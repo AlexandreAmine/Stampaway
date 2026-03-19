@@ -195,6 +195,7 @@ export type Database = {
           created_at: string
           duration_days: number | null
           id: string
+          liked: boolean
           place_id: string
           rating: number
           review_text: string | null
@@ -207,6 +208,7 @@ export type Database = {
           created_at?: string
           duration_days?: number | null
           id?: string
+          liked?: boolean
           place_id: string
           rating: number
           review_text?: string | null
@@ -219,6 +221,7 @@ export type Database = {
           created_at?: string
           duration_days?: number | null
           id?: string
+          liked?: boolean
           place_id?: string
           rating?: number
           review_text?: string | null

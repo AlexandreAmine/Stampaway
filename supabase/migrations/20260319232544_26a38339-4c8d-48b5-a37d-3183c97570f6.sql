@@ -1,0 +1,1 @@
+ALTER TABLE public.reviews ADD COLUMN liked boolean NOT NULL DEFAULT false;
