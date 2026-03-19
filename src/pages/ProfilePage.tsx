@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { ChevronRight, ChevronLeft, LogOut, Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { RatingHistogram } from "@/components/RatingHistogram";
 import { RatingHistogram } from "@/components/RatingHistogram";
 import { FavoritePicker } from "@/components/FavoritePicker";
 import { DestinationPoster } from "@/components/DestinationPoster";
