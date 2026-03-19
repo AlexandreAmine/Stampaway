@@ -71,6 +71,7 @@ export default function AddPlacePage() {
       visit_year: visitYear,
       visit_month: visitMonth,
       duration_days: durationDays || null,
+      liked,
     });
     setSaving(false);
 
