@@ -1,28 +1,29 @@
 import { useState } from "react";
-import { Settings, ChevronRight } from "lucide-react";
+import { Settings, ChevronRight, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
-import { currentUser, places, ratingDistribution, travelLists } from "@/data/mockData";
+import { useAuth } from "@/contexts/AuthContext";
+import { places, ratingDistribution, travelLists } from "@/data/mockData";
 import { PlaceCard } from "@/components/PlaceCard";
-import { StarRating } from "@/components/StarRating";
 
 const profileTabs = ["Profile", "Diary", "Lists", "Wishlist"];
 
 export default function ProfilePage() {
+  const { user, profile, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState("Profile");
 
   const maxCount = Math.max(...ratingDistribution.map((d) => d.count));
 
+  const displayName = profile?.username || user?.email?.split("@")[0] || "User";
+  const avatarUrl = profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3B82F6&color=fff`;
+
   const stats = [
-    { label: "Countries", value: currentUser.countriesCount },
-    { label: "Cities", value: currentUser.citiesCount },
-    { label: "Reviews", value: currentUser.reviewsCount },
-    { label: "Lists", value: travelLists.length },
-    { label: "Wishlist", value: 348 },
-    { label: "Likes", value: 19 },
-    { label: "Tags", value: 8 },
-    { label: "Following", value: currentUser.followingCount },
-    { label: "Followers", value: currentUser.followersCount },
-    { label: "Stats", value: null },
+    { label: "Countries", value: 0 },
+    { label: "Cities", value: 0 },
+    { label: "Reviews", value: 0 },
+    { label: "Lists", value: 0 },
+    { label: "Wishlist", value: 0 },
+    { label: "Following", value: 0 },
+    { label: "Followers", value: 0 },
   ];
 
   return (
@@ -32,14 +33,17 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <img
-              src={currentUser.profilePicture}
-              alt={currentUser.username}
+              src={avatarUrl}
+              alt={displayName}
               className="w-16 h-16 rounded-full object-cover border-2 border-border"
             />
-            <h1 className="text-xl font-bold text-foreground">{currentUser.username}</h1>
+            <div>
+              <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
+              <p className="text-xs text-muted-foreground">{user?.email}</p>
+            </div>
           </div>
-          <button>
-            <Settings className="w-5 h-5 text-muted-foreground" />
+          <button onClick={signOut} className="p-2">
+            <LogOut className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
 
@@ -83,27 +87,9 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Favorite Countries */}
+            {/* Rating distribution */}
             <div className="mb-6">
-              <div className="flex items-center gap-1 mb-3">
-                <h2 className="text-lg font-bold text-foreground">Favorite Countries</h2>
-                <ChevronRight className="w-5 h-5 text-foreground" />
-              </div>
-              <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-5 px-5">
-                {places.slice(2, 6).map((place) => (
-                  <PlaceCard key={place.id} place={place} variant="small" />
-                ))}
-              </div>
-            </div>
-
-            {/* More Activity */}
-            <div className="mb-6">
-              <div className="flex items-center gap-1 mb-4">
-                <h2 className="text-lg font-bold text-foreground">More Activity</h2>
-                <ChevronRight className="w-5 h-5 text-foreground" />
-              </div>
-
-              {/* Rating distribution */}
+              <h2 className="text-lg font-bold text-foreground mb-4">Rating Distribution</h2>
               <div className="space-y-2 mb-6">
                 {ratingDistribution.map((item) => (
                   <div key={item.stars} className="flex items-center gap-2">
@@ -122,24 +108,22 @@ export default function ProfilePage() {
                   </div>
                 ))}
               </div>
+            </div>
 
-              {/* Stats list */}
-              <div className="space-y-0">
-                {stats.map((stat) => (
-                  <div
-                    key={stat.label}
-                    className="flex items-center justify-between py-3 border-b border-border"
-                  >
-                    <span className="text-sm font-semibold text-foreground">{stat.label}</span>
-                    <div className="flex items-center gap-1">
-                      {stat.value !== null && (
-                        <span className="text-sm text-muted-foreground">{stat.value}</span>
-                      )}
-                      <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                    </div>
+            {/* Stats list */}
+            <div className="space-y-0">
+              {stats.map((stat) => (
+                <div
+                  key={stat.label}
+                  className="flex items-center justify-between py-3 border-b border-border"
+                >
+                  <span className="text-sm font-semibold text-foreground">{stat.label}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm text-muted-foreground">{stat.value}</span>
+                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           </motion.div>
         )}
