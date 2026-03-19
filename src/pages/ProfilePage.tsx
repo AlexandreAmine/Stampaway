@@ -6,6 +6,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { RatingHistogram } from "@/components/RatingHistogram";
 import { FavoritePicker } from "@/components/FavoritePicker";
 import { DestinationPoster } from "@/components/DestinationPoster";
+import { DiaryTab } from "@/components/DiaryTab";
+import { ListsTab } from "@/components/ListsTab";
+import { WishlistTab } from "@/components/WishlistTab";
 import { supabase } from "@/integrations/supabase/client";
 
 const profileTabs = ["Profile", "Diary", "Lists", "Wishlist"];
@@ -290,19 +293,11 @@ export default function ProfilePage() {
           </motion.div>
         )}
 
-        {activeTab === "Lists" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-            <div className="flex items-center justify-center h-40">
-              <p className="text-muted-foreground text-sm">No lists yet</p>
-            </div>
-          </motion.div>
-        )}
+        {activeTab === "Diary" && <DiaryTab />}
 
-        {(activeTab === "Diary" || activeTab === "Wishlist") && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-center h-40">
-            <p className="text-muted-foreground text-sm">Coming soon</p>
-          </motion.div>
-        )}
+        {activeTab === "Lists" && <ListsTab />}
+
+        {activeTab === "Wishlist" && <WishlistTab />}
       </div>
 
       <FavoritePicker

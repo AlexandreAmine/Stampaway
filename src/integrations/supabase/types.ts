@@ -193,30 +193,39 @@ export type Database = {
       reviews: {
         Row: {
           created_at: string
+          duration_days: number | null
           id: string
           place_id: string
           rating: number
           review_text: string | null
           updated_at: string
           user_id: string
+          visit_month: number | null
+          visit_year: number | null
         }
         Insert: {
           created_at?: string
+          duration_days?: number | null
           id?: string
           place_id: string
           rating: number
           review_text?: string | null
           updated_at?: string
           user_id: string
+          visit_month?: number | null
+          visit_year?: number | null
         }
         Update: {
           created_at?: string
+          duration_days?: number | null
           id?: string
           place_id?: string
           rating?: number
           review_text?: string | null
           updated_at?: string
           user_id?: string
+          visit_month?: number | null
+          visit_year?: number | null
         }
         Relationships: [
           {
