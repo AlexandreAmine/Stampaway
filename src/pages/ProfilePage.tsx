@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { RatingHistogram } from "@/components/RatingHistogram";
 import { FavoritePicker } from "@/components/FavoritePicker";
 import { DestinationPoster } from "@/components/DestinationPoster";
+import { StarRating } from "@/components/StarRating";
 import { DiaryTab } from "@/components/DiaryTab";
 import { ListsTab } from "@/components/ListsTab";
 import { WishlistTab } from "@/components/WishlistTab";
