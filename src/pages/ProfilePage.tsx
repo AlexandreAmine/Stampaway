@@ -28,7 +28,6 @@ type SubPage = null | "Countries" | "Cities" | "Diary" | "Map" | "Lists" | "Wish
 
 export default function ProfilePage() {
   const { user, profile, signOut } = useAuth();
-  const navigate = useNavigate();
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerType, setPickerType] = useState<"city" | "country">("city");
