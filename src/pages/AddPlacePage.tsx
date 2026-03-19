@@ -67,6 +67,9 @@ export default function AddPlacePage() {
       place_id: selectedPlace.id,
       rating,
       review_text: reviewText || null,
+      visit_year: visitYear,
+      visit_month: visitMonth,
+      duration_days: durationDays || null,
     });
     setSaving(false);
 
