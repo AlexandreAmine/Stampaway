@@ -10,6 +10,7 @@ import ExplorePage from "./pages/ExplorePage";
 import AddPlacePage from "./pages/AddPlacePage";
 import SearchPage from "./pages/SearchPage";
 import ProfilePage from "./pages/ProfilePage";
+import LoggedPlacesPage from "./pages/LoggedPlacesPage";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 
