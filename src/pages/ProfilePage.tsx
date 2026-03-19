@@ -1,30 +1,184 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ChevronRight, LogOut, Plus } from "lucide-react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { travelLists } from "@/data/mockData";
 import { RatingHistogram } from "@/components/RatingHistogram";
+import { FavoritePicker } from "@/components/FavoritePicker";
+import { supabase } from "@/integrations/supabase/client";
 
 const profileTabs = ["Profile", "Diary", "Lists", "Wishlist"];
 
+interface FavoriteSlot {
+  slot_index: number;
+  place_id: string;
+  place_name: string;
+}
+
 export default function ProfilePage() {
   const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Profile");
+
+  // Favorite picker state
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerType, setPickerType] = useState<"city" | "country">("city");
+  const [pickerSlot, setPickerSlot] = useState(0);
+
+  // Favorites
+  const [favoriteCities, setFavoriteCities] = useState<(FavoriteSlot | null)[]>([null, null, null, null]);
+  const [favoriteCountries, setFavoriteCountries] = useState<(FavoriteSlot | null)[]>([null, null, null, null]);
+
+  // Stats from DB
+  const [countriesCount, setCountriesCount] = useState(0);
+  const [citiesCount, setCitiesCount] = useState(0);
+  const [reviewsCount, setReviewsCount] = useState(0);
+  const [listsCount, setListsCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [followersCount, setFollowersCount] = useState(0);
+
+  // Rating distributions
+  const [cityDistribution, setCityDistribution] = useState<number[]>(Array(10).fill(0));
+  const [countryDistribution, setCountryDistribution] = useState<number[]>(Array(10).fill(0));
 
   const displayName = profile?.username || user?.email?.split("@")[0] || "User";
   const avatarUrl = profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3B82F6&color=fff`;
 
-  // All zeros since no reviews logged yet
-  const ratingDistribution = Array(10).fill(0); // 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
+  const fetchData = useCallback(async () => {
+    if (!user) return;
+    const uid = user.id;
+
+    // Fetch all in parallel
+    const [favRes, reviewRes, listRes, wishRes, followingRes, followersRes] = await Promise.all([
+      supabase.from("favorite_places").select("slot_index, place_id, type, places!inner(name)").eq("user_id", uid),
+      supabase.from("reviews").select("rating, places!inner(type)").eq("user_id", uid),
+      supabase.from("lists").select("id", { count: "exact", head: true }).eq("user_id", uid),
+      supabase.from("wishlists").select("id", { count: "exact", head: true }).eq("user_id", uid),
+      supabase.from("followers").select("id", { count: "exact", head: true }).eq("follower_id", uid),
+      supabase.from("followers").select("id", { count: "exact", head: true }).eq("following_id", uid),
+    ]);
+
+    // Favorites
+    if (favRes.data) {
+      const cities: (FavoriteSlot | null)[] = [null, null, null, null];
+      const countries: (FavoriteSlot | null)[] = [null, null, null, null];
+      favRes.data.forEach((f: any) => {
+        const slot = { slot_index: f.slot_index, place_id: f.place_id, place_name: f.places.name };
+        if (f.type === "city") cities[f.slot_index] = slot;
+        else countries[f.slot_index] = slot;
+      });
+      setFavoriteCities(cities);
+      setFavoriteCountries(countries);
+    }
+
+    // Reviews & distributions
+    if (reviewRes.data) {
+      const cityRatings: number[] = [];
+      const countryRatings: number[] = [];
+      const loggedCities = new Set<string>();
+      const loggedCountries = new Set<string>();
+
+      reviewRes.data.forEach((r: any) => {
+        if (r.places.type === "city") {
+          cityRatings.push(Number(r.rating));
+          loggedCities.add("c");
+        } else {
+          countryRatings.push(Number(r.rating));
+          loggedCountries.add("c");
+        }
+      });
+
+      // Count unique logged places
+      // We need place_id for uniqueness - refetch with place_id
+      const { data: reviewsWithPlaces } = await supabase
+        .from("reviews")
+        .select("place_id, places!inner(type)")
+        .eq("user_id", uid);
+
+      const uniqueCities = new Set<string>();
+      const uniqueCountries = new Set<string>();
+      reviewsWithPlaces?.forEach((r: any) => {
+        if (r.places.type === "city") uniqueCities.add(r.place_id);
+        else uniqueCountries.add(r.place_id);
+      });
+
+      setCitiesCount(uniqueCities.size);
+      setCountriesCount(uniqueCountries.size);
+      setReviewsCount(reviewRes.data.length);
+
+      // Build distributions: index 0=0.5, 1=1.0, ..., 9=5.0
+      const buildDist = (ratings: number[]) => {
+        const dist = Array(10).fill(0);
+        ratings.forEach((r) => {
+          const idx = Math.round(r * 2) - 1;
+          if (idx >= 0 && idx < 10) dist[idx]++;
+        });
+        return dist;
+      };
+      setCityDistribution(buildDist(cityRatings));
+      setCountryDistribution(buildDist(countryRatings));
+    }
+
+    setListsCount(listRes.count || 0);
+    setWishlistCount(wishRes.count || 0);
+    setFollowingCount(followingRes.count || 0);
+    setFollowersCount(followersRes.count || 0);
+  }, [user]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleOpenPicker = (type: "city" | "country", slot: number) => {
+    setPickerType(type);
+    setPickerSlot(slot);
+    setPickerOpen(true);
+  };
+
+  const handleSelectFavorite = async (placeId: string, placeName: string) => {
+    if (!user) return;
+
+    // Upsert favorite
+    const existing = pickerType === "city" ? favoriteCities[pickerSlot] : favoriteCountries[pickerSlot];
+
+    if (existing) {
+      await supabase
+        .from("favorite_places")
+        .update({ place_id: placeId })
+        .eq("user_id", user.id)
+        .eq("slot_index", pickerSlot)
+        .eq("type", pickerType);
+    } else {
+      await supabase.from("favorite_places").insert({
+        user_id: user.id,
+        place_id: placeId,
+        slot_index: pickerSlot,
+        type: pickerType,
+      });
+    }
+
+    // Update local state
+    const newSlot: FavoriteSlot = { slot_index: pickerSlot, place_id: placeId, place_name: placeName };
+    if (pickerType === "city") {
+      const updated = [...favoriteCities];
+      updated[pickerSlot] = newSlot;
+      setFavoriteCities(updated);
+    } else {
+      const updated = [...favoriteCountries];
+      updated[pickerSlot] = newSlot;
+      setFavoriteCountries(updated);
+    }
+  };
 
   const stats = [
-    { label: "Countries", value: 0 },
-    { label: "Cities", value: 0 },
-    { label: "Reviews", value: 0 },
-    { label: "Lists", value: 0 },
-    { label: "Wishlist", value: 0 },
-    { label: "Following", value: 0 },
-    { label: "Followers", value: 0 },
+    { label: "Countries", value: countriesCount, link: "/logged-places?type=country" },
+    { label: "Cities", value: citiesCount, link: "/logged-places?type=city" },
+    { label: "Reviews", value: reviewsCount, link: null },
+    { label: "Lists", value: listsCount, link: null },
+    { label: "Wishlist", value: wishlistCount, link: null },
+    { label: "Following", value: followingCount, link: null },
+    { label: "Followers", value: followersCount, link: null },
   ];
 
   return (
@@ -75,43 +229,82 @@ export default function ProfilePage() {
 
         {activeTab === "Profile" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            {/* Favorite Cities - empty with + buttons */}
+            {/* Favorite Countries */}
+            <div className="mb-4">
+              <div className="flex items-center gap-1 mb-3">
+                <h2 className="text-lg font-bold text-foreground">Favorite Countries</h2>
+                <ChevronRight className="w-5 h-5 text-foreground" />
+              </div>
+              <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-5 px-5">
+                {[0, 1, 2, 3].map((i) => {
+                  const fav = favoriteCountries[i];
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => handleOpenPicker("country", i)}
+                      className="w-28 h-36 rounded-2xl border-2 border-dashed border-border flex items-center justify-center shrink-0 hover:border-primary transition-colors overflow-hidden"
+                    >
+                      {fav ? (
+                        <span className="text-xs font-semibold text-foreground text-center px-2">{fav.place_name}</span>
+                      ) : (
+                        <Plus className="w-8 h-8 text-muted-foreground" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Country Rating Distribution */}
             <div className="mb-6">
+              <RatingHistogram distribution={countryDistribution} />
+            </div>
+
+            {/* Favorite Cities */}
+            <div className="mb-4">
               <div className="flex items-center gap-1 mb-3">
                 <h2 className="text-lg font-bold text-foreground">Favorite Cities</h2>
                 <ChevronRight className="w-5 h-5 text-foreground" />
               </div>
               <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-5 px-5">
-                {[1, 2, 3, 4].map((i) => (
-                  <button
-                    key={i}
-                    className="w-28 h-36 rounded-2xl border-2 border-dashed border-border flex items-center justify-center shrink-0 hover:border-primary transition-colors"
-                  >
-                    <Plus className="w-8 h-8 text-muted-foreground" />
-                  </button>
-                ))}
+                {[0, 1, 2, 3].map((i) => {
+                  const fav = favoriteCities[i];
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => handleOpenPicker("city", i)}
+                      className="w-28 h-36 rounded-2xl border-2 border-dashed border-border flex items-center justify-center shrink-0 hover:border-primary transition-colors overflow-hidden"
+                    >
+                      {fav ? (
+                        <span className="text-xs font-semibold text-foreground text-center px-2">{fav.place_name}</span>
+                      ) : (
+                        <Plus className="w-8 h-8 text-muted-foreground" />
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Rating distribution - Letterboxd style horizontal histogram */}
+            {/* City Rating Distribution */}
             <div className="mb-6">
-              <h2 className="text-lg font-bold text-foreground mb-4">Rating Distribution</h2>
-              <RatingHistogram distribution={ratingDistribution} />
+              <RatingHistogram distribution={cityDistribution} />
             </div>
 
             {/* Stats list */}
             <div className="space-y-0">
               {stats.map((stat) => (
-                <div
+                <button
                   key={stat.label}
-                  className="flex items-center justify-between py-3 border-b border-border"
+                  onClick={() => stat.link && navigate(stat.link)}
+                  className="flex items-center justify-between py-3 border-b border-border w-full text-left"
                 >
                   <span className="text-sm font-semibold text-foreground">{stat.label}</span>
                   <div className="flex items-center gap-1">
                     <span className="text-sm text-muted-foreground">{stat.value}</span>
                     <ChevronRight className="w-4 h-4 text-muted-foreground" />
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </motion.div>
@@ -119,18 +312,9 @@ export default function ProfilePage() {
 
         {activeTab === "Lists" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-            {travelLists.map((list) => (
-              <div key={list.id} className="bg-card rounded-2xl overflow-hidden">
-                <div className="relative h-32">
-                  <img src={list.coverImage} alt={list.name} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-                  <div className="absolute bottom-3 left-3">
-                    <p className="text-base font-bold text-foreground">{list.name}</p>
-                    <p className="text-xs text-muted-foreground">{list.placeCount} places</p>
-                  </div>
-                </div>
-              </div>
-            ))}
+            <div className="flex items-center justify-center h-40">
+              <p className="text-muted-foreground text-sm">No lists yet</p>
+            </div>
           </motion.div>
         )}
 
@@ -144,6 +328,13 @@ export default function ProfilePage() {
           </motion.div>
         )}
       </div>
+
+      <FavoritePicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        type={pickerType}
+        onSelect={handleSelectFavorite}
+      />
     </div>
   );
 }

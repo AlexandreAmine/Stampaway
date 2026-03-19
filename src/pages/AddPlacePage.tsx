@@ -1,31 +1,76 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { recentSearches, places } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { StarRating } from "@/components/StarRating";
+import { toast } from "sonner";
 
 type Step = "search" | "review";
 
+interface PlaceResult {
+  id: string;
+  name: string;
+  country: string;
+  type: string;
+}
+
 export default function AddPlacePage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [step, setStep] = useState<Step>("search");
   const [query, setQuery] = useState("");
-  const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
+  const [selectedPlace, setSelectedPlace] = useState<PlaceResult | null>(null);
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
+  const [results, setResults] = useState<PlaceResult[]>([]);
+  const [saving, setSaving] = useState(false);
 
-  const filteredSearches = query
-    ? recentSearches.filter((s) => s.toLowerCase().includes(query.toLowerCase()))
-    : recentSearches;
+  useEffect(() => {
+    const timer = setTimeout(() => fetchPlaces(query), 200);
+    return () => clearTimeout(timer);
+  }, [query]);
 
-  const handleSelectPlace = (name: string) => {
-    setSelectedPlace(name);
+  useEffect(() => {
+    fetchPlaces("");
+  }, []);
+
+  const fetchPlaces = async (search: string) => {
+    let q = supabase.from("places").select("id, name, country, type");
+    if (search) {
+      q = q.ilike("name", `%${search}%`);
+    }
+    q = q.order("name").limit(30);
+    const { data } = await q;
+    setResults(data || []);
+  };
+
+  const handleSelectPlace = (place: PlaceResult) => {
+    setSelectedPlace(place);
     setStep("review");
   };
 
-  const handleSave = () => {
-    navigate("/profile");
+  const handleSave = async () => {
+    if (!user || !selectedPlace || rating === 0) {
+      toast.error("Please select a rating");
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase.from("reviews").insert({
+      user_id: user.id,
+      place_id: selectedPlace.id,
+      rating,
+      review_text: reviewText || null,
+    });
+    setSaving(false);
+
+    if (error) {
+      toast.error("Failed to save review");
+    } else {
+      toast.success("Review saved!");
+      navigate("/profile");
+    }
   };
 
   if (step === "review" && selectedPlace) {
@@ -39,11 +84,16 @@ export default function AddPlacePage() {
               </button>
               <div>
                 <p className="text-xs text-muted-foreground">I TravelD to...</p>
-                <h1 className="text-xl font-bold text-foreground">{selectedPlace}</h1>
+                <h1 className="text-xl font-bold text-foreground">{selectedPlace.name}</h1>
+                <p className="text-xs text-muted-foreground">{selectedPlace.type === "city" ? selectedPlace.country : "Country"}</p>
               </div>
             </div>
-            <button onClick={handleSave} className="text-primary font-semibold text-sm">
-              Save
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="text-primary font-semibold text-sm disabled:opacity-50"
+            >
+              {saving ? "Saving..." : "Save"}
             </button>
           </div>
 
@@ -105,22 +155,26 @@ export default function AddPlacePage() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search location..."
+            placeholder="Search cities or countries..."
             className="w-full bg-card rounded-xl py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
 
-        <p className="text-xs font-medium text-muted-foreground mb-3">Recent Searches</p>
         <div className="space-y-0">
-          {filteredSearches.map((search) => (
+          {results.map((place) => (
             <motion.button
-              key={search}
+              key={place.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              onClick={() => handleSelectPlace(search)}
-              className="w-full text-left py-3.5 text-sm font-medium text-foreground hover:text-primary transition-colors"
+              onClick={() => handleSelectPlace(place)}
+              className="w-full text-left py-3.5 flex items-center justify-between hover:bg-card/50 transition-colors"
             >
-              {search}
+              <div>
+                <span className="text-sm font-medium text-foreground">{place.name}</span>
+                <span className="text-xs text-muted-foreground ml-2">
+                  {place.type === "city" ? place.country : "Country"}
+                </span>
+              </div>
             </motion.button>
           ))}
         </div>

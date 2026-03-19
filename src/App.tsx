@@ -10,6 +10,7 @@ import ExplorePage from "./pages/ExplorePage";
 import AddPlacePage from "./pages/AddPlacePage";
 import SearchPage from "./pages/SearchPage";
 import ProfilePage from "./pages/ProfilePage";
+import LoggedPlacesPage from "./pages/LoggedPlacesPage";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 
@@ -34,6 +35,7 @@ function AppRoutes() {
         <Route path="/add" element={<ProtectedRoute><AddPlacePage /></ProtectedRoute>} />
         <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+        <Route path="/logged-places" element={<ProtectedRoute><LoggedPlacesPage /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
       {user && <BottomNav />}
