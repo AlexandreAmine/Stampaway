@@ -305,10 +305,6 @@ function LoggedPlacesInline({ type }: { type: "city" | "country" }) {
 
   if (places.length === 0) return <div className="flex items-center justify-center h-40"><p className="text-sm text-muted-foreground">No {type === "city" ? "cities" : "countries"} logged yet</p></div>;
 
-  // Need to dynamically import these
-  const StarRating = require("@/components/StarRating").StarRating;
-  const DestinationPoster = require("@/components/DestinationPoster").DestinationPoster;
-
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div className="grid grid-cols-3 gap-3">
