@@ -29,6 +29,7 @@ export default function AddPlacePage() {
   const [visitYear, setVisitYear] = useState(new Date().getFullYear());
   const [visitMonth, setVisitMonth] = useState(new Date().getMonth() + 1);
   const [durationDays, setDurationDays] = useState<number | "">("");
+  const [liked, setLiked] = useState(false);
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [saving, setSaving] = useState(false);
 
