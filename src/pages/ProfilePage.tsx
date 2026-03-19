@@ -6,6 +6,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { RatingHistogram } from "@/components/RatingHistogram";
 import { FavoritePicker } from "@/components/FavoritePicker";
 import { DestinationPoster } from "@/components/DestinationPoster";
+import { DiaryTab } from "@/components/DiaryTab";
+import { ListsTab } from "@/components/ListsTab";
+import { WishlistTab } from "@/components/WishlistTab";
 import { supabase } from "@/integrations/supabase/client";
 
 const profileTabs = ["Profile", "Diary", "Lists", "Wishlist"];
