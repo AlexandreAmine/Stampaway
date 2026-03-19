@@ -29,6 +29,7 @@ export default function AddPlacePage() {
   const [visitYear, setVisitYear] = useState(new Date().getFullYear());
   const [visitMonth, setVisitMonth] = useState(new Date().getMonth() + 1);
   const [durationDays, setDurationDays] = useState<number | "">("");
+  const [liked, setLiked] = useState(false);
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -70,6 +71,7 @@ export default function AddPlacePage() {
       visit_year: visitYear,
       visit_month: visitMonth,
       duration_days: durationDays || null,
+      liked,
     });
     setSaving(false);
 
@@ -182,8 +184,10 @@ export default function AddPlacePage() {
             </div>
 
             <div className="flex items-center justify-between py-3 border-t border-border">
-              <span className="text-sm font-semibold text-foreground">Like</span>
-              <button className="text-muted-foreground">♡</button>
+              <span className="text-sm font-semibold text-foreground">Like this destination</span>
+              <button type="button" onClick={() => setLiked(!liked)} className="text-2xl transition-transform active:scale-90">
+                {liked ? "❤️" : "🤍"}
+              </button>
             </div>
           </div>
         </div>
