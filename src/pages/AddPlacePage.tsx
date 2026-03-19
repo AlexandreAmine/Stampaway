@@ -140,16 +140,45 @@ export default function AddPlacePage() {
               />
             </div>
 
-            <div className="flex items-center justify-between py-3">
-              <span className="text-sm font-semibold text-foreground">Date</span>
-              <span className="text-sm text-primary">
-                {new Date().toLocaleDateString("en-US", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
-              </span>
+            <div className="space-y-3">
+              <p className="text-sm font-semibold text-foreground">When did you visit?</p>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="text-xs text-muted-foreground mb-1 block">Year</label>
+                  <select
+                    value={visitYear}
+                    onChange={(e) => setVisitYear(Number(e.target.value))}
+                    className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    {Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-muted-foreground mb-1 block">Month</label>
+                  <select
+                    value={visitMonth}
+                    onChange={(e) => setVisitMonth(Number(e.target.value))}
+                    className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, i) => (
+                      <option key={i} value={i + 1}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-muted-foreground mb-1 block">Duration</label>
+                  <input
+                    type="number"
+                    value={durationDays}
+                    onChange={(e) => setDurationDays(e.target.value ? Number(e.target.value) : "")}
+                    placeholder="Days"
+                    min={1}
+                    className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="flex items-center justify-between py-3 border-t border-border">
