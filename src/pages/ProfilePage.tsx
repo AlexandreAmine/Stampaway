@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Settings, ChevronRight, LogOut } from "lucide-react";
+import { ChevronRight, LogOut, Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
-import { places, ratingDistribution, travelLists } from "@/data/mockData";
-import { PlaceCard } from "@/components/PlaceCard";
+import { travelLists } from "@/data/mockData";
+import { RatingHistogram } from "@/components/RatingHistogram";
 
 const profileTabs = ["Profile", "Diary", "Lists", "Wishlist"];
 
@@ -11,10 +11,11 @@ export default function ProfilePage() {
   const { user, profile, signOut } = useAuth();
   const [activeTab, setActiveTab] = useState("Profile");
 
-  const maxCount = Math.max(...ratingDistribution.map((d) => d.count));
-
   const displayName = profile?.username || user?.email?.split("@")[0] || "User";
   const avatarUrl = profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3B82F6&color=fff`;
+
+  // All zeros since no reviews logged yet
+  const ratingDistribution = Array(10).fill(0); // 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5
 
   const stats = [
     { label: "Countries", value: 0 },
@@ -74,40 +75,28 @@ export default function ProfilePage() {
 
         {activeTab === "Profile" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-            {/* Favorite Cities */}
+            {/* Favorite Cities - empty with + buttons */}
             <div className="mb-6">
               <div className="flex items-center gap-1 mb-3">
                 <h2 className="text-lg font-bold text-foreground">Favorite Cities</h2>
                 <ChevronRight className="w-5 h-5 text-foreground" />
               </div>
               <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-5 px-5">
-                {places.slice(0, 4).map((place) => (
-                  <PlaceCard key={place.id} place={place} variant="small" />
+                {[1, 2, 3, 4].map((i) => (
+                  <button
+                    key={i}
+                    className="w-28 h-36 rounded-2xl border-2 border-dashed border-border flex items-center justify-center shrink-0 hover:border-primary transition-colors"
+                  >
+                    <Plus className="w-8 h-8 text-muted-foreground" />
+                  </button>
                 ))}
               </div>
             </div>
 
-            {/* Rating distribution */}
+            {/* Rating distribution - Letterboxd style horizontal histogram */}
             <div className="mb-6">
               <h2 className="text-lg font-bold text-foreground mb-4">Rating Distribution</h2>
-              <div className="space-y-2 mb-6">
-                {ratingDistribution.map((item) => (
-                  <div key={item.stars} className="flex items-center gap-2">
-                    <div className="flex items-center gap-0.5 w-8">
-                      <span className="text-xs text-star">★</span>
-                      <span className="text-xs font-medium text-foreground">{item.stars}</span>
-                    </div>
-                    <div className="flex-1 h-2 bg-secondary rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${(item.count / maxCount) * 100}%` }}
-                        transition={{ delay: 0.2, duration: 0.5 }}
-                        className="h-full bg-primary rounded-full"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <RatingHistogram distribution={ratingDistribution} />
             </div>
 
             {/* Stats list */}
