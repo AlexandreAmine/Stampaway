@@ -2,18 +2,20 @@ import { useState, useEffect } from "react";
 import { Search, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { DestinationPoster } from "@/components/DestinationPoster";
 
 interface FavoritePickerProps {
   open: boolean;
   onClose: () => void;
   type: "city" | "country";
-  onSelect: (placeId: string, placeName: string) => void;
+  onSelect: (placeId: string, placeName: string, placeImage: string | null, placeCountry: string) => void;
 }
 
 interface PlaceOption {
   id: string;
   name: string;
   country: string;
+  image: string | null;
 }
 
 export function FavoritePicker({ open, onClose, type, onSelect }: FavoritePickerProps) {
@@ -37,7 +39,7 @@ export function FavoritePicker({ open, onClose, type, onSelect }: FavoritePicker
 
   const fetchPlaces = async (search: string) => {
     setLoading(true);
-    let q = supabase.from("places").select("id, name, country").eq("type", type);
+    let q = supabase.from("places").select("id, name, country, image").eq("type", type);
     if (search) {
       q = q.ilike("name", `%${search}%`);
     }
@@ -82,25 +84,31 @@ export function FavoritePicker({ open, onClose, type, onSelect }: FavoritePicker
           </div>
 
           <div className="flex-1 overflow-y-auto px-5 pb-8">
-            {places.map((place) => (
-              <button
-                key={place.id}
-                onClick={() => {
-                  onSelect(place.id, place.name);
-                  onClose();
-                }}
-                className="w-full text-left py-3 border-b border-border flex items-center justify-between hover:bg-card/50 transition-colors"
-              >
-                <div>
-                  <span className="text-sm font-medium text-foreground">{place.name}</span>
-                  {type === "city" && (
-                    <span className="text-xs text-muted-foreground ml-2">{place.country}</span>
-                  )}
-                </div>
-              </button>
-            ))}
+            <div className="grid grid-cols-3 gap-3">
+              {places.map((place) => (
+                <button
+                  key={place.id}
+                  onClick={() => {
+                    onSelect(place.id, place.name, place.image, place.country);
+                    onClose();
+                  }}
+                  className="aspect-[3/4] w-full"
+                >
+                  <DestinationPoster
+                    placeId={place.id}
+                    name={place.name}
+                    country={place.country}
+                    type={type}
+                    image={place.image}
+                    className="w-full h-full"
+                  />
+                </button>
+              ))}
+            </div>
             {!loading && places.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center mt-8">No {type === "city" ? "cities" : "countries"} found</p>
+              <p className="text-sm text-muted-foreground text-center mt-8">
+                No {type === "city" ? "cities" : "countries"} found
+              </p>
             )}
           </div>
         </div>

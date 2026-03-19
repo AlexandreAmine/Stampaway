@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { RatingHistogram } from "@/components/RatingHistogram";
 import { FavoritePicker } from "@/components/FavoritePicker";
+import { DestinationPoster } from "@/components/DestinationPoster";
 import { supabase } from "@/integrations/supabase/client";
 
 const profileTabs = ["Profile", "Diary", "Lists", "Wishlist"];
@@ -13,6 +14,9 @@ interface FavoriteSlot {
   slot_index: number;
   place_id: string;
   place_name: string;
+  place_image: string | null;
+  place_country: string;
+  place_type: string;
 }
 
 export default function ProfilePage() {
@@ -20,16 +24,13 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Profile");
 
-  // Favorite picker state
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerType, setPickerType] = useState<"city" | "country">("city");
   const [pickerSlot, setPickerSlot] = useState(0);
 
-  // Favorites
   const [favoriteCities, setFavoriteCities] = useState<(FavoriteSlot | null)[]>([null, null, null, null]);
   const [favoriteCountries, setFavoriteCountries] = useState<(FavoriteSlot | null)[]>([null, null, null, null]);
 
-  // Stats from DB
   const [countriesCount, setCountriesCount] = useState(0);
   const [citiesCount, setCitiesCount] = useState(0);
   const [reviewsCount, setReviewsCount] = useState(0);
@@ -38,7 +39,6 @@ export default function ProfilePage() {
   const [followingCount, setFollowingCount] = useState(0);
   const [followersCount, setFollowersCount] = useState(0);
 
-  // Rating distributions
   const [cityDistribution, setCityDistribution] = useState<number[]>(Array(10).fill(0));
   const [countryDistribution, setCountryDistribution] = useState<number[]>(Array(10).fill(0));
 
@@ -49,22 +49,27 @@ export default function ProfilePage() {
     if (!user) return;
     const uid = user.id;
 
-    // Fetch all in parallel
     const [favRes, reviewRes, listRes, wishRes, followingRes, followersRes] = await Promise.all([
-      supabase.from("favorite_places").select("slot_index, place_id, type, places!inner(name)").eq("user_id", uid),
-      supabase.from("reviews").select("rating, places!inner(type)").eq("user_id", uid),
+      supabase.from("favorite_places").select("slot_index, place_id, type, places!inner(name, image, country, type)").eq("user_id", uid),
+      supabase.from("reviews").select("rating, place_id, places!inner(type)").eq("user_id", uid),
       supabase.from("lists").select("id", { count: "exact", head: true }).eq("user_id", uid),
       supabase.from("wishlists").select("id", { count: "exact", head: true }).eq("user_id", uid),
       supabase.from("followers").select("id", { count: "exact", head: true }).eq("follower_id", uid),
       supabase.from("followers").select("id", { count: "exact", head: true }).eq("following_id", uid),
     ]);
 
-    // Favorites
     if (favRes.data) {
       const cities: (FavoriteSlot | null)[] = [null, null, null, null];
       const countries: (FavoriteSlot | null)[] = [null, null, null, null];
       favRes.data.forEach((f: any) => {
-        const slot = { slot_index: f.slot_index, place_id: f.place_id, place_name: f.places.name };
+        const slot: FavoriteSlot = {
+          slot_index: f.slot_index,
+          place_id: f.place_id,
+          place_name: f.places.name,
+          place_image: f.places.image,
+          place_country: f.places.country,
+          place_type: f.places.type,
+        };
         if (f.type === "city") cities[f.slot_index] = slot;
         else countries[f.slot_index] = slot;
       });
@@ -72,42 +77,26 @@ export default function ProfilePage() {
       setFavoriteCountries(countries);
     }
 
-    // Reviews & distributions
     if (reviewRes.data) {
       const cityRatings: number[] = [];
       const countryRatings: number[] = [];
-      const loggedCities = new Set<string>();
-      const loggedCountries = new Set<string>();
+      const uniqueCities = new Set<string>();
+      const uniqueCountries = new Set<string>();
 
       reviewRes.data.forEach((r: any) => {
         if (r.places.type === "city") {
           cityRatings.push(Number(r.rating));
-          loggedCities.add("c");
+          uniqueCities.add(r.place_id);
         } else {
           countryRatings.push(Number(r.rating));
-          loggedCountries.add("c");
+          uniqueCountries.add(r.place_id);
         }
-      });
-
-      // Count unique logged places
-      // We need place_id for uniqueness - refetch with place_id
-      const { data: reviewsWithPlaces } = await supabase
-        .from("reviews")
-        .select("place_id, places!inner(type)")
-        .eq("user_id", uid);
-
-      const uniqueCities = new Set<string>();
-      const uniqueCountries = new Set<string>();
-      reviewsWithPlaces?.forEach((r: any) => {
-        if (r.places.type === "city") uniqueCities.add(r.place_id);
-        else uniqueCountries.add(r.place_id);
       });
 
       setCitiesCount(uniqueCities.size);
       setCountriesCount(uniqueCountries.size);
       setReviewsCount(reviewRes.data.length);
 
-      // Build distributions: index 0=0.5, 1=1.0, ..., 9=5.0
       const buildDist = (ratings: number[]) => {
         const dist = Array(10).fill(0);
         ratings.forEach((r) => {
@@ -136,10 +125,9 @@ export default function ProfilePage() {
     setPickerOpen(true);
   };
 
-  const handleSelectFavorite = async (placeId: string, placeName: string) => {
+  const handleSelectFavorite = async (placeId: string, placeName: string, placeImage: string | null, placeCountry: string) => {
     if (!user) return;
 
-    // Upsert favorite
     const existing = pickerType === "city" ? favoriteCities[pickerSlot] : favoriteCountries[pickerSlot];
 
     if (existing) {
@@ -158,8 +146,14 @@ export default function ProfilePage() {
       });
     }
 
-    // Update local state
-    const newSlot: FavoriteSlot = { slot_index: pickerSlot, place_id: placeId, place_name: placeName };
+    const newSlot: FavoriteSlot = {
+      slot_index: pickerSlot,
+      place_id: placeId,
+      place_name: placeName,
+      place_image: placeImage,
+      place_country: placeCountry,
+      place_type: pickerType,
+    };
     if (pickerType === "city") {
       const updated = [...favoriteCities];
       updated[pickerSlot] = newSlot;
@@ -180,6 +174,39 @@ export default function ProfilePage() {
     { label: "Following", value: followingCount, link: null },
     { label: "Followers", value: followersCount, link: null },
   ];
+
+  const renderFavoriteSlots = (type: "city" | "country", favorites: (FavoriteSlot | null)[]) => (
+    <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-5 px-5">
+      {[0, 1, 2, 3].map((i) => {
+        const fav = favorites[i];
+        return fav ? (
+          <button
+            key={i}
+            onClick={() => handleOpenPicker(type, i)}
+            className="w-28 h-36 shrink-0"
+          >
+            <DestinationPoster
+              placeId={fav.place_id}
+              name={fav.place_name}
+              country={fav.place_country}
+              type={type}
+              image={fav.place_image}
+              autoGenerate
+              className="w-full h-full"
+            />
+          </button>
+        ) : (
+          <button
+            key={i}
+            onClick={() => handleOpenPicker(type, i)}
+            className="w-28 h-36 rounded-2xl border-2 border-dashed border-border flex items-center justify-center shrink-0 hover:border-primary transition-colors"
+          >
+            <Plus className="w-8 h-8 text-muted-foreground" />
+          </button>
+        );
+      })}
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -205,23 +232,12 @@ export default function ProfilePage() {
         {/* Tabs */}
         <div className="flex items-center gap-5 mb-6">
           {profileTabs.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className="relative pb-2"
-            >
-              <span
-                className={`text-sm font-semibold transition-colors ${
-                  activeTab === tab ? "text-foreground" : "text-muted-foreground"
-                }`}
-              >
+            <button key={tab} onClick={() => setActiveTab(tab)} className="relative pb-2">
+              <span className={`text-sm font-semibold transition-colors ${activeTab === tab ? "text-foreground" : "text-muted-foreground"}`}>
                 {tab}
               </span>
               {activeTab === tab && (
-                <motion.div
-                  layoutId="profile-tab"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-full"
-                />
+                <motion.div layoutId="profile-tab" className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground rounded-full" />
               )}
             </button>
           ))}
@@ -235,27 +251,9 @@ export default function ProfilePage() {
                 <h2 className="text-lg font-bold text-foreground">Favorite Countries</h2>
                 <ChevronRight className="w-5 h-5 text-foreground" />
               </div>
-              <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-5 px-5">
-                {[0, 1, 2, 3].map((i) => {
-                  const fav = favoriteCountries[i];
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => handleOpenPicker("country", i)}
-                      className="w-28 h-36 rounded-2xl border-2 border-dashed border-border flex items-center justify-center shrink-0 hover:border-primary transition-colors overflow-hidden"
-                    >
-                      {fav ? (
-                        <span className="text-xs font-semibold text-foreground text-center px-2">{fav.place_name}</span>
-                      ) : (
-                        <Plus className="w-8 h-8 text-muted-foreground" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+              {renderFavoriteSlots("country", favoriteCountries)}
             </div>
 
-            {/* Country Rating Distribution */}
             <div className="mb-6">
               <RatingHistogram distribution={countryDistribution} />
             </div>
@@ -266,27 +264,9 @@ export default function ProfilePage() {
                 <h2 className="text-lg font-bold text-foreground">Favorite Cities</h2>
                 <ChevronRight className="w-5 h-5 text-foreground" />
               </div>
-              <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-5 px-5">
-                {[0, 1, 2, 3].map((i) => {
-                  const fav = favoriteCities[i];
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => handleOpenPicker("city", i)}
-                      className="w-28 h-36 rounded-2xl border-2 border-dashed border-border flex items-center justify-center shrink-0 hover:border-primary transition-colors overflow-hidden"
-                    >
-                      {fav ? (
-                        <span className="text-xs font-semibold text-foreground text-center px-2">{fav.place_name}</span>
-                      ) : (
-                        <Plus className="w-8 h-8 text-muted-foreground" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+              {renderFavoriteSlots("city", favoriteCities)}
             </div>
 
-            {/* City Rating Distribution */}
             <div className="mb-6">
               <RatingHistogram distribution={cityDistribution} />
             </div>
@@ -319,11 +299,7 @@ export default function ProfilePage() {
         )}
 
         {(activeTab === "Diary" || activeTab === "Wishlist") && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex items-center justify-center h-40"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-center h-40">
             <p className="text-muted-foreground text-sm">Coming soon</p>
           </motion.div>
         )}
