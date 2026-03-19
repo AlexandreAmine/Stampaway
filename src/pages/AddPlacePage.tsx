@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { StarRating } from "@/components/StarRating";
+import { DestinationPoster } from "@/components/DestinationPoster";
 import { toast } from "sonner";
 
 type Step = "search" | "review";
@@ -14,6 +15,7 @@ interface PlaceResult {
   name: string;
   country: string;
   type: string;
+  image: string | null;
 }
 
 export default function AddPlacePage() {
@@ -37,7 +39,7 @@ export default function AddPlacePage() {
   }, []);
 
   const fetchPlaces = async (search: string) => {
-    let q = supabase.from("places").select("id, name, country, type");
+    let q = supabase.from("places").select("id, name, country, type, image");
     if (search) {
       q = q.ilike("name", `%${search}%`);
     }
@@ -82,10 +84,25 @@ export default function AddPlacePage() {
               <button onClick={() => setStep("search")}>
                 <ChevronLeft className="w-6 h-6 text-foreground" />
               </button>
-              <div>
-                <p className="text-xs text-muted-foreground">I TravelD to...</p>
-                <h1 className="text-xl font-bold text-foreground">{selectedPlace.name}</h1>
-                <p className="text-xs text-muted-foreground">{selectedPlace.type === "city" ? selectedPlace.country : "Country"}</p>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-16 rounded-lg overflow-hidden shrink-0">
+                  <DestinationPoster
+                    placeId={selectedPlace.id}
+                    name={selectedPlace.name}
+                    country={selectedPlace.country}
+                    type={selectedPlace.type as "city" | "country"}
+                    image={selectedPlace.image}
+                    autoGenerate
+                    className="w-full h-full"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">I TravelD to...</p>
+                  <h1 className="text-xl font-bold text-foreground">{selectedPlace.name}</h1>
+                  <p className="text-xs text-muted-foreground">
+                    {selectedPlace.type === "city" ? selectedPlace.country : "Country"}
+                  </p>
+                </div>
               </div>
             </div>
             <button
@@ -160,21 +177,23 @@ export default function AddPlacePage() {
           />
         </div>
 
-        <div className="space-y-0">
+        <div className="grid grid-cols-3 gap-3">
           {results.map((place) => (
             <motion.button
               key={place.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               onClick={() => handleSelectPlace(place)}
-              className="w-full text-left py-3.5 flex items-center justify-between hover:bg-card/50 transition-colors"
+              className="aspect-[3/4] w-full"
             >
-              <div>
-                <span className="text-sm font-medium text-foreground">{place.name}</span>
-                <span className="text-xs text-muted-foreground ml-2">
-                  {place.type === "city" ? place.country : "Country"}
-                </span>
-              </div>
+              <DestinationPoster
+                placeId={place.id}
+                name={place.name}
+                country={place.country}
+                type={place.type as "city" | "country"}
+                image={place.image}
+                className="w-full h-full"
+              />
             </motion.button>
           ))}
         </div>

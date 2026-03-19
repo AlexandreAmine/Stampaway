@@ -5,11 +5,14 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { StarRating } from "@/components/StarRating";
+import { DestinationPoster } from "@/components/DestinationPoster";
 
 interface LoggedPlace {
   place_id: string;
   place_name: string;
   place_country: string;
+  place_image: string | null;
+  place_type: string;
   rating: number;
   review_text: string | null;
   created_at: string;
@@ -32,7 +35,7 @@ export default function LoggedPlacesPage() {
     setLoading(true);
     const { data } = await supabase
       .from("reviews")
-      .select("place_id, rating, review_text, created_at, places!inner(name, country, type)")
+      .select("place_id, rating, review_text, created_at, places!inner(name, country, type, image)")
       .eq("user_id", user!.id)
       .eq("places.type", type)
       .order("created_at", { ascending: false });
@@ -43,6 +46,8 @@ export default function LoggedPlacesPage() {
           place_id: r.place_id,
           place_name: r.places.name,
           place_country: r.places.country,
+          place_image: r.places.image,
+          place_type: r.places.type,
           rating: r.rating,
           review_text: r.review_text,
           created_at: r.created_at,
@@ -75,22 +80,29 @@ export default function LoggedPlacesPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-0">
+          <div className="grid grid-cols-3 gap-3">
             {places.map((place, i) => (
               <motion.div
                 key={place.place_id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: i * 0.03 }}
-                className="flex items-center justify-between py-3 border-b border-border"
+                className="relative"
               >
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{place.place_name}</p>
-                  {type === "city" && (
-                    <p className="text-xs text-muted-foreground">{place.place_country}</p>
-                  )}
+                <div className="aspect-[3/4] w-full">
+                  <DestinationPoster
+                    placeId={place.place_id}
+                    name={place.place_name}
+                    country={place.place_country}
+                    type={type as "city" | "country"}
+                    image={place.place_image}
+                    autoGenerate
+                    className="w-full h-full"
+                  />
                 </div>
-                <StarRating rating={place.rating} size={14} />
+                <div className="mt-1.5 flex justify-center">
+                  <StarRating rating={place.rating} size={12} />
+                </div>
               </motion.div>
             ))}
           </div>
