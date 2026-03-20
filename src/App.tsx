@@ -14,6 +14,7 @@ import LoggedPlacesPage from "./pages/LoggedPlacesPage";
 import AuthPage from "./pages/AuthPage";
 import PlacePage from "./pages/PlacePage";
 import ReviewDetailPage from "./pages/ReviewDetailPage";
+import PlaceSubPage from "./pages/PlaceSubPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ function AppRoutes() {
         <Route path="/logged-places" element={<ProtectedRoute><LoggedPlacesPage /></ProtectedRoute>} />
         <Route path="/place/:id" element={<ProtectedRoute><PlacePage /></ProtectedRoute>} />
         <Route path="/review/:reviewId" element={<ProtectedRoute><ReviewDetailPage /></ProtectedRoute>} />
+        <Route path="/place/:id/:section" element={<ProtectedRoute><PlaceSubPage /></ProtectedRoute>} />
         <Route path="/profile/:userId" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
