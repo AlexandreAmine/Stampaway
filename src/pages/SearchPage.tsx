@@ -106,7 +106,7 @@ export default function SearchPage() {
       return (
         <div className="space-y-3">
           {users.map((u: any) => (
-            <motion.div key={u.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 py-3">
+            <motion.button key={u.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} onClick={() => navigate(`/profile/${u.user_id}`)} className="flex items-center gap-3 py-3 w-full text-left">
               <Avatar className="w-10 h-10">
                 <AvatarImage src={u.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=3B82F6&color=fff`} />
                 <AvatarFallback>{u.username?.[0]?.toUpperCase()}</AvatarFallback>
@@ -115,7 +115,7 @@ export default function SearchPage() {
                 <p className="text-sm font-semibold text-foreground">{u.username}</p>
                 {u.email && <p className="text-xs text-muted-foreground">{u.email}</p>}
               </div>
-            </motion.div>
+            </motion.button>
           ))}
         </div>
       );
