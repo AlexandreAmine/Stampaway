@@ -179,7 +179,7 @@ export default function ProfilePage() {
   const stats: { label: string; value: string; subPage: SubPage }[] = [
     { label: "Countries", value: `${countriesCount} / ${totalCountries}`, subPage: "Countries" },
     { label: "Cities", value: `${citiesCount}`, subPage: "Cities" },
-    { label: "Diary", value: `${reviewsCount}`, subPage: "Diary" },
+    { label: "Diary", value: "", subPage: "Diary" },
     { label: "Map", value: "", subPage: "Map" },
     { label: "Lists", value: `${listsCount}`, subPage: "Lists" },
     { label: "Wishlist", value: `${wishlistCount}`, subPage: "Wishlist" },
