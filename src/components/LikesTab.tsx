@@ -14,6 +14,7 @@ interface LikedEntry {
 
 export function LikesTab({ userId }: { userId?: string }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [items, setItems] = useState<LikedEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const targetUserId = userId || user?.id;
