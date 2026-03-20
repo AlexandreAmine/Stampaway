@@ -16,7 +16,7 @@ interface FriendActivity {
   place_name: string;
   place_country: string;
   place_type: string;
-  rating: number;
+  rating: number | null;
   created_at: string;
   lat: number;
   lng: number;
