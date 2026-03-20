@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Users, List, MessageSquare } from "lucide-react";
+import { ChevronLeft, ChevronRight, Users, List, MessageSquare, Bookmark } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,6 +39,8 @@ export default function PlacePage() {
   const [writtenReviews, setWrittenReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [ratingsCount, setRatingsCount] = useState(0);
+  const [inWishlist, setInWishlist] = useState(false);
+  const [togglingWishlist, setTogglingWishlist] = useState(false);
   const [countryCities, setCountryCities] = useState<any[]>([]);
   const [wishlistCities, setWishlistCities] = useState<any[]>([]);
 
@@ -54,6 +56,12 @@ export default function PlacePage() {
     const { data: placeData } = await supabase.from("places").select("*").eq("id", id).maybeSingle();
     if (!placeData) { setLoading(false); return; }
     setPlace(placeData);
+
+    // Check wishlist status
+    if (user) {
+      const { data: wl } = await supabase.from("wishlists").select("id").eq("user_id", user.id).eq("place_id", id).maybeSingle();
+      setInWishlist(!!wl);
+    }
 
     // Fetch description from Wikipedia
     fetchDescription(placeData.name, placeData.type, placeData.country);
@@ -244,6 +252,19 @@ export default function PlacePage() {
     return n.toString();
   };
 
+  const toggleWishlist = async () => {
+    if (!user || !id || togglingWishlist) return;
+    setTogglingWishlist(true);
+    if (inWishlist) {
+      await supabase.from("wishlists").delete().eq("user_id", user.id).eq("place_id", id);
+      setInWishlist(false);
+    } else {
+      await supabase.from("wishlists").insert({ user_id: user.id, place_id: id });
+      setInWishlist(true);
+    }
+    setTogglingWishlist(false);
+  };
+
   if (loading || !place) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -274,6 +295,14 @@ export default function PlacePage() {
         >
           <ChevronLeft className="w-5 h-5 text-foreground" />
         </button>
+        {user && (
+          <button
+            onClick={toggleWishlist}
+            className="absolute top-12 right-5 w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"
+          >
+            <Bookmark className={`w-5 h-5 transition-colors ${inWishlist ? "text-primary fill-primary" : "text-foreground"}`} />
+          </button>
+        )}
       </div>
 
       <div className="px-5 -mt-16 relative z-10">
