@@ -79,9 +79,11 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
             </button>
           ))}
         </div>
-        <button onClick={() => setPickerOpen(true)} className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-          <Plus className="w-4 h-4 text-primary" />
-        </button>
+        {!readOnly && (
+          <button onClick={() => setPickerOpen(true)} className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <Plus className="w-4 h-4 text-primary" />
+          </button>
+        )}
       </div>
 
       {filtered.length === 0 ? (
