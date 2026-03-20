@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, Search } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +20,11 @@ interface PlaceResult {
 
 export default function AddPlacePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const favoriteType = searchParams.get("favoriteType") as "city" | "country" | null;
+  const favoriteSlot = searchParams.get("favoriteSlot");
+  const isFavoriteFlow = favoriteType !== null && favoriteSlot !== null;
+
   const { user } = useAuth();
   const [step, setStep] = useState<Step>("search");
   const [query, setQuery] = useState("");
@@ -45,6 +50,9 @@ export default function AddPlacePage() {
 
   const fetchPlaces = async (search: string) => {
     let q = supabase.from("places").select("id, name, country, type, image");
+    if (isFavoriteFlow) {
+      q = q.eq("type", favoriteType);
+    }
     if (search) {
       q = q.ilike("name", `%${search}%`);
     }
@@ -74,6 +82,31 @@ export default function AddPlacePage() {
       duration_days: durationDays || null,
       liked,
     });
+
+    // If this is a favorite flow, also save as favorite
+    if (!error && isFavoriteFlow) {
+      const slotIdx = Number(favoriteSlot);
+      // Check if slot already has a favorite
+      const { data: existing } = await supabase
+        .from("favorite_places")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("slot_index", slotIdx)
+        .eq("type", favoriteType)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase.from("favorite_places").update({ place_id: selectedPlace.id }).eq("id", existing.id);
+      } else {
+        await supabase.from("favorite_places").insert({
+          user_id: user.id,
+          place_id: selectedPlace.id,
+          slot_index: slotIdx,
+          type: favoriteType,
+        });
+      }
+    }
+
     setSaving(false);
 
     if (error) {
@@ -213,7 +246,11 @@ export default function AddPlacePage() {
           <button onClick={() => navigate(-1)}>
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
-          <h1 className="text-xl font-bold text-foreground">Add a Destination</h1>
+          <h1 className="text-xl font-bold text-foreground">
+            {isFavoriteFlow
+              ? `Add a Favorite ${favoriteType === "city" ? "City" : "Country"}`
+              : "Add a Destination"}
+          </h1>
         </div>
 
         <div className="relative mb-6">
@@ -222,7 +259,7 @@ export default function AddPlacePage() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search cities or countries..."
+            placeholder={isFavoriteFlow ? `Search ${favoriteType === "city" ? "cities" : "countries"}...` : "Search cities or countries..."}
             className="w-full bg-card rounded-xl py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
