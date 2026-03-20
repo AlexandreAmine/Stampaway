@@ -347,6 +347,9 @@ export default function ProfilePage() {
           )}
         </div>
 
+        {/* Admin Stats */}
+        {isOwnProfile && user && <AdminStats userId={user.id} />}
+
         {/* Favorite Countries */}
         <div className="mb-4">
           <h2 className="text-lg font-bold text-foreground mb-3">Favorite Countries</h2>
