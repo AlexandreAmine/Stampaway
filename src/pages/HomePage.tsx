@@ -225,8 +225,14 @@ export default function HomePage() {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm font-bold text-foreground truncate">{a.place_name}</span>
-                  <Star className="w-3 h-3 text-primary fill-primary shrink-0" />
-                  <span className="text-sm font-medium text-foreground">{a.rating}</span>
+                  {a.rating != null ? (
+                    <>
+                      <Star className="w-3 h-3 text-primary fill-primary shrink-0" />
+                      <span className="text-sm font-medium text-foreground">{a.rating}</span>
+                    </>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">logged</span>
+                  )}
                 </div>
               </div>
             </motion.button>
