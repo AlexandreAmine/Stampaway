@@ -31,6 +31,7 @@ export function DiaryTab({ userId }: { userId?: string }) {
   const navigate = useNavigate();
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [section, setSection] = useState<"country" | "city">("country");
   const targetUserId = userId || user?.id;
 
   useEffect(() => {
