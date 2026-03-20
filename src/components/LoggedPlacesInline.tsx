@@ -148,9 +148,13 @@ export function LoggedPlacesInline({ type, userId }: { type: "city" | "country";
             <div className="aspect-[3/4] w-full">
               <DestinationPoster placeId={r.place_id} name={r.name} country={r.country} type={type} image={r.image} className="w-full h-full" />
             </div>
-            <div className="mt-1.5 flex justify-center">
-              <StarRating rating={r.rating} size={12} />
-            </div>
+            {r.rating != null ? (
+              <div className="mt-1.5 flex justify-center">
+                <StarRating rating={r.rating} size={12} />
+              </div>
+            ) : (
+              <p className="mt-1.5 text-[10px] text-muted-foreground text-center">No rating</p>
+            )}
           </button>
         ))}
       </div>
