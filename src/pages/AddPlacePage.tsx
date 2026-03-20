@@ -50,6 +50,9 @@ export default function AddPlacePage() {
 
   const fetchPlaces = async (search: string) => {
     let q = supabase.from("places").select("id, name, country, type, image");
+    if (isFavoriteFlow) {
+      q = q.eq("type", favoriteType);
+    }
     if (search) {
       q = q.ilike("name", `%${search}%`);
     }
