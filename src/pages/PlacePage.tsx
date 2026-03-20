@@ -148,7 +148,7 @@ export default function PlacePage() {
           setFriendVisitors(
             friendReviews.map((r) => {
               const p = (profiles || []).find((p: any) => p.user_id === r.user_id);
-              return { ...r, profile: p };
+              return { ...r, profile: p, review_id: r.id, has_review: !!(r.review_text && r.review_text.trim() !== "") };
             })
           );
         }
