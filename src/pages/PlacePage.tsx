@@ -60,7 +60,7 @@ export default function PlacePage() {
     // Fetch all reviews for this place
     const { data: allReviews } = await supabase
       .from("reviews")
-      .select("id, rating, user_id, review_text, liked, created_at")
+      .select("id, rating, user_id, review_text, liked, created_at, visit_year, visit_month, duration_days")
       .eq("place_id", id);
 
     const reviews = allReviews || [];
@@ -92,7 +92,7 @@ export default function PlacePage() {
         uniqueVisitorIds.map((uid) => {
           const p = (visitorProfiles || []).find((pr: any) => pr.user_id === uid);
           const r = reviews.find((rv) => rv.user_id === uid);
-          return { user_id: uid, profile: p, rating: r?.rating, liked: r?.liked };
+          return { user_id: uid, profile: p, rating: r?.rating, liked: r?.liked, review_id: r?.id, has_review: !!(r?.review_text && r.review_text.trim() !== "") };
         })
       );
     }
@@ -148,7 +148,7 @@ export default function PlacePage() {
           setFriendVisitors(
             friendReviews.map((r) => {
               const p = (profiles || []).find((p: any) => p.user_id === r.user_id);
-              return { ...r, profile: p };
+              return { ...r, profile: p, review_id: r.id, has_review: !!(r.review_text && r.review_text.trim() !== "") };
             })
           );
         }
@@ -275,13 +275,19 @@ export default function PlacePage() {
             <h3 className="text-sm font-semibold text-foreground mb-3">Visited by</h3>
             <div className="space-y-2.5">
               {friendVisitors.map((fv: any) => (
-                <div key={fv.user_id} className="flex items-center gap-3">
+                <div key={fv.id || fv.user_id} className="flex items-center gap-3">
                   <Avatar className="w-8 h-8">
                     <AvatarImage src={fv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fv.profile?.username || "?")}&background=3B82F6&color=fff`} />
                     <AvatarFallback>{fv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <p className="text-sm text-foreground flex-1">{fv.profile?.username}</p>
-                  <StarRating rating={fv.rating} size={12} liked={fv.liked} />
+                  <button
+                    onClick={() => navigate(`/review/${fv.review_id}`)}
+                    className="flex items-center gap-1.5 active:scale-95 transition-transform"
+                  >
+                    <StarRating rating={fv.rating} size={12} liked={fv.liked} />
+                    {fv.has_review && <MessageSquare className="w-3 h-3 text-primary" />}
+                  </button>
                 </div>
               ))}
             </div>
@@ -306,27 +312,8 @@ export default function PlacePage() {
           </motion.div>
         )}
 
-        {/* Reviews */}
-        {writtenReviews.length > 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="mb-5">
-            <h3 className="text-sm font-semibold text-foreground mb-3">Reviews</h3>
-            <div className="space-y-3">
-              {writtenReviews.map((rv: any) => (
-                <div key={rv.id} className="bg-card rounded-xl p-3 border border-border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Avatar className="w-7 h-7">
-                      <AvatarImage src={rv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(rv.profile?.username || "?")}&background=3B82F6&color=fff`} />
-                      <AvatarFallback>{rv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <p className="text-sm font-medium text-foreground flex-1">{rv.profile?.username || "User"}</p>
-                    <StarRating rating={rv.rating} size={11} liked={rv.liked} />
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{rv.review_text}</p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
+
+
 
         {/* Stats row - clickable */}
         <motion.div
@@ -358,14 +345,21 @@ export default function PlacePage() {
             <h3 className="text-sm font-semibold text-foreground mb-3">All visitors</h3>
             <div className="space-y-2.5">
               {allVisitors.map((v: any) => (
-                <button key={v.user_id} onClick={() => navigate(v.user_id === user?.id ? "/profile" : `/profile/${v.user_id}`)} className="flex items-center gap-3 w-full text-left">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={v.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(v.profile?.username || "?")}&background=3B82F6&color=fff`} />
-                    <AvatarFallback>{v.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <p className="text-sm text-foreground flex-1">{v.profile?.username || "User"}</p>
-                  {v.rating != null ? <StarRating rating={Number(v.rating)} size={12} liked={v.liked} /> : <span className="text-xs text-muted-foreground">logged</span>}
-                </button>
+                <div key={v.user_id} className="flex items-center gap-3 w-full">
+                  <button onClick={() => navigate(v.user_id === user?.id ? "/profile" : `/profile/${v.user_id}`)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={v.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(v.profile?.username || "?")}&background=3B82F6&color=fff`} />
+                      <AvatarFallback>{v.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <p className="text-sm text-foreground flex-1">{v.profile?.username || "User"}</p>
+                  </button>
+                  {v.rating != null ? (
+                    <button onClick={() => navigate(`/review/${v.review_id}`)} className="flex items-center gap-1.5 active:scale-95 transition-transform">
+                      <StarRating rating={Number(v.rating)} size={12} liked={v.liked} />
+                      {v.has_review && <MessageSquare className="w-3 h-3 text-primary" />}
+                    </button>
+                  ) : <span className="text-xs text-muted-foreground">logged</span>}
+                </div>
               ))}
             </div>
           </motion.div>
@@ -376,19 +370,17 @@ export default function PlacePage() {
             <h3 className="text-sm font-semibold text-foreground mb-3">All reviews</h3>
             <div className="space-y-3">
               {writtenReviews.map((rv: any) => (
-                <div key={rv.id} className="bg-card rounded-xl p-3 border border-border">
+                <button key={rv.id} onClick={() => navigate(`/review/${rv.id}`)} className="bg-card rounded-xl p-3 border border-border w-full text-left active:scale-[0.98] transition-transform">
                   <div className="flex items-center gap-2 mb-2">
-                    <button onClick={() => navigate(rv.user_id === user?.id ? "/profile" : `/profile/${rv.user_id}`)} className="shrink-0">
-                      <Avatar className="w-7 h-7">
-                        <AvatarImage src={rv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(rv.profile?.username || "?")}&background=3B82F6&color=fff`} />
-                        <AvatarFallback>{rv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                    </button>
+                    <Avatar className="w-7 h-7">
+                      <AvatarImage src={rv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(rv.profile?.username || "?")}&background=3B82F6&color=fff`} />
+                      <AvatarFallback>{rv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                    </Avatar>
                     <p className="text-sm font-medium text-foreground flex-1">{rv.profile?.username || "User"}</p>
                     <StarRating rating={rv.rating} size={11} liked={rv.liked} />
                   </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{rv.review_text}</p>
-                </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{rv.review_text}</p>
+                </button>
               ))}
             </div>
           </motion.div>
