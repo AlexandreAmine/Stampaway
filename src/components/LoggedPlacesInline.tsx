@@ -57,7 +57,7 @@ export function LoggedPlacesInline({ type, userId }: { type: "city" | "country";
 
       const entries: PlaceEntry[] = data.map((r: any) => ({
         place_id: r.place_id,
-        rating: Number(r.rating),
+        rating: r.rating != null ? Number(r.rating) : null,
         visit_year: r.visit_year,
         visit_month: r.visit_month,
         duration_days: r.duration_days,
