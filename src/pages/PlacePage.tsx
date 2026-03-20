@@ -231,7 +231,7 @@ export default function PlacePage() {
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="bg-card rounded-xl p-4 border border-border mb-5">
             <p className="text-xs text-primary font-medium mb-1">You rated this</p>
             <div className="flex items-center gap-2">
-              <StarRating rating={myReview.rating} size={14} />
+              <StarRating rating={myReview.rating} size={14} liked={myReview.liked} />
               <span className="text-sm font-semibold text-foreground">{myReview.rating}</span>
             </div>
             {myReview.review_text && (
