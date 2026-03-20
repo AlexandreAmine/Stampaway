@@ -26,7 +26,7 @@ interface FavoriteSlot {
   place_type: string;
 }
 
-type SubPage = null | "Countries" | "Cities" | "Diary" | "Map" | "Lists" | "Wishlist" | "Likes" | "Following" | "Followers";
+type SubPage = null | "Countries" | "Cities" | "Diary" | "Map" | "Lists" | "Wishlist" | "Likes" | "Reviews" | "Following" | "Followers";
 
 export default function ProfilePage() {
   const { user, profile, signOut } = useAuth();
