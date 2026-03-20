@@ -138,12 +138,14 @@ export default function ExplorePage() {
       .eq("follower_id", user.id);
     const followingIds = (following || []).map((f) => f.following_id);
 
-    // Recent reviews from friends
+    // Recent written reviews from friends (exclude own)
     if (followingIds.length > 0) {
       const { data: fRevs } = await supabase
         .from("reviews")
         .select("*, places!inner(name, image)")
         .in("user_id", followingIds)
+        .not("review_text", "is", null)
+        .neq("review_text", "")
         .order("created_at", { ascending: false })
         .limit(5);
 
@@ -171,7 +173,7 @@ export default function ExplorePage() {
       setFriendReviews([]);
     }
 
-    // Most liked reviews (all users)
+    // Most liked reviews (all users, exclude own)
     const { data: likeCounts } = await supabase
       .from("review_likes")
       .select("review_id");
@@ -190,7 +192,10 @@ export default function ExplorePage() {
       const { data: popRevs } = await supabase
         .from("reviews")
         .select("*, places!inner(name, image)")
-        .in("id", topReviewIds);
+        .in("id", topReviewIds)
+        .not("review_text", "is", null)
+        .neq("review_text", "")
+        .neq("user_id", user.id);
 
       const userIds = [...new Set((popRevs || []).map((r) => r.user_id))];
       const { data: profiles } = await supabase
@@ -213,10 +218,13 @@ export default function ExplorePage() {
       enriched.sort((a: any, b: any) => (counts.get(b.id) || 0) - (counts.get(a.id) || 0));
       setPopularReviews(enriched);
     } else {
-      // Fallback: most recent reviews
+      // Fallback: most recent written reviews (exclude own)
       const { data: recentRevs } = await supabase
         .from("reviews")
         .select("*, places!inner(name, image)")
+        .not("review_text", "is", null)
+        .neq("review_text", "")
+        .neq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(10);
 
@@ -255,7 +263,7 @@ export default function ExplorePage() {
       .eq("follower_id", user.id);
     const followingIds = (following || []).map((f) => f.following_id);
 
-    // Recent lists from friends
+    // Recent lists from friends (exclude own)
     if (followingIds.length > 0) {
       const { data: fLists } = await supabase
         .from("lists")
@@ -315,10 +323,13 @@ export default function ExplorePage() {
       const { data } = await supabase
         .from("lists")
         .select("*")
+        .neq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(10);
       popularData = data || [];
     }
+    // Filter out own lists
+    popularData = popularData.filter((l) => l.user_id !== user.id);
 
     const userIds = [...new Set(popularData.map((l) => l.user_id))];
     const { data: profiles } = await supabase
