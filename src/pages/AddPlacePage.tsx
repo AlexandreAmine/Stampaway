@@ -168,13 +168,10 @@ export default function AddPlacePage() {
             </div>
 
             <div>
-              <p className="text-sm font-semibold text-foreground mb-3">
-                Add a review
-              </p>
               <textarea
                 value={reviewText}
                 onChange={(e) => setReviewText(e.target.value)}
-                placeholder="Tell us about your experience..."
+                placeholder="Add a review..."
                 className="w-full h-32 bg-card rounded-xl p-4 text-sm text-foreground placeholder:text-muted-foreground resize-none border border-border focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
