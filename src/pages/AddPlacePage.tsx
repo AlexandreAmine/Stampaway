@@ -20,6 +20,11 @@ interface PlaceResult {
 
 export default function AddPlacePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const favoriteType = searchParams.get("favoriteType") as "city" | "country" | null;
+  const favoriteSlot = searchParams.get("favoriteSlot");
+  const isFavoriteFlow = favoriteType !== null && favoriteSlot !== null;
+
   const { user } = useAuth();
   const [step, setStep] = useState<Step>("search");
   const [query, setQuery] = useState("");
