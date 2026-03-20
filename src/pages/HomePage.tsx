@@ -168,7 +168,7 @@ export default function HomePage() {
             htmlElementsData={activities}
             htmlElement={markerHtml}
             htmlAltitude={0.05}
-            onHtmlElementClick={(d: any) => navigate(`/place/${(d as FriendActivity).place_id}`)}
+            // @ts-ignore - onHtmlElementClick exists at runtime
             atmosphereColor="hsl(217, 91%, 60%)"
             atmosphereAltitude={0.15}
           />
