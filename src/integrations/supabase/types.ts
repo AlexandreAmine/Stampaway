@@ -350,6 +350,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_place_review_counts: {
+        Args: never
+        Returns: {
+          place_id: string
+          review_count: number
+        }[]
+      }
       get_platform_stats: { Args: never; Returns: Json }
       has_role: {
         Args: {
