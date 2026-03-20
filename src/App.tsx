@@ -17,6 +17,7 @@ import ReviewDetailPage from "./pages/ReviewDetailPage";
 import PlaceSubPage from "./pages/PlaceSubPage";
 import CountryCitiesPage from "./pages/CountryCitiesPage";
 import ExploreListPage from "./pages/ExploreListPage";
+import ListDetailPage from "./pages/ListDetailPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
