@@ -17,6 +17,7 @@ import { FollowersTab } from "@/components/FollowersTab";
 import { ReviewsTab } from "@/components/ReviewsTab";
 import { LoggedPlacesInline } from "@/components/LoggedPlacesInline";
 import { supabase } from "@/integrations/supabase/client";
+import { AdminStats } from "@/components/AdminStats";
 
 interface FavoriteSlot {
   slot_index: number;
@@ -345,6 +346,9 @@ export default function ProfilePage() {
             </button>
           )}
         </div>
+
+        {/* Admin Stats */}
+        {isOwnProfile && user && <AdminStats userId={user.id} />}
 
         {/* Favorite Countries */}
         <div className="mb-4">
