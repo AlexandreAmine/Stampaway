@@ -16,6 +16,7 @@ import PlacePage from "./pages/PlacePage";
 import ReviewDetailPage from "./pages/ReviewDetailPage";
 import PlaceSubPage from "./pages/PlaceSubPage";
 import CountryCitiesPage from "./pages/CountryCitiesPage";
+import ExploreListPage from "./pages/ExploreListPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ function AppRoutes() {
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
         <Route path="/explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
+        <Route path="/explore/list" element={<ProtectedRoute><ExploreListPage /></ProtectedRoute>} />
         <Route path="/add" element={<ProtectedRoute><AddPlacePage /></ProtectedRoute>} />
         <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
