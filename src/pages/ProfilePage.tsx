@@ -17,6 +17,7 @@ import { FollowersTab } from "@/components/FollowersTab";
 import { ReviewsTab } from "@/components/ReviewsTab";
 import { LoggedPlacesInline } from "@/components/LoggedPlacesInline";
 import { supabase } from "@/integrations/supabase/client";
+import { AdminStats } from "@/components/AdminStats";
 
 interface FavoriteSlot {
   slot_index: number;
