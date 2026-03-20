@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ChevronRight, ChevronLeft, LogOut, Plus } from "lucide-react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { RatingHistogram } from "@/components/RatingHistogram";
 import { FavoritePicker } from "@/components/FavoritePicker";
@@ -31,6 +31,14 @@ type SubPage = null | "Countries" | "Cities" | "Diary" | "Map" | "Lists" | "Wish
 
 export default function ProfilePage() {
   const { user, profile, signOut } = useAuth();
+  const { userId: paramUserId } = useParams<{ userId?: string }>();
+  const navigate = useNavigate();
+
+  // Determine if viewing own profile or another user's
+  const viewingUserId = paramUserId || user?.id;
+  const isOwnProfile = !paramUserId || paramUserId === user?.id;
+
+  const [viewedProfile, setViewedProfile] = useState<{ username: string; profile_picture: string | null } | null>(null);
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerType, setPickerType] = useState<"city" | "country">("city");
@@ -55,8 +63,20 @@ export default function ProfilePage() {
 
   const [subPage, setSubPage] = useState<SubPage>(null);
 
-  const displayName = profile?.username || user?.email?.split("@")[0] || "User";
-  const avatarUrl = profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3B82F6&color=fff`;
+  // Fetch viewed user's profile if not own
+  useEffect(() => {
+    if (isOwnProfile) {
+      setViewedProfile(null);
+    } else if (viewingUserId) {
+      supabase.from("profiles").select("username, profile_picture").eq("user_id", viewingUserId).single().then(({ data }) => {
+        if (data) setViewedProfile(data);
+      });
+    }
+  }, [viewingUserId, isOwnProfile]);
+
+  const currentProfile = isOwnProfile ? profile : viewedProfile;
+  const displayName = currentProfile?.username || "User";
+  const avatarUrl = currentProfile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3B82F6&color=fff`;
 
   const fetchData = useCallback(async () => {
     if (!user) return;
