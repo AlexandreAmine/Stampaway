@@ -218,10 +218,13 @@ export default function ExplorePage() {
       enriched.sort((a: any, b: any) => (counts.get(b.id) || 0) - (counts.get(a.id) || 0));
       setPopularReviews(enriched);
     } else {
-      // Fallback: most recent reviews
+      // Fallback: most recent written reviews (exclude own)
       const { data: recentRevs } = await supabase
         .from("reviews")
         .select("*, places!inner(name, image)")
+        .not("review_text", "is", null)
+        .neq("review_text", "")
+        .neq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(10);
 
