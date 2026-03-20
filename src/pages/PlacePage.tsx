@@ -92,7 +92,7 @@ export default function PlacePage() {
         uniqueVisitorIds.map((uid) => {
           const p = (visitorProfiles || []).find((pr: any) => pr.user_id === uid);
           const r = reviews.find((rv) => rv.user_id === uid);
-          return { user_id: uid, profile: p, rating: r?.rating, liked: r?.liked };
+          return { user_id: uid, profile: p, rating: r?.rating, liked: r?.liked, review_id: r?.id, has_review: !!(r?.review_text && r.review_text.trim() !== "") };
         })
       );
     }
