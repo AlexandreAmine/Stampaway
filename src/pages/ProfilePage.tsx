@@ -348,20 +348,14 @@ export default function ProfilePage() {
 
         {/* Favorite Countries */}
         <div className="mb-4">
-          <div className="flex items-center gap-1 mb-3">
-            <h2 className="text-lg font-bold text-foreground">Favorite Countries</h2>
-            <ChevronRight className="w-5 h-5 text-foreground" />
-          </div>
+          <h2 className="text-lg font-bold text-foreground mb-3">Favorite Countries</h2>
           {renderFavoriteSlots("country", favoriteCountries)}
         </div>
         <div className="mb-6"><RatingHistogram distribution={countryDistribution} onBarClick={(r) => { setRatingFilter(r); setSubPage("CountriesByRating"); }} /></div>
 
         {/* Favorite Cities */}
         <div className="mb-4">
-          <div className="flex items-center gap-1 mb-3">
-            <h2 className="text-lg font-bold text-foreground">Favorite Cities</h2>
-            <ChevronRight className="w-5 h-5 text-foreground" />
-          </div>
+          <h2 className="text-lg font-bold text-foreground mb-3">Favorite Cities</h2>
           {renderFavoriteSlots("city", favoriteCities)}
         </div>
         <div className="mb-6"><RatingHistogram distribution={cityDistribution} onBarClick={(r) => { setRatingFilter(r); setSubPage("CitiesByRating"); }} /></div>
