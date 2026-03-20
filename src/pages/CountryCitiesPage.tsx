@@ -107,7 +107,7 @@ export default function CountryCitiesPage() {
             {mode === "wishlist" ? "No cities from this country in your wishlist" : "No cities found"}
           </p>
         ) : (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-3 gap-3">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-3 gap-2.5">
             {cities.map((city) => (
               <button
                 key={city.id}
