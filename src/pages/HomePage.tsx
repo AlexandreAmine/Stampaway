@@ -75,14 +75,14 @@ export default function HomePage() {
         return (vy > minYear) || (vy === minYear && vm >= minMonth);
       });
 
-      if (!reviews || reviews.length === 0) {
+      if (filtered.length === 0) {
         setActivities([]);
         setLoading(false);
         return;
       }
 
       // Get profiles for these users
-      const userIds = [...new Set(reviews.map((r) => r.user_id))];
+      const userIds = [...new Set(filtered.map((r: any) => r.user_id))];
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id, username, profile_picture")
@@ -91,7 +91,7 @@ export default function HomePage() {
       const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
 
       const mapped: FriendActivity[] = [];
-      reviews.forEach((r: any) => {
+      filtered.forEach((r: any) => {
         const coords = getPlaceCoordinates(r.places.name, r.places.country);
         if (!coords) return;
         const prof = profileMap.get(r.user_id);
