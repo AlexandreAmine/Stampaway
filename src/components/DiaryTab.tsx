@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,6 +27,7 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 
 export function DiaryTab() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -103,7 +105,7 @@ export function DiaryTab() {
           <h3 className="text-lg font-bold text-foreground mb-3">{year}</h3>
           <div className="space-y-3">
             {grouped[year].map((entry) => (
-              <div key={entry.id} className="flex gap-3 bg-card rounded-xl p-3 border border-border">
+              <button key={entry.id} onClick={() => navigate(`/place/${entry.place.id}`)} className="flex gap-3 bg-card rounded-xl p-3 border border-border w-full text-left">
                 <div className="w-16 h-20 shrink-0 rounded-lg overflow-hidden">
                   <DestinationPoster
                     placeId={entry.place.id}
@@ -128,7 +130,7 @@ export function DiaryTab() {
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{entry.review_text}</p>
                   )}
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>

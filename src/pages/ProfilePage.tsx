@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ChevronRight, ChevronLeft, LogOut, Plus } from "lucide-react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { RatingHistogram } from "@/components/RatingHistogram";
 import { FavoritePicker } from "@/components/FavoritePicker";
@@ -283,6 +284,7 @@ export default function ProfilePage() {
 // Inline version of LoggedPlacesPage for use within profile
 function LoggedPlacesInline({ type }: { type: "city" | "country" }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [places, setPlaces] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -308,14 +310,14 @@ function LoggedPlacesInline({ type }: { type: "city" | "country" }) {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div className="grid grid-cols-3 gap-3">
         {places.map((r: any, i: number) => (
-          <div key={r.place_id + i} className="relative">
+          <button key={r.place_id + i} onClick={() => navigate(`/place/${r.place_id}`)} className="relative text-left">
             <div className="aspect-[3/4] w-full">
               <DestinationPoster placeId={r.place_id} name={r.places.name} country={r.places.country} type={type} image={r.places.image} className="w-full h-full" />
             </div>
             <div className="mt-1.5 flex justify-center">
               <StarRating rating={r.rating} size={12} />
             </div>
-          </div>
+          </button>
         ))}
       </div>
     </motion.div>
