@@ -135,7 +135,7 @@ export default function AddPlacePage() {
 
             <div>
               <p className="text-sm font-semibold text-foreground mb-3">
-                How was your experience there?
+                Add a review
               </p>
               <textarea
                 value={reviewText}
