@@ -31,6 +31,7 @@ export function DiaryTab({ userId }: { userId?: string }) {
   const navigate = useNavigate();
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [section, setSection] = useState<"country" | "city">("country");
   const targetUserId = userId || user?.id;
 
   useEffect(() => {
@@ -87,9 +88,11 @@ export function DiaryTab({ userId }: { userId?: string }) {
     );
   }
 
+  const filtered = entries.filter((e) => e.place.type === section);
+
   // Group by year
   const grouped: Record<number | string, DiaryEntry[]> = {};
-  entries.forEach((e) => {
+  filtered.forEach((e) => {
     const key = e.visit_year || "Unknown";
     if (!grouped[key]) grouped[key] = [];
     grouped[key].push(e);
@@ -101,9 +104,34 @@ export function DiaryTab({ userId }: { userId?: string }) {
     return Number(b) - Number(a);
   });
 
+  const countryCount = entries.filter((e) => e.place.type === "country").length;
+  const cityCount = entries.filter((e) => e.place.type === "city").length;
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      {sortedYears.map((year) => (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+      {/* Section toggle */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => setSection("country")}
+          className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${section === "country" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"}`}
+        >
+          Countries ({countryCount})
+        </button>
+        <button
+          onClick={() => setSection("city")}
+          className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${section === "city" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"}`}
+        >
+          Cities ({cityCount})
+        </button>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="flex items-center justify-center h-32">
+          <p className="text-muted-foreground text-sm">No {section === "country" ? "country" : "city"} entries yet</p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+        {sortedYears.map((year) => (
         <div key={year}>
           <h3 className="text-lg font-bold text-foreground mb-3">{year}</h3>
           <div className="space-y-3">
@@ -142,6 +170,8 @@ export function DiaryTab({ userId }: { userId?: string }) {
           </div>
         </div>
       ))}
+        </div>
+      )}
     </motion.div>
   );
 }
