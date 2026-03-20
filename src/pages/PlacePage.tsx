@@ -57,6 +57,12 @@ export default function PlacePage() {
     if (!placeData) { setLoading(false); return; }
     setPlace(placeData);
 
+    // Check wishlist status
+    if (user) {
+      const { data: wl } = await supabase.from("wishlists").select("id").eq("user_id", user.id).eq("place_id", id).maybeSingle();
+      setInWishlist(!!wl);
+    }
+
     // Fetch description from Wikipedia
     fetchDescription(placeData.name, placeData.type, placeData.country);
 
