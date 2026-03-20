@@ -59,6 +59,7 @@ export function LoggedPlacesInline({ type, userId, ratingFilter }: { type: "city
       const entries: PlaceEntry[] = data.map((r: any) => ({
         place_id: r.place_id,
         rating: r.rating != null ? Number(r.rating) : null,
+        liked: r.liked || false,
         visit_year: r.visit_year,
         visit_month: r.visit_month,
         duration_days: r.duration_days,
