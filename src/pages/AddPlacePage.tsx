@@ -246,7 +246,11 @@ export default function AddPlacePage() {
           <button onClick={() => navigate(-1)}>
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
-          <h1 className="text-xl font-bold text-foreground">Add a Destination</h1>
+          <h1 className="text-xl font-bold text-foreground">
+            {isFavoriteFlow
+              ? `Add a Favorite ${favoriteType === "city" ? "City" : "Country"}`
+              : "Add a Destination"}
+          </h1>
         </div>
 
         <div className="relative mb-6">
