@@ -275,13 +275,19 @@ export default function PlacePage() {
             <h3 className="text-sm font-semibold text-foreground mb-3">Visited by</h3>
             <div className="space-y-2.5">
               {friendVisitors.map((fv: any) => (
-                <div key={fv.user_id} className="flex items-center gap-3">
+                <div key={fv.id || fv.user_id} className="flex items-center gap-3">
                   <Avatar className="w-8 h-8">
                     <AvatarImage src={fv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fv.profile?.username || "?")}&background=3B82F6&color=fff`} />
                     <AvatarFallback>{fv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <p className="text-sm text-foreground flex-1">{fv.profile?.username}</p>
-                  <StarRating rating={fv.rating} size={12} liked={fv.liked} />
+                  <button
+                    onClick={() => navigate(`/review/${fv.review_id}`)}
+                    className="flex items-center gap-1.5 active:scale-95 transition-transform"
+                  >
+                    <StarRating rating={fv.rating} size={12} liked={fv.liked} />
+                    {fv.has_review && <MessageSquare className="w-3 h-3 text-primary" />}
+                  </button>
                 </div>
               ))}
             </div>
