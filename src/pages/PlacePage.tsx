@@ -64,10 +64,10 @@ export default function PlacePage() {
       .eq("place_id", id);
 
     const reviews = allReviews || [];
-    setReviewsCount(reviews.length);
 
     // Written reviews with profiles
     const written = reviews.filter((r) => r.review_text && r.review_text.trim() !== "");
+    setWrittenReviewsCount(written.length);
     if (written.length > 0) {
       const writerIds = [...new Set(written.map((w) => w.user_id))];
       const { data: writerProfiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", writerIds);
@@ -80,11 +80,22 @@ export default function PlacePage() {
           })
       );
     }
-    setReviewsCount(reviews.length);
 
-    // Unique visitors
-    const uniqueVisitors = new Set(reviews.map((r) => r.user_id));
-    setVisitorsCount(uniqueVisitors.size);
+    // Unique visitors + fetch all visitor profiles
+    const uniqueVisitorIds = [...new Set(reviews.map((r) => r.user_id))];
+    setVisitorsCount(uniqueVisitorIds.length);
+    setRatingsCount(reviews.length);
+
+    if (uniqueVisitorIds.length > 0) {
+      const { data: visitorProfiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", uniqueVisitorIds);
+      setAllVisitors(
+        uniqueVisitorIds.map((uid) => {
+          const p = (visitorProfiles || []).find((pr: any) => pr.user_id === uid);
+          const r = reviews.find((rv) => rv.user_id === uid);
+          return { user_id: uid, profile: p, rating: r?.rating, liked: r?.liked };
+        })
+      );
+    }
 
     // My review
     if (user) {
