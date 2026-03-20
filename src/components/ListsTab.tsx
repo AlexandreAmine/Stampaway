@@ -17,11 +17,12 @@ interface ListWithItems {
   }[];
 }
 
-export function ListsTab() {
+export function ListsTab({ userId, readOnly = false }: { userId?: string; readOnly?: boolean }) {
   const { user } = useAuth();
   const [lists, setLists] = useState<ListWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
+  const targetUserId = userId || user?.id;
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [creating, setCreating] = useState(false);
