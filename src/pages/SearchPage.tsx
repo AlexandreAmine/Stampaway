@@ -37,11 +37,18 @@ export default function SearchPage() {
       const { data } = await qb;
       setPlaces(data || []);
     } else if (activeFilter === "Lists") {
-      let qb = supabase.from("lists").select("id, name, description, user_id, profiles!lists_user_id_fkey(username, profile_picture)");
+      let qb = supabase.from("lists").select("id, name, description, user_id");
       if (q) qb = qb.ilike("name", `%${q}%`);
       qb = qb.order("created_at", { ascending: false }).limit(30);
       const { data } = await qb;
-      setLists(data || []);
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map((l: any) => l.user_id))];
+        const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
+        const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+        setLists(data.map((l: any) => ({ ...l, profiles: profileMap.get(l.user_id) || null })));
+      } else {
+        setLists([]);
+      }
     } else if (activeFilter === "Users") {
       let qb = supabase.from("profiles").select("id, user_id, username, email, profile_picture");
       if (q) qb = qb.ilike("username", `%${q}%`);
