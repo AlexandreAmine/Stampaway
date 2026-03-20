@@ -81,18 +81,25 @@ export default function PlacePage() {
       );
     }
 
-    // Unique visitors + fetch all visitor profiles
-    const uniqueVisitorIds = [...new Set(reviews.map((r) => r.user_id))];
+    // Unique visitors (most recent review per user)
+    const reviewsByUser = new Map<string, any>();
+    reviews.forEach((r) => {
+      const existing = reviewsByUser.get(r.user_id);
+      if (!existing || new Date(r.created_at) > new Date(existing.created_at)) {
+        reviewsByUser.set(r.user_id, r);
+      }
+    });
+    const uniqueReviews = Array.from(reviewsByUser.values());
+    const uniqueVisitorIds = [...reviewsByUser.keys()];
     setVisitorsCount(uniqueVisitorIds.length);
     setRatingsCount(reviews.length);
 
     if (uniqueVisitorIds.length > 0) {
       const { data: visitorProfiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", uniqueVisitorIds);
       setAllVisitors(
-        uniqueVisitorIds.map((uid) => {
-          const p = (visitorProfiles || []).find((pr: any) => pr.user_id === uid);
-          const r = reviews.find((rv) => rv.user_id === uid);
-          return { user_id: uid, profile: p, rating: r?.rating, liked: r?.liked, review_id: r?.id, has_review: !!(r?.review_text && r.review_text.trim() !== "") };
+        uniqueReviews.map((r) => {
+          const p = (visitorProfiles || []).find((pr: any) => pr.user_id === r.user_id);
+          return { user_id: r.user_id, profile: p, rating: r.rating, liked: r.liked, review_id: r.id, has_review: !!(r.review_text && r.review_text.trim() !== "") };
         })
       );
     }
