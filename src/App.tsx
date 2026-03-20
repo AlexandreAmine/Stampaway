@@ -17,6 +17,7 @@ import ReviewDetailPage from "./pages/ReviewDetailPage";
 import PlaceSubPage from "./pages/PlaceSubPage";
 import CountryCitiesPage from "./pages/CountryCitiesPage";
 import ExploreListPage from "./pages/ExploreListPage";
+import ListDetailPage from "./pages/ListDetailPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ function AppRoutes() {
         <Route path="/review/:reviewId" element={<ProtectedRoute><ReviewDetailPage /></ProtectedRoute>} />
         <Route path="/place/:id/:section" element={<ProtectedRoute><PlaceSubPage /></ProtectedRoute>} />
         <Route path="/country/:countryName/cities" element={<ProtectedRoute><CountryCitiesPage /></ProtectedRoute>} />
+        <Route path="/list/:listId" element={<ProtectedRoute><ListDetailPage /></ProtectedRoute>} />
         <Route path="/profile/:userId" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>

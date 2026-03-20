@@ -116,11 +116,11 @@ export default function SearchPage() {
       return (
         <div className="space-y-3">
           {lists.map((l: any) => (
-            <motion.div key={l.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="bg-card rounded-xl p-4 border border-border">
+            <motion.button key={l.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} onClick={() => navigate(`/list/${l.id}`)} className="w-full text-left bg-card rounded-xl p-4 border border-border">
               <p className="text-sm font-semibold text-foreground">{l.name}</p>
               {l.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{l.description}</p>}
               {l.profiles && <p className="text-xs text-muted-foreground mt-2">by {(l.profiles as any).username}</p>}
-            </motion.div>
+            </motion.button>
           ))}
         </div>
       );
