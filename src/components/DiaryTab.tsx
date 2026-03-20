@@ -130,7 +130,7 @@ export function DiaryTab() {
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{entry.review_text}</p>
                   )}
                 </div>
-              </div>
+              </button>
             ))}
           </div>
         </div>
