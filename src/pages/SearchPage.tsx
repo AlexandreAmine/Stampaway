@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
-const filterTabs = ["Destinations", "Lists", "Users", "Reviews"] as const;
+const filterTabs = ["Destinations", "Lists", "Users"] as const;
 type FilterTab = (typeof filterTabs)[number];
 
 export default function SearchPage() {
