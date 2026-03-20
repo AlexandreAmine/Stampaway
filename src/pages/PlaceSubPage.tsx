@@ -146,17 +146,20 @@ export default function PlaceSubPage() {
 
             {section === "reviews" &&
               data.map((rv: any) => (
-                <button key={rv.id} onClick={() => navigate(`/review/${rv.id}`)} className="bg-card rounded-xl p-3 border border-border w-full text-left active:scale-[0.98] transition-transform">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Avatar className="w-7 h-7">
-                      <AvatarImage src={rv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(rv.profile?.username || "?")}&background=3B82F6&color=fff`} />
-                      <AvatarFallback>{rv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <p className="text-sm font-medium text-foreground flex-1">{rv.profile?.username || "User"}</p>
-                    <StarRating rating={rv.rating} size={11} liked={rv.liked} />
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{rv.review_text}</p>
-                </button>
+                <ReviewCard
+                  key={rv.id}
+                  review={{
+                    id: rv.id,
+                    user_id: rv.user_id,
+                    rating: rv.rating,
+                    review_text: rv.review_text,
+                    created_at: rv.created_at,
+                    profile_username: rv.profile?.username,
+                    profile_picture: rv.profile?.profile_picture,
+                    place_name: placeName,
+                  }}
+                  showImage={false}
+                />
               ))}
 
             {section === "lists" &&

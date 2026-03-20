@@ -323,10 +323,13 @@ export default function ExplorePage() {
       const { data } = await supabase
         .from("lists")
         .select("*")
+        .neq("user_id", user.id)
         .order("created_at", { ascending: false })
         .limit(10);
       popularData = data || [];
     }
+    // Filter out own lists
+    popularData = popularData.filter((l) => l.user_id !== user.id);
 
     const userIds = [...new Set(popularData.map((l) => l.user_id))];
     const { data: profiles } = await supabase
