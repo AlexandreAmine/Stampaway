@@ -290,7 +290,7 @@ export default function PlacePage() {
                       <AvatarFallback>{rv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <p className="text-sm font-medium text-foreground flex-1">{rv.profile?.username || "User"}</p>
-                    <StarRating rating={rv.rating} size={11} />
+                    <StarRating rating={rv.rating} size={11} liked={rv.liked} />
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">{rv.review_text}</p>
                 </div>
