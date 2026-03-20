@@ -345,14 +345,21 @@ export default function PlacePage() {
             <h3 className="text-sm font-semibold text-foreground mb-3">All visitors</h3>
             <div className="space-y-2.5">
               {allVisitors.map((v: any) => (
-                <button key={v.user_id} onClick={() => navigate(v.user_id === user?.id ? "/profile" : `/profile/${v.user_id}`)} className="flex items-center gap-3 w-full text-left">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={v.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(v.profile?.username || "?")}&background=3B82F6&color=fff`} />
-                    <AvatarFallback>{v.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <p className="text-sm text-foreground flex-1">{v.profile?.username || "User"}</p>
-                  {v.rating != null ? <StarRating rating={Number(v.rating)} size={12} liked={v.liked} /> : <span className="text-xs text-muted-foreground">logged</span>}
-                </button>
+                <div key={v.user_id} className="flex items-center gap-3 w-full">
+                  <button onClick={() => navigate(v.user_id === user?.id ? "/profile" : `/profile/${v.user_id}`)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={v.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(v.profile?.username || "?")}&background=3B82F6&color=fff`} />
+                      <AvatarFallback>{v.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <p className="text-sm text-foreground flex-1">{v.profile?.username || "User"}</p>
+                  </button>
+                  {v.rating != null ? (
+                    <button onClick={() => navigate(`/review/${v.review_id}`)} className="flex items-center gap-1.5 active:scale-95 transition-transform">
+                      <StarRating rating={Number(v.rating)} size={12} liked={v.liked} />
+                      {v.has_review && <MessageSquare className="w-3 h-3 text-primary" />}
+                    </button>
+                  ) : <span className="text-xs text-muted-foreground">logged</span>}
+                </div>
               ))}
             </div>
           </motion.div>
