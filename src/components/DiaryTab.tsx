@@ -115,13 +115,13 @@ export function DiaryTab({ userId }: { userId?: string }) {
           onClick={() => setSection("country")}
           className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${section === "country" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"}`}
         >
-          Countries ({countryCount})
+          Countries
         </button>
         <button
           onClick={() => setSection("city")}
           className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${section === "city" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"}`}
         >
-          Cities ({cityCount})
+          Cities
         </button>
       </div>
 
