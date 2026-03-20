@@ -192,7 +192,10 @@ export default function ExplorePage() {
       const { data: popRevs } = await supabase
         .from("reviews")
         .select("*, places!inner(name, image)")
-        .in("id", topReviewIds);
+        .in("id", topReviewIds)
+        .not("review_text", "is", null)
+        .neq("review_text", "")
+        .neq("user_id", user.id);
 
       const userIds = [...new Set((popRevs || []).map((r) => r.user_id))];
       const { data: profiles } = await supabase
