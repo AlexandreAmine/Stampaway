@@ -42,11 +42,15 @@ export default function SearchPage() {
     const q = query.trim();
 
     if (activeFilter === "Destinations") {
+      const { data: counts } = await supabase.rpc("get_place_review_counts");
+      const countMap = new Map((counts || []).map((c: any) => [c.place_id, Number(c.review_count)]));
+
       let qb = supabase.from("places").select("id, name, country, type, image");
       if (q) qb = qb.ilike("name", `%${q}%`);
-      qb = qb.order("name").limit(30);
+      qb = qb.limit(200);
       const { data } = await qb;
-      setPlaces(data || []);
+      const sorted = (data || []).sort((a, b) => (countMap.get(b.id) || 0) - (countMap.get(a.id) || 0)).slice(0, 30);
+      setPlaces(sorted);
     } else if (activeFilter === "Lists") {
       let qb = supabase.from("lists").select("id, name, description, user_id");
       if (q) qb = qb.ilike("name", `%${q}%`);
