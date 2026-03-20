@@ -353,6 +353,57 @@ export default function PlacePage() {
             <span className="text-[10px] text-muted-foreground">Lists</span>
           </button>
         </motion.div>
+
+        {/* Country-specific: Cities in country */}
+        {place.type === "country" && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-6">
+            {/* Cities in country header */}
+            <button
+              onClick={() => navigate(`/country/${encodeURIComponent(place.name)}/cities`)}
+              className="flex items-center justify-between w-full mb-4"
+            >
+              <h3 className="text-lg font-bold text-foreground">Cities in {place.name}</h3>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+
+            {/* Top 8 cities grid */}
+            {countryCities.length > 0 && (
+              <div className="grid grid-cols-4 gap-2.5 mb-6">
+                {countryCities.slice(0, 8).map((city: any) => (
+                  <button
+                    key={city.id}
+                    onClick={() => navigate(`/place/${city.id}`)}
+                    className="relative aspect-[3/4] rounded-xl overflow-hidden active:scale-[0.97] transition-transform"
+                  >
+                    <DestinationPoster
+                      placeId={city.id}
+                      name={city.name}
+                      country={city.country}
+                      type="city"
+                      image={city.image}
+                      autoGenerate
+                      className="w-full h-full"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Wishlist cities in country */}
+            {wishlistCities.length > 0 && (
+              <button
+                onClick={() => navigate(`/country/${encodeURIComponent(place.name)}/cities?mode=wishlist`)}
+                className="flex items-center justify-between w-full py-3 border-t border-border"
+              >
+                <h3 className="text-sm font-semibold text-foreground">Cities in your wishlist</h3>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm text-muted-foreground">{wishlistCities.length}</span>
+                  <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                </div>
+              </button>
+            )}
+          </motion.div>
+        )}
       </div>
     </div>
   );
