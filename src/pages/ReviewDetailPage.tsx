@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Heart, MessageSquare, Calendar, Clock, Send } from "lucide-react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { ChevronLeft, Heart, MessageSquare, Calendar, Clock, Send, History } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,14 +10,13 @@ import { DestinationPoster } from "@/components/DestinationPoster";
 
 export default function ReviewDetailPage() {
   const { reviewId } = useParams<{ reviewId: string }>();
-  const [searchParams] = useSearchParams();
-  const placeId = searchParams.get("place");
   const navigate = useNavigate();
   const { user } = useAuth();
 
   const [review, setReview] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [place, setPlace] = useState<any>(null);
+  const [pastLoggings, setPastLoggings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -48,16 +47,25 @@ export default function ReviewDetailPage() {
       .maybeSingle();
 
     setProfile(profileData);
+
+    // Fetch past loggings of the same place by the same user
+    const { data: allLoggings } = await supabase
+      .from("reviews")
+      .select("id, rating, liked, review_text, visit_year, visit_month, duration_days, created_at")
+      .eq("user_id", reviewData.user_id)
+      .eq("place_id", reviewData.place_id)
+      .neq("id", reviewId!)
+      .order("created_at", { ascending: false });
+
+    setPastLoggings(allLoggings || []);
     setLoading(false);
   };
 
-  const formatVisitDate = () => {
-    if (!review?.visit_year) return null;
+  const formatVisitDate = (r: any) => {
+    if (!r?.visit_year) return null;
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    if (review.visit_month) {
-      return `${months[review.visit_month - 1]} ${review.visit_year}`;
-    }
-    return `${review.visit_year}`;
+    if (r.visit_month) return `${months[r.visit_month - 1]} ${r.visit_year}`;
+    return `${r.visit_year}`;
   };
 
   if (loading) {
@@ -76,7 +84,7 @@ export default function ReviewDetailPage() {
     );
   }
 
-  const visitDate = formatVisitDate();
+  const visitDate = formatVisitDate(review);
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -164,7 +172,48 @@ export default function ReviewDetailPage() {
           </motion.div>
         )}
 
-        {/* Reply section (only for other users' reviews) */}
+        {/* Past loggings */}
+        {pastLoggings.length > 0 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="mb-4">
+            <div className="flex items-center gap-2 mb-3">
+              <History className="w-4 h-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">Previous visits</h3>
+            </div>
+            <div className="space-y-2">
+              {pastLoggings.map((log) => {
+                const logDate = formatVisitDate(log);
+                return (
+                  <button
+                    key={log.id}
+                    onClick={() => navigate(`/review/${log.id}`)}
+                    className="bg-card rounded-xl p-3 border border-border w-full text-left active:scale-[0.98] transition-transform"
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <StarRating rating={log.rating || 0} size={12} liked={log.liked} />
+                        <span className="text-sm font-semibold text-foreground">{log.rating ?? "—"}</span>
+                        {log.liked && <Heart className="w-3 h-3 text-red-400 fill-current" />}
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        {logDate && (
+                          <span className="text-[10px]">{logDate}</span>
+                        )}
+                        {log.duration_days && (
+                          <span className="text-[10px]">{log.duration_days}d</span>
+                        )}
+                      </div>
+                    </div>
+                    {log.review_text && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{log.review_text}</p>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Reply section */}
         {review.user_id !== user?.id && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="mt-6">
             <div className="flex items-center gap-2 mb-3">
