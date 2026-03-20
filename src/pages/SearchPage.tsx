@@ -3,8 +3,10 @@ import { ChevronLeft, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { toast } from "sonner";
 
 const filterTabs = ["Destinations", "Lists", "Users"] as const;
 type FilterTab = (typeof filterTabs)[number];
