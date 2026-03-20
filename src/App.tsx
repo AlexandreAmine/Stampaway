@@ -15,6 +15,7 @@ import AuthPage from "./pages/AuthPage";
 import PlacePage from "./pages/PlacePage";
 import ReviewDetailPage from "./pages/ReviewDetailPage";
 import PlaceSubPage from "./pages/PlaceSubPage";
+import CountryCitiesPage from "./pages/CountryCitiesPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
