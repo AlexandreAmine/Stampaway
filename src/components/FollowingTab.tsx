@@ -24,8 +24,8 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
   const [searchResults, setSearchResults] = useState<{ user_id: string; username: string; profile_picture: string | null }[]>([]);
 
   useEffect(() => {
-    if (user) fetchFollowing();
-  }, [user]);
+    if (targetUserId) fetchFollowing();
+  }, [targetUserId]);
 
   useEffect(() => {
     if (!query.trim()) { setSearchResults([]); return; }
