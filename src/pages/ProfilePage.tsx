@@ -127,6 +127,7 @@ export default function ProfilePage() {
     setFollowersCount(followersRes.count || 0);
     setTotalCountries(totalCountriesRes.count || 0);
     setLikesCount(likesRes.count || 0);
+    setWrittenReviewsCount(writtenReviewsRes.count || 0);
   }, [user]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
