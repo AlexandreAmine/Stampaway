@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -9,18 +10,20 @@ interface FollowerUser {
   profile_picture: string | null;
 }
 
-export function FollowersTab() {
+export function FollowersTab({ userId }: { userId?: string }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const targetUserId = userId || user?.id;
   const [followers, setFollowers] = useState<FollowerUser[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!targetUserId) return;
     (async () => {
       const { data } = await supabase
         .from("followers")
         .select("follower_id")
-        .eq("following_id", user.id);
+        .eq("following_id", targetUserId);
 
       if (data && data.length > 0) {
         const ids = data.map((f) => f.follower_id);
@@ -37,7 +40,7 @@ export function FollowersTab() {
       }
       setLoading(false);
     })();
-  }, [user]);
+  }, [targetUserId]);
 
   if (loading) {
     return <div className="flex items-center justify-center h-40"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
@@ -50,14 +53,14 @@ export function FollowersTab() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-1">
       {followers.map((f) => (
-        <div key={f.id} className="flex items-center gap-3 py-2.5">
+        <button key={f.id} onClick={() => navigate(`/profile/${f.id}`)} className="flex items-center gap-3 py-2.5 w-full text-left">
           <img
             src={f.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.username)}&background=3B82F6&color=fff&size=32`}
             alt={f.username}
             className="w-8 h-8 rounded-full object-cover"
           />
           <span className="text-sm font-medium text-foreground">{f.username}</span>
-        </div>
+        </button>
       ))}
     </motion.div>
   );

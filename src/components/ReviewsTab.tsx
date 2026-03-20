@@ -20,19 +20,20 @@ interface ReviewEntry {
   };
 }
 
-export function ReviewsTab() {
+export function ReviewsTab({ userId }: { userId?: string }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [reviews, setReviews] = useState<ReviewEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const targetUserId = userId || user?.id;
 
   useEffect(() => {
-    if (!user) return;
+    if (!targetUserId) return;
     (async () => {
       const { data } = await supabase
         .from("reviews")
         .select("id, rating, review_text, created_at, places!inner(id, name, country, type, image)")
-        .eq("user_id", user.id)
+        .eq("user_id", targetUserId)
         .not("review_text", "is", null)
         .neq("review_text", "")
         .order("created_at", { ascending: false });
@@ -50,7 +51,7 @@ export function ReviewsTab() {
       }
       setLoading(false);
     })();
-  }, [user]);
+  }, [targetUserId]);
 
   if (loading) {
     return (

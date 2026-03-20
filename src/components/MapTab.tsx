@@ -70,19 +70,19 @@ const MapChart = memo(({ visitedCodes }: { visitedCodes: Set<string> }) => (
 ));
 MapChart.displayName = "MapChart";
 
-export function MapTab() {
+export function MapTab({ userId }: { userId?: string }) {
   const { user } = useAuth();
   const [visitedCodes, setVisitedCodes] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const targetUserId = userId || user?.id;
 
   useEffect(() => {
-    if (!user) return;
+    if (!targetUserId) return;
     (async () => {
-      // Get all unique countries from user's reviews
       const { data } = await supabase
         .from("reviews")
         .select("places!inner(country)")
-        .eq("user_id", user.id);
+        .eq("user_id", targetUserId);
 
       if (data) {
         const codes = new Set<string>();
@@ -94,7 +94,7 @@ export function MapTab() {
       }
       setLoading(false);
     })();
-  }, [user]);
+  }, [targetUserId]);
 
   if (loading) {
     return <div className="flex items-center justify-center h-40"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;

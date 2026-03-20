@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Plus, X, Search } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,8 +13,10 @@ interface FollowUser {
   profile_picture: string | null;
 }
 
-export function FollowingTab() {
+export function FollowingTab({ userId, readOnly = false }: { userId?: string; readOnly?: boolean }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const targetUserId = userId || user?.id;
   const [following, setFollowing] = useState<FollowUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSearch, setShowSearch] = useState(false);
@@ -21,8 +24,8 @@ export function FollowingTab() {
   const [searchResults, setSearchResults] = useState<{ user_id: string; username: string; profile_picture: string | null }[]>([]);
 
   useEffect(() => {
-    if (user) fetchFollowing();
-  }, [user]);
+    if (targetUserId) fetchFollowing();
+  }, [targetUserId]);
 
   useEffect(() => {
     if (!query.trim()) { setSearchResults([]); return; }
@@ -31,11 +34,11 @@ export function FollowingTab() {
   }, [query]);
 
   const fetchFollowing = async () => {
-    if (!user) return;
+    if (!targetUserId) return;
     const { data } = await supabase
       .from("followers")
       .select("id, following_id")
-      .eq("follower_id", user.id);
+      .eq("follower_id", targetUserId);
 
     if (data && data.length > 0) {
       const ids = data.map((f) => f.following_id);
@@ -93,13 +96,15 @@ export function FollowingTab() {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{following.length} following</p>
-        <button onClick={() => setShowSearch(!showSearch)} className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-          <Plus className="w-4 h-4 text-primary" />
-        </button>
+        {!readOnly && (
+          <button onClick={() => setShowSearch(!showSearch)} className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <Plus className="w-4 h-4 text-primary" />
+          </button>
+        )}
       </div>
 
       <AnimatePresence>
-        {showSearch && (
+        {showSearch && !readOnly && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
             <div className="relative mb-3">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -115,14 +120,14 @@ export function FollowingTab() {
               const isFollowing = following.some((f) => f.id === u.user_id);
               return (
                 <div key={u.user_id} className="flex items-center justify-between py-2">
-                  <div className="flex items-center gap-3">
+                  <button onClick={() => navigate(`/profile/${u.user_id}`)} className="flex items-center gap-3">
                     <img
                       src={u.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=3B82F6&color=fff&size=32`}
                       alt={u.username}
                       className="w-8 h-8 rounded-full object-cover"
                     />
                     <span className="text-sm font-medium text-foreground">{u.username}</span>
-                  </div>
+                  </button>
                   {!isFollowing && (
                     <button onClick={() => handleFollow(u.user_id)} className="text-xs bg-primary text-primary-foreground px-3 py-1 rounded-lg font-medium">
                       Follow
@@ -143,17 +148,19 @@ export function FollowingTab() {
         <div className="space-y-1">
           {following.map((f) => (
             <div key={f.id} className="flex items-center justify-between py-2.5">
-              <div className="flex items-center gap-3">
+              <button onClick={() => navigate(`/profile/${f.id}`)} className="flex items-center gap-3">
                 <img
                   src={f.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.username)}&background=3B82F6&color=fff&size=32`}
                   alt={f.username}
                   className="w-8 h-8 rounded-full object-cover"
                 />
                 <span className="text-sm font-medium text-foreground">{f.username}</span>
-              </div>
-              <button onClick={() => handleUnfollow(f.followId)} className="p-1.5">
-                <X className="w-4 h-4 text-muted-foreground" />
               </button>
+              {!readOnly && (
+                <button onClick={() => handleUnfollow(f.followId)} className="p-1.5">
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </button>
+              )}
             </div>
           ))}
         </div>

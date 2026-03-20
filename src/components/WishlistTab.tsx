@@ -12,23 +12,24 @@ interface WishlistItem {
   place: { id: string; name: string; country: string; type: string; image: string | null };
 }
 
-export function WishlistTab() {
+export function WishlistTab({ userId, readOnly = false }: { userId?: string; readOnly?: boolean }) {
   const { user } = useAuth();
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [subTab, setSubTab] = useState<"country" | "city">("country");
   const [pickerOpen, setPickerOpen] = useState(false);
+  const targetUserId = userId || user?.id;
 
   useEffect(() => {
-    if (user) fetchWishlist();
-  }, [user]);
+    if (targetUserId) fetchWishlist();
+  }, [targetUserId]);
 
   const fetchWishlist = async () => {
-    if (!user) return;
+    if (!targetUserId) return;
     const { data } = await supabase
       .from("wishlists")
       .select("id, places!inner(id, name, country, type, image)")
-      .eq("user_id", user.id)
+      .eq("user_id", targetUserId)
       .order("created_at", { ascending: false });
 
     if (data) {
@@ -78,9 +79,11 @@ export function WishlistTab() {
             </button>
           ))}
         </div>
-        <button onClick={() => setPickerOpen(true)} className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-          <Plus className="w-4 h-4 text-primary" />
-        </button>
+        {!readOnly && (
+          <button onClick={() => setPickerOpen(true)} className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <Plus className="w-4 h-4 text-primary" />
+          </button>
+        )}
       </div>
 
       {filtered.length === 0 ? (
@@ -99,12 +102,14 @@ export function WishlistTab() {
                 image={item.place.image}
                 className="w-full h-full"
               />
-              <button
-                onClick={() => handleRemove(item.id)}
-                className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center"
-              >
-                <X className="w-3 h-3 text-white" />
-              </button>
+              {!readOnly && (
+                <button
+                  onClick={() => handleRemove(item.id)}
+                  className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center"
+                >
+                  <X className="w-3 h-3 text-white" />
+                </button>
+              )}
             </div>
           ))}
         </div>

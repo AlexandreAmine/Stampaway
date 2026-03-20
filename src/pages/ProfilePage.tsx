@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ChevronRight, ChevronLeft, LogOut, Plus } from "lucide-react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { RatingHistogram } from "@/components/RatingHistogram";
 import { FavoritePicker } from "@/components/FavoritePicker";
@@ -31,6 +31,14 @@ type SubPage = null | "Countries" | "Cities" | "Diary" | "Map" | "Lists" | "Wish
 
 export default function ProfilePage() {
   const { user, profile, signOut } = useAuth();
+  const { userId: paramUserId } = useParams<{ userId?: string }>();
+  const navigate = useNavigate();
+
+  // Determine if viewing own profile or another user's
+  const viewingUserId = paramUserId || user?.id;
+  const isOwnProfile = !paramUserId || paramUserId === user?.id;
+
+  const [viewedProfile, setViewedProfile] = useState<{ username: string; profile_picture: string | null } | null>(null);
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerType, setPickerType] = useState<"city" | "country">("city");
@@ -55,12 +63,24 @@ export default function ProfilePage() {
 
   const [subPage, setSubPage] = useState<SubPage>(null);
 
-  const displayName = profile?.username || user?.email?.split("@")[0] || "User";
-  const avatarUrl = profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3B82F6&color=fff`;
+  // Fetch viewed user's profile if not own
+  useEffect(() => {
+    if (isOwnProfile) {
+      setViewedProfile(null);
+    } else if (viewingUserId) {
+      supabase.from("profiles").select("username, profile_picture").eq("user_id", viewingUserId).single().then(({ data }) => {
+        if (data) setViewedProfile(data);
+      });
+    }
+  }, [viewingUserId, isOwnProfile]);
+
+  const currentProfile = isOwnProfile ? profile : viewedProfile;
+  const displayName = currentProfile?.username || "User";
+  const avatarUrl = currentProfile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3B82F6&color=fff`;
 
   const fetchData = useCallback(async () => {
-    if (!user) return;
-    const uid = user.id;
+    if (!viewingUserId) return;
+    const uid = viewingUserId;
 
     const [favRes, reviewRes, listRes, wishRes, followingRes, followersRes, totalCountriesRes, likesRes, writtenReviewsRes] = await Promise.all([
       supabase.from("favorite_places").select("slot_index, place_id, type, places!inner(name, image, country, type)").eq("user_id", uid),
@@ -129,7 +149,7 @@ export default function ProfilePage() {
     setTotalCountries(totalCountriesRes.count || 0);
     setLikesCount(likesRes.count || 0);
     setWrittenReviewsCount(writtenReviewsRes.count || 0);
-  }, [user]);
+  }, [viewingUserId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -173,40 +193,41 @@ export default function ProfilePage() {
       {[0, 1, 2, 3].map((i) => {
         const fav = favorites[i];
         return fav ? (
-          <button key={i} onClick={() => handleOpenPicker(type, i)} className="w-28 h-36 shrink-0">
+          <button key={i} onClick={() => { if (isOwnProfile) handleOpenPicker(type, i); else navigate(`/place/${fav.place_id}`); }} className="w-28 h-36 shrink-0">
             <DestinationPoster placeId={fav.place_id} name={fav.place_name} country={fav.place_country} type={type} image={fav.place_image} autoGenerate className="w-full h-full" />
           </button>
-        ) : (
+        ) : isOwnProfile ? (
           <button key={i} onClick={() => handleOpenPicker(type, i)} className="w-28 h-36 rounded-2xl border-2 border-dashed border-border flex items-center justify-center shrink-0 hover:border-primary transition-colors">
             <Plus className="w-8 h-8 text-muted-foreground" />
           </button>
-        );
+        ) : null;
       })}
     </div>
   );
 
   const renderSubPage = () => {
+    const uid = viewingUserId;
     switch (subPage) {
       case "Countries":
-        return <LoggedPlacesInline type="country" />;
+        return <LoggedPlacesInline type="country" userId={uid} />;
       case "Cities":
-        return <LoggedPlacesInline type="city" />;
+        return <LoggedPlacesInline type="city" userId={uid} />;
       case "Diary":
-        return <DiaryTab />;
+        return <DiaryTab userId={uid} />;
       case "Map":
-        return <MapTab />;
+        return <MapTab userId={uid} />;
       case "Lists":
-        return <ListsTab />;
+        return <ListsTab userId={uid} readOnly={!isOwnProfile} />;
       case "Wishlist":
-        return <WishlistTab />;
+        return <WishlistTab userId={uid} readOnly={!isOwnProfile} />;
       case "Likes":
-        return <LikesTab />;
+        return <LikesTab userId={uid} />;
       case "Reviews":
-        return <ReviewsTab />;
+        return <ReviewsTab userId={uid} />;
       case "Following":
-        return <FollowingTab />;
+        return <FollowingTab userId={uid} readOnly={!isOwnProfile} />;
       case "Followers":
-        return <FollowersTab />;
+        return <FollowersTab userId={uid} />;
       default:
         return null;
     }
@@ -235,15 +256,22 @@ export default function ProfilePage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
+            {!isOwnProfile && (
+              <button onClick={() => navigate(-1)} className="mr-1">
+                <ChevronLeft className="w-6 h-6 text-foreground" />
+              </button>
+            )}
             <img src={avatarUrl} alt={displayName} className="w-16 h-16 rounded-full object-cover border-2 border-border" />
             <div>
               <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
-              <p className="text-xs text-muted-foreground">{user?.email}</p>
+              {isOwnProfile && <p className="text-xs text-muted-foreground">{user?.email}</p>}
             </div>
           </div>
-          <button onClick={signOut} className="p-2">
-            <LogOut className="w-5 h-5 text-muted-foreground" />
-          </button>
+          {isOwnProfile && (
+            <button onClick={signOut} className="p-2">
+              <LogOut className="w-5 h-5 text-muted-foreground" />
+            </button>
+          )}
         </div>
 
         {/* Favorite Countries */}
@@ -284,7 +312,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <FavoritePicker open={pickerOpen} onClose={() => setPickerOpen(false)} type={pickerType} onSelect={handleSelectFavorite} />
+      {isOwnProfile && <FavoritePicker open={pickerOpen} onClose={() => setPickerOpen(false)} type={pickerType} onSelect={handleSelectFavorite} />}
     </div>
   );
 }

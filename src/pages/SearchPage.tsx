@@ -37,11 +37,18 @@ export default function SearchPage() {
       const { data } = await qb;
       setPlaces(data || []);
     } else if (activeFilter === "Lists") {
-      let qb = supabase.from("lists").select("id, name, description, user_id, profiles!lists_user_id_fkey(username, profile_picture)");
+      let qb = supabase.from("lists").select("id, name, description, user_id");
       if (q) qb = qb.ilike("name", `%${q}%`);
       qb = qb.order("created_at", { ascending: false }).limit(30);
       const { data } = await qb;
-      setLists(data || []);
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map((l: any) => l.user_id))];
+        const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
+        const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+        setLists(data.map((l: any) => ({ ...l, profiles: profileMap.get(l.user_id) || null })));
+      } else {
+        setLists([]);
+      }
     } else if (activeFilter === "Users") {
       let qb = supabase.from("profiles").select("id, user_id, username, email, profile_picture");
       if (q) qb = qb.ilike("username", `%${q}%`);
@@ -49,11 +56,18 @@ export default function SearchPage() {
       const { data } = await qb;
       setUsers(data || []);
     } else if (activeFilter === "Reviews") {
-      let qb = supabase.from("reviews").select("id, rating, review_text, liked, created_at, place_id, user_id, places!inner(name, country, type, image), profiles:user_id(username, profile_picture)");
+      let qb = supabase.from("reviews").select("id, rating, review_text, liked, created_at, place_id, user_id, places!inner(name, country, type, image)");
       if (q) qb = qb.ilike("places.name", `%${q}%`);
       qb = qb.order("created_at", { ascending: false }).limit(30);
       const { data } = await qb;
-      setReviews(data || []);
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map((r: any) => r.user_id))];
+        const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
+        const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+        setReviews(data.map((r: any) => ({ ...r, profiles: profileMap.get(r.user_id) || null })));
+      } else {
+        setReviews([]);
+      }
     }
     setLoading(false);
   };
@@ -106,7 +120,7 @@ export default function SearchPage() {
       return (
         <div className="space-y-3">
           {users.map((u: any) => (
-            <motion.div key={u.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 py-3">
+            <motion.button key={u.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} onClick={() => navigate(`/profile/${u.user_id}`)} className="flex items-center gap-3 py-3 w-full text-left">
               <Avatar className="w-10 h-10">
                 <AvatarImage src={u.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=3B82F6&color=fff`} />
                 <AvatarFallback>{u.username?.[0]?.toUpperCase()}</AvatarFallback>
@@ -115,7 +129,7 @@ export default function SearchPage() {
                 <p className="text-sm font-semibold text-foreground">{u.username}</p>
                 {u.email && <p className="text-xs text-muted-foreground">{u.email}</p>}
               </div>
-            </motion.div>
+            </motion.button>
           ))}
         </div>
       );
