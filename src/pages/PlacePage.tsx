@@ -178,6 +178,45 @@ export default function PlacePage() {
       }
     }
 
+    // Fetch cities in this country (only for country pages)
+    if (placeData.type === "country") {
+      const { data: citiesData } = await supabase
+        .from("places")
+        .select("id, name, country, type, image")
+        .eq("type", "city")
+        .eq("country", placeData.name);
+
+      if (citiesData && citiesData.length > 0) {
+        const cityIds = citiesData.map((c) => c.id);
+        const { data: cityReviews } = await supabase
+          .from("reviews")
+          .select("place_id")
+          .in("place_id", cityIds);
+
+        const counts = new Map<string, number>();
+        (cityReviews || []).forEach((r) => {
+          counts.set(r.place_id, (counts.get(r.place_id) || 0) + 1);
+        });
+
+        const sorted = citiesData
+          .map((c) => ({ ...c, review_count: counts.get(c.id) || 0 }))
+          .sort((a, b) => b.review_count - a.review_count);
+        setCountryCities(sorted);
+      }
+
+      // Wishlist cities in this country
+      if (user) {
+        const { data: wishData } = await supabase
+          .from("wishlists")
+          .select("place_id, places!inner(id, name, country, type)")
+          .eq("user_id", user.id);
+
+        const wishCities = (wishData || [])
+          .filter((w: any) => w.places.type === "city" && w.places.country === placeData.name);
+        setWishlistCities(wishCities);
+      }
+    }
+
     setLoading(false);
   };
 
