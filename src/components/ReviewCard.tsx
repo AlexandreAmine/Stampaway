@@ -89,54 +89,58 @@ export function ReviewCard({ review, showImage = true }: ReviewCardProps) {
     setToggling(false);
   };
 
+  const placeId = review.place_id || review.placeId || "";
+  const userId = review.userId || review.user_id || "";
+
   return (
-    <div className="bg-card rounded-2xl overflow-hidden">
-      {showImage && placeImage && (
-        <div className="relative h-48">
-          <img src={placeImage} alt={placeName} className="w-full h-full object-cover" />
-          <div className="absolute bottom-3 left-3">
-            <p className="text-lg font-bold text-foreground drop-shadow-lg">{placeName}</p>
-          </div>
-        </div>
-      )}
-      <div className="p-4">
-        <div className="flex items-center gap-3">
-          {userAvatar && (
-            <img
-              src={userAvatar}
-              alt={userName}
-              className="w-8 h-8 rounded-full object-cover"
-            />
-          )}
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-foreground">{userName}</p>
-            {rating != null && (
-              <div className="flex items-center gap-1">
-                <Star className="w-3 h-3 text-star fill-star" />
-                <span className="text-xs font-medium text-foreground">{rating}</span>
-              </div>
-            )}
-          </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={toggleLike}
-              className="flex items-center gap-1 active:scale-95 transition-transform"
-            >
-              <Heart
-                className={`w-4 h-4 transition-colors ${
-                  liked ? "text-red-500 fill-red-500" : "text-muted-foreground"
-                }`}
-              />
-              {likeCount > 0 && (
-                <span className="text-xs text-muted-foreground">{likeCount}</span>
-              )}
-            </button>
-            <span className="text-xs text-muted-foreground">{createdAt}</span>
-          </div>
-        </div>
-        {reviewText && (
-          <p className="text-sm text-muted-foreground mt-3 leading-relaxed line-clamp-3">{reviewText}</p>
+    <div
+      className="bg-card rounded-xl p-3 border border-border cursor-pointer"
+      onClick={() => placeId && navigate(`/place/${placeId}`)}
+    >
+      <div className="flex items-start gap-3">
+        {showImage && placeImage && (
+          <img src={placeImage} alt={placeName} className="w-12 h-12 rounded-lg object-cover shrink-0" />
         )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              {userAvatar && (
+                <img
+                  src={userAvatar}
+                  alt={userName}
+                  className="w-5 h-5 rounded-full object-cover shrink-0"
+                  onClick={(e) => { e.stopPropagation(); if (userId) navigate(`/profile/${userId}`); }}
+                />
+              )}
+              <span className="text-xs font-medium text-muted-foreground truncate">{userName}</span>
+              {rating != null && (
+                <>
+                  <Star className="w-3 h-3 text-star fill-star shrink-0" />
+                  <span className="text-xs font-semibold text-foreground">{rating}</span>
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={toggleLike}
+                className="flex items-center gap-1 active:scale-95 transition-transform"
+              >
+                <Heart
+                  className={`w-3.5 h-3.5 transition-colors ${
+                    liked ? "text-red-500 fill-red-500" : "text-muted-foreground"
+                  }`}
+                />
+                {likeCount > 0 && (
+                  <span className="text-xs text-muted-foreground">{likeCount}</span>
+                )}
+              </button>
+            </div>
+          </div>
+          {placeName && <p className="text-sm font-semibold text-foreground mt-1">{placeName}</p>}
+          {reviewText && (
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed line-clamp-2">{reviewText}</p>
+          )}
+        </div>
       </div>
     </div>
   );
