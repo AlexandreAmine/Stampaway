@@ -130,7 +130,8 @@ export function DiaryTab({ userId }: { userId?: string }) {
           <p className="text-muted-foreground text-sm">No {section === "country" ? "country" : "city"} entries yet</p>
         </div>
       ) : (
-      {sortedYears.map((year) => (
+        <div className="space-y-6">
+        {sortedYears.map((year) => (
         <div key={year}>
           <h3 className="text-lg font-bold text-foreground mb-3">{year}</h3>
           <div className="space-y-3">
