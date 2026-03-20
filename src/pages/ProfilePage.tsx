@@ -116,25 +116,20 @@ export default function ProfilePage() {
       const cityRatings: number[] = [];
       const countryRatings: number[] = [];
       const uniqueCities = new Set<string>();
-      const uniqueCountryPlaces = new Set<string>();
-      const uniqueVisitedCountries = new Set<string>();
+      const uniqueCountries = new Set<string>();
 
       reviewRes.data.forEach((r: any) => {
-        // Track unique countries visited (from any review type)
-        if (r.places.country) {
-          uniqueVisitedCountries.add(r.places.country);
-        }
         if (r.places.type === "city") {
           cityRatings.push(Number(r.rating));
           uniqueCities.add(r.place_id);
         } else {
           countryRatings.push(Number(r.rating));
-          uniqueCountryPlaces.add(r.place_id);
+          uniqueCountries.add(r.place_id);
         }
       });
 
       setCitiesCount(uniqueCities.size);
-      setCountriesCount(uniqueVisitedCountries.size);
+      setCountriesCount(uniqueCountries.size);
       setReviewsCount(reviewRes.data.length);
 
       const buildDist = (ratings: number[]) => {
