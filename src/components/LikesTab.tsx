@@ -36,7 +36,7 @@ export function LikesTab({ userId }: { userId?: string }) {
       }
       setLoading(false);
     })();
-  }, [user]);
+  }, [targetUserId]);
 
   if (loading) {
     return <div className="flex items-center justify-center h-40"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;

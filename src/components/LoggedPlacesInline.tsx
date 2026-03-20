@@ -35,20 +35,21 @@ interface PlaceEntry {
   avg_rating?: number;
 }
 
-export function LoggedPlacesInline({ type }: { type: "city" | "country" }) {
+export function LoggedPlacesInline({ type, userId }: { type: "city" | "country"; userId?: string }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [places, setPlaces] = useState<PlaceEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<SortOption>("your-highest");
+  const targetUserId = userId || user?.id;
 
   useEffect(() => {
-    if (!user) return;
+    if (!targetUserId) return;
     (async () => {
       const { data } = await supabase
         .from("reviews")
         .select("place_id, rating, visit_year, visit_month, duration_days, places!inner(name, country, type, image)")
-        .eq("user_id", user.id)
+        .eq("user_id", targetUserId)
         .eq("places.type", type)
         .order("created_at", { ascending: false });
 

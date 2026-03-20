@@ -25,23 +25,24 @@ interface DiaryEntry {
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-export function DiaryTab() {
+export function DiaryTab({ userId }: { userId?: string }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const targetUserId = userId || user?.id;
 
   useEffect(() => {
-    if (!user) return;
+    if (!targetUserId) return;
     fetchDiary();
-  }, [user]);
+  }, [targetUserId]);
 
   const fetchDiary = async () => {
-    if (!user) return;
+    if (!targetUserId) return;
     const { data } = await supabase
       .from("reviews")
       .select("id, rating, review_text, visit_year, visit_month, duration_days, created_at, places!inner(id, name, country, type, image)")
-      .eq("user_id", user.id)
+      .eq("user_id", targetUserId)
       .order("visit_year", { ascending: false, nullsFirst: false })
       .order("visit_month", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false });
