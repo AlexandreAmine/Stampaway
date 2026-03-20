@@ -102,7 +102,12 @@ export function LoggedPlacesInline({ type, userId, ratingFilter }: { type: "city
     })();
   }, [targetUserId, type]);
 
-  const sorted = [...places].sort((a, b) => {
+  // Apply rating filter if provided
+  const filtered = ratingFilter != null
+    ? places.filter((p) => p.rating != null && p.rating === ratingFilter)
+    : places;
+
+  const sorted = [...filtered].sort((a, b) => {
     switch (sort) {
       case "your-highest": {
         // Null ratings go to bottom
