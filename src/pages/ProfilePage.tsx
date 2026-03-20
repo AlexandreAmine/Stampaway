@@ -287,7 +287,7 @@ export default function ProfilePage() {
           </div>
           {renderFavoriteSlots("country", favoriteCountries)}
         </div>
-        <div className="mb-6"><RatingHistogram distribution={countryDistribution} /></div>
+        <div className="mb-6"><RatingHistogram distribution={countryDistribution} onBarClick={(r) => { setRatingFilter(r); setSubPage("CountriesByRating"); }} /></div>
 
         {/* Favorite Cities */}
         <div className="mb-4">
