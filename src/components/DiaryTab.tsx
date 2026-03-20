@@ -42,7 +42,7 @@ export function DiaryTab({ userId }: { userId?: string }) {
     if (!targetUserId) return;
     const { data } = await supabase
       .from("reviews")
-      .select("id, rating, review_text, visit_year, visit_month, duration_days, created_at, places!inner(id, name, country, type, image)")
+      .select("id, rating, liked, review_text, visit_year, visit_month, duration_days, created_at, places!inner(id, name, country, type, image)")
       .eq("user_id", targetUserId)
       .order("visit_year", { ascending: false, nullsFirst: false })
       .order("visit_month", { ascending: false, nullsFirst: false })
