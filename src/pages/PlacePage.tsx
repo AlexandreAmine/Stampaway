@@ -252,7 +252,7 @@ export default function PlacePage() {
                     <AvatarFallback>{fv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <p className="text-sm text-foreground flex-1">{fv.profile?.username}</p>
-                  <StarRating rating={fv.rating} size={12} />
+                  <StarRating rating={fv.rating} size={12} liked={fv.liked} />
                 </div>
               ))}
             </div>
