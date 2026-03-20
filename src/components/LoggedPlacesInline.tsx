@@ -92,7 +92,7 @@ export function LoggedPlacesInline({ type, userId }: { type: "city" | "country";
       setPlaces(entries);
       setLoading(false);
     })();
-  }, [user, type]);
+  }, [targetUserId, type]);
 
   const sorted = [...places].sort((a, b) => {
     switch (sort) {
