@@ -14,6 +14,7 @@ import { MapTab } from "@/components/MapTab";
 import { LikesTab } from "@/components/LikesTab";
 import { FollowingTab } from "@/components/FollowingTab";
 import { FollowersTab } from "@/components/FollowersTab";
+import { ReviewsTab } from "@/components/ReviewsTab";
 import { supabase } from "@/integrations/supabase/client";
 
 interface FavoriteSlot {
