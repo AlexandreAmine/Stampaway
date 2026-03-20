@@ -56,11 +56,18 @@ export default function SearchPage() {
       const { data } = await qb;
       setUsers(data || []);
     } else if (activeFilter === "Reviews") {
-      let qb = supabase.from("reviews").select("id, rating, review_text, liked, created_at, place_id, user_id, places!inner(name, country, type, image), profiles:user_id(username, profile_picture)");
+      let qb = supabase.from("reviews").select("id, rating, review_text, liked, created_at, place_id, user_id, places!inner(name, country, type, image)");
       if (q) qb = qb.ilike("places.name", `%${q}%`);
       qb = qb.order("created_at", { ascending: false }).limit(30);
       const { data } = await qb;
-      setReviews(data || []);
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map((r: any) => r.user_id))];
+        const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
+        const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+        setReviews(data.map((r: any) => ({ ...r, profiles: profileMap.get(r.user_id) || null })));
+      } else {
+        setReviews([]);
+      }
     }
     setLoading(false);
   };
