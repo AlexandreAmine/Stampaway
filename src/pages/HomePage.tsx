@@ -48,28 +48,41 @@ export default function HomePage() {
         .eq("follower_id", user.id);
 
       const followingIds = following?.map((f) => f.following_id) || [];
-      // Include own activity too
-      const allIds = [...followingIds, user.id];
+      if (followingIds.length === 0) {
+        setActivities([]);
+        setLoading(false);
+        return;
+      }
 
-      // Get reviews from the last 2 months
-      const twoMonthsAgo = new Date();
-      twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+      // Calculate 2 months ago based on visit date
+      const now = new Date();
+      const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+      const minYear = twoMonthsAgo.getFullYear();
+      const minMonth = twoMonthsAgo.getMonth() + 1; // 1-indexed
 
       const { data: reviews } = await supabase
         .from("reviews")
-        .select("id, user_id, place_id, rating, created_at, places!inner(name, country, type)")
-        .in("user_id", allIds)
-        .gte("created_at", twoMonthsAgo.toISOString())
+        .select("id, user_id, place_id, rating, created_at, visit_year, visit_month, places!inner(name, country, type)")
+        .in("user_id", followingIds)
+        .not("visit_year", "is", null)
+        .not("visit_month", "is", null)
         .order("created_at", { ascending: false });
 
-      if (!reviews || reviews.length === 0) {
+      // Filter client-side for visit dates within last 2 months
+      const filtered = (reviews || []).filter((r: any) => {
+        const vy = r.visit_year;
+        const vm = r.visit_month;
+        return (vy > minYear) || (vy === minYear && vm >= minMonth);
+      });
+
+      if (filtered.length === 0) {
         setActivities([]);
         setLoading(false);
         return;
       }
 
       // Get profiles for these users
-      const userIds = [...new Set(reviews.map((r) => r.user_id))];
+      const userIds = [...new Set(filtered.map((r: any) => r.user_id))];
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id, username, profile_picture")
@@ -78,7 +91,7 @@ export default function HomePage() {
       const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
 
       const mapped: FriendActivity[] = [];
-      reviews.forEach((r: any) => {
+      filtered.forEach((r: any) => {
         const coords = getPlaceCoordinates(r.places.name, r.places.country);
         if (!coords) return;
         const prof = profileMap.get(r.user_id);
