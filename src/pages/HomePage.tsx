@@ -208,7 +208,7 @@ export default function HomePage() {
 
       {/* Friends activities */}
       <div className="px-5 mt-4">
-        <h2 className="text-xl font-bold text-foreground mb-4">Friend activities</h2>
+        <h2 className="text-xl font-bold text-foreground mb-4">Recent friend activities</h2>
         {activities.length === 0 && !loading && (
           <p className="text-sm text-muted-foreground">No recent activity from friends. Follow people to see their trips here!</p>
         )}
