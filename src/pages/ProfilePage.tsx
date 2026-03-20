@@ -60,7 +60,7 @@ export default function ProfilePage() {
     if (!user) return;
     const uid = user.id;
 
-    const [favRes, reviewRes, listRes, wishRes, followingRes, followersRes, totalCountriesRes, likesRes] = await Promise.all([
+    const [favRes, reviewRes, listRes, wishRes, followingRes, followersRes, totalCountriesRes, likesRes, writtenReviewsRes] = await Promise.all([
       supabase.from("favorite_places").select("slot_index, place_id, type, places!inner(name, image, country, type)").eq("user_id", uid),
       supabase.from("reviews").select("rating, place_id, places!inner(type)").eq("user_id", uid),
       supabase.from("lists").select("id", { count: "exact", head: true }).eq("user_id", uid),
@@ -69,6 +69,7 @@ export default function ProfilePage() {
       supabase.from("followers").select("id", { count: "exact", head: true }).eq("following_id", uid),
       supabase.from("places").select("id", { count: "exact", head: true }).eq("type", "country"),
       supabase.from("reviews").select("id", { count: "exact", head: true }).eq("user_id", uid).eq("liked", true),
+      supabase.from("reviews").select("id", { count: "exact", head: true }).eq("user_id", uid).not("review_text", "is", null).neq("review_text", ""),
     ]);
 
     if (favRes.data) {
