@@ -60,7 +60,7 @@ export default function PlacePage() {
     // Fetch all reviews for this place
     const { data: allReviews } = await supabase
       .from("reviews")
-      .select("id, rating, user_id, review_text, liked, created_at")
+      .select("id, rating, user_id, review_text, liked, created_at, visit_year, visit_month, duration_days")
       .eq("place_id", id);
 
     const reviews = allReviews || [];
