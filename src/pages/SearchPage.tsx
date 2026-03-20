@@ -1,23 +1,152 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { DestinationPoster } from "@/components/DestinationPoster";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
-const filterTabs = ["Destinations", "Lists", "Users", "Reviews"];
-const browseOptions = [
-  "Trending destinations",
-  "Most visited",
-  "Highest rated",
-  "Genre or region",
-  "Based on destinations you like",
-  "Most affordable",
-  "Most liked lists",
-];
+const filterTabs = ["Destinations", "Lists", "Users", "Reviews"] as const;
+type FilterTab = (typeof filterTabs)[number];
 
 export default function SearchPage() {
   const navigate = useNavigate();
-  const [activeFilter, setActiveFilter] = useState("Destinations");
+  const [activeFilter, setActiveFilter] = useState<FilterTab>("Destinations");
   const [query, setQuery] = useState("");
+  const [places, setPlaces] = useState<any[]>([]);
+  const [lists, setLists] = useState<any[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => search(), 250);
+    return () => clearTimeout(t);
+  }, [query, activeFilter]);
+
+  useEffect(() => { search(); }, [activeFilter]);
+
+  const search = async () => {
+    setLoading(true);
+    const q = query.trim();
+
+    if (activeFilter === "Destinations") {
+      let qb = supabase.from("places").select("id, name, country, type, image");
+      if (q) qb = qb.ilike("name", `%${q}%`);
+      qb = qb.order("name").limit(30);
+      const { data } = await qb;
+      setPlaces(data || []);
+    } else if (activeFilter === "Lists") {
+      let qb = supabase.from("lists").select("id, name, description, user_id, profiles!lists_user_id_fkey(username, profile_picture)");
+      if (q) qb = qb.ilike("name", `%${q}%`);
+      qb = qb.order("created_at", { ascending: false }).limit(30);
+      const { data } = await qb;
+      setLists(data || []);
+    } else if (activeFilter === "Users") {
+      let qb = supabase.from("profiles").select("id, user_id, username, email, profile_picture");
+      if (q) qb = qb.ilike("username", `%${q}%`);
+      qb = qb.order("username").limit(30);
+      const { data } = await qb;
+      setUsers(data || []);
+    } else if (activeFilter === "Reviews") {
+      let qb = supabase.from("reviews").select("id, rating, review_text, liked, created_at, place_id, user_id, places!inner(name, country, type, image), profiles:user_id(username, profile_picture)");
+      if (q) qb = qb.ilike("places.name", `%${q}%`);
+      qb = qb.order("created_at", { ascending: false }).limit(30);
+      const { data } = await qb;
+      setReviews(data || []);
+    }
+    setLoading(false);
+  };
+
+  const renderResults = () => {
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center h-40">
+          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      );
+    }
+
+    if (activeFilter === "Destinations") {
+      if (!places.length) return <EmptyState text="No destinations found" />;
+      return (
+        <div className="grid grid-cols-3 gap-3">
+          {places.map((p) => (
+            <motion.button
+              key={p.id}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              onClick={() => navigate(`/place/${p.id}`)}
+              className="aspect-[3/4] w-full"
+            >
+              <DestinationPoster placeId={p.id} name={p.name} country={p.country} type={p.type as "city" | "country"} image={p.image} className="w-full h-full" />
+            </motion.button>
+          ))}
+        </div>
+      );
+    }
+
+    if (activeFilter === "Lists") {
+      if (!lists.length) return <EmptyState text="No lists found" />;
+      return (
+        <div className="space-y-3">
+          {lists.map((l: any) => (
+            <motion.div key={l.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="bg-card rounded-xl p-4 border border-border">
+              <p className="text-sm font-semibold text-foreground">{l.name}</p>
+              {l.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{l.description}</p>}
+              {l.profiles && <p className="text-xs text-muted-foreground mt-2">by {(l.profiles as any).username}</p>}
+            </motion.div>
+          ))}
+        </div>
+      );
+    }
+
+    if (activeFilter === "Users") {
+      if (!users.length) return <EmptyState text="No users found" />;
+      return (
+        <div className="space-y-3">
+          {users.map((u: any) => (
+            <motion.div key={u.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-3 py-3">
+              <Avatar className="w-10 h-10">
+                <AvatarImage src={u.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=3B82F6&color=fff`} />
+                <AvatarFallback>{u.username?.[0]?.toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-sm font-semibold text-foreground">{u.username}</p>
+                {u.email && <p className="text-xs text-muted-foreground">{u.email}</p>}
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      );
+    }
+
+    if (activeFilter === "Reviews") {
+      if (!reviews.length) return <EmptyState text="No reviews found" />;
+      return (
+        <div className="space-y-3">
+          {reviews.map((r: any) => (
+            <motion.button
+              key={r.id}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              onClick={() => navigate(`/place/${r.place_id}`)}
+              className="w-full text-left bg-card rounded-xl p-4 border border-border"
+            >
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-sm font-semibold text-foreground">{(r.places as any)?.name}</p>
+                <span className="text-xs text-muted-foreground">⭐ {r.rating}</span>
+              </div>
+              {r.review_text && <p className="text-xs text-muted-foreground line-clamp-2">{r.review_text}</p>}
+              {r.profiles && <p className="text-xs text-muted-foreground mt-2">by {(r.profiles as any)?.username}</p>}
+            </motion.button>
+          ))}
+        </div>
+      );
+    }
+
+    return null;
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -40,7 +169,6 @@ export default function SearchPage() {
           />
         </div>
 
-        {/* Filter tabs */}
         <div className="flex gap-2 mb-6 overflow-x-auto scrollbar-hide">
           {filterTabs.map((tab) => (
             <button
@@ -57,22 +185,16 @@ export default function SearchPage() {
           ))}
         </div>
 
-        {/* Browse by */}
-        <p className="text-xs font-medium text-muted-foreground mb-3">Browse by</p>
-        <div className="space-y-0">
-          {browseOptions.map((option, i) => (
-            <motion.button
-              key={option}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="w-full text-left py-3.5 text-sm font-medium text-foreground hover:text-primary transition-colors"
-            >
-              {option}
-            </motion.button>
-          ))}
-        </div>
+        {renderResults()}
       </div>
+    </div>
+  );
+}
+
+function EmptyState({ text }: { text: string }) {
+  return (
+    <div className="flex items-center justify-center h-40">
+      <p className="text-sm text-muted-foreground">{text}</p>
     </div>
   );
 }
