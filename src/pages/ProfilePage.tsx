@@ -149,7 +149,7 @@ export default function ProfilePage() {
     setTotalCountries(totalCountriesRes.count || 0);
     setLikesCount(likesRes.count || 0);
     setWrittenReviewsCount(writtenReviewsRes.count || 0);
-  }, [user]);
+  }, [viewingUserId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
