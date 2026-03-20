@@ -116,9 +116,23 @@ export default function PlacePage() {
       setDistribution(dist);
     }
 
-    // Lists containing this place
-    const { count: lc } = await supabase.from("list_items").select("id", { count: "exact", head: true }).eq("place_id", id);
-    setListsCount(lc || 0);
+    // Lists containing this place (with list details)
+    const { data: listItemsData } = await supabase
+      .from("list_items")
+      .select("list_id, lists!inner(id, name, user_id)")
+      .eq("place_id", id);
+    
+    if (listItemsData && listItemsData.length > 0) {
+      const listUserIds = [...new Set((listItemsData as any[]).map((li: any) => li.lists.user_id))];
+      const { data: listProfiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", listUserIds);
+      setAllLists(
+        (listItemsData as any[]).map((li: any) => {
+          const p = (listProfiles || []).find((pr: any) => pr.user_id === li.lists.user_id);
+          return { list_id: li.lists.id, list_name: li.lists.name, profile: p };
+        })
+      );
+    }
+    setListsCount(listItemsData?.length || 0);
 
     // Friends activity (people I follow)
     if (user) {
