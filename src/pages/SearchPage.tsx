@@ -3,14 +3,17 @@ import { ChevronLeft, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { toast } from "sonner";
 
 const filterTabs = ["Destinations", "Lists", "Users"] as const;
 type FilterTab = (typeof filterTabs)[number];
 
 export default function SearchPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeFilter, setActiveFilter] = useState<FilterTab>("Destinations");
   const [query, setQuery] = useState("");
   const [places, setPlaces] = useState<any[]>([]);
@@ -18,6 +21,14 @@ export default function SearchPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("followers").select("following_id").eq("follower_id", user.id).then(({ data }) => {
+      setFollowingIds(new Set((data || []).map((f) => f.following_id)));
+    });
+  }, [user]);
 
   useEffect(() => {
     const t = setTimeout(() => search(), 250);
@@ -119,18 +130,41 @@ export default function SearchPage() {
       if (!users.length) return <EmptyState text="No users found" />;
       return (
         <div className="space-y-3">
-          {users.map((u: any) => (
-            <motion.button key={u.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} onClick={() => navigate(`/profile/${u.user_id}`)} className="flex items-center gap-3 py-3 w-full text-left">
-              <Avatar className="w-10 h-10">
-                <AvatarImage src={u.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=3B82F6&color=fff`} />
-                <AvatarFallback>{u.username?.[0]?.toUpperCase()}</AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-sm font-semibold text-foreground">{u.username}</p>
-                {u.email && <p className="text-xs text-muted-foreground">{u.email}</p>}
-              </div>
-            </motion.button>
-          ))}
+          {users.map((u: any) => {
+            const isMe = u.user_id === user?.id;
+            const isFollowing = followingIds.has(u.user_id);
+            return (
+              <motion.div key={u.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between py-3">
+                <button onClick={() => navigate(isMe ? "/profile" : `/profile/${u.user_id}`)} className="flex items-center gap-3">
+                  <Avatar className="w-10 h-10">
+                    <AvatarImage src={u.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=3B82F6&color=fff`} />
+                    <AvatarFallback>{u.username?.[0]?.toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{u.username}</p>
+                    {u.email && <p className="text-xs text-muted-foreground">{u.email}</p>}
+                  </div>
+                </button>
+                {!isMe && !isFollowing && (
+                  <button
+                    onClick={async () => {
+                      if (!user) return;
+                      const { error } = await supabase.from("followers").insert({ follower_id: user.id, following_id: u.user_id });
+                      if (error) { toast.error("Failed to follow"); return; }
+                      setFollowingIds((prev) => new Set([...prev, u.user_id]));
+                      toast.success(`Following ${u.username}!`);
+                    }}
+                    className="text-xs bg-primary text-primary-foreground px-4 py-1.5 rounded-lg font-medium"
+                  >
+                    Follow
+                  </button>
+                )}
+                {!isMe && isFollowing && (
+                  <span className="text-xs text-muted-foreground px-3 py-1.5">Following</span>
+                )}
+              </motion.div>
+            );
+          })}
         </div>
       );
     }

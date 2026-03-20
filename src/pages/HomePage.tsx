@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Star } from "lucide-react";
+import { Star, UserPlus } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +29,7 @@ export default function HomePage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activities, setActivities] = useState<FriendActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasFollowing, setHasFollowing] = useState(true);
   const [globeWidth, setGlobeWidth] = useState(380);
 
   useEffect(() => {
@@ -48,6 +49,7 @@ export default function HomePage() {
         .eq("follower_id", user.id);
 
       const followingIds = following?.map((f) => f.following_id) || [];
+      setHasFollowing(followingIds.length > 0);
       if (followingIds.length === 0) {
         setActivities([]);
         setLoading(false);
@@ -209,9 +211,20 @@ export default function HomePage() {
       {/* Friends activities */}
       <div className="px-5 mt-4">
         <h2 className="text-xl font-bold text-foreground mb-4">Recent friend activities</h2>
-        {activities.length === 0 && !loading && (
-          <p className="text-sm text-muted-foreground">No recent activity from friends. Follow people to see their trips here!</p>
-        )}
+        {!hasFollowing && !loading ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-4">
+            <p className="text-sm text-muted-foreground text-center">Follow friends to see their travel activities here!</p>
+            <button
+              onClick={() => navigate("/search")}
+              className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full text-sm font-medium"
+            >
+              <UserPlus className="w-4 h-4" />
+              Find friends
+            </button>
+          </div>
+        ) : activities.length === 0 && !loading ? (
+          <p className="text-sm text-muted-foreground">No recent activity from friends yet.</p>
+        ) : null}
         <div className="space-y-1">
           {activities.map((a, i) => (
             <motion.button
