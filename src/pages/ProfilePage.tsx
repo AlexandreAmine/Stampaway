@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ChevronRight, ChevronLeft, LogOut, Plus } from "lucide-react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { RatingHistogram } from "@/components/RatingHistogram";
 import { FavoritePicker } from "@/components/FavoritePicker";
