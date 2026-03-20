@@ -47,6 +47,7 @@ export default function ProfilePage() {
   const [followingCount, setFollowingCount] = useState(0);
   const [followersCount, setFollowersCount] = useState(0);
   const [likesCount, setLikesCount] = useState(0);
+  const [writtenReviewsCount, setWrittenReviewsCount] = useState(0);
 
   const [cityDistribution, setCityDistribution] = useState<number[]>(Array(10).fill(0));
   const [countryDistribution, setCountryDistribution] = useState<number[]>(Array(10).fill(0));
