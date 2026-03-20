@@ -62,7 +62,10 @@ export default function AddPlacePage() {
     }
     q = q.limit(200);
     const { data } = await q;
-    const sorted = (data || []).sort((a, b) => (countMap.get(b.id) || 0) - (countMap.get(a.id) || 0)).slice(0, 30);
+    const sorted = (data || []).sort((a, b) => {
+      const diff = (countMap.get(b.id) || 0) - (countMap.get(a.id) || 0);
+      return diff !== 0 ? diff : a.name.localeCompare(b.name);
+    }).slice(0, 30);
     setResults(sorted);
   };
 
