@@ -149,8 +149,10 @@ export default function HomePage() {
     el.innerHTML = `
       <div style="display:flex;align-items:center;gap:3px;background:white;border-radius:20px;padding:3px 8px 3px 3px;box-shadow:0 2px 8px rgba(0,0,0,0.3);white-space:nowrap;">
         <img src="${avatar}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;" />
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="hsl(217,91%,60%)" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-        <span style="font-size:12px;font-weight:700;color:#111;">${a.rating}</span>
+        ${a.rating != null ? `
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="hsl(217,91%,60%)" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span style="font-size:12px;font-weight:700;color:#111;">${a.rating}</span>
+        ` : `<span style="font-size:11px;color:#666;">logged</span>`}
       </div>
     `;
     el.addEventListener("click", () => navigate(`/place/${a.place_id}`));
