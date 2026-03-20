@@ -370,19 +370,17 @@ export default function PlacePage() {
             <h3 className="text-sm font-semibold text-foreground mb-3">All reviews</h3>
             <div className="space-y-3">
               {writtenReviews.map((rv: any) => (
-                <div key={rv.id} className="bg-card rounded-xl p-3 border border-border">
+                <button key={rv.id} onClick={() => navigate(`/review/${rv.id}`)} className="bg-card rounded-xl p-3 border border-border w-full text-left active:scale-[0.98] transition-transform">
                   <div className="flex items-center gap-2 mb-2">
-                    <button onClick={() => navigate(rv.user_id === user?.id ? "/profile" : `/profile/${rv.user_id}`)} className="shrink-0">
-                      <Avatar className="w-7 h-7">
-                        <AvatarImage src={rv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(rv.profile?.username || "?")}&background=3B82F6&color=fff`} />
-                        <AvatarFallback>{rv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                    </button>
+                    <Avatar className="w-7 h-7">
+                      <AvatarImage src={rv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(rv.profile?.username || "?")}&background=3B82F6&color=fff`} />
+                      <AvatarFallback>{rv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                    </Avatar>
                     <p className="text-sm font-medium text-foreground flex-1">{rv.profile?.username || "User"}</p>
                     <StarRating rating={rv.rating} size={11} liked={rv.liked} />
                   </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">{rv.review_text}</p>
-                </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{rv.review_text}</p>
+                </button>
               ))}
             </div>
           </motion.div>
