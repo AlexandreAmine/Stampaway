@@ -62,6 +62,7 @@ export default function ProfilePage() {
   const [countryDistribution, setCountryDistribution] = useState<number[]>(Array(10).fill(0));
 
   const [subPage, setSubPage] = useState<SubPage>(null);
+  const [ratingFilter, setRatingFilter] = useState<number | undefined>(undefined);
 
   // Fetch viewed user's profile if not own
   useEffect(() => {
