@@ -30,12 +30,16 @@ export default function PlacePage() {
   const [distribution, setDistribution] = useState<number[]>(Array(10).fill(0));
   const [myReview, setMyReview] = useState<any>(null);
   const [visitorsCount, setVisitorsCount] = useState(0);
-  const [reviewsCount, setReviewsCount] = useState(0);
+  const [writtenReviewsCount, setWrittenReviewsCount] = useState(0);
   const [listsCount, setListsCount] = useState(0);
+  const [allVisitors, setAllVisitors] = useState<any[]>([]);
+  const [allLists, setAllLists] = useState<any[]>([]);
   const [friendVisitors, setFriendVisitors] = useState<any[]>([]);
   const [friendWishlist, setFriendWishlist] = useState<any[]>([]);
   const [writtenReviews, setWrittenReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeSection, setActiveSection] = useState<"visitors" | "reviews" | "lists" | null>(null);
+  const [ratingsCount, setRatingsCount] = useState(0);
 
   useEffect(() => {
     if (id) fetchAll();
