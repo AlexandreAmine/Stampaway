@@ -79,8 +79,8 @@ export default function ProfilePage() {
   const avatarUrl = currentProfile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3B82F6&color=fff`;
 
   const fetchData = useCallback(async () => {
-    if (!user) return;
-    const uid = user.id;
+    if (!viewingUserId) return;
+    const uid = viewingUserId;
 
     const [favRes, reviewRes, listRes, wishRes, followingRes, followersRes, totalCountriesRes, likesRes, writtenReviewsRes] = await Promise.all([
       supabase.from("favorite_places").select("slot_index, place_id, type, places!inner(name, image, country, type)").eq("user_id", uid),
