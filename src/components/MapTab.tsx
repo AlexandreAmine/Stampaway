@@ -80,37 +80,46 @@ export function MapTab({ userId }: { userId?: string }) {
   const navigate = useNavigate();
   const [visitedCodes, setVisitedCodes] = useState<Set<string>>(new Set());
   const [countryPlaceMap, setCountryPlaceMap] = useState<CountryPlaceMap>({});
+  const [loggedCountriesCount, setLoggedCountriesCount] = useState(0);
+  const [totalCountries, setTotalCountries] = useState(0);
   const [loading, setLoading] = useState(true);
   const targetUserId = userId || user?.id;
 
   useEffect(() => {
     if (!targetUserId) return;
     (async () => {
-      const { data } = await supabase
-        .from("reviews")
-        .select("place_id, places!inner(country, type)")
-        .eq("user_id", targetUserId);
+      const [reviewsRes, totalRes] = await Promise.all([
+        supabase
+          .from("reviews")
+          .select("place_id, places!inner(country, type)")
+          .eq("user_id", targetUserId),
+        supabase
+          .from("places")
+          .select("id", { count: "exact", head: true })
+          .eq("type", "country"),
+      ]);
 
-      if (data) {
+      if (reviewsRes.data) {
         const codes = new Set<string>();
         const placeMap: CountryPlaceMap = {};
-        data.forEach((r: any) => {
+        const uniqueCountryPlaces = new Set<string>();
+        reviewsRes.data.forEach((r: any) => {
           const code = getCountryCode(r.places.country);
           if (code) {
             codes.add(code);
-            // For countries, map to the country place_id; for cities, map to the country name
-            // We want clicking a country to go to the country place page if it exists
             if (r.places.type === "country") {
               placeMap[code] = r.place_id;
+              uniqueCountryPlaces.add(r.place_id);
             } else if (!placeMap[code]) {
-              // fallback: use the city's place_id for that country
               placeMap[code] = r.place_id;
             }
           }
         });
         setVisitedCodes(codes);
         setCountryPlaceMap(placeMap);
+        setLoggedCountriesCount(uniqueCountryPlaces.size);
       }
+      setTotalCountries(totalRes.count || 0);
       setLoading(false);
     })();
   }, [targetUserId]);
@@ -127,7 +136,7 @@ export function MapTab({ userId }: { userId?: string }) {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div className="flex items-center justify-between mb-3">
-        <p className="text-sm text-muted-foreground">{visitedCodes.size} countries visited</p>
+        <p className="text-sm text-muted-foreground">{loggedCountriesCount} / {totalCountries} countries logged</p>
       </div>
       <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ height: 300 }}>
         <MapChart visitedCodes={visitedCodes} onCountryClick={handleCountryClick} />
