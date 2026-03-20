@@ -68,7 +68,6 @@ export function LikesTab({ userId }: { userId?: string }) {
             </div>
           </button>
         ))}
-        ))}
       </div>
     </motion.div>
   );
