@@ -11,18 +11,19 @@ interface LikedEntry {
   place: { id: string; name: string; country: string; type: string; image: string | null };
 }
 
-export function LikesTab() {
+export function LikesTab({ userId }: { userId?: string }) {
   const { user } = useAuth();
   const [items, setItems] = useState<LikedEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const targetUserId = userId || user?.id;
 
   useEffect(() => {
-    if (!user) return;
+    if (!targetUserId) return;
     (async () => {
       const { data } = await supabase
         .from("reviews")
         .select("id, rating, places!inner(id, name, country, type, image)")
-        .eq("user_id", user.id)
+        .eq("user_id", targetUserId)
         .eq("liked", true)
         .order("created_at", { ascending: false });
 
