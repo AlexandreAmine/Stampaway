@@ -49,7 +49,10 @@ export default function SearchPage() {
       if (q) qb = qb.ilike("name", `%${q}%`);
       qb = qb.limit(200);
       const { data } = await qb;
-      const sorted = (data || []).sort((a, b) => (countMap.get(b.id) || 0) - (countMap.get(a.id) || 0)).slice(0, 30);
+      const sorted = (data || []).sort((a, b) => {
+        const diff = (countMap.get(b.id) || 0) - (countMap.get(a.id) || 0);
+        return diff !== 0 ? diff : a.name.localeCompare(b.name);
+      }).slice(0, 30);
       setPlaces(sorted);
     } else if (activeFilter === "Lists") {
       let qb = supabase.from("lists").select("id, name, description, user_id");
