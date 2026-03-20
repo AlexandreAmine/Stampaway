@@ -259,7 +259,7 @@ export default function AddPlacePage() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search cities or countries..."
+            placeholder={isFavoriteFlow ? `Search ${favoriteType === "city" ? "cities" : "countries"}...` : "Search cities or countries..."}
             className="w-full bg-card rounded-xl py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
