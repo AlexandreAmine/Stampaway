@@ -39,6 +39,8 @@ export default function PlacePage() {
   const [writtenReviews, setWrittenReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [ratingsCount, setRatingsCount] = useState(0);
+  const [inWishlist, setInWishlist] = useState(false);
+  const [togglingWishlist, setTogglingWishlist] = useState(false);
   const [countryCities, setCountryCities] = useState<any[]>([]);
   const [wishlistCities, setWishlistCities] = useState<any[]>([]);
 
