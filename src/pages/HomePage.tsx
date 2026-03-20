@@ -104,7 +104,7 @@ export default function HomePage() {
           place_name: r.places.name,
           place_country: r.places.country,
           place_type: r.places.type,
-          rating: Number(r.rating),
+          rating: r.rating != null ? Number(r.rating) : null,
           created_at: r.created_at,
           lat: coords[0],
           lng: coords[1],
