@@ -82,6 +82,31 @@ export default function AddPlacePage() {
       duration_days: durationDays || null,
       liked,
     });
+
+    // If this is a favorite flow, also save as favorite
+    if (!error && isFavoriteFlow) {
+      const slotIdx = Number(favoriteSlot);
+      // Check if slot already has a favorite
+      const { data: existing } = await supabase
+        .from("favorite_places")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("slot_index", slotIdx)
+        .eq("type", favoriteType)
+        .maybeSingle();
+
+      if (existing) {
+        await supabase.from("favorite_places").update({ place_id: selectedPlace.id }).eq("id", existing.id);
+      } else {
+        await supabase.from("favorite_places").insert({
+          user_id: user.id,
+          place_id: selectedPlace.id,
+          slot_index: slotIdx,
+          type: favoriteType,
+        });
+      }
+    }
+
     setSaving(false);
 
     if (error) {
