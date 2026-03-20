@@ -49,6 +49,10 @@ export default function AddPlacePage() {
   }, []);
 
   const fetchPlaces = async (search: string) => {
+    // Fetch review counts
+    const { data: counts } = await supabase.rpc("get_place_review_counts");
+    const countMap = new Map((counts || []).map((c: any) => [c.place_id, Number(c.review_count)]));
+
     let q = supabase.from("places").select("id, name, country, type, image");
     if (isFavoriteFlow) {
       q = q.eq("type", favoriteType);
@@ -56,9 +60,10 @@ export default function AddPlacePage() {
     if (search) {
       q = q.ilike("name", `%${search}%`);
     }
-    q = q.order("name").limit(30);
+    q = q.limit(200);
     const { data } = await q;
-    setResults(data || []);
+    const sorted = (data || []).sort((a, b) => (countMap.get(b.id) || 0) - (countMap.get(a.id) || 0)).slice(0, 30);
+    setResults(sorted);
   };
 
   const handleSelectPlace = (place: PlaceResult) => {
