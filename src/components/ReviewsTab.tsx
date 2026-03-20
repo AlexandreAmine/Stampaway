@@ -51,7 +51,7 @@ export function ReviewsTab({ userId }: { userId?: string }) {
       }
       setLoading(false);
     })();
-  }, [user]);
+  }, [targetUserId]);
 
   if (loading) {
     return (
