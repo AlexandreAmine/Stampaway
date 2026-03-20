@@ -210,9 +210,11 @@ export default function ProfilePage() {
     const uid = viewingUserId;
     switch (subPage) {
       case "Countries":
-        return <LoggedPlacesInline type="country" userId={uid} />;
+      case "CountriesByRating":
+        return <LoggedPlacesInline type="country" userId={uid} ratingFilter={ratingFilter} />;
       case "Cities":
-        return <LoggedPlacesInline type="city" userId={uid} />;
+      case "CitiesByRating":
+        return <LoggedPlacesInline type="city" userId={uid} ratingFilter={ratingFilter} />;
       case "Diary":
         return <DiaryTab userId={uid} />;
       case "Map":
