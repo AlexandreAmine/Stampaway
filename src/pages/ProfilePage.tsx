@@ -256,15 +256,22 @@ export default function ProfilePage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
+            {!isOwnProfile && (
+              <button onClick={() => navigate(-1)} className="mr-1">
+                <ChevronLeft className="w-6 h-6 text-foreground" />
+              </button>
+            )}
             <img src={avatarUrl} alt={displayName} className="w-16 h-16 rounded-full object-cover border-2 border-border" />
             <div>
               <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
-              <p className="text-xs text-muted-foreground">{user?.email}</p>
+              {isOwnProfile && <p className="text-xs text-muted-foreground">{user?.email}</p>}
             </div>
           </div>
-          <button onClick={signOut} className="p-2">
-            <LogOut className="w-5 h-5 text-muted-foreground" />
-          </button>
+          {isOwnProfile && (
+            <button onClick={signOut} className="p-2">
+              <LogOut className="w-5 h-5 text-muted-foreground" />
+            </button>
+          )}
         </div>
 
         {/* Favorite Countries */}
@@ -305,7 +312,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <FavoritePicker open={pickerOpen} onClose={() => setPickerOpen(false)} type={pickerType} onSelect={handleSelectFavorite} />
+      {isOwnProfile && <FavoritePicker open={pickerOpen} onClose={() => setPickerOpen(false)} type={pickerType} onSelect={handleSelectFavorite} />}
     </div>
   );
 }
