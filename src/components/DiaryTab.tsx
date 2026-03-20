@@ -127,9 +127,9 @@ export function DiaryTab({ userId }: { userId?: string }) {
                     {entry.duration_days ? ` · ${entry.duration_days} day${entry.duration_days > 1 ? "s" : ""}` : ""}
                   </p>
                    {entry.rating != null ? (
-                     <div className="mt-1">
-                       <StarRating rating={entry.rating} size={14} />
-                     </div>
+                      <div className="mt-1">
+                        <StarRating rating={entry.rating} size={14} liked={entry.liked} />
+                      </div>
                    ) : (
                      <p className="text-xs text-muted-foreground mt-1">No rating</p>
                    )}

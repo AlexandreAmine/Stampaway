@@ -51,7 +51,7 @@ export function LikesTab({ userId }: { userId?: string }) {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div className="grid grid-cols-3 gap-3">
         {items.map((item) => (
-          <div key={item.id} className="relative">
+          <button key={item.id} onClick={() => navigate(`/place/${item.place.id}`)} className="relative text-left">
             <div className="aspect-[3/4] w-full">
               <DestinationPoster
                 placeId={item.place.id}
@@ -63,9 +63,10 @@ export function LikesTab({ userId }: { userId?: string }) {
               />
             </div>
             <div className="mt-1.5 flex justify-center">
-              <StarRating rating={item.rating} size={12} />
+              <StarRating rating={item.rating} size={12} liked />
             </div>
-          </div>
+          </button>
+        ))}
         ))}
       </div>
     </motion.div>
