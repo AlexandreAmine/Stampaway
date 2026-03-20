@@ -206,27 +206,28 @@ export default function ProfilePage() {
   );
 
   const renderSubPage = () => {
+    const uid = viewingUserId;
     switch (subPage) {
       case "Countries":
-        return <LoggedPlacesInline type="country" />;
+        return <LoggedPlacesInline type="country" userId={uid} />;
       case "Cities":
-        return <LoggedPlacesInline type="city" />;
+        return <LoggedPlacesInline type="city" userId={uid} />;
       case "Diary":
-        return <DiaryTab />;
+        return <DiaryTab userId={uid} />;
       case "Map":
-        return <MapTab />;
+        return <MapTab userId={uid} />;
       case "Lists":
-        return <ListsTab />;
+        return <ListsTab userId={uid} readOnly={!isOwnProfile} />;
       case "Wishlist":
-        return <WishlistTab />;
+        return <WishlistTab userId={uid} readOnly={!isOwnProfile} />;
       case "Likes":
-        return <LikesTab />;
+        return <LikesTab userId={uid} />;
       case "Reviews":
-        return <ReviewsTab />;
+        return <ReviewsTab userId={uid} />;
       case "Following":
-        return <FollowingTab />;
+        return <FollowingTab userId={uid} readOnly={!isOwnProfile} />;
       case "Followers":
-        return <FollowersTab />;
+        return <FollowersTab userId={uid} />;
       default:
         return null;
     }
