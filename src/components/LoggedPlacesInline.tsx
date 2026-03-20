@@ -166,7 +166,7 @@ export function LoggedPlacesInline({ type, userId, ratingFilter }: { type: "city
             </div>
             {r.rating != null ? (
               <div className="mt-1.5 flex justify-center">
-                <StarRating rating={r.rating} size={12} />
+                <StarRating rating={r.rating} size={12} liked={r.liked} />
               </div>
             ) : (
               <p className="mt-1.5 text-[10px] text-muted-foreground text-center">No rating</p>
