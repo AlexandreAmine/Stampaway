@@ -10,8 +10,10 @@ interface FollowerUser {
   profile_picture: string | null;
 }
 
-export function FollowersTab() {
+export function FollowersTab({ userId }: { userId?: string }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const targetUserId = userId || user?.id;
   const [followers, setFollowers] = useState<FollowerUser[]>([]);
   const [loading, setLoading] = useState(true);
 

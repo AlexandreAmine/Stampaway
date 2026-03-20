@@ -31,15 +31,15 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
   const [pickerType, setPickerType] = useState<"city" | "country">("city");
 
   useEffect(() => {
-    if (user) fetchLists();
-  }, [user]);
+    if (targetUserId) fetchLists();
+  }, [targetUserId]);
 
   const fetchLists = async () => {
-    if (!user) return;
+    if (!targetUserId) return;
     const { data: listsData } = await supabase
       .from("lists")
       .select("id, name, description")
-      .eq("user_id", user.id)
+      .eq("user_id", targetUserId)
       .order("created_at", { ascending: false });
 
     if (!listsData) { setLoading(false); return; }
