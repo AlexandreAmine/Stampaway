@@ -89,7 +89,15 @@ export function LoggedPlacesInline({ type, userId, ratingFilter }: { type: "city
         }
       }
 
-      setPlaces(entries);
+      // Deduplicate: keep only the latest entry per place (data is ordered by created_at desc)
+      const seen = new Set<string>();
+      const deduped = entries.filter((e) => {
+        if (seen.has(e.place_id)) return false;
+        seen.add(e.place_id);
+        return true;
+      });
+
+      setPlaces(deduped);
       setLoading(false);
     })();
   }, [targetUserId, type]);
