@@ -157,7 +157,7 @@ export default function HomePage() {
     `;
     el.addEventListener("click", () => navigate(`/place/${a.place_id}`));
     return el;
-  }, []);
+  }, [navigate]);
 
   const nightTexture = "//unpkg.com/three-globe/example/img/earth-night.jpg";
   const bumpTexture = "//unpkg.com/three-globe/example/img/earth-topology.png";
