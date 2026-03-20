@@ -30,12 +30,16 @@ export default function PlacePage() {
   const [distribution, setDistribution] = useState<number[]>(Array(10).fill(0));
   const [myReview, setMyReview] = useState<any>(null);
   const [visitorsCount, setVisitorsCount] = useState(0);
-  const [reviewsCount, setReviewsCount] = useState(0);
+  const [writtenReviewsCount, setWrittenReviewsCount] = useState(0);
   const [listsCount, setListsCount] = useState(0);
+  const [allVisitors, setAllVisitors] = useState<any[]>([]);
+  const [allLists, setAllLists] = useState<any[]>([]);
   const [friendVisitors, setFriendVisitors] = useState<any[]>([]);
   const [friendWishlist, setFriendWishlist] = useState<any[]>([]);
   const [writtenReviews, setWrittenReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeSection, setActiveSection] = useState<"visitors" | "reviews" | "lists" | null>(null);
+  const [ratingsCount, setRatingsCount] = useState(0);
 
   useEffect(() => {
     if (id) fetchAll();
@@ -60,10 +64,10 @@ export default function PlacePage() {
       .eq("place_id", id);
 
     const reviews = allReviews || [];
-    setReviewsCount(reviews.length);
 
     // Written reviews with profiles
     const written = reviews.filter((r) => r.review_text && r.review_text.trim() !== "");
+    setWrittenReviewsCount(written.length);
     if (written.length > 0) {
       const writerIds = [...new Set(written.map((w) => w.user_id))];
       const { data: writerProfiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", writerIds);
@@ -76,11 +80,22 @@ export default function PlacePage() {
           })
       );
     }
-    setReviewsCount(reviews.length);
 
-    // Unique visitors
-    const uniqueVisitors = new Set(reviews.map((r) => r.user_id));
-    setVisitorsCount(uniqueVisitors.size);
+    // Unique visitors + fetch all visitor profiles
+    const uniqueVisitorIds = [...new Set(reviews.map((r) => r.user_id))];
+    setVisitorsCount(uniqueVisitorIds.length);
+    setRatingsCount(reviews.length);
+
+    if (uniqueVisitorIds.length > 0) {
+      const { data: visitorProfiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", uniqueVisitorIds);
+      setAllVisitors(
+        uniqueVisitorIds.map((uid) => {
+          const p = (visitorProfiles || []).find((pr: any) => pr.user_id === uid);
+          const r = reviews.find((rv) => rv.user_id === uid);
+          return { user_id: uid, profile: p, rating: r?.rating, liked: r?.liked };
+        })
+      );
+    }
 
     // My review
     if (user) {
@@ -101,9 +116,23 @@ export default function PlacePage() {
       setDistribution(dist);
     }
 
-    // Lists containing this place
-    const { count: lc } = await supabase.from("list_items").select("id", { count: "exact", head: true }).eq("place_id", id);
-    setListsCount(lc || 0);
+    // Lists containing this place (with list details)
+    const { data: listItemsData } = await supabase
+      .from("list_items")
+      .select("list_id, lists!inner(id, name, user_id)")
+      .eq("place_id", id);
+    
+    if (listItemsData && listItemsData.length > 0) {
+      const listUserIds = [...new Set((listItemsData as any[]).map((li: any) => li.lists.user_id))];
+      const { data: listProfiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", listUserIds);
+      setAllLists(
+        (listItemsData as any[]).map((li: any) => {
+          const p = (listProfiles || []).find((pr: any) => pr.user_id === li.lists.user_id);
+          return { list_id: li.lists.id, list_name: li.lists.name, profile: p };
+        })
+      );
+    }
+    setListsCount(listItemsData?.length || 0);
 
     // Friends activity (people I follow)
     if (user) {
@@ -220,7 +249,7 @@ export default function PlacePage() {
             <span className="text-3xl font-bold text-foreground">{avgRating || "—"}</span>
             <div>
               <StarRating rating={avgRating} size={14} />
-              <p className="text-xs text-muted-foreground mt-0.5">{reviewsCount} ratings</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{ratingsCount} ratings</p>
             </div>
           </div>
           <RatingHistogram distribution={distribution} />
@@ -299,29 +328,91 @@ export default function PlacePage() {
           </motion.div>
         )}
 
-        {/* Stats row */}
+        {/* Stats row - clickable */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           className="flex items-center justify-around py-5 border-t border-border mt-2"
         >
-          <div className="flex flex-col items-center gap-1">
-            <Users className="w-5 h-5 text-primary" />
+          <button onClick={() => setActiveSection(activeSection === "visitors" ? null : "visitors")} className="flex flex-col items-center gap-1">
+            <Users className={`w-5 h-5 ${activeSection === "visitors" ? "text-primary" : "text-primary"}`} />
             <span className="text-lg font-bold text-foreground">{formatCount(visitorsCount)}</span>
             <span className="text-[10px] text-muted-foreground">Visitors</span>
-          </div>
-          <div className="flex flex-col items-center gap-1">
-            <Star className="w-5 h-5 text-primary" />
-            <span className="text-lg font-bold text-foreground">{formatCount(reviewsCount)}</span>
+          </button>
+          <button onClick={() => setActiveSection(activeSection === "reviews" ? null : "reviews")} className="flex flex-col items-center gap-1">
+            <MessageSquare className={`w-5 h-5 ${activeSection === "reviews" ? "text-primary" : "text-primary"}`} />
+            <span className="text-lg font-bold text-foreground">{formatCount(writtenReviewsCount)}</span>
             <span className="text-[10px] text-muted-foreground">Reviews</span>
-          </div>
-          <div className="flex flex-col items-center gap-1">
-            <List className="w-5 h-5 text-primary" />
+          </button>
+          <button onClick={() => setActiveSection(activeSection === "lists" ? null : "lists")} className="flex flex-col items-center gap-1">
+            <List className={`w-5 h-5 ${activeSection === "lists" ? "text-primary" : "text-primary"}`} />
             <span className="text-lg font-bold text-foreground">{formatCount(listsCount)}</span>
             <span className="text-[10px] text-muted-foreground">Lists</span>
-          </div>
+          </button>
         </motion.div>
+
+        {/* Expanded section */}
+        {activeSection === "visitors" && allVisitors.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-5 mt-2">
+            <h3 className="text-sm font-semibold text-foreground mb-3">All visitors</h3>
+            <div className="space-y-2.5">
+              {allVisitors.map((v: any) => (
+                <button key={v.user_id} onClick={() => navigate(v.user_id === user?.id ? "/profile" : `/profile/${v.user_id}`)} className="flex items-center gap-3 w-full text-left">
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src={v.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(v.profile?.username || "?")}&background=3B82F6&color=fff`} />
+                    <AvatarFallback>{v.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <p className="text-sm text-foreground flex-1">{v.profile?.username || "User"}</p>
+                  {v.rating != null ? <StarRating rating={Number(v.rating)} size={12} liked={v.liked} /> : <span className="text-xs text-muted-foreground">logged</span>}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {activeSection === "reviews" && writtenReviews.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-5 mt-2">
+            <h3 className="text-sm font-semibold text-foreground mb-3">All reviews</h3>
+            <div className="space-y-3">
+              {writtenReviews.map((rv: any) => (
+                <div key={rv.id} className="bg-card rounded-xl p-3 border border-border">
+                  <div className="flex items-center gap-2 mb-2">
+                    <button onClick={() => navigate(rv.user_id === user?.id ? "/profile" : `/profile/${rv.user_id}`)} className="shrink-0">
+                      <Avatar className="w-7 h-7">
+                        <AvatarImage src={rv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(rv.profile?.username || "?")}&background=3B82F6&color=fff`} />
+                        <AvatarFallback>{rv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                    </button>
+                    <p className="text-sm font-medium text-foreground flex-1">{rv.profile?.username || "User"}</p>
+                    <StarRating rating={rv.rating} size={11} liked={rv.liked} />
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{rv.review_text}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {activeSection === "lists" && allLists.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-5 mt-2">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Appears in lists</h3>
+            <div className="space-y-2.5">
+              {allLists.map((l: any, i: number) => (
+                <button key={i} onClick={() => navigate(l.profile?.user_id === user?.id ? "/profile" : `/profile/${l.profile?.user_id}`)} className="flex items-center gap-3 w-full text-left">
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src={l.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(l.profile?.username || "?")}&background=3B82F6&color=fff`} />
+                    <AvatarFallback>{l.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{l.list_name}</p>
+                    <p className="text-xs text-muted-foreground">by {l.profile?.username || "User"}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );
