@@ -1,4 +1,5 @@
 import { useState, useEffect, memo } from "react";
+import { useNavigate } from "react-router-dom";
 import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,7 +8,6 @@ import { getCountryCode } from "@/lib/countryFlags";
 
 const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
-// ISO numeric → alpha-2 mapping for matching
 const numericToAlpha2: Record<string, string> = {
   "004":"AF","008":"AL","012":"DZ","020":"AD","024":"AO","028":"AG","032":"AR","051":"AM",
   "036":"AU","040":"AT","031":"AZ","044":"BS","048":"BH","050":"BD","052":"BB","112":"BY",
@@ -36,7 +36,11 @@ const numericToAlpha2: Record<string, string> = {
   "704":"VN","887":"YE","894":"ZM","716":"ZW","-99":"XK",
 };
 
-const MapChart = memo(({ visitedCodes }: { visitedCodes: Set<string> }) => (
+interface CountryPlaceMap {
+  [alpha2: string]: string; // alpha2 → place_id
+}
+
+const MapChart = memo(({ visitedCodes, onCountryClick }: { visitedCodes: Set<string>; onCountryClick?: (alpha2: string) => void }) => (
   <ComposableMap
     projection="geoMercator"
     projectionConfig={{ scale: 120, center: [0, 30] }}
@@ -55,9 +59,10 @@ const MapChart = memo(({ visitedCodes }: { visitedCodes: Set<string> }) => (
                 fill={isVisited ? "hsl(217, 91%, 60%)" : "hsl(0, 0%, 18%)"}
                 stroke="hsl(0, 0%, 12%)"
                 strokeWidth={0.5}
+                onClick={() => isVisited && onCountryClick?.(alpha2)}
                 style={{
-                  default: { outline: "none" },
-                  hover: { outline: "none", fill: isVisited ? "hsl(217, 91%, 70%)" : "hsl(0, 0%, 25%)" },
+                  default: { outline: "none", cursor: isVisited ? "pointer" : "default" },
+                  hover: { outline: "none", fill: isVisited ? "hsl(217, 91%, 70%)" : "hsl(0, 0%, 25%)", cursor: isVisited ? "pointer" : "default" },
                   pressed: { outline: "none" },
                 }}
               />
@@ -72,7 +77,9 @@ MapChart.displayName = "MapChart";
 
 export function MapTab({ userId }: { userId?: string }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [visitedCodes, setVisitedCodes] = useState<Set<string>>(new Set());
+  const [countryPlaceMap, setCountryPlaceMap] = useState<CountryPlaceMap>({});
   const [loading, setLoading] = useState(true);
   const targetUserId = userId || user?.id;
 
@@ -81,20 +88,37 @@ export function MapTab({ userId }: { userId?: string }) {
     (async () => {
       const { data } = await supabase
         .from("reviews")
-        .select("places!inner(country)")
+        .select("place_id, places!inner(country, type)")
         .eq("user_id", targetUserId);
 
       if (data) {
         const codes = new Set<string>();
+        const placeMap: CountryPlaceMap = {};
         data.forEach((r: any) => {
           const code = getCountryCode(r.places.country);
-          if (code) codes.add(code);
+          if (code) {
+            codes.add(code);
+            // For countries, map to the country place_id; for cities, map to the country name
+            // We want clicking a country to go to the country place page if it exists
+            if (r.places.type === "country") {
+              placeMap[code] = r.place_id;
+            } else if (!placeMap[code]) {
+              // fallback: use the city's place_id for that country
+              placeMap[code] = r.place_id;
+            }
+          }
         });
         setVisitedCodes(codes);
+        setCountryPlaceMap(placeMap);
       }
       setLoading(false);
     })();
   }, [targetUserId]);
+
+  const handleCountryClick = (alpha2: string) => {
+    const placeId = countryPlaceMap[alpha2];
+    if (placeId) navigate(`/place/${placeId}`);
+  };
 
   if (loading) {
     return <div className="flex items-center justify-center h-40"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
@@ -106,7 +130,7 @@ export function MapTab({ userId }: { userId?: string }) {
         <p className="text-sm text-muted-foreground">{visitedCodes.size} countries visited</p>
       </div>
       <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ height: 300 }}>
-        <MapChart visitedCodes={visitedCodes} />
+        <MapChart visitedCodes={visitedCodes} onCountryClick={handleCountryClick} />
       </div>
     </motion.div>
   );
