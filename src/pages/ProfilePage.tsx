@@ -221,18 +221,13 @@ export default function ProfilePage() {
     setFavorites(favorites);
 
     // Update DB
-    const updates: Promise<any>[] = [];
-    if (srcItem) {
-      updates.push(supabase.from("favorite_places").update({ slot_index: targetIndex }).eq("user_id", user.id).eq("slot_index", dragIndex).eq("type", type));
+    if (srcItem && destItem) {
+      await supabase.from("favorite_places").update({ slot_index: 99 }).eq("user_id", user.id).eq("slot_index", targetIndex).eq("type", type);
+      await supabase.from("favorite_places").update({ slot_index: targetIndex }).eq("user_id", user.id).eq("slot_index", dragIndex).eq("type", type);
+      await supabase.from("favorite_places").update({ slot_index: dragIndex }).eq("user_id", user.id).eq("slot_index", 99).eq("type", type);
+    } else if (srcItem) {
+      await supabase.from("favorite_places").update({ slot_index: targetIndex }).eq("user_id", user.id).eq("slot_index", dragIndex).eq("type", type);
     }
-    if (destItem) {
-      // Need to use a temp slot to avoid unique constraint
-      updates.push(
-        supabase.from("favorite_places").update({ slot_index: 99 }).eq("user_id", user.id).eq("slot_index", targetIndex).eq("type", type)
-          .then(() => supabase.from("favorite_places").update({ slot_index: dragIndex }).eq("user_id", user.id).eq("slot_index", 99).eq("type", type))
-      );
-    }
-    await Promise.all(updates);
 
     setDragIndex(null);
     setDragType(null);
