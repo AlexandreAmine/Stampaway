@@ -200,6 +200,8 @@ export default function ProfilePage() {
         return <WishlistTab />;
       case "Likes":
         return <LikesTab />;
+      case "Reviews":
+        return <ReviewsTab />;
       case "Following":
         return <FollowingTab />;
       case "Followers":
