@@ -277,6 +277,28 @@ export default function PlacePage() {
           </motion.div>
         )}
 
+        {/* Reviews */}
+        {writtenReviews.length > 0 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="mb-5">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Reviews</h3>
+            <div className="space-y-3">
+              {writtenReviews.map((rv: any) => (
+                <div key={rv.id} className="bg-card rounded-xl p-3 border border-border">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Avatar className="w-7 h-7">
+                      <AvatarImage src={rv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(rv.profile?.username || "?")}&background=3B82F6&color=fff`} />
+                      <AvatarFallback>{rv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <p className="text-sm font-medium text-foreground flex-1">{rv.profile?.username || "User"}</p>
+                    <StarRating rating={rv.rating} size={11} />
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{rv.review_text}</p>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
         {/* Stats row */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
