@@ -249,7 +249,7 @@ export default function PlacePage() {
             <span className="text-3xl font-bold text-foreground">{avgRating || "—"}</span>
             <div>
               <StarRating rating={avgRating} size={14} />
-              <p className="text-xs text-muted-foreground mt-0.5">{reviewsCount} ratings</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{ratingsCount} ratings</p>
             </div>
           </div>
           <RatingHistogram distribution={distribution} />
