@@ -27,7 +27,7 @@ interface FavoriteSlot {
   place_type: string;
 }
 
-type SubPage = null | "Countries" | "Cities" | "Diary" | "Map" | "Lists" | "Wishlist" | "Likes" | "Reviews" | "Following" | "Followers";
+type SubPage = null | "Countries" | "Cities" | "Diary" | "Map" | "Lists" | "Wishlist" | "Likes" | "Reviews" | "Following" | "Followers" | "CountriesByRating" | "CitiesByRating";
 
 export default function ProfilePage() {
   const { user, profile, signOut } = useAuth();
@@ -62,6 +62,7 @@ export default function ProfilePage() {
   const [countryDistribution, setCountryDistribution] = useState<number[]>(Array(10).fill(0));
 
   const [subPage, setSubPage] = useState<SubPage>(null);
+  const [ratingFilter, setRatingFilter] = useState<number | undefined>(undefined);
 
   // Fetch viewed user's profile if not own
   useEffect(() => {
@@ -209,9 +210,11 @@ export default function ProfilePage() {
     const uid = viewingUserId;
     switch (subPage) {
       case "Countries":
-        return <LoggedPlacesInline type="country" userId={uid} />;
+      case "CountriesByRating":
+        return <LoggedPlacesInline type="country" userId={uid} ratingFilter={ratingFilter} />;
       case "Cities":
-        return <LoggedPlacesInline type="city" userId={uid} />;
+      case "CitiesByRating":
+        return <LoggedPlacesInline type="city" userId={uid} ratingFilter={ratingFilter} />;
       case "Diary":
         return <DiaryTab userId={uid} />;
       case "Map":
@@ -239,10 +242,12 @@ export default function ProfilePage() {
       <div className="min-h-screen bg-background pb-24">
         <div className="pt-12 px-5">
           <div className="flex items-center gap-3 mb-6">
-            <button onClick={() => setSubPage(null)}>
+            <button onClick={() => { setSubPage(null); setRatingFilter(undefined); }}>
               <ChevronLeft className="w-6 h-6 text-foreground" />
             </button>
-            <h1 className="text-xl font-bold text-foreground">{subPage}</h1>
+            <h1 className="text-xl font-bold text-foreground">
+              {subPage === "CountriesByRating" ? `Countries · ${ratingFilter}★` : subPage === "CitiesByRating" ? `Cities · ${ratingFilter}★` : subPage}
+            </h1>
           </div>
           {renderSubPage()}
         </div>
@@ -282,7 +287,7 @@ export default function ProfilePage() {
           </div>
           {renderFavoriteSlots("country", favoriteCountries)}
         </div>
-        <div className="mb-6"><RatingHistogram distribution={countryDistribution} /></div>
+        <div className="mb-6"><RatingHistogram distribution={countryDistribution} onBarClick={(r) => { setRatingFilter(r); setSubPage("CountriesByRating"); }} /></div>
 
         {/* Favorite Cities */}
         <div className="mb-4">
@@ -292,7 +297,7 @@ export default function ProfilePage() {
           </div>
           {renderFavoriteSlots("city", favoriteCities)}
         </div>
-        <div className="mb-6"><RatingHistogram distribution={cityDistribution} /></div>
+        <div className="mb-6"><RatingHistogram distribution={cityDistribution} onBarClick={(r) => { setRatingFilter(r); setSubPage("CitiesByRating"); }} /></div>
 
         {/* Stats / Navigation list */}
         <div className="space-y-0">

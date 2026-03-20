@@ -35,7 +35,7 @@ interface PlaceEntry {
   avg_rating?: number;
 }
 
-export function LoggedPlacesInline({ type, userId }: { type: "city" | "country"; userId?: string }) {
+export function LoggedPlacesInline({ type, userId, ratingFilter }: { type: "city" | "country"; userId?: string; ratingFilter?: number }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [places, setPlaces] = useState<PlaceEntry[]>([]);
@@ -89,12 +89,25 @@ export function LoggedPlacesInline({ type, userId }: { type: "city" | "country";
         }
       }
 
-      setPlaces(entries);
+      // Deduplicate: keep only the latest entry per place (data is ordered by created_at desc)
+      const seen = new Set<string>();
+      const deduped = entries.filter((e) => {
+        if (seen.has(e.place_id)) return false;
+        seen.add(e.place_id);
+        return true;
+      });
+
+      setPlaces(deduped);
       setLoading(false);
     })();
   }, [targetUserId, type]);
 
-  const sorted = [...places].sort((a, b) => {
+  // Apply rating filter if provided
+  const filtered = ratingFilter != null
+    ? places.filter((p) => p.rating != null && p.rating === ratingFilter)
+    : places;
+
+  const sorted = [...filtered].sort((a, b) => {
     switch (sort) {
       case "your-highest": {
         // Null ratings go to bottom
@@ -120,6 +133,7 @@ export function LoggedPlacesInline({ type, userId }: { type: "city" | "country";
   if (loading) return <div className="flex items-center justify-center h-40"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 
   if (places.length === 0) return <div className="flex items-center justify-center h-40"><p className="text-sm text-muted-foreground">No {type === "city" ? "cities" : "countries"} logged yet</p></div>;
+  if (ratingFilter != null && sorted.length === 0) return <div className="flex items-center justify-center h-40"><p className="text-sm text-muted-foreground">No {type === "city" ? "cities" : "countries"} with this rating</p></div>;
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
