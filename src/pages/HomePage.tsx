@@ -49,6 +49,7 @@ export default function HomePage() {
         .eq("follower_id", user.id);
 
       const followingIds = following?.map((f) => f.following_id) || [];
+      setHasFollowing(followingIds.length > 0);
       if (followingIds.length === 0) {
         setActivities([]);
         setLoading(false);
