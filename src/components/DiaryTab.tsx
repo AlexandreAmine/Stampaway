@@ -105,7 +105,7 @@ export function DiaryTab() {
           <h3 className="text-lg font-bold text-foreground mb-3">{year}</h3>
           <div className="space-y-3">
             {grouped[year].map((entry) => (
-              <div key={entry.id} className="flex gap-3 bg-card rounded-xl p-3 border border-border">
+              <button key={entry.id} onClick={() => navigate(`/place/${entry.place.id}`)} className="flex gap-3 bg-card rounded-xl p-3 border border-border w-full text-left">
                 <div className="w-16 h-20 shrink-0 rounded-lg overflow-hidden">
                   <DestinationPoster
                     placeId={entry.place.id}
