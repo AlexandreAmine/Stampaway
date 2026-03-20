@@ -85,7 +85,7 @@ export default function AddPlacePage() {
 
   if (step === "review" && selectedPlace) {
     return (
-      <div className="min-h-screen bg-background pb-24">
+      <div className="min-h-screen bg-[hsl(0,0%,4%)] pb-24">
         <div className="pt-12 px-5">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
@@ -124,15 +124,18 @@ export default function AddPlacePage() {
 
           <div className="space-y-6">
             <div>
-              <p className="text-sm font-semibold text-foreground mb-3">
-                How do you rate this destination?
-              </p>
-              <StarRating rating={rating} size={40} interactive onChange={setRating} />
+              <p className="text-sm font-semibold text-foreground mb-3">Your rating</p>
+              <div className="flex items-center justify-between">
+                <StarRating rating={rating} size={40} interactive onChange={setRating} />
+                <button type="button" onClick={() => setLiked(!liked)} className="text-2xl transition-transform active:scale-90">
+                  {liked ? "❤️" : "🤍"}
+                </button>
+              </div>
             </div>
 
             <div>
               <p className="text-sm font-semibold text-foreground mb-3">
-                How was your experience there?
+                Add a review
               </p>
               <textarea
                 value={reviewText}
@@ -183,12 +186,6 @@ export default function AddPlacePage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between py-3 border-t border-border">
-              <span className="text-sm font-semibold text-foreground">Like this destination</span>
-              <button type="button" onClick={() => setLiked(!liked)} className="text-2xl transition-transform active:scale-90">
-                {liked ? "❤️" : "🤍"}
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -196,7 +193,7 @@ export default function AddPlacePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-[hsl(0,0%,4%)] pb-24">
       <div className="pt-12 px-5">
         <div className="flex items-center gap-3 mb-6">
           <button onClick={() => navigate(-1)}>
