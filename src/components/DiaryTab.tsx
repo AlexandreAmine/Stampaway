@@ -52,6 +52,7 @@ export function DiaryTab({ userId }: { userId?: string }) {
       const mapped: DiaryEntry[] = data.map((r: any) => ({
         id: r.id,
         rating: r.rating,
+        liked: r.liked || false,
         review_text: r.review_text,
         visit_year: r.visit_year,
         visit_month: r.visit_month,
