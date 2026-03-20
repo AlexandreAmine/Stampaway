@@ -34,11 +34,11 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
   }, [query]);
 
   const fetchFollowing = async () => {
-    if (!user) return;
+    if (!targetUserId) return;
     const { data } = await supabase
       .from("followers")
       .select("id, following_id")
-      .eq("follower_id", user.id);
+      .eq("follower_id", targetUserId);
 
     if (data && data.length > 0) {
       const ids = data.map((f) => f.following_id);

@@ -18,12 +18,12 @@ export function FollowersTab({ userId }: { userId?: string }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!targetUserId) return;
     (async () => {
       const { data } = await supabase
         .from("followers")
         .select("follower_id")
-        .eq("following_id", user.id);
+        .eq("following_id", targetUserId);
 
       if (data && data.length > 0) {
         const ids = data.map((f) => f.follower_id);
