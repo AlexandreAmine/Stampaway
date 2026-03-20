@@ -125,13 +125,16 @@ export default function AddPlacePage() {
 
           <div className="space-y-6">
             <div>
-              <p className="text-sm font-semibold text-foreground mb-3">Your rating</p>
+              <p className="text-sm font-semibold text-foreground mb-3">Your rating <span className="text-muted-foreground font-normal">(optional)</span></p>
               <div className="flex items-center justify-between">
                 <StarRating rating={rating} size={40} interactive onChange={setRating} />
                 <button type="button" onClick={() => setLiked(!liked)} className="text-2xl transition-transform active:scale-90">
                   {liked ? "❤️" : "🤍"}
                 </button>
               </div>
+              {rating === 0 && (
+                <p className="text-xs text-muted-foreground mt-1">Tap to rate, or leave blank to log without a grade</p>
+              )}
             </div>
 
             <div>
@@ -147,44 +150,57 @@ export default function AddPlacePage() {
             </div>
 
             <div className="space-y-3">
-              <p className="text-sm font-semibold text-foreground">When did you visit?</p>
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="text-xs text-muted-foreground mb-1 block">Year</label>
-                  <select
-                    value={visitYear}
-                    onChange={(e) => setVisitYear(Number(e.target.value))}
-                    className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    {Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i).map((y) => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex-1">
-                  <label className="text-xs text-muted-foreground mb-1 block">Month</label>
-                  <select
-                    value={visitMonth}
-                    onChange={(e) => setVisitMonth(Number(e.target.value))}
-                    className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, i) => (
-                      <option key={i} value={i + 1}>{m}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex-1">
-                  <label className="text-xs text-muted-foreground mb-1 block">Duration</label>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-foreground">When did you visit?</p>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <span className="text-xs text-muted-foreground">I don't know</span>
                   <input
-                    type="number"
-                    value={durationDays}
-                    onChange={(e) => setDurationDays(e.target.value ? Number(e.target.value) : "")}
-                    placeholder="Days"
-                    min={1}
-                    className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                    type="checkbox"
+                    checked={unknownDate}
+                    onChange={(e) => setUnknownDate(e.target.checked)}
+                    className="w-4 h-4 rounded border-border bg-card text-primary focus:ring-primary accent-primary"
                   />
-                </div>
+                </label>
               </div>
+              {!unknownDate && (
+                <div className="flex gap-3">
+                  <div className="flex-1">
+                    <label className="text-xs text-muted-foreground mb-1 block">Year</label>
+                    <select
+                      value={visitYear}
+                      onChange={(e) => setVisitYear(Number(e.target.value))}
+                      className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      {Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+                        <option key={y} value={y}>{y}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs text-muted-foreground mb-1 block">Month</label>
+                    <select
+                      value={visitMonth}
+                      onChange={(e) => setVisitMonth(Number(e.target.value))}
+                      className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, i) => (
+                        <option key={i} value={i + 1}>{m}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-xs text-muted-foreground mb-1 block">Duration</label>
+                    <input
+                      type="number"
+                      value={durationDays}
+                      onChange={(e) => setDurationDays(e.target.value ? Number(e.target.value) : "")}
+                      placeholder="Days"
+                      min={1}
+                      className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
           </div>
