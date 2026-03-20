@@ -138,12 +138,14 @@ export default function ExplorePage() {
       .eq("follower_id", user.id);
     const followingIds = (following || []).map((f) => f.following_id);
 
-    // Recent reviews from friends
+    // Recent written reviews from friends (exclude own)
     if (followingIds.length > 0) {
       const { data: fRevs } = await supabase
         .from("reviews")
         .select("*, places!inner(name, image)")
         .in("user_id", followingIds)
+        .not("review_text", "is", null)
+        .neq("review_text", "")
         .order("created_at", { ascending: false })
         .limit(5);
 
