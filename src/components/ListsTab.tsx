@@ -180,42 +180,46 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-      <AnimatePresence>
-        {showCreate && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
-            <div className="bg-card rounded-xl p-4 border border-border space-y-3">
-              <input
-                autoFocus
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="List name..."
-                className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none font-semibold"
-              />
-              <input
-                value={newDesc}
-                onChange={(e) => setNewDesc(e.target.value)}
-                placeholder="Description (optional)"
-                className="w-full bg-transparent text-xs text-muted-foreground placeholder:text-muted-foreground focus:outline-none"
-              />
-              <div className="flex gap-2">
-                <button onClick={handleCreate} disabled={creating || !newName.trim()} className="text-xs bg-primary text-primary-foreground px-4 py-1.5 rounded-lg font-medium disabled:opacity-50">Create</button>
-                <button onClick={() => setShowCreate(false)} className="text-xs text-muted-foreground px-4 py-1.5">Cancel</button>
+      {!readOnly && (
+        <AnimatePresence>
+          {showCreate && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="overflow-hidden">
+              <div className="bg-card rounded-xl p-4 border border-border space-y-3">
+                <input
+                  autoFocus
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="List name..."
+                  className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none font-semibold"
+                />
+                <input
+                  value={newDesc}
+                  onChange={(e) => setNewDesc(e.target.value)}
+                  placeholder="Description (optional)"
+                  className="w-full bg-transparent text-xs text-muted-foreground placeholder:text-muted-foreground focus:outline-none"
+                />
+                <div className="flex gap-2">
+                  <button onClick={handleCreate} disabled={creating || !newName.trim()} className="text-xs bg-primary text-primary-foreground px-4 py-1.5 rounded-lg font-medium disabled:opacity-50">Create</button>
+                  <button onClick={() => setShowCreate(false)} className="text-xs text-muted-foreground px-4 py-1.5">Cancel</button>
+                </div>
               </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
 
       {lists.length === 0 && !showCreate ? (
         <div className="flex flex-col items-center justify-center h-40 gap-3">
           <p className="text-muted-foreground text-sm">No lists yet</p>
-          <button onClick={() => setShowCreate(true)} className="flex items-center gap-1 text-primary text-sm font-medium">
-            <Plus className="w-4 h-4" /> Create your first list
-          </button>
+          {!readOnly && (
+            <button onClick={() => setShowCreate(true)} className="flex items-center gap-1 text-primary text-sm font-medium">
+              <Plus className="w-4 h-4" /> Create your first list
+            </button>
+          )}
         </div>
       ) : (
         <>
-          {!showCreate && (
+          {!readOnly && !showCreate && (
             <button onClick={() => setShowCreate(true)} className="flex items-center gap-1 text-primary text-sm font-medium">
               <Plus className="w-4 h-4" /> New list
             </button>
