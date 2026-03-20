@@ -35,7 +35,7 @@ interface PlaceEntry {
   avg_rating?: number;
 }
 
-export function LoggedPlacesInline({ type, userId }: { type: "city" | "country"; userId?: string }) {
+export function LoggedPlacesInline({ type, userId, ratingFilter }: { type: "city" | "country"; userId?: string; ratingFilter?: number }) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [places, setPlaces] = useState<PlaceEntry[]>([]);
