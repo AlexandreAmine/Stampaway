@@ -29,6 +29,7 @@ export default function HomePage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [activities, setActivities] = useState<FriendActivity[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasFollowing, setHasFollowing] = useState(true);
   const [globeWidth, setGlobeWidth] = useState(380);
 
   useEffect(() => {
