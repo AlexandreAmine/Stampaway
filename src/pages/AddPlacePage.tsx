@@ -186,12 +186,6 @@ export default function AddPlacePage() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between py-3 border-t border-border">
-              <span className="text-sm font-semibold text-foreground">Like this destination</span>
-              <button type="button" onClick={() => setLiked(!liked)} className="text-2xl transition-transform active:scale-90">
-                {liked ? "❤️" : "🤍"}
-              </button>
-            </div>
           </div>
         </div>
       </div>
