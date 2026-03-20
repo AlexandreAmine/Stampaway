@@ -12,6 +12,7 @@ import SearchPage from "./pages/SearchPage";
 import ProfilePage from "./pages/ProfilePage";
 import LoggedPlacesPage from "./pages/LoggedPlacesPage";
 import AuthPage from "./pages/AuthPage";
+import PlacePage from "./pages/PlacePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
