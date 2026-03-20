@@ -59,18 +59,18 @@ export default function AddPlacePage() {
   };
 
   const handleSave = async () => {
-    if (!user || !selectedPlace || rating === 0) {
-      toast.error("Please select a rating");
+    if (!user || !selectedPlace) {
+      toast.error("Please select a place");
       return;
     }
     setSaving(true);
     const { error } = await supabase.from("reviews").insert({
       user_id: user.id,
       place_id: selectedPlace.id,
-      rating,
+      rating: rating > 0 ? rating : null,
       review_text: reviewText || null,
-      visit_year: visitYear,
-      visit_month: visitMonth,
+      visit_year: unknownDate ? null : visitYear,
+      visit_month: unknownDate ? null : visitMonth,
       duration_days: durationDays || null,
       liked,
     });
