@@ -242,10 +242,12 @@ export default function ProfilePage() {
       <div className="min-h-screen bg-background pb-24">
         <div className="pt-12 px-5">
           <div className="flex items-center gap-3 mb-6">
-            <button onClick={() => setSubPage(null)}>
+            <button onClick={() => { setSubPage(null); setRatingFilter(undefined); }}>
               <ChevronLeft className="w-6 h-6 text-foreground" />
             </button>
-            <h1 className="text-xl font-bold text-foreground">{subPage}</h1>
+            <h1 className="text-xl font-bold text-foreground">
+              {subPage === "CountriesByRating" ? `Countries · ${ratingFilter}★` : subPage === "CitiesByRating" ? `Cities · ${ratingFilter}★` : subPage}
+            </h1>
           </div>
           {renderSubPage()}
         </div>
