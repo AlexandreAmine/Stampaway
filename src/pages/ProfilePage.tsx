@@ -193,14 +193,14 @@ export default function ProfilePage() {
       {[0, 1, 2, 3].map((i) => {
         const fav = favorites[i];
         return fav ? (
-          <button key={i} onClick={() => handleOpenPicker(type, i)} className="w-28 h-36 shrink-0">
+          <button key={i} onClick={() => { if (isOwnProfile) handleOpenPicker(type, i); else navigate(`/place/${fav.place_id}`); }} className="w-28 h-36 shrink-0">
             <DestinationPoster placeId={fav.place_id} name={fav.place_name} country={fav.place_country} type={type} image={fav.place_image} autoGenerate className="w-full h-full" />
           </button>
-        ) : (
+        ) : isOwnProfile ? (
           <button key={i} onClick={() => handleOpenPicker(type, i)} className="w-28 h-36 rounded-2xl border-2 border-dashed border-border flex items-center justify-center shrink-0 hover:border-primary transition-colors">
             <Plus className="w-8 h-8 text-muted-foreground" />
           </button>
-        );
+        ) : null;
       })}
     </div>
   );
