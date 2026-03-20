@@ -96,10 +96,15 @@ export function LoggedPlacesInline({ type, userId }: { type: "city" | "country";
 
   const sorted = [...places].sort((a, b) => {
     switch (sort) {
-      case "your-highest":
+      case "your-highest": {
+        // Null ratings go to bottom
+        if (a.rating === null && b.rating === null) return 0;
+        if (a.rating === null) return 1;
+        if (b.rating === null) return -1;
         return b.rating - a.rating;
+      }
       case "avg-highest":
-        return (b.avg_rating ?? b.rating) - (a.avg_rating ?? a.rating);
+        return (b.avg_rating ?? b.rating ?? 0) - (a.avg_rating ?? a.rating ?? 0);
       case "newest": {
         const ya = a.visit_year ?? 0, yb = b.visit_year ?? 0;
         if (yb !== ya) return yb - ya;
