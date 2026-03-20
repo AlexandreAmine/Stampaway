@@ -65,8 +65,10 @@ export default function ProfilePage() {
   const [subPage, setSubPage] = useState<SubPage>(null);
   const [ratingFilter, setRatingFilter] = useState<number | undefined>(undefined);
 
-  // Fetch viewed user's profile if not own
+  // Reset subpage and fetch profile when navigating to a different user
   useEffect(() => {
+    setSubPage(null);
+    setRatingFilter(undefined);
     if (isOwnProfile) {
       setViewedProfile(null);
     } else if (viewingUserId) {
