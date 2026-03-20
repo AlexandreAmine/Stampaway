@@ -156,9 +156,7 @@ export default function ProfilePage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleOpenPicker = (type: "city" | "country", slot: number) => {
-    setPickerType(type);
-    setPickerSlot(slot);
-    setPickerOpen(true);
+    navigate(`/add?favoriteType=${type}&favoriteSlot=${slot}`);
   };
 
   const handleSelectFavorite = async (placeId: string, placeName: string, placeImage: string | null, placeCountry: string) => {
