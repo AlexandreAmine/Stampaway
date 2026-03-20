@@ -24,7 +24,7 @@ const SORT_LABELS: Record<SortOption, string> = {
 
 interface PlaceEntry {
   place_id: string;
-  rating: number;
+  rating: number | null;
   visit_year: number | null;
   visit_month: number | null;
   duration_days: number | null;
