@@ -170,6 +170,7 @@ export function DiaryTab({ userId }: { userId?: string }) {
           </div>
         </div>
       ))}
+        </div>
       )}
     </motion.div>
   );
