@@ -55,10 +55,26 @@ export default function PlacePage() {
     // Fetch all reviews for this place
     const { data: allReviews } = await supabase
       .from("reviews")
-      .select("id, rating, user_id, review_text, liked")
+      .select("id, rating, user_id, review_text, liked, created_at")
       .eq("place_id", id);
 
     const reviews = allReviews || [];
+    setReviewsCount(reviews.length);
+
+    // Written reviews with profiles
+    const written = reviews.filter((r) => r.review_text && r.review_text.trim() !== "");
+    if (written.length > 0) {
+      const writerIds = [...new Set(written.map((w) => w.user_id))];
+      const { data: writerProfiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", writerIds);
+      setWrittenReviews(
+        written
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .map((w) => {
+            const p = (writerProfiles || []).find((p: any) => p.user_id === w.user_id);
+            return { ...w, profile: p };
+          })
+      );
+    }
     setReviewsCount(reviews.length);
 
     // Unique visitors
