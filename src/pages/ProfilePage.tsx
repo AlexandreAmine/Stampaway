@@ -297,7 +297,7 @@ export default function ProfilePage() {
           </div>
           {renderFavoriteSlots("city", favoriteCities)}
         </div>
-        <div className="mb-6"><RatingHistogram distribution={cityDistribution} /></div>
+        <div className="mb-6"><RatingHistogram distribution={cityDistribution} onBarClick={(r) => { setRatingFilter(r); setSubPage("CitiesByRating"); }} /></div>
 
         {/* Stats / Navigation list */}
         <div className="space-y-0">
