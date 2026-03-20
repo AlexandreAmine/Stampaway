@@ -193,7 +193,7 @@ export default function AddPlacePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-[hsl(0,0%,4%)] pb-24">
       <div className="pt-12 px-5">
         <div className="flex items-center gap-3 mb-6">
           <button onClick={() => navigate(-1)}>
