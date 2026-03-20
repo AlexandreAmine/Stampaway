@@ -189,16 +189,88 @@ export default function ProfilePage() {
     { label: "Followers", value: `${followersCount}`, subPage: "Followers" },
   ];
 
+  const handleRemoveFavorite = async (type: "city" | "country", slotIndex: number) => {
+    if (!user) return;
+    await supabase.from("favorite_places").delete().eq("user_id", user.id).eq("slot_index", slotIndex).eq("type", type);
+    if (type === "city") {
+      const updated = [...favoriteCities]; updated[slotIndex] = null; setFavoriteCities(updated);
+    } else {
+      const updated = [...favoriteCountries]; updated[slotIndex] = null; setFavoriteCountries(updated);
+    }
+  };
+
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragType, setDragType] = useState<"city" | "country" | null>(null);
+
+  const handleDragStart = (type: "city" | "country", index: number) => {
+    setDragIndex(index);
+    setDragType(type);
+  };
+
+  const handleDrop = async (type: "city" | "country", targetIndex: number) => {
+    if (dragIndex === null || dragType !== type || dragIndex === targetIndex || !user) return;
+    const favorites = type === "city" ? [...favoriteCities] : [...favoriteCountries];
+    const setFavorites = type === "city" ? setFavoriteCities : setFavoriteCountries;
+
+    const srcItem = favorites[dragIndex];
+    const destItem = favorites[targetIndex];
+
+    // Swap in state
+    favorites[targetIndex] = srcItem ? { ...srcItem, slot_index: targetIndex } : null;
+    favorites[dragIndex] = destItem ? { ...destItem, slot_index: dragIndex } : null;
+    setFavorites(favorites);
+
+    // Update DB
+    const updates: Promise<any>[] = [];
+    if (srcItem) {
+      updates.push(supabase.from("favorite_places").update({ slot_index: targetIndex }).eq("user_id", user.id).eq("slot_index", dragIndex).eq("type", type));
+    }
+    if (destItem) {
+      // Need to use a temp slot to avoid unique constraint
+      updates.push(
+        supabase.from("favorite_places").update({ slot_index: 99 }).eq("user_id", user.id).eq("slot_index", targetIndex).eq("type", type)
+          .then(() => supabase.from("favorite_places").update({ slot_index: dragIndex }).eq("user_id", user.id).eq("slot_index", 99).eq("type", type))
+      );
+    }
+    await Promise.all(updates);
+
+    setDragIndex(null);
+    setDragType(null);
+  };
+
   const renderFavoriteSlots = (type: "city" | "country", favorites: (FavoriteSlot | null)[]) => (
     <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-5 px-5">
       {[0, 1, 2, 3].map((i) => {
         const fav = favorites[i];
         return fav ? (
-          <button key={i} onClick={() => { if (isOwnProfile) handleOpenPicker(type, i); else navigate(`/place/${fav.place_id}`); }} className="w-28 h-36 shrink-0">
-            <DestinationPoster placeId={fav.place_id} name={fav.place_name} country={fav.place_country} type={type} image={fav.place_image} autoGenerate className="w-full h-full" />
-          </button>
+          <div
+            key={i}
+            className="relative w-28 h-36 shrink-0"
+            draggable={isOwnProfile}
+            onDragStart={() => handleDragStart(type, i)}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={() => handleDrop(type, i)}
+          >
+            <button onClick={() => navigate(`/place/${fav.place_id}`)} className="w-full h-full">
+              <DestinationPoster placeId={fav.place_id} name={fav.place_name} country={fav.place_country} type={type} image={fav.place_image} autoGenerate className="w-full h-full" />
+            </button>
+            {isOwnProfile && (
+              <button
+                onClick={(e) => { e.stopPropagation(); handleRemoveFavorite(type, i); }}
+                className="absolute top-1 left-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center z-10"
+              >
+                <X className="w-3 h-3 text-white" />
+              </button>
+            )}
+          </div>
         ) : isOwnProfile ? (
-          <button key={i} onClick={() => handleOpenPicker(type, i)} className="w-28 h-36 rounded-2xl border-2 border-dashed border-border flex items-center justify-center shrink-0 hover:border-primary transition-colors">
+          <button
+            key={i}
+            onClick={() => handleOpenPicker(type, i)}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={() => handleDrop(type, i)}
+            className="w-28 h-36 rounded-2xl border-2 border-dashed border-border flex items-center justify-center shrink-0 hover:border-primary transition-colors"
+          >
             <Plus className="w-8 h-8 text-muted-foreground" />
           </button>
         ) : null;
