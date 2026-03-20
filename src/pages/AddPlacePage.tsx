@@ -124,10 +124,13 @@ export default function AddPlacePage() {
 
           <div className="space-y-6">
             <div>
-              <p className="text-sm font-semibold text-foreground mb-3">
-                How do you rate this destination?
-              </p>
-              <StarRating rating={rating} size={40} interactive onChange={setRating} />
+              <p className="text-sm font-semibold text-foreground mb-3">Your rating</p>
+              <div className="flex items-center justify-between">
+                <StarRating rating={rating} size={40} interactive onChange={setRating} />
+                <button type="button" onClick={() => setLiked(!liked)} className="text-2xl transition-transform active:scale-90">
+                  {liked ? "❤️" : "🤍"}
+                </button>
+              </div>
             </div>
 
             <div>
