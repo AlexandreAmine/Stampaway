@@ -8,7 +8,7 @@ import { StarRating } from "@/components/StarRating";
 
 interface DiaryEntry {
   id: string;
-  rating: number;
+  rating: number | null;
   review_text: string | null;
   visit_year: number | null;
   visit_month: number | null;
@@ -124,9 +124,13 @@ export function DiaryTab({ userId }: { userId?: string }) {
                     {entry.visit_year || ""}
                     {entry.duration_days ? ` · ${entry.duration_days} day${entry.duration_days > 1 ? "s" : ""}` : ""}
                   </p>
-                  <div className="mt-1">
-                    <StarRating rating={entry.rating} size={14} />
-                  </div>
+                   {entry.rating != null ? (
+                     <div className="mt-1">
+                       <StarRating rating={entry.rating} size={14} />
+                     </div>
+                   ) : (
+                     <p className="text-xs text-muted-foreground mt-1">No rating</p>
+                   )}
                   {entry.review_text && (
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{entry.review_text}</p>
                   )}

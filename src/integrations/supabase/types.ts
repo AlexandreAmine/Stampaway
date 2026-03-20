@@ -197,7 +197,7 @@ export type Database = {
           id: string
           liked: boolean
           place_id: string
-          rating: number
+          rating: number | null
           review_text: string | null
           updated_at: string
           user_id: string
@@ -210,7 +210,7 @@ export type Database = {
           id?: string
           liked?: boolean
           place_id: string
-          rating: number
+          rating?: number | null
           review_text?: string | null
           updated_at?: string
           user_id: string
@@ -223,7 +223,7 @@ export type Database = {
           id?: string
           liked?: boolean
           place_id?: string
-          rating?: number
+          rating?: number | null
           review_text?: string | null
           updated_at?: string
           user_id?: string

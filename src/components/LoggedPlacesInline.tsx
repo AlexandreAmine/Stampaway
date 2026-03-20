@@ -24,7 +24,7 @@ const SORT_LABELS: Record<SortOption, string> = {
 
 interface PlaceEntry {
   place_id: string;
-  rating: number;
+  rating: number | null;
   visit_year: number | null;
   visit_month: number | null;
   duration_days: number | null;
@@ -57,7 +57,7 @@ export function LoggedPlacesInline({ type, userId }: { type: "city" | "country";
 
       const entries: PlaceEntry[] = data.map((r: any) => ({
         place_id: r.place_id,
-        rating: Number(r.rating),
+        rating: r.rating != null ? Number(r.rating) : null,
         visit_year: r.visit_year,
         visit_month: r.visit_month,
         duration_days: r.duration_days,
@@ -96,10 +96,15 @@ export function LoggedPlacesInline({ type, userId }: { type: "city" | "country";
 
   const sorted = [...places].sort((a, b) => {
     switch (sort) {
-      case "your-highest":
+      case "your-highest": {
+        // Null ratings go to bottom
+        if (a.rating === null && b.rating === null) return 0;
+        if (a.rating === null) return 1;
+        if (b.rating === null) return -1;
         return b.rating - a.rating;
+      }
       case "avg-highest":
-        return (b.avg_rating ?? b.rating) - (a.avg_rating ?? a.rating);
+        return (b.avg_rating ?? b.rating ?? 0) - (a.avg_rating ?? a.rating ?? 0);
       case "newest": {
         const ya = a.visit_year ?? 0, yb = b.visit_year ?? 0;
         if (yb !== ya) return yb - ya;
@@ -143,9 +148,13 @@ export function LoggedPlacesInline({ type, userId }: { type: "city" | "country";
             <div className="aspect-[3/4] w-full">
               <DestinationPoster placeId={r.place_id} name={r.name} country={r.country} type={type} image={r.image} className="w-full h-full" />
             </div>
-            <div className="mt-1.5 flex justify-center">
-              <StarRating rating={r.rating} size={12} />
-            </div>
+            {r.rating != null ? (
+              <div className="mt-1.5 flex justify-center">
+                <StarRating rating={r.rating} size={12} />
+              </div>
+            ) : (
+              <p className="mt-1.5 text-[10px] text-muted-foreground text-center">No rating</p>
+            )}
           </button>
         ))}
       </div>
