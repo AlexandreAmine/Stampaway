@@ -38,8 +38,9 @@ export default function PlacePage() {
   const [friendWishlist, setFriendWishlist] = useState<any[]>([]);
   const [writtenReviews, setWrittenReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  // activeSection removed - stats now navigate to sub-pages
   const [ratingsCount, setRatingsCount] = useState(0);
+  const [countryCities, setCountryCities] = useState<any[]>([]);
+  const [wishlistCities, setWishlistCities] = useState<any[]>([]);
 
   useEffect(() => {
     if (id) fetchAll();
