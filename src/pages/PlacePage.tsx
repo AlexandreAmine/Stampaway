@@ -34,6 +34,7 @@ export default function PlacePage() {
   const [listsCount, setListsCount] = useState(0);
   const [friendVisitors, setFriendVisitors] = useState<any[]>([]);
   const [friendWishlist, setFriendWishlist] = useState<any[]>([]);
+  const [writtenReviews, setWrittenReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
