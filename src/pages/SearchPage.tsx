@@ -13,6 +13,7 @@ type FilterTab = (typeof filterTabs)[number];
 
 export default function SearchPage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [activeFilter, setActiveFilter] = useState<FilterTab>("Destinations");
   const [query, setQuery] = useState("");
   const [places, setPlaces] = useState<any[]>([]);
@@ -20,6 +21,14 @@ export default function SearchPage() {
   const [users, setUsers] = useState<any[]>([]);
   const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("followers").select("following_id").eq("follower_id", user.id).then(({ data }) => {
+      setFollowingIds(new Set((data || []).map((f) => f.following_id)));
+    });
+  }, [user]);
 
   useEffect(() => {
     const t = setTimeout(() => search(), 250);
