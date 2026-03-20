@@ -125,17 +125,21 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
             <ChevronRight className="w-4 h-4 text-muted-foreground rotate-180" />
             <span className="text-sm text-muted-foreground">Back</span>
           </button>
-          <button onClick={() => handleDeleteList(openList.id)} className="p-2">
-            <Trash2 className="w-4 h-4 text-destructive" />
-          </button>
+          {!readOnly && (
+            <button onClick={() => handleDeleteList(openList.id)} className="p-2">
+              <Trash2 className="w-4 h-4 text-destructive" />
+            </button>
+          )}
         </div>
         <h3 className="text-lg font-bold text-foreground">{openList.name}</h3>
         {openList.description && <p className="text-xs text-muted-foreground">{openList.description}</p>}
 
-        <div className="flex gap-2">
-          <button onClick={() => { setPickerType("city"); setPickerOpen(true); }} className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg font-medium">+ Add City</button>
-          <button onClick={() => { setPickerType("country"); setPickerOpen(true); }} className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg font-medium">+ Add Country</button>
-        </div>
+        {!readOnly && (
+          <div className="flex gap-2">
+            <button onClick={() => { setPickerType("city"); setPickerOpen(true); }} className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg font-medium">+ Add City</button>
+            <button onClick={() => { setPickerType("country"); setPickerOpen(true); }} className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg font-medium">+ Add Country</button>
+          </div>
+        )}
 
         {openList.items.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">No destinations in this list yet</p>
