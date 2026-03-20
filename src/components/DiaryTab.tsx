@@ -9,6 +9,7 @@ import { StarRating } from "@/components/StarRating";
 interface DiaryEntry {
   id: string;
   rating: number | null;
+  liked: boolean;
   review_text: string | null;
   visit_year: number | null;
   visit_month: number | null;
