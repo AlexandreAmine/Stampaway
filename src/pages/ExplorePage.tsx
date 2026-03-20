@@ -173,7 +173,7 @@ export default function ExplorePage() {
       setFriendReviews([]);
     }
 
-    // Most liked reviews (all users)
+    // Most liked reviews (all users, exclude own)
     const { data: likeCounts } = await supabase
       .from("review_likes")
       .select("review_id");
