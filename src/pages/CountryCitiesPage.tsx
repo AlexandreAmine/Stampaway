@@ -107,22 +107,24 @@ export default function CountryCitiesPage() {
             {mode === "wishlist" ? "No cities from this country in your wishlist" : "No cities found"}
           </p>
         ) : (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-2 gap-3">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-3 gap-3">
             {cities.map((city) => (
               <button
                 key={city.id}
                 onClick={() => navigate(`/place/${city.id}`)}
-                className="relative aspect-[3/4] rounded-2xl overflow-hidden active:scale-[0.97] transition-transform"
+                className="relative text-left"
               >
-                <DestinationPoster
-                  placeId={city.id}
-                  name={city.name}
-                  country={city.country}
-                  type="city"
-                  image={city.image}
-                  autoGenerate
-                  className="w-full h-full"
-                />
+                <div className="aspect-[3/4] w-full">
+                  <DestinationPoster
+                    placeId={city.id}
+                    name={city.name}
+                    country={city.country}
+                    type="city"
+                    image={city.image}
+                    autoGenerate
+                    className="w-full h-full"
+                  />
+                </div>
               </button>
             ))}
           </motion.div>
