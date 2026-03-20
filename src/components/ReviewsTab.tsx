@@ -1,0 +1,100 @@
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { StarRating } from "@/components/StarRating";
+import { DestinationPoster } from "@/components/DestinationPoster";
+
+interface ReviewEntry {
+  id: string;
+  rating: number;
+  review_text: string;
+  created_at: string;
+  place: {
+    id: string;
+    name: string;
+    country: string;
+    type: string;
+    image: string | null;
+  };
+}
+
+export function ReviewsTab() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [reviews, setReviews] = useState<ReviewEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("reviews")
+        .select("id, rating, review_text, created_at, places!inner(id, name, country, type, image)")
+        .eq("user_id", user.id)
+        .not("review_text", "is", null)
+        .neq("review_text", "")
+        .order("created_at", { ascending: false });
+
+      if (data) {
+        setReviews(
+          data.map((r: any) => ({
+            id: r.id,
+            rating: r.rating,
+            review_text: r.review_text,
+            created_at: r.created_at,
+            place: { id: r.places.id, name: r.places.name, country: r.places.country, type: r.places.type, image: r.places.image },
+          }))
+        );
+      }
+      setLoading(false);
+    })();
+  }, [user]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-40">
+        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (reviews.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-40">
+        <p className="text-muted-foreground text-sm">No reviews written yet</p>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+      {reviews.map((r) => (
+        <button
+          key={r.id}
+          onClick={() => navigate(`/place/${r.place.id}`)}
+          className="flex gap-3 bg-card rounded-xl p-3 border border-border w-full text-left"
+        >
+          <div className="w-14 h-[72px] shrink-0 rounded-lg overflow-hidden">
+            <DestinationPoster
+              placeId={r.place.id}
+              name={r.place.name}
+              country={r.place.country}
+              type={r.place.type as "city" | "country"}
+              image={r.place.image}
+              className="w-full h-full"
+            />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-foreground truncate">{r.place.name}</p>
+            <div className="mt-0.5">
+              <StarRating rating={r.rating} size={12} />
+            </div>
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{r.review_text}</p>
+          </div>
+        </button>
+      ))}
+    </motion.div>
+  );
+}

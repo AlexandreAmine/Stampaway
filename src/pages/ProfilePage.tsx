@@ -14,6 +14,7 @@ import { MapTab } from "@/components/MapTab";
 import { LikesTab } from "@/components/LikesTab";
 import { FollowingTab } from "@/components/FollowingTab";
 import { FollowersTab } from "@/components/FollowersTab";
+import { ReviewsTab } from "@/components/ReviewsTab";
 import { supabase } from "@/integrations/supabase/client";
 
 interface FavoriteSlot {
@@ -25,7 +26,7 @@ interface FavoriteSlot {
   place_type: string;
 }
 
-type SubPage = null | "Countries" | "Cities" | "Diary" | "Map" | "Lists" | "Wishlist" | "Likes" | "Following" | "Followers";
+type SubPage = null | "Countries" | "Cities" | "Diary" | "Map" | "Lists" | "Wishlist" | "Likes" | "Reviews" | "Following" | "Followers";
 
 export default function ProfilePage() {
   const { user, profile, signOut } = useAuth();
@@ -46,6 +47,7 @@ export default function ProfilePage() {
   const [followingCount, setFollowingCount] = useState(0);
   const [followersCount, setFollowersCount] = useState(0);
   const [likesCount, setLikesCount] = useState(0);
+  const [writtenReviewsCount, setWrittenReviewsCount] = useState(0);
 
   const [cityDistribution, setCityDistribution] = useState<number[]>(Array(10).fill(0));
   const [countryDistribution, setCountryDistribution] = useState<number[]>(Array(10).fill(0));
@@ -59,7 +61,7 @@ export default function ProfilePage() {
     if (!user) return;
     const uid = user.id;
 
-    const [favRes, reviewRes, listRes, wishRes, followingRes, followersRes, totalCountriesRes, likesRes] = await Promise.all([
+    const [favRes, reviewRes, listRes, wishRes, followingRes, followersRes, totalCountriesRes, likesRes, writtenReviewsRes] = await Promise.all([
       supabase.from("favorite_places").select("slot_index, place_id, type, places!inner(name, image, country, type)").eq("user_id", uid),
       supabase.from("reviews").select("rating, place_id, places!inner(type)").eq("user_id", uid),
       supabase.from("lists").select("id", { count: "exact", head: true }).eq("user_id", uid),
@@ -68,6 +70,7 @@ export default function ProfilePage() {
       supabase.from("followers").select("id", { count: "exact", head: true }).eq("following_id", uid),
       supabase.from("places").select("id", { count: "exact", head: true }).eq("type", "country"),
       supabase.from("reviews").select("id", { count: "exact", head: true }).eq("user_id", uid).eq("liked", true),
+      supabase.from("reviews").select("id", { count: "exact", head: true }).eq("user_id", uid).not("review_text", "is", null).neq("review_text", ""),
     ]);
 
     if (favRes.data) {
@@ -124,6 +127,7 @@ export default function ProfilePage() {
     setFollowersCount(followersRes.count || 0);
     setTotalCountries(totalCountriesRes.count || 0);
     setLikesCount(likesRes.count || 0);
+    setWrittenReviewsCount(writtenReviewsRes.count || 0);
   }, [user]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -158,6 +162,7 @@ export default function ProfilePage() {
     { label: "Lists", value: `${listsCount}`, subPage: "Lists" },
     { label: "Wishlist", value: `${wishlistCount}`, subPage: "Wishlist" },
     { label: "Likes", value: `${likesCount}`, subPage: "Likes" },
+    { label: "Reviews", value: `${writtenReviewsCount}`, subPage: "Reviews" },
     { label: "Following", value: `${followingCount}`, subPage: "Following" },
     { label: "Followers", value: `${followersCount}`, subPage: "Followers" },
   ];
@@ -195,6 +200,8 @@ export default function ProfilePage() {
         return <WishlistTab />;
       case "Likes":
         return <LikesTab />;
+      case "Reviews":
+        return <ReviewsTab />;
       case "Following":
         return <FollowingTab />;
       case "Followers":

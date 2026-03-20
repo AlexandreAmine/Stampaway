@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Users, Star, List } from "lucide-react";
+import { ChevronLeft, Users, Star, List, MessageSquare } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,6 +34,7 @@ export default function PlacePage() {
   const [listsCount, setListsCount] = useState(0);
   const [friendVisitors, setFriendVisitors] = useState<any[]>([]);
   const [friendWishlist, setFriendWishlist] = useState<any[]>([]);
+  const [writtenReviews, setWrittenReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -55,10 +56,26 @@ export default function PlacePage() {
     // Fetch all reviews for this place
     const { data: allReviews } = await supabase
       .from("reviews")
-      .select("id, rating, user_id, review_text, liked")
+      .select("id, rating, user_id, review_text, liked, created_at")
       .eq("place_id", id);
 
     const reviews = allReviews || [];
+    setReviewsCount(reviews.length);
+
+    // Written reviews with profiles
+    const written = reviews.filter((r) => r.review_text && r.review_text.trim() !== "");
+    if (written.length > 0) {
+      const writerIds = [...new Set(written.map((w) => w.user_id))];
+      const { data: writerProfiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", writerIds);
+      setWrittenReviews(
+        written
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .map((w) => {
+            const p = (writerProfiles || []).find((p: any) => p.user_id === w.user_id);
+            return { ...w, profile: p };
+          })
+      );
+    }
     setReviewsCount(reviews.length);
 
     // Unique visitors
@@ -256,6 +273,28 @@ export default function PlacePage() {
               <span className="text-xs text-muted-foreground ml-4 self-center">
                 {friendWishlist.map((f: any) => f.username).join(", ")}
               </span>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Reviews */}
+        {writtenReviews.length > 0 && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="mb-5">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Reviews</h3>
+            <div className="space-y-3">
+              {writtenReviews.map((rv: any) => (
+                <div key={rv.id} className="bg-card rounded-xl p-3 border border-border">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Avatar className="w-7 h-7">
+                      <AvatarImage src={rv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(rv.profile?.username || "?")}&background=3B82F6&color=fff`} />
+                      <AvatarFallback>{rv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <p className="text-sm font-medium text-foreground flex-1">{rv.profile?.username || "User"}</p>
+                    <StarRating rating={rv.rating} size={11} />
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{rv.review_text}</p>
+                </div>
+              ))}
             </div>
           </motion.div>
         )}
