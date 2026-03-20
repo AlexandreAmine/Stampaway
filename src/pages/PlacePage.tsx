@@ -252,6 +252,19 @@ export default function PlacePage() {
     return n.toString();
   };
 
+  const toggleWishlist = async () => {
+    if (!user || !id || togglingWishlist) return;
+    setTogglingWishlist(true);
+    if (inWishlist) {
+      await supabase.from("wishlists").delete().eq("user_id", user.id).eq("place_id", id);
+      setInWishlist(false);
+    } else {
+      await supabase.from("wishlists").insert({ user_id: user.id, place_id: id });
+      setInWishlist(true);
+    }
+    setTogglingWishlist(false);
+  };
+
   if (loading || !place) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
