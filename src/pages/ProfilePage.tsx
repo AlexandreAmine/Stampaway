@@ -15,6 +15,7 @@ import { LikesTab } from "@/components/LikesTab";
 import { FollowingTab } from "@/components/FollowingTab";
 import { FollowersTab } from "@/components/FollowersTab";
 import { ReviewsTab } from "@/components/ReviewsTab";
+import { LoggedPlacesInline } from "@/components/LoggedPlacesInline";
 import { supabase } from "@/integrations/supabase/client";
 
 interface FavoriteSlot {
@@ -285,48 +286,5 @@ export default function ProfilePage() {
 
       <FavoritePicker open={pickerOpen} onClose={() => setPickerOpen(false)} type={pickerType} onSelect={handleSelectFavorite} />
     </div>
-  );
-}
-
-// Inline version of LoggedPlacesPage for use within profile
-function LoggedPlacesInline({ type }: { type: "city" | "country" }) {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [places, setPlaces] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
-      const { data } = await supabase
-        .from("reviews")
-        .select("place_id, rating, places!inner(name, country, type, image)")
-        .eq("user_id", user.id)
-        .eq("places.type", type)
-        .order("created_at", { ascending: false });
-      setPlaces(data || []);
-      setLoading(false);
-    })();
-  }, [user, type]);
-
-  if (loading) return <div className="flex items-center justify-center h-40"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
-
-  if (places.length === 0) return <div className="flex items-center justify-center h-40"><p className="text-sm text-muted-foreground">No {type === "city" ? "cities" : "countries"} logged yet</p></div>;
-
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <div className="grid grid-cols-3 gap-3">
-        {places.map((r: any, i: number) => (
-          <button key={r.place_id + i} onClick={() => navigate(`/place/${r.place_id}`)} className="relative text-left">
-            <div className="aspect-[3/4] w-full">
-              <DestinationPoster placeId={r.place_id} name={r.places.name} country={r.places.country} type={type} image={r.places.image} className="w-full h-full" />
-            </div>
-            <div className="mt-1.5 flex justify-center">
-              <StarRating rating={r.rating} size={12} />
-            </div>
-          </button>
-        ))}
-      </div>
-    </motion.div>
   );
 }
