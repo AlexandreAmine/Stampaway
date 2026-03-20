@@ -336,89 +336,22 @@ export default function PlacePage() {
           transition={{ delay: 0.4 }}
           className="flex items-center justify-around py-5 border-t border-border mt-2"
         >
-          <button onClick={() => setActiveSection(activeSection === "visitors" ? null : "visitors")} className="flex flex-col items-center gap-1">
-            <Users className={`w-5 h-5 ${activeSection === "visitors" ? "text-primary" : "text-primary"}`} />
+          <button onClick={() => navigate(`/place/${id}/visitors`)} className="flex flex-col items-center gap-1">
+            <Users className="w-5 h-5 text-primary" />
             <span className="text-lg font-bold text-foreground">{formatCount(visitorsCount)}</span>
             <span className="text-[10px] text-muted-foreground">Visitors</span>
           </button>
-          <button onClick={() => setActiveSection(activeSection === "reviews" ? null : "reviews")} className="flex flex-col items-center gap-1">
-            <MessageSquare className={`w-5 h-5 ${activeSection === "reviews" ? "text-primary" : "text-primary"}`} />
+          <button onClick={() => navigate(`/place/${id}/reviews`)} className="flex flex-col items-center gap-1">
+            <MessageSquare className="w-5 h-5 text-primary" />
             <span className="text-lg font-bold text-foreground">{formatCount(writtenReviewsCount)}</span>
             <span className="text-[10px] text-muted-foreground">Reviews</span>
           </button>
-          <button onClick={() => setActiveSection(activeSection === "lists" ? null : "lists")} className="flex flex-col items-center gap-1">
-            <List className={`w-5 h-5 ${activeSection === "lists" ? "text-primary" : "text-primary"}`} />
+          <button onClick={() => navigate(`/place/${id}/lists`)} className="flex flex-col items-center gap-1">
+            <List className="w-5 h-5 text-primary" />
             <span className="text-lg font-bold text-foreground">{formatCount(listsCount)}</span>
             <span className="text-[10px] text-muted-foreground">Lists</span>
           </button>
         </motion.div>
-
-        {/* Expanded section */}
-        {activeSection === "visitors" && allVisitors.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-5 mt-2">
-            <h3 className="text-sm font-semibold text-foreground mb-3">All visitors</h3>
-            <div className="space-y-2.5">
-              {allVisitors.map((v: any) => (
-                <div key={v.user_id} className="flex items-center gap-3 w-full">
-                  <button onClick={() => navigate(v.user_id === user?.id ? "/profile" : `/profile/${v.user_id}`)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage src={v.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(v.profile?.username || "?")}&background=3B82F6&color=fff`} />
-                      <AvatarFallback>{v.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <p className="text-sm text-foreground flex-1">{v.profile?.username || "User"}</p>
-                  </button>
-                  {v.rating != null ? (
-                    <button onClick={() => navigate(`/review/${v.review_id}`)} className="flex items-center gap-1.5 active:scale-95 transition-transform">
-                      <StarRating rating={Number(v.rating)} size={12} liked={v.liked} />
-                      {v.has_review && <MessageSquare className="w-3 h-3 text-primary" />}
-                    </button>
-                  ) : <span className="text-xs text-muted-foreground">logged</span>}
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {activeSection === "reviews" && writtenReviews.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-5 mt-2">
-            <h3 className="text-sm font-semibold text-foreground mb-3">All reviews</h3>
-            <div className="space-y-3">
-              {writtenReviews.map((rv: any) => (
-                <button key={rv.id} onClick={() => navigate(`/review/${rv.id}`)} className="bg-card rounded-xl p-3 border border-border w-full text-left active:scale-[0.98] transition-transform">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Avatar className="w-7 h-7">
-                      <AvatarImage src={rv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(rv.profile?.username || "?")}&background=3B82F6&color=fff`} />
-                      <AvatarFallback>{rv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <p className="text-sm font-medium text-foreground flex-1">{rv.profile?.username || "User"}</p>
-                    <StarRating rating={rv.rating} size={11} liked={rv.liked} />
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">{rv.review_text}</p>
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {activeSection === "lists" && allLists.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="mb-5 mt-2">
-            <h3 className="text-sm font-semibold text-foreground mb-3">Appears in lists</h3>
-            <div className="space-y-2.5">
-              {allLists.map((l: any, i: number) => (
-                <button key={i} onClick={() => navigate(l.profile?.user_id === user?.id ? "/profile" : `/profile/${l.profile?.user_id}`)} className="flex items-center gap-3 w-full text-left">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={l.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(l.profile?.username || "?")}&background=3B82F6&color=fff`} />
-                    <AvatarFallback>{l.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{l.list_name}</p>
-                    <p className="text-xs text-muted-foreground">by {l.profile?.username || "User"}</p>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
       </div>
     </div>
   );
