@@ -147,13 +147,20 @@ export default function PlacePage() {
       const followingIds = (following || []).map((f) => f.following_id);
 
       if (followingIds.length > 0) {
-        // Friends who visited
-        const friendReviews = reviews.filter((r) => followingIds.includes(r.user_id));
-        if (friendReviews.length > 0) {
-          const friendIds = friendReviews.map((r) => r.user_id);
+        // Friends who visited (most recent per friend)
+        const friendReviewsByUser = new Map<string, any>();
+        reviews.filter((r) => followingIds.includes(r.user_id)).forEach((r) => {
+          const existing = friendReviewsByUser.get(r.user_id);
+          if (!existing || new Date(r.created_at) > new Date(existing.created_at)) {
+            friendReviewsByUser.set(r.user_id, r);
+          }
+        });
+        const uniqueFriendReviews = Array.from(friendReviewsByUser.values());
+        if (uniqueFriendReviews.length > 0) {
+          const friendIds = uniqueFriendReviews.map((r) => r.user_id);
           const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", friendIds);
           setFriendVisitors(
-            friendReviews.map((r) => {
+            uniqueFriendReviews.map((r) => {
               const p = (profiles || []).find((p: any) => p.user_id === r.user_id);
               return { ...r, profile: p, review_id: r.id, has_review: !!(r.review_text && r.review_text.trim() !== "") };
             })
