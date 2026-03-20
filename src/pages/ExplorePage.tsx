@@ -263,7 +263,7 @@ export default function ExplorePage() {
       .eq("follower_id", user.id);
     const followingIds = (following || []).map((f) => f.following_id);
 
-    // Recent lists from friends
+    // Recent lists from friends (exclude own)
     if (followingIds.length > 0) {
       const { data: fLists } = await supabase
         .from("lists")
