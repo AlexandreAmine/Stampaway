@@ -9,6 +9,7 @@ import { StarRating } from "@/components/StarRating";
 interface DiaryEntry {
   id: string;
   rating: number | null;
+  liked: boolean;
   review_text: string | null;
   visit_year: number | null;
   visit_month: number | null;
@@ -41,7 +42,7 @@ export function DiaryTab({ userId }: { userId?: string }) {
     if (!targetUserId) return;
     const { data } = await supabase
       .from("reviews")
-      .select("id, rating, review_text, visit_year, visit_month, duration_days, created_at, places!inner(id, name, country, type, image)")
+      .select("id, rating, liked, review_text, visit_year, visit_month, duration_days, created_at, places!inner(id, name, country, type, image)")
       .eq("user_id", targetUserId)
       .order("visit_year", { ascending: false, nullsFirst: false })
       .order("visit_month", { ascending: false, nullsFirst: false })
@@ -51,6 +52,7 @@ export function DiaryTab({ userId }: { userId?: string }) {
       const mapped: DiaryEntry[] = data.map((r: any) => ({
         id: r.id,
         rating: r.rating,
+        liked: r.liked || false,
         review_text: r.review_text,
         visit_year: r.visit_year,
         visit_month: r.visit_month,
@@ -125,9 +127,9 @@ export function DiaryTab({ userId }: { userId?: string }) {
                     {entry.duration_days ? ` · ${entry.duration_days} day${entry.duration_days > 1 ? "s" : ""}` : ""}
                   </p>
                    {entry.rating != null ? (
-                     <div className="mt-1">
-                       <StarRating rating={entry.rating} size={14} />
-                     </div>
+                      <div className="mt-1">
+                        <StarRating rating={entry.rating} size={14} liked={entry.liked} />
+                      </div>
                    ) : (
                      <p className="text-xs text-muted-foreground mt-1">No rating</p>
                    )}

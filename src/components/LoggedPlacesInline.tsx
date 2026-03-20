@@ -25,6 +25,7 @@ const SORT_LABELS: Record<SortOption, string> = {
 interface PlaceEntry {
   place_id: string;
   rating: number | null;
+  liked: boolean;
   visit_year: number | null;
   visit_month: number | null;
   duration_days: number | null;
@@ -48,7 +49,7 @@ export function LoggedPlacesInline({ type, userId, ratingFilter }: { type: "city
     (async () => {
       const { data } = await supabase
         .from("reviews")
-        .select("place_id, rating, visit_year, visit_month, duration_days, places!inner(name, country, type, image)")
+        .select("place_id, rating, liked, visit_year, visit_month, duration_days, places!inner(name, country, type, image)")
         .eq("user_id", targetUserId)
         .eq("places.type", type)
         .order("created_at", { ascending: false });
@@ -58,6 +59,7 @@ export function LoggedPlacesInline({ type, userId, ratingFilter }: { type: "city
       const entries: PlaceEntry[] = data.map((r: any) => ({
         place_id: r.place_id,
         rating: r.rating != null ? Number(r.rating) : null,
+        liked: r.liked || false,
         visit_year: r.visit_year,
         visit_month: r.visit_month,
         duration_days: r.duration_days,
@@ -164,7 +166,7 @@ export function LoggedPlacesInline({ type, userId, ratingFilter }: { type: "city
             </div>
             {r.rating != null ? (
               <div className="mt-1.5 flex justify-center">
-                <StarRating rating={r.rating} size={12} />
+                <StarRating rating={r.rating} size={12} liked={r.liked} />
               </div>
             ) : (
               <p className="mt-1.5 text-[10px] text-muted-foreground text-center">No rating</p>

@@ -1,13 +1,14 @@
-import { Star } from "lucide-react";
+import { Star, Heart } from "lucide-react";
 
 interface StarRatingProps {
   rating: number | null;
   size?: number;
   interactive?: boolean;
   onChange?: (rating: number) => void;
+  liked?: boolean;
 }
 
-export function StarRating({ rating, size = 16, interactive = false, onChange }: StarRatingProps) {
+export function StarRating({ rating, size = 16, interactive = false, onChange, liked }: StarRatingProps) {
   const stars = [1, 2, 3, 4, 5];
   const displayRating = rating ?? 0;
 
@@ -17,7 +18,6 @@ export function StarRating({ rating, size = 16, interactive = false, onChange }:
     const clickX = e.clientX - rect.left;
     const isLeftHalf = clickX < rect.width / 2;
     const newRating = isLeftHalf ? star - 0.5 : star;
-    // Toggle off if clicking same value
     onChange(displayRating === newRating ? 0 : newRating);
   };
 
@@ -36,33 +36,24 @@ export function StarRating({ rating, size = 16, interactive = false, onChange }:
             className={`relative ${interactive ? "cursor-pointer" : "cursor-default"}`}
             style={{ width: size, height: size }}
           >
-            {/* Empty star background */}
-            <Star
-              size={size}
-              className="text-star-empty absolute inset-0"
-              fill="none"
-            />
-            {/* Half fill */}
+            <Star size={size} className="text-star-empty absolute inset-0" fill="none" />
             {halfFilled && (
               <div className="absolute inset-0 overflow-hidden" style={{ width: '50%' }}>
-                <Star
-                  size={size}
-                  className="text-star fill-star"
-                  fill="currentColor"
-                />
+                <Star size={size} className="text-star fill-star" fill="currentColor" />
               </div>
             )}
-            {/* Full fill */}
             {filled && (
-              <Star
-                size={size}
-                className="text-star fill-star absolute inset-0"
-                fill="currentColor"
-              />
+              <Star size={size} className="text-star fill-star absolute inset-0" fill="currentColor" />
             )}
           </button>
         );
       })}
+      {liked && (
+        <Heart
+          size={size * 0.75}
+          className="text-red-500 fill-red-500 ml-0.5 shrink-0"
+        />
+      )}
     </div>
   );
 }

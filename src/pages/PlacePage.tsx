@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Users, Star, List, MessageSquare } from "lucide-react";
+import { ChevronLeft, Users, Star, List, MessageSquare, Heart } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -231,7 +231,7 @@ export default function PlacePage() {
           <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="bg-card rounded-xl p-4 border border-border mb-5">
             <p className="text-xs text-primary font-medium mb-1">You rated this</p>
             <div className="flex items-center gap-2">
-              <StarRating rating={myReview.rating} size={14} />
+              <StarRating rating={myReview.rating} size={14} liked={myReview.liked} />
               <span className="text-sm font-semibold text-foreground">{myReview.rating}</span>
             </div>
             {myReview.review_text && (
@@ -252,7 +252,7 @@ export default function PlacePage() {
                     <AvatarFallback>{fv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <p className="text-sm text-foreground flex-1">{fv.profile?.username}</p>
-                  <StarRating rating={fv.rating} size={12} />
+                  <StarRating rating={fv.rating} size={12} liked={fv.liked} />
                 </div>
               ))}
             </div>
@@ -290,7 +290,7 @@ export default function PlacePage() {
                       <AvatarFallback>{rv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <p className="text-sm font-medium text-foreground flex-1">{rv.profile?.username || "User"}</p>
-                    <StarRating rating={rv.rating} size={11} />
+                    <StarRating rating={rv.rating} size={11} liked={rv.liked} />
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed">{rv.review_text}</p>
                 </div>
