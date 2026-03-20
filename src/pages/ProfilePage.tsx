@@ -86,7 +86,7 @@ export default function ProfilePage() {
 
     const [favRes, reviewRes, listRes, wishRes, followingRes, followersRes, totalCountriesRes, likesRes, writtenReviewsRes] = await Promise.all([
       supabase.from("favorite_places").select("slot_index, place_id, type, places!inner(name, image, country, type)").eq("user_id", uid),
-      supabase.from("reviews").select("rating, place_id, places!inner(type, country)").eq("user_id", uid),
+      supabase.from("reviews").select("rating, place_id, places!inner(type)").eq("user_id", uid),
       supabase.from("lists").select("id", { count: "exact", head: true }).eq("user_id", uid),
       supabase.from("wishlists").select("id", { count: "exact", head: true }).eq("user_id", uid),
       supabase.from("followers").select("id", { count: "exact", head: true }).eq("follower_id", uid),
