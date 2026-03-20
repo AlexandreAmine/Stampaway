@@ -125,16 +125,13 @@ export default function AddPlacePage() {
 
           <div className="space-y-6">
             <div>
-              <p className="text-sm font-semibold text-foreground mb-3">Your rating <span className="text-muted-foreground font-normal">(optional)</span></p>
+              <p className="text-sm font-semibold text-foreground mb-3">Your rating</p>
               <div className="flex items-center justify-between">
                 <StarRating rating={rating} size={40} interactive onChange={setRating} />
                 <button type="button" onClick={() => setLiked(!liked)} className="text-2xl transition-transform active:scale-90">
                   {liked ? "❤️" : "🤍"}
                 </button>
               </div>
-              {rating === 0 && (
-                <p className="text-xs text-muted-foreground mt-1">Tap to rate, or leave blank to log without a grade</p>
-              )}
             </div>
 
             <div>
