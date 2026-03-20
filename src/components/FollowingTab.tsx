@@ -12,8 +12,10 @@ interface FollowUser {
   profile_picture: string | null;
 }
 
-export function FollowingTab() {
+export function FollowingTab({ userId, readOnly = false }: { userId?: string; readOnly?: boolean }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const targetUserId = userId || user?.id;
   const [following, setFollowing] = useState<FollowUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSearch, setShowSearch] = useState(false);
