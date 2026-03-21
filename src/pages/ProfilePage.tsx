@@ -78,6 +78,32 @@ export default function ProfilePage() {
     }
   }, [viewingUserId, isOwnProfile]);
 
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [togglingFollow, setTogglingFollow] = useState(false);
+
+  // Check follow status
+  useEffect(() => {
+    if (!user || isOwnProfile || !viewingUserId) return;
+    supabase.from("followers").select("id").eq("follower_id", user.id).eq("following_id", viewingUserId).maybeSingle().then(({ data }) => {
+      setIsFollowing(!!data);
+    });
+  }, [user, viewingUserId, isOwnProfile]);
+
+  const toggleFollow = async () => {
+    if (!user || !viewingUserId || togglingFollow) return;
+    setTogglingFollow(true);
+    if (isFollowing) {
+      await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", viewingUserId);
+      setIsFollowing(false);
+      setFollowersCount((c) => Math.max(0, c - 1));
+    } else {
+      await supabase.from("followers").insert({ follower_id: user.id, following_id: viewingUserId });
+      setIsFollowing(true);
+      setFollowersCount((c) => c + 1);
+    }
+    setTogglingFollow(false);
+  };
+
   const currentProfile = isOwnProfile ? profile : viewedProfile;
   const displayName = currentProfile?.username || "User";
   const avatarUrl = currentProfile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3B82F6&color=fff`;
