@@ -270,6 +270,9 @@ export default function HomePage() {
                   <span className="text-xs text-muted-foreground">• {formatDate(a.created_at)}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
+                  {getFlagEmoji(a.place_country) && (
+                    <span className="text-sm shrink-0">{getFlagEmoji(a.place_country)}</span>
+                  )}
                   <span className="text-sm font-bold text-foreground truncate">{a.place_name}</span>
                   {a.rating != null ? (
                     <>
