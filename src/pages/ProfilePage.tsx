@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { ChevronRight, ChevronLeft, LogOut, Plus, X } from "lucide-react";
+import { ChevronRight, ChevronLeft, LogOut, Plus, X, UserPlus, UserMinus } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -77,6 +77,32 @@ export default function ProfilePage() {
       });
     }
   }, [viewingUserId, isOwnProfile]);
+
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [togglingFollow, setTogglingFollow] = useState(false);
+
+  // Check follow status
+  useEffect(() => {
+    if (!user || isOwnProfile || !viewingUserId) return;
+    supabase.from("followers").select("id").eq("follower_id", user.id).eq("following_id", viewingUserId).maybeSingle().then(({ data }) => {
+      setIsFollowing(!!data);
+    });
+  }, [user, viewingUserId, isOwnProfile]);
+
+  const toggleFollow = async () => {
+    if (!user || !viewingUserId || togglingFollow) return;
+    setTogglingFollow(true);
+    if (isFollowing) {
+      await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", viewingUserId);
+      setIsFollowing(false);
+      setFollowersCount((c) => Math.max(0, c - 1));
+    } else {
+      await supabase.from("followers").insert({ follower_id: user.id, following_id: viewingUserId });
+      setIsFollowing(true);
+      setFollowersCount((c) => c + 1);
+    }
+    setTogglingFollow(false);
+  };
 
   const currentProfile = isOwnProfile ? profile : viewedProfile;
   const displayName = currentProfile?.username || "User";
@@ -340,9 +366,31 @@ export default function ProfilePage() {
               {isOwnProfile && <p className="text-xs text-muted-foreground">{user?.email}</p>}
             </div>
           </div>
-          {isOwnProfile && (
+          {isOwnProfile ? (
             <button onClick={signOut} className="p-2">
               <LogOut className="w-5 h-5 text-muted-foreground" />
+            </button>
+          ) : user && (
+            <button
+              onClick={toggleFollow}
+              disabled={togglingFollow}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                isFollowing
+                  ? "bg-card border border-border text-foreground"
+                  : "bg-primary text-primary-foreground"
+              }`}
+            >
+              {isFollowing ? (
+                <>
+                  <UserMinus className="w-3.5 h-3.5" />
+                  Unfollow
+                </>
+              ) : (
+                <>
+                  <UserPlus className="w-3.5 h-3.5" />
+                  Follow
+                </>
+              )}
             </button>
           )}
         </div>

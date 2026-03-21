@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Heart, MessageSquare, Calendar, Clock, Send, History } from "lucide-react";
+import { ChevronLeft, Heart, MessageSquare, Calendar, Clock, History } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { StarRating } from "@/components/StarRating";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { DestinationPoster } from "@/components/DestinationPoster";
+import { ReviewComments } from "@/components/ReviewComments";
 
 export default function ReviewDetailPage() {
   const { reviewId } = useParams<{ reviewId: string }>();
@@ -213,16 +214,10 @@ export default function ReviewDetailPage() {
           </motion.div>
         )}
 
-        {/* Reply section */}
-        {review.user_id !== user?.id && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="mt-6">
-            <div className="flex items-center gap-2 mb-3">
-              <Send className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">Reply to {profile?.username}</h3>
-            </div>
-            <p className="text-xs text-muted-foreground">Replying feature coming soon</p>
-          </motion.div>
-        )}
+        {/* Comments section */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="mt-6">
+          <ReviewComments reviewId={reviewId!} />
+        </motion.div>
       </div>
     </div>
   );

@@ -164,7 +164,7 @@ export default function PlaceSubPage() {
 
             {section === "lists" &&
               data.map((l: any, i: number) => (
-                <button key={i} onClick={() => navigate(l.profile?.user_id === user?.id ? "/profile" : `/profile/${l.profile?.user_id}`)} className="flex items-center gap-3 w-full text-left">
+                <button key={i} onClick={() => navigate(`/list/${l.list_id}`)} className="flex items-center gap-3 w-full text-left">
                   <Avatar className="w-9 h-9">
                     <AvatarImage src={l.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(l.profile?.username || "?")}&background=3B82F6&color=fff`} />
                     <AvatarFallback>{l.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>

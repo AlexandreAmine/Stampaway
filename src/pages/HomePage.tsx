@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Star, UserPlus } from "lucide-react";
+import { getFlagEmoji } from "@/lib/countryFlags";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -122,7 +123,7 @@ export default function HomePage() {
     if (globeRef.current) {
       globeRef.current.controls().autoRotate = true;
       globeRef.current.controls().autoRotateSpeed = 0.4;
-      globeRef.current.controls().enableZoom = false;
+      globeRef.current.controls().enableZoom = true;
       globeRef.current.pointOfView({ altitude: 2.2 });
     }
   }, [loading]);
@@ -269,6 +270,9 @@ export default function HomePage() {
                   <span className="text-xs text-muted-foreground">• {formatDate(a.created_at)}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
+                  {getFlagEmoji(a.place_country) && (
+                    <span className="text-sm shrink-0">{getFlagEmoji(a.place_country)}</span>
+                  )}
                   <span className="text-sm font-bold text-foreground truncate">{a.place_name}</span>
                   {a.rating != null ? (
                     <>

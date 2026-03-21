@@ -359,11 +359,15 @@ export default function PlacePage() {
             <div className="space-y-2.5">
               {friendVisitors.map((fv: any) => (
                 <div key={fv.id || fv.user_id} className="flex items-center gap-3">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={fv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fv.profile?.username || "?")}&background=3B82F6&color=fff`} />
-                    <AvatarFallback>{fv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <p className="text-sm text-foreground flex-1">{fv.profile?.username}</p>
+                  <button onClick={() => navigate(fv.user_id === user?.id ? "/profile" : `/profile/${fv.user_id}`)} className="shrink-0">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={fv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fv.profile?.username || "?")}&background=3B82F6&color=fff`} />
+                      <AvatarFallback>{fv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                  </button>
+                  <button onClick={() => navigate(fv.user_id === user?.id ? "/profile" : `/profile/${fv.user_id}`)} className="text-sm text-foreground flex-1 text-left hover:underline">
+                    {fv.profile?.username}
+                  </button>
                   <button
                     onClick={() => navigate(`/review/${fv.review_id}`)}
                     className="flex items-center gap-1.5 active:scale-95 transition-transform"
@@ -383,10 +387,12 @@ export default function PlacePage() {
             <h3 className="text-sm font-semibold text-foreground mb-3">Want to visit</h3>
             <div className="flex -space-x-2">
               {friendWishlist.map((fw: any) => (
-                <Avatar key={fw.user_id} className="w-8 h-8 border-2 border-background">
-                  <AvatarImage src={fw.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fw.username || "?")}&background=3B82F6&color=fff`} />
-                  <AvatarFallback>{fw.username?.[0]?.toUpperCase()}</AvatarFallback>
-                </Avatar>
+                <button key={fw.user_id} onClick={() => navigate(fw.user_id === user?.id ? "/profile" : `/profile/${fw.user_id}`)}>
+                  <Avatar className="w-8 h-8 border-2 border-background">
+                    <AvatarImage src={fw.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fw.username || "?")}&background=3B82F6&color=fff`} />
+                    <AvatarFallback>{fw.username?.[0]?.toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                </button>
               ))}
               <span className="text-xs text-muted-foreground ml-4 self-center">
                 {friendWishlist.map((f: any) => f.username).join(", ")}

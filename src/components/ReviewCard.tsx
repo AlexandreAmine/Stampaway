@@ -108,11 +108,16 @@ export function ReviewCard({ review, showImage = true }: ReviewCardProps) {
                 <img
                   src={userAvatar}
                   alt={userName}
-                  className="w-5 h-5 rounded-full object-cover shrink-0"
-                  onClick={(e) => { e.stopPropagation(); if (userId) navigate(`/profile/${userId}`); }}
+                  className="w-5 h-5 rounded-full object-cover shrink-0 cursor-pointer"
+                  onClick={(e) => { e.stopPropagation(); if (userId) navigate(userId === user?.id ? "/profile" : `/profile/${userId}`); }}
                 />
               )}
-              <span className="text-xs font-medium text-muted-foreground truncate">{userName}</span>
+              <button
+                onClick={(e) => { e.stopPropagation(); if (userId) navigate(userId === user?.id ? "/profile" : `/profile/${userId}`); }}
+                className="text-xs font-medium text-muted-foreground truncate hover:underline"
+              >
+                {userName}
+              </button>
               {rating != null && (
                 <>
                   <Star className="w-3 h-3 text-star fill-star shrink-0" />
