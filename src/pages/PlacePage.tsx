@@ -359,11 +359,15 @@ export default function PlacePage() {
             <div className="space-y-2.5">
               {friendVisitors.map((fv: any) => (
                 <div key={fv.id || fv.user_id} className="flex items-center gap-3">
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={fv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fv.profile?.username || "?")}&background=3B82F6&color=fff`} />
-                    <AvatarFallback>{fv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <p className="text-sm text-foreground flex-1">{fv.profile?.username}</p>
+                  <button onClick={() => navigate(fv.user_id === user?.id ? "/profile" : `/profile/${fv.user_id}`)} className="shrink-0">
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={fv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fv.profile?.username || "?")}&background=3B82F6&color=fff`} />
+                      <AvatarFallback>{fv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                  </button>
+                  <button onClick={() => navigate(fv.user_id === user?.id ? "/profile" : `/profile/${fv.user_id}`)} className="text-sm text-foreground flex-1 text-left hover:underline">
+                    {fv.profile?.username}
+                  </button>
                   <button
                     onClick={() => navigate(`/review/${fv.review_id}`)}
                     className="flex items-center gap-1.5 active:scale-95 transition-transform"
