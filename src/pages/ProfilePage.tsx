@@ -366,9 +366,31 @@ export default function ProfilePage() {
               {isOwnProfile && <p className="text-xs text-muted-foreground">{user?.email}</p>}
             </div>
           </div>
-          {isOwnProfile && (
+          {isOwnProfile ? (
             <button onClick={signOut} className="p-2">
               <LogOut className="w-5 h-5 text-muted-foreground" />
+            </button>
+          ) : user && (
+            <button
+              onClick={toggleFollow}
+              disabled={togglingFollow}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                isFollowing
+                  ? "bg-card border border-border text-foreground"
+                  : "bg-primary text-primary-foreground"
+              }`}
+            >
+              {isFollowing ? (
+                <>
+                  <UserMinus className="w-3.5 h-3.5" />
+                  Unfollow
+                </>
+              ) : (
+                <>
+                  <UserPlus className="w-3.5 h-3.5" />
+                  Follow
+                </>
+              )}
             </button>
           )}
         </div>
