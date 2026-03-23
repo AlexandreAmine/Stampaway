@@ -451,6 +451,27 @@ export default function ProfilePage() {
       </div>
 
       {isOwnProfile && <FavoritePicker open={pickerOpen} onClose={() => setPickerOpen(false)} type={pickerType} onSelect={handleSelectFavorite} />}
+      {isOwnProfile && user && (
+        <EditProfileDialog
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          userId={user.id}
+          currentData={{
+            username: profile?.username || "",
+            bio: profile?.bio || null,
+            country: profile?.country || null,
+          }}
+          onSaved={() => {
+            // Refresh profile in auth context
+            supabase.from("profiles").select("username, profile_picture, bio, country").eq("user_id", user.id).single().then(({ data }) => {
+              if (data) {
+                // Force re-render by refetching
+                window.location.reload();
+              }
+            });
+          }}
+        />
+      )}
     </div>
   );
 }
