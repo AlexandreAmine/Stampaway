@@ -462,13 +462,8 @@ export default function ProfilePage() {
             country: profile?.country || null,
           }}
           onSaved={() => {
-            // Refresh profile in auth context
-            supabase.from("profiles").select("username, profile_picture, bio, country").eq("user_id", user.id).single().then(({ data }) => {
-              if (data) {
-                // Force re-render by refetching
-                window.location.reload();
-              }
-            });
+            refreshProfile();
+            fetchData();
           }}
         />
       )}
