@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { ChevronRight, ChevronLeft, LogOut, Plus, X, UserPlus, UserMinus } from "lucide-react";
+import { ChevronRight, ChevronLeft, LogOut, Plus, X, UserPlus, UserMinus, Settings } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,6 +18,8 @@ import { ReviewsTab } from "@/components/ReviewsTab";
 import { LoggedPlacesInline } from "@/components/LoggedPlacesInline";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminStats } from "@/components/AdminStats";
+import { EditProfileDialog } from "@/components/EditProfileDialog";
+import { getFlagEmoji } from "@/lib/countryFlags";
 
 interface FavoriteSlot {
   slot_index: number;
@@ -31,7 +33,7 @@ interface FavoriteSlot {
 type SubPage = null | "Countries" | "Cities" | "Diary" | "Map" | "Lists" | "Wishlist" | "Likes" | "Reviews" | "Following" | "Followers" | "CountriesByRating" | "CitiesByRating";
 
 export default function ProfilePage() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, refreshProfile } = useAuth();
   const { userId: paramUserId } = useParams<{ userId?: string }>();
   const navigate = useNavigate();
 
@@ -39,7 +41,8 @@ export default function ProfilePage() {
   const viewingUserId = paramUserId || user?.id;
   const isOwnProfile = !paramUserId || paramUserId === user?.id;
 
-  const [viewedProfile, setViewedProfile] = useState<{ username: string; profile_picture: string | null } | null>(null);
+  const [viewedProfile, setViewedProfile] = useState<{ username: string; profile_picture: string | null; bio: string | null; country: string | null } | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerType, setPickerType] = useState<"city" | "country">("city");
@@ -72,7 +75,7 @@ export default function ProfilePage() {
     if (isOwnProfile) {
       setViewedProfile(null);
     } else if (viewingUserId) {
-      supabase.from("profiles").select("username, profile_picture").eq("user_id", viewingUserId).single().then(({ data }) => {
+      supabase.from("profiles").select("username, profile_picture, bio, country").eq("user_id", viewingUserId).single().then(({ data }) => {
         if (data) setViewedProfile(data);
       });
     }
@@ -353,7 +356,7 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-background pb-24">
       <div className="pt-12 px-5">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-4">
             {!isOwnProfile && (
               <button onClick={() => navigate(-1)} className="mr-1">
@@ -362,38 +365,55 @@ export default function ProfilePage() {
             )}
             <img src={avatarUrl} alt={displayName} className="w-16 h-16 rounded-full object-cover border-2 border-border" />
             <div>
-              <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
+                {currentProfile?.country && (
+                  <span className="text-lg">{getFlagEmoji(currentProfile.country)}</span>
+                )}
+              </div>
               {isOwnProfile && <p className="text-xs text-muted-foreground">{user?.email}</p>}
             </div>
           </div>
-          {isOwnProfile ? (
-            <button onClick={signOut} className="p-2">
-              <LogOut className="w-5 h-5 text-muted-foreground" />
-            </button>
-          ) : user && (
-            <button
-              onClick={toggleFollow}
-              disabled={togglingFollow}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                isFollowing
-                  ? "bg-card border border-border text-foreground"
-                  : "bg-primary text-primary-foreground"
-              }`}
-            >
-              {isFollowing ? (
-                <>
-                  <UserMinus className="w-3.5 h-3.5" />
-                  Unfollow
-                </>
-              ) : (
-                <>
-                  <UserPlus className="w-3.5 h-3.5" />
-                  Follow
-                </>
-              )}
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {isOwnProfile ? (
+              <>
+                <button onClick={() => setEditOpen(true)} className="p-2">
+                  <Settings className="w-5 h-5 text-muted-foreground" />
+                </button>
+                <button onClick={signOut} className="p-2">
+                  <LogOut className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </>
+            ) : user && (
+              <button
+                onClick={toggleFollow}
+                disabled={togglingFollow}
+                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  isFollowing
+                    ? "bg-card border border-border text-foreground"
+                    : "bg-primary text-primary-foreground"
+                }`}
+              >
+                {isFollowing ? (
+                  <>
+                    <UserMinus className="w-3.5 h-3.5" />
+                    Unfollow
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-3.5 h-3.5" />
+                    Follow
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Bio */}
+        {currentProfile?.bio && (
+          <p className="text-sm text-muted-foreground mb-4 px-1">{currentProfile.bio}</p>
+        )}
 
         {/* Admin Stats */}
         {isOwnProfile && user && <AdminStats userId={user.id} />}
@@ -431,6 +451,22 @@ export default function ProfilePage() {
       </div>
 
       {isOwnProfile && <FavoritePicker open={pickerOpen} onClose={() => setPickerOpen(false)} type={pickerType} onSelect={handleSelectFavorite} />}
+      {isOwnProfile && user && (
+        <EditProfileDialog
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          userId={user.id}
+          currentData={{
+            username: profile?.username || "",
+            bio: profile?.bio || null,
+            country: profile?.country || null,
+          }}
+          onSaved={() => {
+            refreshProfile();
+            fetchData();
+          }}
+        />
+      )}
     </div>
   );
 }

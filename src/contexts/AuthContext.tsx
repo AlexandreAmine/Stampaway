@@ -5,11 +5,12 @@ import { supabase } from "@/integrations/supabase/client";
 interface AuthContextType {
   session: Session | null;
   user: User | null;
-  profile: { username: string; profile_picture: string | null } | null;
+  profile: { username: string; profile_picture: string | null; bio: string | null; country: string | null } | null;
   loading: boolean;
   signUp: (email: string, password: string, username: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,13 +18,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<{ username: string; profile_picture: string | null } | null>(null);
+  const [profile, setProfile] = useState<{ username: string; profile_picture: string | null; bio: string | null; country: string | null } | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("username, profile_picture")
+      .select("username, profile_picture, bio, country")
       .eq("user_id", userId)
       .single();
     if (data) setProfile(data);
@@ -65,12 +66,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
-  const signOut = async () => {
+  const refreshProfile = async () => {
+    if (user) await fetchProfile(user.id);
+  };
+
+  const signOutFn = async () => {
     await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ session, user, profile, loading, signUp, signIn, signOut: signOutFn, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
