@@ -356,7 +356,7 @@ export default function ProfilePage() {
     <div className="min-h-screen bg-background pb-24">
       <div className="pt-12 px-5">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-4">
             {!isOwnProfile && (
               <button onClick={() => navigate(-1)} className="mr-1">
@@ -365,38 +365,55 @@ export default function ProfilePage() {
             )}
             <img src={avatarUrl} alt={displayName} className="w-16 h-16 rounded-full object-cover border-2 border-border" />
             <div>
-              <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
+                {currentProfile?.country && (
+                  <span className="text-lg">{getFlagEmoji(currentProfile.country)}</span>
+                )}
+              </div>
               {isOwnProfile && <p className="text-xs text-muted-foreground">{user?.email}</p>}
             </div>
           </div>
-          {isOwnProfile ? (
-            <button onClick={signOut} className="p-2">
-              <LogOut className="w-5 h-5 text-muted-foreground" />
-            </button>
-          ) : user && (
-            <button
-              onClick={toggleFollow}
-              disabled={togglingFollow}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                isFollowing
-                  ? "bg-card border border-border text-foreground"
-                  : "bg-primary text-primary-foreground"
-              }`}
-            >
-              {isFollowing ? (
-                <>
-                  <UserMinus className="w-3.5 h-3.5" />
-                  Unfollow
-                </>
-              ) : (
-                <>
-                  <UserPlus className="w-3.5 h-3.5" />
-                  Follow
-                </>
-              )}
-            </button>
-          )}
+          <div className="flex items-center gap-2">
+            {isOwnProfile ? (
+              <>
+                <button onClick={() => setEditOpen(true)} className="p-2">
+                  <Settings className="w-5 h-5 text-muted-foreground" />
+                </button>
+                <button onClick={signOut} className="p-2">
+                  <LogOut className="w-5 h-5 text-muted-foreground" />
+                </button>
+              </>
+            ) : user && (
+              <button
+                onClick={toggleFollow}
+                disabled={togglingFollow}
+                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  isFollowing
+                    ? "bg-card border border-border text-foreground"
+                    : "bg-primary text-primary-foreground"
+                }`}
+              >
+                {isFollowing ? (
+                  <>
+                    <UserMinus className="w-3.5 h-3.5" />
+                    Unfollow
+                  </>
+                ) : (
+                  <>
+                    <UserPlus className="w-3.5 h-3.5" />
+                    Follow
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Bio */}
+        {currentProfile?.bio && (
+          <p className="text-sm text-muted-foreground mb-4 px-1">{currentProfile.bio}</p>
+        )}
 
         {/* Admin Stats */}
         {isOwnProfile && user && <AdminStats userId={user.id} />}
