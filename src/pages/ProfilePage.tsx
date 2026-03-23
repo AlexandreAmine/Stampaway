@@ -75,7 +75,7 @@ export default function ProfilePage() {
     if (isOwnProfile) {
       setViewedProfile(null);
     } else if (viewingUserId) {
-      supabase.from("profiles").select("username, profile_picture").eq("user_id", viewingUserId).single().then(({ data }) => {
+      supabase.from("profiles").select("username, profile_picture, bio, country").eq("user_id", viewingUserId).single().then(({ data }) => {
         if (data) setViewedProfile(data);
       });
     }
