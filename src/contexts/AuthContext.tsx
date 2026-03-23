@@ -66,7 +66,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: error as Error | null };
   };
 
-  const signOut = async () => {
+  const refreshProfile = async () => {
+    if (user) await fetchProfile(user.id);
+  };
+
+  const signOutFn = async () => {
     await supabase.auth.signOut();
   };
 
