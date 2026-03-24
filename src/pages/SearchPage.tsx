@@ -68,7 +68,7 @@ export default function SearchPage() {
         setLists([]);
       }
     } else if (activeFilter === "Users") {
-      let qb = supabase.from("profiles").select("id, user_id, username, email, profile_picture");
+      let qb = supabase.from("profiles").select("id, user_id, username, profile_picture");
       if (q) qb = qb.ilike("username", `%${q}%`);
       qb = qb.order("username").limit(30);
       const { data } = await qb;
@@ -149,7 +149,7 @@ export default function SearchPage() {
                   </Avatar>
                   <div>
                     <p className="text-sm font-semibold text-foreground">{u.username}</p>
-                    {u.email && <p className="text-xs text-muted-foreground">{u.email}</p>}
+                    
                   </div>
                 </button>
                 {!isMe && !isFollowing && (
