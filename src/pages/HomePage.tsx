@@ -121,10 +121,16 @@ export default function HomePage() {
 
   useEffect(() => {
     if (globeRef.current) {
-      globeRef.current.controls().autoRotate = true;
-      globeRef.current.controls().autoRotateSpeed = 0.4;
-      globeRef.current.controls().enableZoom = true;
+      const controls = globeRef.current.controls();
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 0.4;
+      controls.enableZoom = true;
       globeRef.current.pointOfView({ altitude: 2.2 });
+
+      // Stop rotation when user starts interacting
+      controls.addEventListener("start", () => {
+        controls.autoRotate = false;
+      });
     }
   }, [loading]);
 
