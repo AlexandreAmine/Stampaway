@@ -18,6 +18,8 @@ import { ReviewsTab } from "@/components/ReviewsTab";
 import { LoggedPlacesInline } from "@/components/LoggedPlacesInline";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminStats } from "@/components/AdminStats";
+import { ProfileEditSheet } from "@/components/ProfileEditSheet";
+import { getFlagEmoji } from "@/lib/countryFlags";
 
 interface FavoriteSlot {
   slot_index: number;
