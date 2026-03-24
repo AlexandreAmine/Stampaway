@@ -462,6 +462,18 @@ export default function ProfilePage() {
       </div>
 
       {isOwnProfile && <FavoritePicker open={pickerOpen} onClose={() => setPickerOpen(false)} type={pickerType} onSelect={handleSelectFavorite} />}
+      {isOwnProfile && currentProfile && (
+        <ProfileEditSheet
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          onSaved={handleProfileSaved}
+          currentData={{
+            username: currentProfile.username,
+            bio: profileBio,
+            country: profileCountry,
+          }}
+        />
+      )}
     </div>
   );
 }
