@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { ChevronRight, ChevronLeft, LogOut, Plus, X, UserPlus, UserMinus } from "lucide-react";
+import { ChevronRight, ChevronLeft, LogOut, Plus, X, UserPlus, UserMinus, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,6 +18,8 @@ import { ReviewsTab } from "@/components/ReviewsTab";
 import { LoggedPlacesInline } from "@/components/LoggedPlacesInline";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminStats } from "@/components/AdminStats";
+import { ProfileEditSheet } from "@/components/ProfileEditSheet";
+import { getFlagEmoji } from "@/lib/countryFlags";
 
 interface FavoriteSlot {
   slot_index: number;
@@ -39,7 +41,9 @@ export default function ProfilePage() {
   const viewingUserId = paramUserId || user?.id;
   const isOwnProfile = !paramUserId || paramUserId === user?.id;
 
-  const [viewedProfile, setViewedProfile] = useState<{ username: string; profile_picture: string | null } | null>(null);
+  const [viewedProfile, setViewedProfile] = useState<{ username: string; profile_picture: string | null; bio: string | null; country: string | null } | null>(null);
+  const [ownProfileFull, setOwnProfileFull] = useState<{ username: string; profile_picture: string | null; bio: string | null; country: string | null } | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerType, setPickerType] = useState<"city" | "country">("city");
@@ -69,10 +73,13 @@ export default function ProfilePage() {
   useEffect(() => {
     setSubPage(null);
     setRatingFilter(undefined);
-    if (isOwnProfile) {
+    if (isOwnProfile && viewingUserId) {
+      supabase.from("profiles").select("username, profile_picture, bio, country").eq("user_id", viewingUserId).single().then(({ data }) => {
+        if (data) setOwnProfileFull(data);
+      });
       setViewedProfile(null);
     } else if (viewingUserId) {
-      supabase.from("profiles").select("username, profile_picture").eq("user_id", viewingUserId).single().then(({ data }) => {
+      supabase.from("profiles").select("username, profile_picture, bio, country").eq("user_id", viewingUserId).single().then(({ data }) => {
         if (data) setViewedProfile(data);
       });
     }
@@ -104,9 +111,20 @@ export default function ProfilePage() {
     setTogglingFollow(false);
   };
 
-  const currentProfile = isOwnProfile ? profile : viewedProfile;
+  const currentProfile = isOwnProfile ? (ownProfileFull || profile) : viewedProfile;
   const displayName = currentProfile?.username || "User";
   const avatarUrl = currentProfile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3B82F6&color=fff`;
+  const profileBio = (currentProfile as any)?.bio as string | null;
+  const profileCountry = (currentProfile as any)?.country as string | null;
+  const countryFlag = profileCountry ? getFlagEmoji(profileCountry) : null;
+
+  const handleProfileSaved = () => {
+    if (viewingUserId) {
+      supabase.from("profiles").select("username, profile_picture, bio, country").eq("user_id", viewingUserId).single().then(({ data }) => {
+        if (data) setOwnProfileFull(data);
+      });
+    }
+  };
 
   const fetchData = useCallback(async () => {
     if (!viewingUserId) return;
@@ -362,14 +380,22 @@ export default function ProfilePage() {
             )}
             <img src={avatarUrl} alt={displayName} className="w-16 h-16 rounded-full object-cover border-2 border-border" />
             <div>
-              <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
+                {countryFlag && <span className="text-lg">{countryFlag}</span>}
+              </div>
               {isOwnProfile && <p className="text-xs text-muted-foreground">{user?.email}</p>}
             </div>
           </div>
           {isOwnProfile ? (
-            <button onClick={signOut} className="p-2">
-              <LogOut className="w-5 h-5 text-muted-foreground" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setEditOpen(true)} className="p-2">
+                <Pencil className="w-5 h-5 text-muted-foreground" />
+              </button>
+              <button onClick={signOut} className="p-2">
+                <LogOut className="w-5 h-5 text-muted-foreground" />
+              </button>
+            </div>
           ) : user && (
             <button
               onClick={toggleFollow}
@@ -394,6 +420,11 @@ export default function ProfilePage() {
             </button>
           )}
         </div>
+
+        {/* Bio */}
+        {profileBio && (
+          <p className="text-sm text-muted-foreground mb-4">{profileBio}</p>
+        )}
 
         {/* Admin Stats */}
         {isOwnProfile && user && <AdminStats userId={user.id} />}
@@ -431,6 +462,18 @@ export default function ProfilePage() {
       </div>
 
       {isOwnProfile && <FavoritePicker open={pickerOpen} onClose={() => setPickerOpen(false)} type={pickerType} onSelect={handleSelectFavorite} />}
+      {isOwnProfile && currentProfile && (
+        <ProfileEditSheet
+          open={editOpen}
+          onClose={() => setEditOpen(false)}
+          onSaved={handleProfileSaved}
+          currentData={{
+            username: currentProfile.username,
+            bio: profileBio,
+            country: profileCountry,
+          }}
+        />
+      )}
     </div>
   );
 }
