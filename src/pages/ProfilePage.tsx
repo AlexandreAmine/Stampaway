@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { ChevronRight, ChevronLeft, LogOut, Plus, X, UserPlus, UserMinus } from "lucide-react";
+import { ChevronRight, ChevronLeft, LogOut, Plus, X, UserPlus, UserMinus, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
