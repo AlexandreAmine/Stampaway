@@ -410,6 +410,11 @@ export default function ProfilePage() {
           )}
         </div>
 
+        {/* Bio */}
+        {profileBio && (
+          <p className="text-sm text-muted-foreground mb-4">{profileBio}</p>
+        )}
+
         {/* Admin Stats */}
         {isOwnProfile && user && <AdminStats userId={user.id} />}
 
