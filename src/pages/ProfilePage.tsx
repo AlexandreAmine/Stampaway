@@ -108,9 +108,20 @@ export default function ProfilePage() {
     setTogglingFollow(false);
   };
 
-  const currentProfile = isOwnProfile ? profile : viewedProfile;
+  const currentProfile = isOwnProfile ? (ownProfileFull || profile) : viewedProfile;
   const displayName = currentProfile?.username || "User";
   const avatarUrl = currentProfile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3B82F6&color=fff`;
+  const profileBio = (currentProfile as any)?.bio as string | null;
+  const profileCountry = (currentProfile as any)?.country as string | null;
+  const countryFlag = profileCountry ? getFlagEmoji(profileCountry) : null;
+
+  const handleProfileSaved = () => {
+    if (viewingUserId) {
+      supabase.from("profiles").select("username, profile_picture, bio, country").eq("user_id", viewingUserId).single().then(({ data }) => {
+        if (data) setOwnProfileFull(data);
+      });
+    }
+  };
 
   const fetchData = useCallback(async () => {
     if (!viewingUserId) return;
