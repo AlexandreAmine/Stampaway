@@ -149,7 +149,7 @@ export default function SearchPage() {
                   </Avatar>
                   <div>
                     <p className="text-sm font-semibold text-foreground">{u.username}</p>
-                    {u.email && <p className="text-xs text-muted-foreground">{u.email}</p>}
+                    
                   </div>
                 </button>
                 {!isMe && !isFollowing && (
