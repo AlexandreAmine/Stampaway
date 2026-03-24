@@ -380,14 +380,22 @@ export default function ProfilePage() {
             )}
             <img src={avatarUrl} alt={displayName} className="w-16 h-16 rounded-full object-cover border-2 border-border" />
             <div>
-              <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
+                {countryFlag && <span className="text-lg">{countryFlag}</span>}
+              </div>
               {isOwnProfile && <p className="text-xs text-muted-foreground">{user?.email}</p>}
             </div>
           </div>
           {isOwnProfile ? (
-            <button onClick={signOut} className="p-2">
-              <LogOut className="w-5 h-5 text-muted-foreground" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button onClick={() => setEditOpen(true)} className="p-2">
+                <Pencil className="w-5 h-5 text-muted-foreground" />
+              </button>
+              <button onClick={signOut} className="p-2">
+                <LogOut className="w-5 h-5 text-muted-foreground" />
+              </button>
+            </div>
           ) : user && (
             <button
               onClick={toggleFollow}
