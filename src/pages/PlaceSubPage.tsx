@@ -8,7 +8,7 @@ import { StarRating } from "@/components/StarRating";
 import { ReviewCard } from "@/components/ReviewCard";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
-type Section = "visitors" | "reviews" | "lists";
+type Section = "visitors" | "reviews" | "lists" | "wanttovisit";
 
 export default function PlaceSubPage() {
   const { id, section } = useParams<{ id: string; section: string }>();
@@ -95,12 +95,23 @@ export default function PlaceSubPage() {
           })
         );
       }
+    } else if (section === "wanttovisit") {
+      const { data: wishlistData } = await supabase
+        .from("wishlists")
+        .select("user_id")
+        .eq("place_id", id);
+
+      if (wishlistData && wishlistData.length > 0) {
+        const userIds = wishlistData.map((w) => w.user_id);
+        const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
+        setData(profiles || []);
+      }
     }
 
     setLoading(false);
   };
 
-  const title = section === "visitors" ? "Visitors" : section === "reviews" ? "Reviews" : "Lists";
+  const title = section === "visitors" ? "Visitors" : section === "reviews" ? "Reviews" : section === "wanttovisit" ? "Want to go" : "Lists";
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -173,6 +184,17 @@ export default function PlaceSubPage() {
                     <p className="text-sm font-medium text-foreground truncate">{l.list_name}</p>
                     <p className="text-xs text-muted-foreground">by {l.profile?.username || "User"}</p>
                   </div>
+                </button>
+              ))}
+
+            {section === "wanttovisit" &&
+              data.map((w: any) => (
+                <button key={w.user_id} onClick={() => navigate(w.user_id === user?.id ? "/profile" : `/profile/${w.user_id}`)} className="flex items-center gap-3 w-full text-left">
+                  <Avatar className="w-9 h-9">
+                    <AvatarImage src={w.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(w.username || "?")}&background=3B82F6&color=fff`} />
+                    <AvatarFallback>{w.username?.[0]?.toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <p className="text-sm text-foreground flex-1">{w.username || "User"}</p>
                 </button>
               ))}
           </motion.div>

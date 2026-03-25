@@ -566,7 +566,7 @@ function ListCard({ list, showLikes = false }: { list: any; showLikes?: boolean 
       <div className="flex items-center justify-between">
         <div
           className="flex-1 cursor-pointer"
-          onClick={() => navigate(`/profile/${list.user_id}`)}
+          onClick={() => navigate(`/list/${list.id}`)}
         >
           <div className="flex items-center gap-2 mb-1">
             {list.profile_picture && (

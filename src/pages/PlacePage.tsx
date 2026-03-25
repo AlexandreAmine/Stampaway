@@ -101,7 +101,7 @@ export default function PlacePage() {
     const uniqueReviews = Array.from(reviewsByUser.values());
     const uniqueVisitorIds = [...reviewsByUser.keys()];
     setVisitorsCount(uniqueVisitorIds.length);
-    setRatingsCount(reviews.length);
+    // ratingsCount set below after filtering
 
     if (uniqueVisitorIds.length > 0) {
       const { data: visitorProfiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", uniqueVisitorIds);
@@ -119,18 +119,20 @@ export default function PlacePage() {
       setMyReview(mine || null);
     }
 
-    // Average & distribution
-    if (reviews.length > 0) {
-      const sum = reviews.reduce((a, r) => a + Number(r.rating), 0);
-      setAvgRating(Math.round((sum / reviews.length) * 10) / 10);
+    // Average & distribution (exclude null ratings)
+    const ratedReviews = reviews.filter((r) => r.rating !== null && r.rating !== undefined);
+    if (ratedReviews.length > 0) {
+      const sum = ratedReviews.reduce((a, r) => a + Number(r.rating), 0);
+      setAvgRating(Math.round((sum / ratedReviews.length) * 10) / 10);
 
       const dist = Array(10).fill(0);
-      reviews.forEach((r) => {
+      ratedReviews.forEach((r) => {
         const idx = Math.round(Number(r.rating) * 2) - 1;
         if (idx >= 0 && idx < 10) dist[idx]++;
       });
       setDistribution(dist);
     }
+    setRatingsCount(ratedReviews.length);
 
     // Lists containing this place (with list details)
     const { data: listItemsData } = await supabase
@@ -355,27 +357,32 @@ export default function PlacePage() {
         {/* Visited by (friends) */}
         {friendVisitors.length > 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="mb-5">
-            <h3 className="text-sm font-semibold text-foreground mb-3">Visited by</h3>
-            <div className="space-y-2.5">
+            <button
+              onClick={() => navigate(`/place/${id}/visitors`)}
+              className="flex items-center gap-1 mb-3"
+            >
+              <h3 className="text-sm font-semibold text-foreground">Visited by</h3>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
               {friendVisitors.map((fv: any) => (
-                <div key={fv.id || fv.user_id} className="flex items-center gap-3">
-                  <button onClick={() => navigate(fv.user_id === user?.id ? "/profile" : `/profile/${fv.user_id}`)} className="shrink-0">
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage src={fv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fv.profile?.username || "?")}&background=3B82F6&color=fff`} />
-                      <AvatarFallback>{fv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                  </button>
-                  <button onClick={() => navigate(fv.user_id === user?.id ? "/profile" : `/profile/${fv.user_id}`)} className="text-sm text-foreground flex-1 text-left hover:underline">
-                    {fv.profile?.username}
-                  </button>
-                  <button
-                    onClick={() => navigate(`/review/${fv.review_id}`)}
-                    className="flex items-center gap-1.5 active:scale-95 transition-transform"
-                  >
-                    <StarRating rating={fv.rating} size={12} liked={fv.liked} />
-                    {fv.has_review && <MessageSquare className="w-3 h-3 text-primary" />}
-                  </button>
-                </div>
+                <button
+                  key={fv.id || fv.user_id}
+                  onClick={() => navigate(`/review/${fv.review_id}`)}
+                  className="flex-shrink-0 flex items-center gap-1.5 bg-card border border-border rounded-full pl-1 pr-3 py-1 active:scale-95 transition-transform"
+                >
+                  <Avatar className="w-8 h-8">
+                    <AvatarImage src={fv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fv.profile?.username || "?")}&background=3B82F6&color=fff`} />
+                    <AvatarFallback>{fv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  {fv.rating != null && (
+                    <div className="flex items-center gap-0.5">
+                      <StarRating rating={Number(fv.rating)} size={12} />
+                      <span className="text-xs font-semibold text-foreground">{Number(fv.rating).toFixed(1)}</span>
+                    </div>
+                  )}
+                  {fv.has_review && <MessageSquare className="w-3 h-3 text-primary" />}
+                </button>
               ))}
             </div>
           </motion.div>
@@ -384,19 +391,22 @@ export default function PlacePage() {
         {/* Want to visit (friends) */}
         {friendWishlist.length > 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="mb-5">
-            <h3 className="text-sm font-semibold text-foreground mb-3">Want to visit</h3>
-            <div className="flex -space-x-2">
+            <button
+              onClick={() => navigate(`/place/${id}/wanttovisit`)}
+              className="flex items-center gap-1 mb-3"
+            >
+              <h3 className="text-sm font-semibold text-foreground">Want to go</h3>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
               {friendWishlist.map((fw: any) => (
                 <button key={fw.user_id} onClick={() => navigate(fw.user_id === user?.id ? "/profile" : `/profile/${fw.user_id}`)}>
-                  <Avatar className="w-8 h-8 border-2 border-background">
+                  <Avatar className="w-9 h-9 border-2 border-border">
                     <AvatarImage src={fw.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fw.username || "?")}&background=3B82F6&color=fff`} />
                     <AvatarFallback>{fw.username?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                 </button>
               ))}
-              <span className="text-xs text-muted-foreground ml-4 self-center">
-                {friendWishlist.map((f: any) => f.username).join(", ")}
-              </span>
             </div>
           </motion.div>
         )}
