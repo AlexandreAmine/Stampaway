@@ -8,7 +8,7 @@ import { StarRating } from "@/components/StarRating";
 import { ReviewCard } from "@/components/ReviewCard";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
-type Section = "visitors" | "reviews" | "lists";
+type Section = "visitors" | "reviews" | "lists" | "wanttovisit";
 
 export default function PlaceSubPage() {
   const { id, section } = useParams<{ id: string; section: string }>();
