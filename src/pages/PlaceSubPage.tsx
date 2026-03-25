@@ -186,6 +186,17 @@ export default function PlaceSubPage() {
                   </div>
                 </button>
               ))}
+
+            {section === "wanttovisit" &&
+              data.map((w: any) => (
+                <button key={w.user_id} onClick={() => navigate(w.user_id === user?.id ? "/profile" : `/profile/${w.user_id}`)} className="flex items-center gap-3 w-full text-left">
+                  <Avatar className="w-9 h-9">
+                    <AvatarImage src={w.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(w.username || "?")}&background=3B82F6&color=fff`} />
+                    <AvatarFallback>{w.username?.[0]?.toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <p className="text-sm text-foreground flex-1">{w.username || "User"}</p>
+                </button>
+              ))}
           </motion.div>
         )}
       </div>
