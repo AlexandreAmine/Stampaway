@@ -119,18 +119,20 @@ export default function PlacePage() {
       setMyReview(mine || null);
     }
 
-    // Average & distribution
-    if (reviews.length > 0) {
-      const sum = reviews.reduce((a, r) => a + Number(r.rating), 0);
-      setAvgRating(Math.round((sum / reviews.length) * 10) / 10);
+    // Average & distribution (exclude null ratings)
+    const ratedReviews = reviews.filter((r) => r.rating !== null && r.rating !== undefined);
+    if (ratedReviews.length > 0) {
+      const sum = ratedReviews.reduce((a, r) => a + Number(r.rating), 0);
+      setAvgRating(Math.round((sum / ratedReviews.length) * 10) / 10);
 
       const dist = Array(10).fill(0);
-      reviews.forEach((r) => {
+      ratedReviews.forEach((r) => {
         const idx = Math.round(Number(r.rating) * 2) - 1;
         if (idx >= 0 && idx < 10) dist[idx]++;
       });
       setDistribution(dist);
     }
+    setRatingsCount(ratedReviews.length);
 
     // Lists containing this place (with list details)
     const { data: listItemsData } = await supabase
