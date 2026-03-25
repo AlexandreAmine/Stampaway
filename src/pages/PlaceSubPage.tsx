@@ -95,6 +95,17 @@ export default function PlaceSubPage() {
           })
         );
       }
+    } else if (section === "wanttovisit") {
+      const { data: wishlistData } = await supabase
+        .from("wishlists")
+        .select("user_id")
+        .eq("place_id", id);
+
+      if (wishlistData && wishlistData.length > 0) {
+        const userIds = wishlistData.map((w) => w.user_id);
+        const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
+        setData(profiles || []);
+      }
     }
 
     setLoading(false);
