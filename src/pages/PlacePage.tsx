@@ -101,7 +101,7 @@ export default function PlacePage() {
     const uniqueReviews = Array.from(reviewsByUser.values());
     const uniqueVisitorIds = [...reviewsByUser.keys()];
     setVisitorsCount(uniqueVisitorIds.length);
-    setRatingsCount(reviews.length);
+    // ratingsCount set below after filtering
 
     if (uniqueVisitorIds.length > 0) {
       const { data: visitorProfiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", uniqueVisitorIds);
