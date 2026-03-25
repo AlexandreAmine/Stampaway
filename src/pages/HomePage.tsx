@@ -6,6 +6,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { getPlaceCoordinates } from "@/lib/cityCoordinates";
+import { countryLabels, cityLabels } from "@/lib/globeLabels";
+import { GlobeActivityPopup } from "@/components/GlobeActivityPopup";
 import Globe from "react-globe.gl";
 
 interface FriendActivity {
@@ -21,6 +23,10 @@ interface FriendActivity {
   created_at: string;
   lat: number;
   lng: number;
+  visit_month: number | null;
+  visit_year: number | null;
+  duration_days: number | null;
+  review_text: string | null;
 }
 
 export default function HomePage() {
@@ -32,6 +38,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
   const [hasFollowing, setHasFollowing] = useState(true);
   const [globeWidth, setGlobeWidth] = useState(380);
+  const [selectedActivity, setSelectedActivity] = useState<FriendActivity | null>(null);
 
   useEffect(() => {
     if (containerRef.current) {
@@ -43,7 +50,6 @@ export default function HomePage() {
     if (!user) return;
 
     (async () => {
-      // Get who the user follows
       const { data: following } = await supabase
         .from("followers")
         .select("following_id")
@@ -57,21 +63,19 @@ export default function HomePage() {
         return;
       }
 
-      // Calculate 2 months ago based on visit date
       const now = new Date();
       const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1);
       const minYear = twoMonthsAgo.getFullYear();
-      const minMonth = twoMonthsAgo.getMonth() + 1; // 1-indexed
+      const minMonth = twoMonthsAgo.getMonth() + 1;
 
       const { data: reviews } = await supabase
         .from("reviews")
-        .select("id, user_id, place_id, rating, created_at, visit_year, visit_month, places!inner(name, country, type)")
+        .select("id, user_id, place_id, rating, created_at, visit_year, visit_month, duration_days, review_text, places!inner(name, country, type)")
         .in("user_id", followingIds)
         .not("visit_year", "is", null)
         .not("visit_month", "is", null)
         .order("created_at", { ascending: false });
 
-      // Filter client-side for visit dates within last 2 months
       const filtered = (reviews || []).filter((r: any) => {
         const vy = r.visit_year;
         const vm = r.visit_month;
@@ -84,7 +88,6 @@ export default function HomePage() {
         return;
       }
 
-      // Get profiles for these users
       const userIds = [...new Set(filtered.map((r: any) => r.user_id))];
       const { data: profiles } = await supabase
         .from("profiles")
@@ -111,6 +114,10 @@ export default function HomePage() {
           created_at: r.created_at,
           lat: coords[0],
           lng: coords[1],
+          visit_month: r.visit_month,
+          visit_year: r.visit_year,
+          duration_days: r.duration_days,
+          review_text: r.review_text,
         });
       });
 
@@ -127,7 +134,6 @@ export default function HomePage() {
       controls.enableZoom = true;
       globeRef.current.pointOfView({ altitude: 2.2 });
 
-      // Stop rotation when user starts interacting
       controls.addEventListener("start", () => {
         controls.autoRotate = false;
       });
@@ -149,7 +155,21 @@ export default function HomePage() {
     return `${Math.floor(diffDays / 30)}mo ago`;
   };
 
-  // Custom HTML marker for globe pins
+  const handlePinClick = useCallback((a: FriendActivity) => {
+    if (selectedActivity?.id === a.id) {
+      // Second click → navigate
+      navigate(`/place/${a.place_id}`);
+      return;
+    }
+    // First click → zoom + show popup
+    setSelectedActivity(a);
+    if (globeRef.current) {
+      globeRef.current.pointOfView({ lat: a.lat, lng: a.lng, altitude: 1.2 }, 800);
+      const controls = globeRef.current.controls();
+      controls.autoRotate = false;
+    }
+  }, [selectedActivity, navigate]);
+
   const markerHtml = useCallback((d: object) => {
     const a = d as FriendActivity;
     const avatar = getAvatarUrl(a);
@@ -165,133 +185,183 @@ export default function HomePage() {
         ` : ``}
       </div>
     `;
-    // Use mousedown to beat orbit controls which use mouseup
     let isDrag = false;
     el.addEventListener("mousedown", () => { isDrag = false; });
     el.addEventListener("mousemove", () => { isDrag = true; });
     el.addEventListener("mouseup", (e) => {
       if (!isDrag) {
         e.stopPropagation();
-        navigate(`/place/${a.place_id}`);
+        handlePinClick(a);
       }
     });
+    el.addEventListener("touchstart", () => { isDrag = false; }, { passive: true });
+    el.addEventListener("touchmove", () => { isDrag = true; }, { passive: true });
     el.addEventListener("touchend", (e) => {
-      e.stopPropagation();
-      navigate(`/place/${a.place_id}`);
+      if (!isDrag) {
+        e.stopPropagation();
+        handlePinClick(a);
+      }
     });
     return el;
+  }, [handlePinClick]);
+
+  // Globe label click handler
+  const handleLabelClick = useCallback((label: object) => {
+    const l = label as { text: string; type: string };
+    // Search for a place matching this label
+    (async () => {
+      const { data } = await supabase
+        .from("places")
+        .select("id")
+        .eq("name", l.text)
+        .eq("type", l.type === "country" ? "country" : "city")
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        navigate(`/place/${data.id}`);
+      }
+    })();
   }, [navigate]);
 
-  const nightTexture = "//unpkg.com/three-globe/example/img/earth-night.jpg";
+  const allLabels = [...countryLabels, ...cityLabels];
+
+  const dayTexture = "//unpkg.com/three-globe/example/img/earth-blue-marble.jpg";
   const bumpTexture = "//unpkg.com/three-globe/example/img/earth-topology.png";
 
+  const globeHeight = Math.round(globeWidth * 1.1);
+
   return (
-    <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
-      <div className="pt-12 pb-2 px-5 text-center">
-        <h1 className="text-2xl font-bold text-foreground tracking-tight">Travel'D</h1>
-      </div>
-
-      {/* Globe with starry background */}
-      <div ref={containerRef} className="relative mx-auto flex items-center justify-center overflow-hidden" style={{ height: globeWidth }}>
-        {/* Stars */}
-        <div className="absolute inset-0 overflow-hidden">
-          {Array.from({ length: 80 }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute rounded-full bg-white"
-              style={{
-                width: `${Math.random() * 2 + 1}px`,
-                height: `${Math.random() * 2 + 1}px`,
-                top: `${Math.random() * 100}%`,
-                left: `${Math.random() * 100}%`,
-                opacity: Math.random() * 0.7 + 0.2,
-                animation: `pulse ${2 + Math.random() * 3}s ease-in-out infinite`,
-                animationDelay: `${Math.random() * 3}s`,
-              }}
-            />
-          ))}
+    <div className="min-h-screen bg-background pb-24 relative">
+      {/* Globe section - fixed behind content */}
+      <div className="sticky top-0 z-0">
+        {/* Header */}
+        <div className="pt-12 pb-2 px-5 text-center relative z-10">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Travel'D</h1>
         </div>
-        {loading ? (
-          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        ) : (
-          <Globe
-            ref={globeRef}
-            width={globeWidth}
-            height={globeWidth}
-            globeImageUrl={nightTexture}
-            bumpImageUrl={bumpTexture}
-            backgroundImageUrl=""
-            backgroundColor="rgba(0,0,0,0)"
-            htmlElementsData={activities}
-            htmlElement={markerHtml}
-            htmlAltitude={0.05}
-            
-            atmosphereColor="hsl(217, 91%, 60%)"
-            atmosphereAltitude={0.15}
+
+        <div ref={containerRef} className="relative mx-auto flex items-center justify-center overflow-hidden" style={{ height: globeHeight }}>
+          {/* Stars */}
+          <div className="absolute inset-0 overflow-hidden">
+            {Array.from({ length: 80 }).map((_, i) => (
+              <div
+                key={i}
+                className="absolute rounded-full bg-white"
+                style={{
+                  width: `${Math.random() * 2 + 1}px`,
+                  height: `${Math.random() * 2 + 1}px`,
+                  top: `${Math.random() * 100}%`,
+                  left: `${Math.random() * 100}%`,
+                  opacity: Math.random() * 0.7 + 0.2,
+                  animation: `pulse ${2 + Math.random() * 3}s ease-in-out infinite`,
+                  animationDelay: `${Math.random() * 3}s`,
+                }}
+              />
+            ))}
+          </div>
+          {loading ? (
+            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Globe
+              ref={globeRef}
+              width={globeWidth}
+              height={globeHeight}
+              globeImageUrl={dayTexture}
+              bumpImageUrl={bumpTexture}
+              backgroundImageUrl=""
+              backgroundColor="rgba(0,0,0,0)"
+              htmlElementsData={activities}
+              htmlElement={markerHtml}
+              htmlAltitude={0.05}
+              atmosphereColor="hsl(217, 91%, 60%)"
+              atmosphereAltitude={0.15}
+              labelsData={allLabels}
+              labelText="text"
+              labelSize={(d: any) => d.size || 0.5}
+              labelColor={() => "rgba(255, 255, 255, 0.75)"}
+              labelResolution={2}
+              labelAltitude={0.01}
+              labelDotRadius={0}
+              onLabelClick={handleLabelClick}
+            />
+          )}
+
+          {/* Activity popup overlay */}
+          <GlobeActivityPopup
+            activity={selectedActivity}
+            onClose={() => setSelectedActivity(null)}
+            onNavigate={() => {
+              if (selectedActivity) navigate(`/place/${selectedActivity.place_id}`);
+            }}
           />
-        )}
+        </div>
       </div>
 
-      {/* Friends activities */}
-      <div className="px-5 mt-4">
-        <h2 className="text-xl font-bold text-foreground mb-4">Recent friend activities</h2>
-        {!hasFollowing && !loading ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-4">
-            <p className="text-sm text-muted-foreground text-center">Follow friends to see their travel activities here!</p>
-            <button
-              onClick={() => navigate("/search")}
-              className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full text-sm font-medium"
-            >
-              <UserPlus className="w-4 h-4" />
-              Find friends
-            </button>
+      {/* Bottom sheet style activity list */}
+      <div className="relative z-10 -mt-6">
+        <div className="bg-background rounded-t-3xl pt-3 px-5 min-h-[50vh]">
+          {/* Drag handle */}
+          <div className="flex justify-center mb-4">
+            <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
           </div>
-        ) : activities.length === 0 && !loading ? (
-          <p className="text-sm text-muted-foreground">No recent activity from friends yet.</p>
-        ) : null}
-        <div className="space-y-1">
-          {activities.map((a, i) => (
-            <motion.button
-              key={a.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04 }}
-              onClick={() => navigate(`/place/${a.place_id}`)}
-              className="flex items-center gap-3 py-2.5 w-full text-left"
-            >
+
+          <h2 className="text-xl font-bold text-foreground mb-4">Friends activities</h2>
+
+          {!hasFollowing && !loading ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-4">
+              <p className="text-sm text-muted-foreground text-center">Follow friends to see their travel activities here!</p>
               <button
-                onClick={(e) => { e.stopPropagation(); navigate(a.user_id === user?.id ? "/profile" : `/profile/${a.user_id}`); }}
-                className="shrink-0"
+                onClick={() => navigate("/search")}
+                className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full text-sm font-medium"
               >
-                <img
-                  src={getAvatarUrl(a)}
-                  alt={a.username}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
+                <UserPlus className="w-4 h-4" />
+                Find friends
               </button>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1">
-                  <span className="text-sm font-medium text-foreground">{a.username}</span>
-                  <span className="text-xs text-muted-foreground">• {formatDate(a.created_at)}</span>
+            </div>
+          ) : activities.length === 0 && !loading ? (
+            <p className="text-sm text-muted-foreground">No recent activity from friends yet.</p>
+          ) : null}
+
+          <div className="space-y-1">
+            {activities.map((a, i) => (
+              <motion.button
+                key={a.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04 }}
+                onClick={() => navigate(`/place/${a.place_id}`)}
+                className="flex items-center gap-3 py-2.5 w-full text-left"
+              >
+                <button
+                  onClick={(e) => { e.stopPropagation(); navigate(a.user_id === user?.id ? "/profile" : `/profile/${a.user_id}`); }}
+                  className="shrink-0"
+                >
+                  <img
+                    src={getAvatarUrl(a)}
+                    alt={a.username}
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                </button>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm font-medium text-foreground">{a.username}</span>
+                    <span className="text-xs text-muted-foreground">• {formatDate(a.created_at)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    {getFlagEmoji(a.place_country) && (
+                      <span className="text-sm shrink-0">{getFlagEmoji(a.place_country)}</span>
+                    )}
+                    <span className="text-sm font-bold text-foreground truncate">{a.place_name}</span>
+                    {a.rating != null && (
+                      <>
+                        <Star className="w-3 h-3 text-primary fill-primary shrink-0" />
+                        <span className="text-sm font-medium text-foreground">{a.rating}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  {getFlagEmoji(a.place_country) && (
-                    <span className="text-sm shrink-0">{getFlagEmoji(a.place_country)}</span>
-                  )}
-                  <span className="text-sm font-bold text-foreground truncate">{a.place_name}</span>
-                  {a.rating != null ? (
-                    <>
-                      <Star className="w-3 h-3 text-primary fill-primary shrink-0" />
-                      <span className="text-sm font-medium text-foreground">{a.rating}</span>
-                    </>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">logged</span>
-                  )}
-                </div>
-              </div>
-            </motion.button>
-          ))}
+              </motion.button>
+            ))}
+          </div>
         </div>
       </div>
     </div>
