@@ -91,6 +91,11 @@ export default function AddPlacePage() {
       liked,
     });
 
+    // Auto-remove from wishlist if present
+    if (!error) {
+      await supabase.from("wishlists").delete().eq("user_id", user.id).eq("place_id", selectedPlace.id);
+    }
+
     // If this is a favorite flow, also save as favorite
     if (!error && isFavoriteFlow) {
       const slotIdx = Number(favoriteSlot);
