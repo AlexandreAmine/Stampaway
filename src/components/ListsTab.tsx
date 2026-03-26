@@ -1,20 +1,23 @@
-import { useState, useEffect } from "react";
-import { Plus, X, ChevronRight, Trash2 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect, useRef } from "react";
+import { Plus, X, ChevronRight, Trash2, GripVertical } from "lucide-react";
+import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { FavoritePicker } from "@/components/FavoritePicker";
 import { toast } from "sonner";
 
+interface ListItem {
+  id: string;
+  position: number;
+  place: { id: string; name: string; country: string; type: string; image: string | null };
+}
+
 interface ListWithItems {
   id: string;
   name: string;
   description: string | null;
-  items: {
-    id: string;
-    place: { id: string; name: string; country: string; type: string; image: string | null };
-  }[];
+  items: ListItem[];
 }
 
 export function ListsTab({ userId, readOnly = false }: { userId?: string; readOnly?: boolean }) {
@@ -48,13 +51,15 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
     for (const list of listsData) {
       const { data: items } = await supabase
         .from("list_items")
-        .select("id, places!inner(id, name, country, type, image)")
-        .eq("list_id", list.id);
+        .select("id, position, places!inner(id, name, country, type, image)")
+        .eq("list_id", list.id)
+        .order("position", { ascending: true });
 
       enriched.push({
         ...list,
         items: (items || []).map((i: any) => ({
           id: i.id,
+          position: i.position || 0,
           place: { id: i.places.id, name: i.places.name, country: i.places.country, type: i.places.type, image: i.places.image },
         })),
       });
@@ -92,7 +97,8 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
     if (!openList) return;
     const exists = openList.items.some((i) => i.place.id === placeId);
     if (exists) { toast("Already in this list"); return; }
-    const { error } = await supabase.from("list_items").insert({ list_id: openList.id, place_id: placeId });
+    const maxPos = openList.items.reduce((max, i) => Math.max(max, i.position), -1);
+    const { error } = await supabase.from("list_items").insert({ list_id: openList.id, place_id: placeId, position: maxPos + 1 });
     if (error) { toast.error("Failed to add"); return; }
     toast.success("Added to list!");
     fetchLists();
@@ -102,6 +108,18 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
     await supabase.from("list_items").delete().eq("id", itemId);
     toast.success("Removed from list");
     fetchLists();
+  };
+
+  const handleReorder = async (newItems: ListItem[]) => {
+    if (!openList) return;
+    const updated = { ...openList, items: newItems };
+    setOpenList(updated);
+    // Update positions in DB
+    for (let i = 0; i < newItems.length; i++) {
+      if (newItems[i].position !== i) {
+        await supabase.from("list_items").update({ position: i }).eq("id", newItems[i].id);
+      }
+    }
   };
 
   // Sync openList with refreshed data
@@ -143,6 +161,31 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
 
         {openList.items.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">No destinations in this list yet</p>
+        ) : !readOnly ? (
+          <Reorder.Group axis="y" values={openList.items} onReorder={handleReorder} className="space-y-2">
+            {openList.items.map((item) => (
+              <Reorder.Item key={item.id} value={item} className="flex items-center gap-2 bg-card rounded-xl border border-border p-2">
+                <GripVertical className="w-4 h-4 text-muted-foreground shrink-0 cursor-grab active:cursor-grabbing" />
+                <div className="w-12 h-16 shrink-0 rounded-lg overflow-hidden">
+                  <DestinationPoster
+                    placeId={item.place.id}
+                    name={item.place.name}
+                    country={item.place.country}
+                    type={item.place.type as "city" | "country"}
+                    image={item.place.image}
+                    className="w-full h-full"
+                  />
+                </div>
+                <p className="text-sm font-semibold text-foreground flex-1 truncate">{item.place.name}</p>
+                <button
+                  onClick={() => handleRemoveItem(item.id)}
+                  className="w-6 h-6 flex items-center justify-center shrink-0"
+                >
+                  <X className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
+              </Reorder.Item>
+            ))}
+          </Reorder.Group>
         ) : (
           <div className="grid grid-cols-3 gap-3">
             {openList.items.map((item) => (
@@ -155,14 +198,6 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
                   image={item.place.image}
                   className="w-full h-full"
                 />
-                {!readOnly && (
-                  <button
-                    onClick={() => handleRemoveItem(item.id)}
-                    className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center"
-                  >
-                    <X className="w-3 h-3 text-white" />
-                  </button>
-                )}
               </div>
             ))}
           </div>
