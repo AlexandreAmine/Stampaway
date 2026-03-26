@@ -458,7 +458,9 @@ export default function ProfilePage() {
 
         {/* Bio */}
         {profileBio && (
-          <p className="text-sm text-muted-foreground mb-4">{profileBio}</p>
+          <div className="mb-4">
+            <RichBio text={profileBio} />
+          </div>
         )}
 
         {/* Admin Stats */}
