@@ -20,6 +20,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminStats } from "@/components/AdminStats";
 import { ProfileEditSheet } from "@/components/ProfileEditSheet";
 import { getFlagEmoji } from "@/lib/countryFlags";
+import { RichBio } from "@/components/RichBio";
+import { Camera } from "lucide-react";
+import { toast } from "sonner";
 
 interface FavoriteSlot {
   slot_index: number;
