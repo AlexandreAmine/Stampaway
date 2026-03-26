@@ -20,6 +20,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminStats } from "@/components/AdminStats";
 import { ProfileEditSheet } from "@/components/ProfileEditSheet";
 import { getFlagEmoji } from "@/lib/countryFlags";
+import { RichBio } from "@/components/RichBio";
+import { Camera } from "lucide-react";
+import { toast } from "sonner";
 
 interface FavoriteSlot {
   slot_index: number;
@@ -378,7 +381,39 @@ export default function ProfilePage() {
                 <ChevronLeft className="w-6 h-6 text-foreground" />
               </button>
             )}
-            <img src={avatarUrl} alt={displayName} className="w-16 h-16 rounded-full object-cover border-2 border-border" />
+            <div className="relative">
+              <img src={avatarUrl} alt={displayName} className="w-16 h-16 rounded-full object-cover border-2 border-border" />
+              {isOwnProfile && (
+                <>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    id="profile-pic-input"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file || !user) return;
+                      const ext = file.name.split('.').pop() || 'jpg';
+                      const path = `${user.id}/avatar.${ext}`;
+                      const { error: uploadErr } = await supabase.storage.from('profile-pictures').upload(path, file, { upsert: true });
+                      if (uploadErr) { toast.error("Upload failed"); return; }
+                      const { data: urlData } = supabase.storage.from('profile-pictures').getPublicUrl(path);
+                      const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+                      await supabase.from('profiles').update({ profile_picture: publicUrl }).eq('user_id', user.id);
+                      setOwnProfileFull(prev => prev ? { ...prev, profile_picture: publicUrl } : prev);
+                      toast.success("Profile picture updated");
+                    }}
+                  />
+                  <button
+                    onClick={() => document.getElementById('profile-pic-input')?.click()}
+                    className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center border-2 border-background"
+                  >
+                    <Camera className="w-3 h-3 text-primary-foreground" />
+                  </button>
+                </>
+              )}
+            </div>
             <div>
               <div className="flex items-center gap-1.5">
                 <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
@@ -423,7 +458,9 @@ export default function ProfilePage() {
 
         {/* Bio */}
         {profileBio && (
-          <p className="text-sm text-muted-foreground mb-4">{profileBio}</p>
+          <div className="mb-4">
+            <RichBio text={profileBio} />
+          </div>
         )}
 
         {/* Admin Stats */}
