@@ -1,0 +1,1 @@
+CREATE POLICY "List owners can update items" ON public.list_items FOR UPDATE USING (EXISTS (SELECT 1 FROM lists WHERE lists.id = list_items.list_id AND lists.user_id = auth.uid())) WITH CHECK (EXISTS (SELECT 1 FROM lists WHERE lists.id = list_items.list_id AND lists.user_id = auth.uid()));

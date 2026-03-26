@@ -1,0 +1,1 @@
+ALTER TABLE public.list_items ADD COLUMN position integer NOT NULL DEFAULT 0;

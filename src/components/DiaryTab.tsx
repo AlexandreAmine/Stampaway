@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { StarRating } from "@/components/StarRating";
+import { toast } from "sonner";
 
 interface DiaryEntry {
   id: string;
@@ -33,6 +35,7 @@ export function DiaryTab({ userId }: { userId?: string }) {
   const [loading, setLoading] = useState(true);
   const [section, setSection] = useState<"country" | "city">("country");
   const targetUserId = userId || user?.id;
+  const isOwnProfile = !userId || userId === user?.id;
 
   useEffect(() => {
     if (!targetUserId) return;
@@ -72,6 +75,16 @@ export function DiaryTab({ userId }: { userId?: string }) {
     setLoading(false);
   };
 
+  const handleDelete = async (entryId: string) => {
+    const { error } = await supabase.from("reviews").delete().eq("id", entryId);
+    if (error) {
+      toast.error("Failed to delete entry");
+      return;
+    }
+    toast.success("Entry deleted");
+    setEntries((prev) => prev.filter((e) => e.id !== entryId));
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-40">
@@ -104,9 +117,6 @@ export function DiaryTab({ userId }: { userId?: string }) {
     return Number(b) - Number(a);
   });
 
-  const countryCount = entries.filter((e) => e.place.type === "country").length;
-  const cityCount = entries.filter((e) => e.place.type === "city").length;
-
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
       {/* Section toggle */}
@@ -136,8 +146,8 @@ export function DiaryTab({ userId }: { userId?: string }) {
           <h3 className="text-lg font-bold text-foreground mb-3">{year}</h3>
           <div className="space-y-3">
             {grouped[year].map((entry) => (
-              <button key={entry.id} onClick={() => navigate(`/place/${entry.place.id}`)} className="flex gap-3 bg-card rounded-xl p-3 border border-border w-full text-left">
-                <div className="w-16 h-20 shrink-0 rounded-lg overflow-hidden">
+              <div key={entry.id} className="flex gap-3 bg-card rounded-xl p-3 border border-border w-full">
+                <button onClick={() => navigate(`/place/${entry.place.id}`)} className="w-16 h-20 shrink-0 rounded-lg overflow-hidden">
                   <DestinationPoster
                     placeId={entry.place.id}
                     name={entry.place.name}
@@ -146,8 +156,8 @@ export function DiaryTab({ userId }: { userId?: string }) {
                     image={entry.place.image}
                     className="w-full h-full"
                   />
-                </div>
-                <div className="flex-1 min-w-0">
+                </button>
+                <button onClick={() => navigate(`/place/${entry.place.id}`)} className="flex-1 min-w-0 text-left">
                   <p className="text-sm font-bold text-foreground truncate">{entry.place.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {entry.visit_month ? MONTHS[entry.visit_month - 1] + " " : ""}
@@ -155,17 +165,25 @@ export function DiaryTab({ userId }: { userId?: string }) {
                     {entry.duration_days ? ` · ${entry.duration_days} day${entry.duration_days > 1 ? "s" : ""}` : ""}
                   </p>
                    {entry.rating != null ? (
-                      <div className="mt-1">
-                        <StarRating rating={entry.rating} size={14} liked={entry.liked} />
-                      </div>
+                     <div className="mt-1">
+                       <StarRating rating={entry.rating} size={14} liked={entry.liked} />
+                     </div>
                    ) : (
                      <p className="text-xs text-muted-foreground mt-1">No rating</p>
                    )}
                   {entry.review_text && (
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{entry.review_text}</p>
                   )}
-                </div>
-              </button>
+                </button>
+                {isOwnProfile && (
+                  <button
+                    onClick={() => handleDelete(entry.id)}
+                    className="self-center p-2 shrink-0"
+                  >
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  </button>
+                )}
+              </div>
             ))}
           </div>
         </div>
