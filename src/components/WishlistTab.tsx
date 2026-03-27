@@ -51,6 +51,7 @@ interface WishlistItem {
 }
 
 export function WishlistTab({ userId, readOnly = false }: { userId?: string; readOnly?: boolean }) {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
