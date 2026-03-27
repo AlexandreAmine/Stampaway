@@ -141,7 +141,10 @@ export default function SearchPage() {
             <motion.button key={l.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} onClick={() => navigate(`/list/${l.id}`)} className="w-full text-left bg-card rounded-xl p-4 border border-border">
               <p className="text-sm font-semibold text-foreground">{l.name}</p>
               {l.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{l.description}</p>}
-              {l.profiles && <p className="text-xs text-muted-foreground mt-2">by {(l.profiles as any).username}</p>}
+              <div className="flex items-center gap-2 mt-2">
+                {l.profiles && <p className="text-xs text-muted-foreground">by {(l.profiles as any).username}</p>}
+                <span className="text-xs text-muted-foreground">• {l.item_count ?? "?"} destination{(l.item_count ?? 0) !== 1 ? "s" : ""}</span>
+              </div>
               <ListPreviewPosters listId={l.id} />
             </motion.button>
           ))}

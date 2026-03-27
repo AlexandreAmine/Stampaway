@@ -273,15 +273,16 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </div>
               {list.items.length > 0 && (
-                <div className="flex gap-1.5 mt-2 overflow-x-auto scrollbar-hide">
+                <div className="flex gap-2 mt-2 overflow-x-auto scrollbar-hide">
                   {list.items.slice(0, 8).map((item) => (
-                    <div key={item.id} className="w-10 h-14 shrink-0 rounded-md overflow-hidden">
+                    <div key={item.id} className="w-16 h-[88px] shrink-0 rounded-lg overflow-hidden">
                       <DestinationPoster
                         placeId={item.place.id}
                         name={item.place.name}
                         country={item.place.country}
                         type={item.place.type as "city" | "country"}
                         image={item.place.image}
+                        autoGenerate
                         className="w-full h-full"
                       />
                     </div>

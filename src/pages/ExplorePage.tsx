@@ -548,9 +548,11 @@ export default function ExplorePage() {
                   {popularLists.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-8">No lists yet</p>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
                       {popularLists.map((l) => (
-                        <ListCard key={l.id} list={l} showLikes />
+                        <div key={l.id} className="flex-shrink-0 w-[280px]">
+                          <ListCard list={l} showLikes />
+                        </div>
                       ))}
                     </div>
                   )}
