@@ -15,12 +15,12 @@ import {
 
 type SortOption = "your-highest" | "avg-highest" | "newest" | "longest";
 
-const SORT_LABELS: Record<SortOption, string> = {
-  "your-highest": "Your highest first",
+const getSortLabels = (name?: string): Record<SortOption, string> => ({
+  "your-highest": name ? `${name}'s highest first` : "Your highest first",
   "avg-highest": "Average highest first",
   "newest": "Newest visited first",
   "longest": "Highest total duration first",
-};
+});
 
 interface PlaceEntry {
   place_id: string;
