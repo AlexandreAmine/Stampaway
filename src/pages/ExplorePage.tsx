@@ -579,6 +579,7 @@ function ListCard({ list, showLikes = false }: { list: any; showLikes?: boolean 
           <p className="text-xs text-muted-foreground">
             {list.item_count} destination{list.item_count !== 1 ? "s" : ""}
           </p>
+          <ListPreviewPosters listId={list.id} />
         </div>
         <button
           onClick={toggleLike}
