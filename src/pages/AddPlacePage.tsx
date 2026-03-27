@@ -249,6 +249,15 @@ export default function AddPlacePage() {
     );
   }
 
+  const [recentSearches, setRecentSearches] = useState<PlaceResult[]>([]);
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("recentSearches") || "[]");
+      setRecentSearches(saved);
+    } catch { /* ignore */ }
+  }, []);
+
   return (
     <div className="min-h-screen bg-[hsl(0,0%,4%)] pb-24">
       <div className="pt-12 px-5">
@@ -269,10 +278,28 @@ export default function AddPlacePage() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={isFavoriteFlow ? `Search ${favoriteType === "city" ? "cities" : "countries"}...` : "Search cities or countries..."}
+            placeholder={isFavoriteFlow ? `Search ${favoriteType === "city" ? "cities" : "countries"}...` : "Name of destination"}
             className="w-full bg-card rounded-xl py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
+
+        {/* Recent Searches */}
+        {!query && recentSearches.length > 0 && (
+          <div className="mb-6">
+            <p className="text-xs text-muted-foreground mb-3">Recent Searches</p>
+            <div className="space-y-0">
+              {recentSearches.map((place) => (
+                <button
+                  key={place.id}
+                  onClick={() => navigate(`/place/${place.id}`)}
+                  className="w-full text-left py-2.5"
+                >
+                  <p className="text-base font-bold text-foreground">{place.name}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-3 gap-3">
           {results.map((place) => (

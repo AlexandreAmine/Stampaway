@@ -54,6 +54,11 @@ export default function SearchPage() {
         return diff !== 0 ? diff : a.name.localeCompare(b.name);
       }).slice(0, 30);
       setPlaces(sorted);
+
+      // Save clicked destinations to recent searches
+      if (q && sorted.length > 0) {
+        // We'll save when user clicks, not on search
+      }
     } else if (activeFilter === "Lists") {
       let qb = supabase.from("lists").select("id, name, description, user_id");
       if (q) qb = qb.ilike("name", `%${q}%`);
