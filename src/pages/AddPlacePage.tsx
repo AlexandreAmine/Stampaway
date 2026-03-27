@@ -47,6 +47,7 @@ export default function AddPlacePage() {
     } catch { /* ignore */ }
   }, []);
 
+  useEffect(() => {
     const timer = setTimeout(() => fetchPlaces(query), 200);
     return () => clearTimeout(timer);
   }, [query]);
