@@ -120,7 +120,9 @@ export default function ReviewDetailPage() {
               </Avatar>
             </button>
             <div>
-              <p className="text-base font-semibold text-foreground">{profile?.username || "User"}</p>
+              <button onClick={() => navigate(profile?.user_id === user?.id ? "/profile" : `/profile/${profile?.user_id}`)} className="text-base font-semibold text-foreground hover:text-primary transition-colors">
+                {profile?.username || "User"}
+              </button>
               <p className="text-xs text-muted-foreground">
                 logged <button onClick={() => navigate(`/place/${place.id}`)} className="text-primary hover:underline">{place.name}</button>
               </p>

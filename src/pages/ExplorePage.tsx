@@ -455,11 +455,22 @@ export default function ExplorePage() {
                                 className="w-full h-full"
                               />
                             </div>
-                            {friendComments.has(place.id) && (
-                              <p className="text-[10px] text-muted-foreground mt-1 line-clamp-1 px-0.5">
-                                <span className="text-primary font-medium">{friendComments.get(place.id)!.username}</span>: {friendComments.get(place.id)!.text}
-                              </p>
-                            )}
+                            {friendComments.has(place.id) && (() => {
+                              const comment = friendComments.get(place.id)!;
+                              return (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); navigate(`/review/${comment.review_id}`); }}
+                                  className="flex items-center gap-1.5 mt-1.5 px-0.5"
+                                >
+                                  <img
+                                    src={comment.profile_picture || `https://ui-avatars.com/api/?name=U&background=3B82F6&color=fff&size=20`}
+                                    className="w-4 h-4 rounded-full shrink-0"
+                                    alt=""
+                                  />
+                                  <span className="text-[10px] text-muted-foreground line-clamp-1">{comment.text}</span>
+                                </button>
+                              );
+                            })()}
                           </button>
                         ))}
                       </div>

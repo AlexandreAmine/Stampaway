@@ -25,15 +25,16 @@ export function ListPreviewPosters({ listId, maxItems = 8 }: ListPreviewPostersP
   if (items.length === 0) return null;
 
   return (
-    <div className="flex gap-1.5 mt-2 overflow-x-auto scrollbar-hide">
+    <div className="flex gap-2 mt-2 overflow-x-auto scrollbar-hide">
       {items.map((place) => (
-        <div key={place.id} className="w-10 h-14 shrink-0 rounded-md overflow-hidden">
+        <div key={place.id} className="w-16 h-[88px] shrink-0 rounded-lg overflow-hidden">
           <DestinationPoster
             placeId={place.id}
             name={place.name}
             country={place.country}
             type={place.type as "city" | "country"}
             image={place.image}
+            autoGenerate
             className="w-full h-full"
           />
         </div>
