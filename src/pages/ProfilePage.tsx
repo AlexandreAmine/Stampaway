@@ -237,25 +237,9 @@ export default function ProfilePage() {
       }
       toast.success("Favorite saved!");
     } else {
-      // Not yet logged — auto-log it (create a review with no rating) and save as favorite
-      await supabase.from("reviews").insert({ user_id: user.id, place_id: placeId });
-      // Also remove from wishlist if present
-      await supabase.from("wishlists").delete().eq("user_id", user.id).eq("place_id", placeId);
-      // Save as favorite
-      const existing = pickerType === "city" ? favoriteCities[pickerSlot] : favoriteCountries[pickerSlot];
-      if (existing) {
-        await supabase.from("favorite_places").update({ place_id: placeId }).eq("user_id", user.id).eq("slot_index", pickerSlot).eq("type", pickerType);
-      } else {
-        await supabase.from("favorite_places").insert({ user_id: user.id, place_id: placeId, slot_index: pickerSlot, type: pickerType });
-      }
-      const newSlot: FavoriteSlot = { slot_index: pickerSlot, place_id: placeId, place_name: placeName, place_image: placeImage, place_country: placeCountry, place_type: pickerType };
-      if (pickerType === "city") {
-        const updated = [...favoriteCities]; updated[pickerSlot] = newSlot; setFavoriteCities(updated);
-      } else {
-        const updated = [...favoriteCountries]; updated[pickerSlot] = newSlot; setFavoriteCountries(updated);
-      }
-      toast.success("Favorite saved & destination logged!");
-      fetchData(); // refresh counts
+      // Not yet logged — redirect to logging page
+      setPickerOpen(false);
+      navigate(`/add?favoriteType=${pickerType}&favoriteSlot=${pickerSlot}`);
     }
   };
 
