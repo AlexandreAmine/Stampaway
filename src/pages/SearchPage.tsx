@@ -142,6 +142,7 @@ export default function SearchPage() {
               <p className="text-sm font-semibold text-foreground">{l.name}</p>
               {l.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{l.description}</p>}
               {l.profiles && <p className="text-xs text-muted-foreground mt-2">by {(l.profiles as any).username}</p>}
+              <ListPreviewPosters listId={l.id} />
             </motion.button>
           ))}
         </div>
