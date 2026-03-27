@@ -39,7 +39,7 @@ export default function ExplorePage() {
   // Places state
   const [sections, setSections] = useState<SectionConfig[]>([]);
   const [placesLoading, setPlacesLoading] = useState(true);
-  const [friendComments, setFriendComments] = useState<Map<string, { username: string; text: string }>>(new Map());
+  const [friendComments, setFriendComments] = useState<Map<string, { profile_picture: string | null; text: string; review_id: string }>>(new Map());
 
   // Reviews state
   const [friendReviews, setFriendReviews] = useState<any[]>([]);
@@ -133,7 +133,7 @@ export default function ExplorePage() {
       if (followingIds.length > 0) {
         const { data: friendRevs } = await supabase
           .from("reviews")
-          .select("place_id, review_text, user_id, created_at")
+          .select("id, place_id, review_text, user_id, created_at")
           .in("user_id", followingIds)
           .not("review_text", "is", null)
           .neq("review_text", "")
@@ -141,13 +141,14 @@ export default function ExplorePage() {
         
         if (friendRevs && friendRevs.length > 0) {
           const userIds = [...new Set(friendRevs.map((r) => r.user_id))];
-          const { data: profiles } = await supabase.from("profiles").select("user_id, username").in("user_id", userIds);
-          const profileMap = new Map((profiles || []).map((p) => [p.user_id, p.username]));
+          const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
+          const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
           
-          const commentMap = new Map<string, { username: string; text: string }>();
+          const commentMap = new Map<string, { profile_picture: string | null; text: string; review_id: string }>();
           friendRevs.forEach((r) => {
             if (!commentMap.has(r.place_id)) {
-              commentMap.set(r.place_id, { username: profileMap.get(r.user_id) || "User", text: r.review_text! });
+              const prof = profileMap.get(r.user_id);
+              commentMap.set(r.place_id, { profile_picture: prof?.profile_picture || null, text: r.review_text!, review_id: r.id });
             }
           });
           setFriendComments(commentMap);
@@ -454,11 +455,22 @@ export default function ExplorePage() {
                                 className="w-full h-full"
                               />
                             </div>
-                            {friendComments.has(place.id) && (
-                              <p className="text-[10px] text-muted-foreground mt-1 line-clamp-1 px-0.5">
-                                <span className="text-primary font-medium">{friendComments.get(place.id)!.username}</span>: {friendComments.get(place.id)!.text}
-                              </p>
-                            )}
+                            {friendComments.has(place.id) && (() => {
+                              const comment = friendComments.get(place.id)!;
+                              return (
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); navigate(`/review/${comment.review_id}`); }}
+                                  className="flex items-center gap-1.5 mt-1.5 px-0.5"
+                                >
+                                  <img
+                                    src={comment.profile_picture || `https://ui-avatars.com/api/?name=U&background=3B82F6&color=fff&size=20`}
+                                    className="w-4 h-4 rounded-full shrink-0"
+                                    alt=""
+                                  />
+                                  <span className="text-[10px] text-muted-foreground line-clamp-1">{comment.text}</span>
+                                </button>
+                              );
+                            })()}
                           </button>
                         ))}
                       </div>

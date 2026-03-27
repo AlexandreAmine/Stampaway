@@ -291,7 +291,7 @@ export default function AddPlacePage() {
               {recentSearches.map((place) => (
                 <button
                   key={place.id}
-                  onClick={() => navigate(`/place/${place.id}`)}
+                  onClick={() => handleSelectPlace(place)}
                   className="w-full text-left py-2.5"
                 >
                   <p className="text-base font-bold text-foreground">{place.name}</p>
