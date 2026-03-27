@@ -263,13 +263,31 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
             <button
               key={list.id}
               onClick={() => setOpenList(list)}
-              className="w-full bg-card rounded-xl p-4 border border-border text-left flex items-center justify-between"
+              className="w-full bg-card rounded-xl p-4 border border-border text-left"
             >
-              <div>
-                <p className="text-sm font-bold text-foreground">{list.name}</p>
-                <p className="text-xs text-muted-foreground">{list.items.length} destination{list.items.length !== 1 ? "s" : ""}</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold text-foreground">{list.name}</p>
+                  <p className="text-xs text-muted-foreground">{list.items.length} destination{list.items.length !== 1 ? "s" : ""}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </div>
-              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              {list.items.length > 0 && (
+                <div className="flex gap-1.5 mt-2 overflow-x-auto scrollbar-hide">
+                  {list.items.slice(0, 8).map((item) => (
+                    <div key={item.id} className="w-10 h-14 shrink-0 rounded-md overflow-hidden">
+                      <DestinationPoster
+                        placeId={item.place.id}
+                        name={item.place.name}
+                        country={item.place.country}
+                        type={item.place.type as "city" | "country"}
+                        image={item.place.image}
+                        className="w-full h-full"
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </button>
           ))}
         </>
