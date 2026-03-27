@@ -69,7 +69,15 @@ export default function SearchPage() {
         const userIds = [...new Set(data.map((l: any) => l.user_id))];
         const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
         const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
-        setLists(data.map((l: any) => ({ ...l, profiles: profileMap.get(l.user_id) || null })));
+        
+        // Get item counts for each list
+        const enriched = await Promise.all(
+          data.map(async (l: any) => {
+            const { count } = await supabase.from("list_items").select("*", { count: "exact", head: true }).eq("list_id", l.id);
+            return { ...l, item_count: count || 0, profiles: profileMap.get(l.user_id) || null };
+          })
+        );
+        setLists(enriched);
       } else {
         setLists([]);
       }
