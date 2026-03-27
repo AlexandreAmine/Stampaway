@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { ReviewCard } from "@/components/ReviewCard";
+import { ListPreviewPosters } from "@/components/ListPreviewPosters";
 import {
   EUROPE_COUNTRIES,
   ASIA_COUNTRIES,
@@ -38,6 +39,7 @@ export default function ExplorePage() {
   // Places state
   const [sections, setSections] = useState<SectionConfig[]>([]);
   const [placesLoading, setPlacesLoading] = useState(true);
+  const [friendComments, setFriendComments] = useState<Map<string, { username: string; text: string }>>(new Map());
 
   // Reviews state
   const [friendReviews, setFriendReviews] = useState<any[]>([]);
@@ -123,6 +125,36 @@ export default function ExplorePage() {
       { key: "tna", title: "Top 15 cities in North America", places: buildTopRated("city", NORTH_AMERICA_COUNTRIES, 8), linkParams: "mode=top-rated&type=city&continent=North America&limit=15" },
       { key: "ta", title: "Top 25 countries in Asia", places: buildTopRated("country", ASIA_COUNTRIES, 8), linkParams: "mode=top-rated&type=country&continent=Asia&limit=25" },
     ]);
+
+    // Fetch friend comments for displayed places
+    if (user) {
+      const { data: following } = await supabase.from("followers").select("following_id").eq("follower_id", user.id);
+      const followingIds = (following || []).map((f) => f.following_id);
+      if (followingIds.length > 0) {
+        const { data: friendRevs } = await supabase
+          .from("reviews")
+          .select("place_id, review_text, user_id, created_at")
+          .in("user_id", followingIds)
+          .not("review_text", "is", null)
+          .neq("review_text", "")
+          .order("created_at", { ascending: false });
+        
+        if (friendRevs && friendRevs.length > 0) {
+          const userIds = [...new Set(friendRevs.map((r) => r.user_id))];
+          const { data: profiles } = await supabase.from("profiles").select("user_id, username").in("user_id", userIds);
+          const profileMap = new Map((profiles || []).map((p) => [p.user_id, p.username]));
+          
+          const commentMap = new Map<string, { username: string; text: string }>();
+          friendRevs.forEach((r) => {
+            if (!commentMap.has(r.place_id)) {
+              commentMap.set(r.place_id, { username: profileMap.get(r.user_id) || "User", text: r.review_text! });
+            }
+          });
+          setFriendComments(commentMap);
+        }
+      }
+    }
+
     setPlacesLoading(false);
   };
 
@@ -422,6 +454,11 @@ export default function ExplorePage() {
                                 className="w-full h-full"
                               />
                             </div>
+                            {friendComments.has(place.id) && (
+                              <p className="text-[10px] text-muted-foreground mt-1 line-clamp-1 px-0.5">
+                                <span className="text-primary font-medium">{friendComments.get(place.id)!.username}</span>: {friendComments.get(place.id)!.text}
+                              </p>
+                            )}
                           </button>
                         ))}
                       </div>
@@ -578,6 +615,7 @@ function ListCard({ list, showLikes = false }: { list: any; showLikes?: boolean 
           <p className="text-xs text-muted-foreground">
             {list.item_count} destination{list.item_count !== 1 ? "s" : ""}
           </p>
+          <ListPreviewPosters listId={list.id} />
         </div>
         <button
           onClick={toggleLike}

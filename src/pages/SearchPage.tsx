@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
+import { ListPreviewPosters } from "@/components/ListPreviewPosters";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 
@@ -54,6 +55,11 @@ export default function SearchPage() {
         return diff !== 0 ? diff : a.name.localeCompare(b.name);
       }).slice(0, 30);
       setPlaces(sorted);
+
+      // Save clicked destinations to recent searches
+      if (q && sorted.length > 0) {
+        // We'll save when user clicks, not on search
+      }
     } else if (activeFilter === "Lists") {
       let qb = supabase.from("lists").select("id, name, description, user_id");
       if (q) qb = qb.ilike("name", `%${q}%`);
@@ -108,7 +114,16 @@ export default function SearchPage() {
               key={p.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              onClick={() => navigate(`/place/${p.id}`)}
+              onClick={() => {
+                // Save to recent searches
+                try {
+                  const saved = JSON.parse(localStorage.getItem("recentSearches") || "[]");
+                  const filtered = saved.filter((s: any) => s.id !== p.id);
+                  const updated = [{ id: p.id, name: p.name, country: p.country, type: p.type, image: p.image }, ...filtered].slice(0, 15);
+                  localStorage.setItem("recentSearches", JSON.stringify(updated));
+                } catch { /* ignore */ }
+                navigate(`/place/${p.id}`);
+              }}
               className="aspect-[3/4] w-full"
             >
               <DestinationPoster placeId={p.id} name={p.name} country={p.country} type={p.type as "city" | "country"} image={p.image} className="w-full h-full" />
@@ -127,6 +142,7 @@ export default function SearchPage() {
               <p className="text-sm font-semibold text-foreground">{l.name}</p>
               {l.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{l.description}</p>}
               {l.profiles && <p className="text-xs text-muted-foreground mt-2">by {(l.profiles as any).username}</p>}
+              <ListPreviewPosters listId={l.id} />
             </motion.button>
           ))}
         </div>
