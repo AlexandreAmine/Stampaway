@@ -24,11 +24,19 @@ export default function AddPlacePage() {
   const favoriteType = searchParams.get("favoriteType") as "city" | "country" | null;
   const favoriteSlot = searchParams.get("favoriteSlot");
   const isFavoriteFlow = favoriteType !== null && favoriteSlot !== null;
+  const preSelectedPlaceId = searchParams.get("placeId");
+  const preSelectedPlaceName = searchParams.get("placeName");
+  const preSelectedPlaceCountry = searchParams.get("placeCountry");
+  const preSelectedPlaceImage = searchParams.get("placeImage");
 
   const { user } = useAuth();
-  const [step, setStep] = useState<Step>("search");
+  const [step, setStep] = useState<Step>(preSelectedPlaceId ? "review" : "search");
   const [query, setQuery] = useState("");
-  const [selectedPlace, setSelectedPlace] = useState<PlaceResult | null>(null);
+  const [selectedPlace, setSelectedPlace] = useState<PlaceResult | null>(
+    preSelectedPlaceId && preSelectedPlaceName
+      ? { id: preSelectedPlaceId, name: preSelectedPlaceName, country: preSelectedPlaceCountry || "", type: favoriteType || "city", image: preSelectedPlaceImage || null }
+      : null
+  );
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [visitYear, setVisitYear] = useState(new Date().getFullYear());

@@ -237,9 +237,9 @@ export default function ProfilePage() {
       }
       toast.success("Favorite saved!");
     } else {
-      // Not yet logged — redirect to logging page
+      // Not yet logged — redirect directly to logging form with place pre-selected
       setPickerOpen(false);
-      navigate(`/add?favoriteType=${pickerType}&favoriteSlot=${pickerSlot}`);
+      navigate(`/add?favoriteType=${pickerType}&favoriteSlot=${pickerSlot}&placeId=${placeId}&placeName=${encodeURIComponent(placeName)}&placeCountry=${encodeURIComponent(placeCountry)}&placeImage=${encodeURIComponent(placeImage || "")}`);
     }
   };
 
