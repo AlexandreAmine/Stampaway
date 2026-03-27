@@ -361,10 +361,10 @@ export default function ProfilePage() {
     switch (subPage) {
       case "Countries":
       case "CountriesByRating":
-        return <LoggedPlacesInline type="country" userId={uid} ratingFilter={ratingFilter} />;
+        return <LoggedPlacesInline type="country" userId={uid} ratingFilter={ratingFilter} profileUsername={!isOwnProfile ? displayName : undefined} />;
       case "Cities":
       case "CitiesByRating":
-        return <LoggedPlacesInline type="city" userId={uid} ratingFilter={ratingFilter} />;
+        return <LoggedPlacesInline type="city" userId={uid} ratingFilter={ratingFilter} profileUsername={!isOwnProfile ? displayName : undefined} />;
       case "Diary":
         return <DiaryTab userId={uid} />;
       case "Map":

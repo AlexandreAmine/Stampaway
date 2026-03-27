@@ -137,22 +137,25 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
   if (places.length === 0) return <div className="flex items-center justify-center h-40"><p className="text-sm text-muted-foreground">No {type === "city" ? "cities" : "countries"} logged yet</p></div>;
   if (ratingFilter != null && sorted.length === 0) return <div className="flex items-center justify-center h-40"><p className="text-sm text-muted-foreground">No {type === "city" ? "cities" : "countries"} with this rating</p></div>;
 
+  const isOtherUser = !!userId && userId !== user?.id;
+  const sortLabels = getSortLabels(isOtherUser ? profileUsername : undefined);
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div className="flex justify-end mb-3">
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded-lg px-3 py-1.5 hover:text-foreground transition-colors">
-            {SORT_LABELS[sort]}
+            {sortLabels[sort]}
             <ChevronDown className="w-3.5 h-3.5" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-[200px]">
-            {(Object.keys(SORT_LABELS) as SortOption[]).map((key) => (
+            {(Object.keys(sortLabels) as SortOption[]).map((key) => (
               <DropdownMenuItem
                 key={key}
                 onClick={() => setSort(key)}
                 className={sort === key ? "text-primary font-semibold" : ""}
               >
-                {SORT_LABELS[key]}
+                {sortLabels[key]}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
