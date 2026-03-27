@@ -233,7 +233,7 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.label}</h3>
               <div className="grid grid-cols-3 gap-3">
                 {group.items.map((item) => (
-                  <div key={item.id} className="relative aspect-[3/4]">
+                  <div key={item.id} className="relative aspect-[3/4] cursor-pointer" onClick={() => navigate(`/place/${item.place.id}`)}>
                     <DestinationPoster placeId={item.place.id} name={item.place.name} country={item.place.country} type={item.place.type as "city" | "country"} image={item.place.image} className="w-full h-full" />
                     {!readOnly && (
                       <button onClick={() => handleRemove(item.id)} className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center">
