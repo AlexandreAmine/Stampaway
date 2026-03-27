@@ -378,10 +378,7 @@ export default function PlacePage() {
                   </button>
                   <button onClick={() => navigate(`/review/${fv.review_id}`)} className="flex items-center gap-0.5">
                     {fv.rating != null && (
-                      <>
-                        <StarRating rating={Number(fv.rating)} size={12} />
-                        <span className="text-xs font-semibold text-foreground">{Number(fv.rating).toFixed(1)}</span>
-                      </>
+                      <StarRating rating={Number(fv.rating)} size={12} />
                     )}
                     {fv.has_review && <MessageSquare className="w-3 h-3 text-primary" />}
                   </button>

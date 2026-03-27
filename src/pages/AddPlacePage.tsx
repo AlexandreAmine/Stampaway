@@ -148,16 +148,12 @@ export default function AddPlacePage() {
                 <ChevronLeft className="w-6 h-6 text-foreground" />
               </button>
               <div className="flex items-center gap-3">
-                <div className="w-12 h-16 rounded-lg overflow-hidden shrink-0">
-                  <DestinationPoster
-                    placeId={selectedPlace.id}
-                    name={selectedPlace.name}
-                    country={selectedPlace.country}
-                    type={selectedPlace.type as "city" | "country"}
-                    image={selectedPlace.image}
-                    autoGenerate
-                    className="w-full h-full"
-                  />
+                <div className="w-14 h-[76px] rounded-lg overflow-hidden shrink-0">
+                  {selectedPlace.image ? (
+                    <img src={selectedPlace.image} alt={selectedPlace.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-primary/20 via-primary/10 to-muted" />
+                  )}
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">I TravelD to...</p>

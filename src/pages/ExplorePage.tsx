@@ -534,11 +534,9 @@ export default function ExplorePage() {
                 {friendLists.length > 0 && (
                   <div>
                     <h2 className="text-lg font-bold text-foreground mb-3">Recent from friends</h2>
-                    <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
+                    <div className="space-y-3">
                       {friendLists.map((l) => (
-                        <div key={l.id} className="flex-shrink-0 w-[280px]">
-                          <ListCard list={l} />
-                        </div>
+                        <ListCard key={l.id} list={l} />
                       ))}
                     </div>
                   </div>
@@ -548,11 +546,9 @@ export default function ExplorePage() {
                   {popularLists.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-8">No lists yet</p>
                   ) : (
-                    <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
+                    <div className="space-y-3">
                       {popularLists.map((l) => (
-                        <div key={l.id} className="flex-shrink-0 w-[280px]">
-                          <ListCard list={l} showLikes />
-                        </div>
+                        <ListCard key={l.id} list={l} showLikes />
                       ))}
                     </div>
                   )}
