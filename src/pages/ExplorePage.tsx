@@ -437,12 +437,12 @@ export default function ExplorePage() {
                     {section.places.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No data yet</p>
                     ) : (
-                      <div className="flex gap-2.5 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
+                    <div className="flex gap-2.5 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
                         {section.places.map((place) => (
                           <button
                             key={place.id}
                             onClick={() => navigate(`/place/${place.id}`)}
-                            className="flex-shrink-0 w-[110px]"
+                            className="flex-shrink-0 w-[130px]"
                           >
                             <div className="aspect-[3/4] w-full">
                               <DestinationPoster
@@ -460,14 +460,14 @@ export default function ExplorePage() {
                               return (
                                 <button
                                   onClick={(e) => { e.stopPropagation(); navigate(`/review/${comment.review_id}`); }}
-                                  className="flex items-center gap-1.5 mt-1.5 px-0.5"
+                                  className="flex items-start gap-1.5 mt-1.5 px-0.5 w-full text-left"
                                 >
                                   <img
                                     src={comment.profile_picture || `https://ui-avatars.com/api/?name=U&background=3B82F6&color=fff&size=20`}
-                                    className="w-4 h-4 rounded-full shrink-0"
+                                    className="w-4 h-4 rounded-full shrink-0 mt-0.5"
                                     alt=""
                                   />
-                                  <span className="text-[10px] text-muted-foreground line-clamp-1">{comment.text}</span>
+                                  <span className="text-[10px] text-muted-foreground line-clamp-2">{comment.text}</span>
                                 </button>
                               );
                             })()}
