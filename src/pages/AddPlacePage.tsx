@@ -256,14 +256,6 @@ export default function AddPlacePage() {
     );
   }
 
-  const [recentSearches, setRecentSearches] = useState<PlaceResult[]>([]);
-
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem("recentSearches") || "[]");
-      setRecentSearches(saved);
-    } catch { /* ignore */ }
-  }, []);
 
   return (
     <div className="min-h-screen bg-[hsl(0,0%,4%)] pb-24">
