@@ -454,6 +454,11 @@ export default function ExplorePage() {
                                 className="w-full h-full"
                               />
                             </div>
+                            {friendComments.has(place.id) && (
+                              <p className="text-[10px] text-muted-foreground mt-1 line-clamp-1 px-0.5">
+                                <span className="text-primary font-medium">{friendComments.get(place.id)!.username}</span>: {friendComments.get(place.id)!.text}
+                              </p>
+                            )}
                           </button>
                         ))}
                       </div>

@@ -366,23 +366,26 @@ export default function PlacePage() {
             </button>
             <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
               {friendVisitors.map((fv: any) => (
-                <button
+                <div
                   key={fv.id || fv.user_id}
-                  onClick={() => navigate(`/review/${fv.review_id}`)}
-                  className="flex-shrink-0 flex items-center gap-1.5 bg-card border border-border rounded-full pl-1 pr-3 py-1 active:scale-95 transition-transform"
+                  className="flex-shrink-0 flex items-center gap-1.5 bg-card border border-border rounded-full pl-1 pr-3 py-1"
                 >
-                  <Avatar className="w-8 h-8">
-                    <AvatarImage src={fv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fv.profile?.username || "?")}&background=3B82F6&color=fff`} />
-                    <AvatarFallback>{fv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  {fv.rating != null && (
-                    <div className="flex items-center gap-0.5">
-                      <StarRating rating={Number(fv.rating)} size={12} />
-                      <span className="text-xs font-semibold text-foreground">{Number(fv.rating).toFixed(1)}</span>
-                    </div>
-                  )}
-                  {fv.has_review && <MessageSquare className="w-3 h-3 text-primary" />}
-                </button>
+                  <button onClick={() => navigate(fv.user_id === user?.id ? "/profile" : `/profile/${fv.user_id}`)}>
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={fv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fv.profile?.username || "?")}&background=3B82F6&color=fff`} />
+                      <AvatarFallback>{fv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                  </button>
+                  <button onClick={() => navigate(`/review/${fv.review_id}`)} className="flex items-center gap-0.5">
+                    {fv.rating != null && (
+                      <>
+                        <StarRating rating={Number(fv.rating)} size={12} />
+                        <span className="text-xs font-semibold text-foreground">{Number(fv.rating).toFixed(1)}</span>
+                      </>
+                    )}
+                    {fv.has_review && <MessageSquare className="w-3 h-3 text-primary" />}
+                  </button>
+                </div>
               ))}
             </div>
           </motion.div>
