@@ -422,7 +422,7 @@ export default function ProfilePage() {
                   <input
                     type="file"
                     accept="image/*"
-                    capture="environment"
+                    
                     id="profile-pic-input"
                     className="hidden"
                     onChange={async (e) => {
