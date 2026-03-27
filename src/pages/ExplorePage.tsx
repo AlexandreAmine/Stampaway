@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { ReviewCard } from "@/components/ReviewCard";
+import { ListPreviewPosters } from "@/components/ListPreviewPosters";
 import {
   EUROPE_COUNTRIES,
   ASIA_COUNTRIES,
