@@ -1,12 +1,21 @@
 import { useState, useEffect, memo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ComposableMap, Geographies, Geography, ZoomableGroup } from "react-simple-maps";
+import { ComposableMap, Geographies, Geography, ZoomableGroup, Marker } from "react-simple-maps";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { getCountryCode } from "@/lib/countryFlags";
+import { getCityCoordinates } from "@/lib/cityCoordinates";
+import {
+  EUROPE_COUNTRIES, ASIA_COUNTRIES, NORTH_AMERICA_COUNTRIES,
+  SOUTH_AMERICA_COUNTRIES, AFRICA_COUNTRIES, OCEANIA_COUNTRIES,
+} from "@/lib/continents";
+import { MapPin } from "lucide-react";
 
 const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+
+// Antarctica numeric id = "010"
+const ANTARCTICA_ID = "010";
 
 const numericToAlpha2: Record<string, string> = {
   "004":"AF","008":"AL","012":"DZ","020":"AD","024":"AO","028":"AG","032":"AR","051":"AM",
@@ -37,10 +46,37 @@ const numericToAlpha2: Record<string, string> = {
 };
 
 interface CountryPlaceMap {
-  [alpha2: string]: string; // alpha2 → place_id
+  [alpha2: string]: string;
 }
 
-const MapChart = memo(({ visitedCodes, onCountryClick }: { visitedCodes: Set<string>; onCountryClick?: (alpha2: string) => void }) => (
+interface FiveStarCity {
+  name: string;
+  coords: [number, number];
+  placeId: string;
+}
+
+const CONTINENTS: Record<string, string[]> = {
+  "Africa": AFRICA_COUNTRIES,
+  "Asia": ASIA_COUNTRIES,
+  "Europe": EUROPE_COUNTRIES,
+  "North America": NORTH_AMERICA_COUNTRIES,
+  "South America": SOUTH_AMERICA_COUNTRIES,
+  "Oceania": OCEANIA_COUNTRIES,
+};
+
+function getContinent(country: string): string | null {
+  for (const [continent, countries] of Object.entries(CONTINENTS)) {
+    if (countries.includes(country)) return continent;
+  }
+  return null;
+}
+
+const MapChart = memo(({ visitedCodes, onCountryClick, fiveStarCities, onCityClick }: {
+  visitedCodes: Set<string>;
+  onCountryClick?: (alpha2: string) => void;
+  fiveStarCities: FiveStarCity[];
+  onCityClick?: (placeId: string) => void;
+}) => (
   <ComposableMap
     projection="geoMercator"
     projectionConfig={{ scale: 120, center: [0, 30] }}
@@ -49,27 +85,41 @@ const MapChart = memo(({ visitedCodes, onCountryClick }: { visitedCodes: Set<str
     <ZoomableGroup>
       <Geographies geography={GEO_URL}>
         {({ geographies }) =>
-          geographies.map((geo) => {
-            const alpha2 = numericToAlpha2[geo.id] || "";
-            const isVisited = visitedCodes.has(alpha2);
-            return (
-              <Geography
-                key={geo.rsmKey}
-                geography={geo}
-                fill={isVisited ? "hsl(217, 91%, 60%)" : "hsl(0, 0%, 18%)"}
-                stroke="hsl(0, 0%, 12%)"
-                strokeWidth={0.5}
-                onClick={() => isVisited && onCountryClick?.(alpha2)}
-                style={{
-                  default: { outline: "none", cursor: isVisited ? "pointer" : "default" },
-                  hover: { outline: "none", fill: isVisited ? "hsl(217, 91%, 70%)" : "hsl(0, 0%, 25%)", cursor: isVisited ? "pointer" : "default" },
-                  pressed: { outline: "none" },
-                }}
-              />
-            );
-          })
+          geographies
+            .filter((geo) => geo.id !== ANTARCTICA_ID)
+            .map((geo) => {
+              const alpha2 = numericToAlpha2[geo.id] || "";
+              const isVisited = visitedCodes.has(alpha2);
+              return (
+                <Geography
+                  key={geo.rsmKey}
+                  geography={geo}
+                  fill={isVisited ? "hsl(217, 91%, 60%)" : "hsl(0, 0%, 18%)"}
+                  stroke="hsl(0, 0%, 12%)"
+                  strokeWidth={0.5}
+                  onClick={() => isVisited && onCountryClick?.(alpha2)}
+                  style={{
+                    default: { outline: "none", cursor: isVisited ? "pointer" : "default" },
+                    hover: { outline: "none", fill: isVisited ? "hsl(217, 91%, 70%)" : "hsl(0, 0%, 25%)", cursor: isVisited ? "pointer" : "default" },
+                    pressed: { outline: "none" },
+                  }}
+                />
+              );
+            })
         }
       </Geographies>
+      {fiveStarCities.map((city) => (
+        <Marker key={city.name} coordinates={[city.coords[1], city.coords[0]]}>
+          <circle
+            r={3}
+            fill="hsl(45, 100%, 60%)"
+            stroke="hsl(0, 0%, 10%)"
+            strokeWidth={0.5}
+            style={{ cursor: "pointer" }}
+            onClick={() => onCityClick?.(city.placeId)}
+          />
+        </Marker>
+      ))}
     </ZoomableGroup>
   </ComposableMap>
 ));
@@ -80,9 +130,16 @@ export function MapTab({ userId }: { userId?: string }) {
   const navigate = useNavigate();
   const [visitedCodes, setVisitedCodes] = useState<Set<string>>(new Set());
   const [countryPlaceMap, setCountryPlaceMap] = useState<CountryPlaceMap>({});
-  const [loggedCountriesCount, setLoggedCountriesCount] = useState(0);
-  const [totalCountries, setTotalCountries] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [fiveStarCities, setFiveStarCities] = useState<FiveStarCity[]>([]);
+
+  // Stats
+  const [visitedCountries, setVisitedCountries] = useState<Set<string>>(new Set());
+  const [totalCountries, setTotalCountries] = useState(0);
+  const [visitedCitiesCount, setVisitedCitiesCount] = useState(0);
+  const [continentStats, setContinentStats] = useState<Record<string, { visited: number; total: number }>>({});
+  const [topCountriesByCities, setTopCountriesByCities] = useState<{ country: string; count: number }[]>([]);
+
   const targetUserId = userId || user?.id;
 
   useEffect(() => {
@@ -91,7 +148,7 @@ export function MapTab({ userId }: { userId?: string }) {
       const [reviewsRes, totalRes] = await Promise.all([
         supabase
           .from("reviews")
-          .select("place_id, places!inner(country, type)")
+          .select("place_id, rating, places!inner(name, country, type)")
           .eq("user_id", targetUserId),
         supabase
           .from("places")
@@ -102,23 +159,63 @@ export function MapTab({ userId }: { userId?: string }) {
       if (reviewsRes.data) {
         const codes = new Set<string>();
         const placeMap: CountryPlaceMap = {};
-        const uniqueCountryPlaces = new Set<string>();
+        const visitedCountryNames = new Set<string>();
+        const cityCountByCountry: Record<string, number> = {};
+        let cityCount = 0;
+        const fiveStars: FiveStarCity[] = [];
+
         reviewsRes.data.forEach((r: any) => {
           const code = getCountryCode(r.places.country);
           if (code) {
             codes.add(code);
             if (r.places.type === "country") {
               placeMap[code] = r.place_id;
-              uniqueCountryPlaces.add(r.place_id);
+              visitedCountryNames.add(r.places.country);
             } else if (!placeMap[code]) {
               placeMap[code] = r.place_id;
             }
           }
+
+          if (r.places.type === "country") {
+            visitedCountryNames.add(r.places.country);
+          }
+
+          if (r.places.type === "city") {
+            cityCount++;
+            const c = r.places.country;
+            cityCountByCountry[c] = (cityCountByCountry[c] || 0) + 1;
+
+            if (r.rating === 5) {
+              const coords = getCityCoordinates(r.places.name);
+              if (coords) {
+                fiveStars.push({ name: r.places.name, coords, placeId: r.place_id });
+              }
+            }
+          }
         });
+
         setVisitedCodes(codes);
         setCountryPlaceMap(placeMap);
-        setLoggedCountriesCount(uniqueCountryPlaces.size);
+        setVisitedCountries(visitedCountryNames);
+        setVisitedCitiesCount(cityCount);
+        setFiveStarCities(fiveStars);
+
+        // Continent stats
+        const cStats: Record<string, { visited: number; total: number }> = {};
+        for (const [continent, countries] of Object.entries(CONTINENTS)) {
+          const visited = countries.filter((c) => visitedCountryNames.has(c)).length;
+          cStats[continent] = { visited, total: countries.length };
+        }
+        setContinentStats(cStats);
+
+        // Top 5 countries by cities
+        const sorted = Object.entries(cityCountByCountry)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 5)
+          .map(([country, count]) => ({ country, count }));
+        setTopCountriesByCities(sorted);
       }
+
       setTotalCountries(totalRes.count || 0);
       setLoading(false);
     })();
@@ -129,17 +226,90 @@ export function MapTab({ userId }: { userId?: string }) {
     if (placeId) navigate(`/place/${placeId}`);
   };
 
+  const visitedContinentsCount = Object.values(continentStats).filter((s) => s.visited > 0).length;
+
   if (loading) {
     return <div className="flex items-center justify-center h-40"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   }
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-sm text-muted-foreground">{loggedCountriesCount} / {totalCountries} countries logged</p>
-      </div>
       <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ height: 300 }}>
-        <MapChart visitedCodes={visitedCodes} onCountryClick={handleCountryClick} />
+        <MapChart
+          visitedCodes={visitedCodes}
+          onCountryClick={handleCountryClick}
+          fiveStarCities={fiveStarCities}
+          onCityClick={(placeId) => navigate(`/place/${placeId}`)}
+        />
+      </div>
+
+      {/* Country stats */}
+      <div className="mt-4 flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          <span className="text-foreground font-semibold">{visitedCountries.size}</span> / {totalCountries} countries
+        </p>
+        <span className="text-xs font-medium text-primary">
+          {totalCountries > 0 ? ((visitedCountries.size / totalCountries) * 100).toFixed(1) : 0}%
+        </span>
+      </div>
+
+      {/* Continent stats */}
+      <div className="mt-4 space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            <span className="text-foreground font-semibold">{visitedContinentsCount}</span> / 6 continents
+          </p>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {Object.entries(continentStats).map(([continent, stats]) => (
+            <div key={continent} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-1.5">
+              <span className="text-xs text-muted-foreground">{continent}</span>
+              <span className={`text-xs font-medium ${stats.visited > 0 ? "text-primary" : "text-muted-foreground"}`}>
+                {stats.total > 0 ? ((stats.visited / stats.total) * 100).toFixed(0) : 0}%
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Cities visited */}
+      <div className="mt-4 flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          <span className="text-foreground font-semibold">{visitedCitiesCount}</span> cities visited
+        </p>
+      </div>
+
+      {/* Top 5 countries by cities */}
+      {topCountriesByCities.length > 0 && (
+        <div className="mt-4 space-y-1">
+          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-2">Top countries by cities</p>
+          {topCountriesByCities.map((item, i) => {
+            const code = getCountryCode(item.country);
+            const flag = code
+              ? String.fromCodePoint(...code.split("").map((c) => 0x1f1e6 + c.charCodeAt(0) - 65))
+              : "";
+            return (
+              <div key={item.country} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-1.5">
+                <span className="text-sm">
+                  {flag} {item.country}
+                </span>
+                <span className="text-xs font-medium text-primary">{item.count} {item.count === 1 ? "city" : "cities"}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Legend */}
+      <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(217, 91%, 60%)" }} />
+          <span>Visited</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-3 h-3 rounded-full" style={{ background: "hsl(45, 100%, 60%)" }} />
+          <span>5★ cities</span>
+        </div>
       </div>
     </motion.div>
   );
