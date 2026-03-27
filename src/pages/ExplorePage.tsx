@@ -39,7 +39,7 @@ export default function ExplorePage() {
   // Places state
   const [sections, setSections] = useState<SectionConfig[]>([]);
   const [placesLoading, setPlacesLoading] = useState(true);
-  const [friendComments, setFriendComments] = useState<Map<string, { username: string; text: string }>>(new Map());
+  const [friendComments, setFriendComments] = useState<Map<string, { profile_picture: string | null; text: string; review_id: string }>>(new Map());
 
   // Reviews state
   const [friendReviews, setFriendReviews] = useState<any[]>([]);
