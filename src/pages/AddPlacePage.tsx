@@ -38,8 +38,15 @@ export default function AddPlacePage() {
   const [unknownDate, setUnknownDate] = useState(false);
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [saving, setSaving] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<PlaceResult[]>([]);
 
   useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("recentSearches") || "[]");
+      setRecentSearches(saved);
+    } catch { /* ignore */ }
+  }, []);
+
     const timer = setTimeout(() => fetchPlaces(query), 200);
     return () => clearTimeout(timer);
   }, [query]);
