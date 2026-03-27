@@ -113,7 +113,16 @@ export default function SearchPage() {
               key={p.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              onClick={() => navigate(`/place/${p.id}`)}
+              onClick={() => {
+                // Save to recent searches
+                try {
+                  const saved = JSON.parse(localStorage.getItem("recentSearches") || "[]");
+                  const filtered = saved.filter((s: any) => s.id !== p.id);
+                  const updated = [{ id: p.id, name: p.name, country: p.country, type: p.type, image: p.image }, ...filtered].slice(0, 15);
+                  localStorage.setItem("recentSearches", JSON.stringify(updated));
+                } catch { /* ignore */ }
+                navigate(`/place/${p.id}`);
+              }}
               className="aspect-[3/4] w-full"
             >
               <DestinationPoster placeId={p.id} name={p.name} country={p.country} type={p.type as "city" | "country"} image={p.image} className="w-full h-full" />
