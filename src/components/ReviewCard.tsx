@@ -95,7 +95,7 @@ export function ReviewCard({ review, showImage = true }: ReviewCardProps) {
   return (
     <div
       className="bg-card rounded-xl p-3 border border-border cursor-pointer"
-      onClick={() => placeId && navigate(`/place/${placeId}`)}
+      onClick={() => reviewId && navigate(`/review/${reviewId}`)}
     >
       <div className="flex items-start gap-3">
         {showImage && placeImage && (
