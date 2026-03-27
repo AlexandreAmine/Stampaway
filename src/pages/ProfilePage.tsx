@@ -204,8 +204,42 @@ export default function ProfilePage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const handleOpenPicker = (type: "city" | "country", slot: number) => {
-    navigate(`/add?favoriteType=${type}&favoriteSlot=${slot}`);
+  const handleOpenPicker = async (type: "city" | "country", slot: number) => {
+    // Open picker inline to select place, then check if already logged
+    setPickerType(type);
+    setPickerSlot(slot);
+    setPickerOpen(true);
+  };
+
+  const handleFavoriteSelected = async (placeId: string, placeName: string, placeImage: string | null, placeCountry: string) => {
+    if (!user) return;
+    // Check if user already logged this destination
+    const { data: existingReview } = await supabase
+      .from("reviews")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("place_id", placeId)
+      .limit(1);
+
+    if (existingReview && existingReview.length > 0) {
+      // Already logged — just save as favorite directly
+      const existing = pickerType === "city" ? favoriteCities[pickerSlot] : favoriteCountries[pickerSlot];
+      if (existing) {
+        await supabase.from("favorite_places").update({ place_id: placeId }).eq("user_id", user.id).eq("slot_index", pickerSlot).eq("type", pickerType);
+      } else {
+        await supabase.from("favorite_places").insert({ user_id: user.id, place_id: placeId, slot_index: pickerSlot, type: pickerType });
+      }
+      const newSlot: FavoriteSlot = { slot_index: pickerSlot, place_id: placeId, place_name: placeName, place_image: placeImage, place_country: placeCountry, place_type: pickerType };
+      if (pickerType === "city") {
+        const updated = [...favoriteCities]; updated[pickerSlot] = newSlot; setFavoriteCities(updated);
+      } else {
+        const updated = [...favoriteCountries]; updated[pickerSlot] = newSlot; setFavoriteCountries(updated);
+      }
+      toast.success("Favorite saved!");
+    } else {
+      // Not yet logged — redirect to logging page
+      navigate(`/add?favoriteType=${pickerType}&favoriteSlot=${pickerSlot}`);
+    }
   };
 
   const handleSelectFavorite = async (placeId: string, placeName: string, placeImage: string | null, placeCountry: string) => {
@@ -388,7 +422,7 @@ export default function ProfilePage() {
                   <input
                     type="file"
                     accept="image/*"
-                    capture="environment"
+                    
                     id="profile-pic-input"
                     className="hidden"
                     onChange={async (e) => {
@@ -498,7 +532,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {isOwnProfile && <FavoritePicker open={pickerOpen} onClose={() => setPickerOpen(false)} type={pickerType} onSelect={handleSelectFavorite} />}
+      {isOwnProfile && <FavoritePicker open={pickerOpen} onClose={() => setPickerOpen(false)} type={pickerType} onSelect={handleFavoriteSelected} />}
       {isOwnProfile && currentProfile && (
         <ProfileEditSheet
           open={editOpen}
