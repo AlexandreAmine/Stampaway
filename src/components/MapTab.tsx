@@ -117,7 +117,10 @@ async function fetchUserMapData(userId: string): Promise<UserMapData> {
 }
 
 // ─── Solo Map ───
-const SoloMapChart = memo(({ data, onCountryClick, onCityClick }: {
+export { fetchUserMapData };
+export type { UserMapData };
+
+export const SoloMapChart = memo(({ data, onCountryClick, onCityClick }: {
   data: UserMapData;
   onCountryClick?: (alpha2: string) => void;
   onCityClick?: (placeId: string) => void;
@@ -180,7 +183,7 @@ const SoloMapChart = memo(({ data, onCountryClick, onCityClick }: {
 SoloMapChart.displayName = "SoloMapChart";
 
 // ─── Comparative Map ───
-const CompareMapChart = memo(({ myData, theirData, onCountryClick }: {
+export const CompareMapChart = memo(({ myData, theirData, onCountryClick }: {
   myData: UserMapData;
   theirData: UserMapData;
   onCountryClick?: (alpha2: string) => void;

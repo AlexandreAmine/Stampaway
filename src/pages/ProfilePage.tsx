@@ -10,7 +10,8 @@ import { StarRating } from "@/components/StarRating";
 import { DiaryTab } from "@/components/DiaryTab";
 import { ListsTab } from "@/components/ListsTab";
 import { WishlistTab } from "@/components/WishlistTab";
-import { MapTab } from "@/components/MapTab";
+import { MapTab, SoloMapChart, CompareMapChart, fetchUserMapData } from "@/components/MapTab";
+import type { UserMapData } from "@/components/MapTab";
 import { LikesTab } from "@/components/LikesTab";
 import { FollowingTab } from "@/components/FollowingTab";
 import { FollowersTab } from "@/components/FollowersTab";
@@ -65,6 +66,8 @@ export default function ProfilePage() {
   const [followersCount, setFollowersCount] = useState(0);
   const [likesCount, setLikesCount] = useState(0);
   const [writtenReviewsCount, setWrittenReviewsCount] = useState(0);
+  const [mapMyData, setMapMyData] = useState<UserMapData | null>(null);
+  const [mapTheirData, setMapTheirData] = useState<UserMapData | null>(null);
 
   const [cityDistribution, setCityDistribution] = useState<number[]>(Array(10).fill(0));
   const [countryDistribution, setCountryDistribution] = useState<number[]>(Array(10).fill(0));
@@ -200,7 +203,21 @@ export default function ProfilePage() {
     setTotalCountries(totalCountriesRes.count || 0);
     setLikesCount(likesRes.count || 0);
     setWrittenReviewsCount(writtenReviewsRes.count || 0);
-  }, [viewingUserId]);
+
+    // Fetch map data
+    if (!isOwnProfile && user?.id && viewingUserId) {
+      const [mine, theirs] = await Promise.all([
+        fetchUserMapData(user.id),
+        fetchUserMapData(viewingUserId),
+      ]);
+      setMapMyData(mine);
+      setMapTheirData(theirs);
+    } else if (viewingUserId) {
+      const mapData = await fetchUserMapData(viewingUserId);
+      setMapMyData(mapData);
+      setMapTheirData(null);
+    }
+  }, [viewingUserId, isOwnProfile, user?.id]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -263,7 +280,7 @@ export default function ProfilePage() {
     { label: "Countries", value: `${countriesCount} / ${totalCountries}`, subPage: "Countries" },
     { label: "Cities", value: `${citiesCount}`, subPage: "Cities" },
     { label: "Diary", value: "", subPage: "Diary" },
-    { label: "Map", value: "", subPage: "Map" },
+    
     { label: "Lists", value: `${listsCount}`, subPage: "Lists" },
     { label: "Wishlist", value: `${wishlistCount}`, subPage: "Wishlist" },
     { label: "Likes", value: `${likesCount}`, subPage: "Likes" },
@@ -514,6 +531,74 @@ export default function ProfilePage() {
           {renderFavoriteSlots("city", favoriteCities)}
         </div>
         <div className="mb-6"><RatingHistogram distribution={cityDistribution} onBarClick={(r) => { setRatingFilter(r); setSubPage("CitiesByRating"); }} /></div>
+
+        {/* Map Preview */}
+        {mapMyData && (
+          <div className="mb-6">
+            <button
+              onClick={() => setSubPage("Map")}
+              className="flex items-center justify-between w-full mb-3"
+            >
+              <h2 className="text-lg font-bold text-foreground">Map</h2>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+            <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ height: 220 }}>
+              {!isOwnProfile && mapTheirData ? (
+                <CompareMapChart
+                  myData={mapMyData}
+                  theirData={mapTheirData}
+                  onCountryClick={(alpha2) => {
+                    const placeId = mapMyData?.countryPlaceMap[alpha2] || mapTheirData?.countryPlaceMap[alpha2];
+                    if (placeId) navigate(`/place/${placeId}`);
+                  }}
+                />
+              ) : (
+                <SoloMapChart
+                  data={mapMyData}
+                  onCountryClick={(alpha2) => {
+                    const placeId = mapMyData?.countryPlaceMap[alpha2];
+                    if (placeId) navigate(`/place/${placeId}`);
+                  }}
+                  onCityClick={(placeId) => navigate(`/place/${placeId}`)}
+                />
+              )}
+            </div>
+            {/* Legend */}
+            <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+              {!isOwnProfile && mapTheirData ? (
+                <>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(217, 91%, 60%)" }} />
+                    <span>You</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(40, 95%, 55%)" }} />
+                    <span>{displayName}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(150, 60%, 45%)" }} />
+                    <span>Both</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(217, 91%, 60%)" }} />
+                    <span>Visited</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(25, 95%, 53%)" }} />
+                    <span>5★ country</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-full" style={{ background: "hsl(35, 100%, 55%)" }} />
+                    <span>5★ city</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Stats / Navigation list */}
         <div className="space-y-0">
