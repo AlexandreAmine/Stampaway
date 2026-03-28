@@ -203,7 +203,21 @@ export default function ProfilePage() {
     setTotalCountries(totalCountriesRes.count || 0);
     setLikesCount(likesRes.count || 0);
     setWrittenReviewsCount(writtenReviewsRes.count || 0);
-  }, [viewingUserId]);
+
+    // Fetch map data
+    if (!isOwnProfile && user?.id && viewingUserId) {
+      const [mine, theirs] = await Promise.all([
+        fetchUserMapData(user.id),
+        fetchUserMapData(viewingUserId),
+      ]);
+      setMapMyData(mine);
+      setMapTheirData(theirs);
+    } else if (viewingUserId) {
+      const mapData = await fetchUserMapData(viewingUserId);
+      setMapMyData(mapData);
+      setMapTheirData(null);
+    }
+  }, [viewingUserId, isOwnProfile, user?.id]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
