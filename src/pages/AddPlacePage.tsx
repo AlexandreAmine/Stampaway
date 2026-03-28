@@ -116,7 +116,7 @@ export default function AddPlacePage() {
       return;
     }
     setSaving(true);
-    const { error } = await supabase.from("reviews").insert({
+    const { error, data: insertedReviews } = await supabase.from("reviews").insert({
       user_id: user.id,
       place_id: selectedPlace.id,
       rating: rating > 0 ? rating : null,
@@ -125,7 +125,7 @@ export default function AddPlacePage() {
       visit_month: unknownDate ? null : visitMonth,
       duration_days: durationDays || null,
       liked,
-    });
+    }).select("id");
 
     // Auto-remove from wishlist if present
     if (!error) {
