@@ -130,6 +130,18 @@ export default function AddPlacePage() {
     // Auto-remove from wishlist if present
     if (!error) {
       await supabase.from("wishlists").delete().eq("user_id", user.id).eq("place_id", selectedPlace.id);
+
+      // Save tags
+      if (taggedUsers.length > 0 && insertedReviews && insertedReviews[0]) {
+        const reviewId = insertedReviews[0].id;
+        await supabase.from("review_tags").insert(
+          taggedUsers.map(t => ({
+            review_id: reviewId,
+            tagged_user_id: t.user_id,
+            tagged_by_user_id: user.id,
+          }))
+        );
+      }
     }
 
     // If this is a favorite flow, also save as favorite
