@@ -299,6 +299,38 @@ export type Database = {
           },
         ]
       }
+      review_tags: {
+        Row: {
+          created_at: string
+          id: string
+          review_id: string
+          tagged_by_user_id: string
+          tagged_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          review_id: string
+          tagged_by_user_id: string
+          tagged_user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          review_id?: string
+          tagged_by_user_id?: string
+          tagged_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_tags_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           created_at: string

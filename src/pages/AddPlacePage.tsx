@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Search } from "lucide-react";
+import { ChevronLeft, Search, X } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { StarRating } from "@/components/StarRating";
 import { DestinationPoster } from "@/components/DestinationPoster";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 
 type Step = "search" | "review";
@@ -47,6 +48,9 @@ export default function AddPlacePage() {
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [saving, setSaving] = useState(false);
   const [recentSearches, setRecentSearches] = useState<PlaceResult[]>([]);
+  const [tagQuery, setTagQuery] = useState("");
+  const [tagResults, setTagResults] = useState<{ user_id: string; username: string; profile_picture: string | null }[]>([]);
+  const [taggedUsers, setTaggedUsers] = useState<{ user_id: string; username: string; profile_picture: string | null }[]>([]);
 
   useEffect(() => {
     try {
@@ -63,6 +67,22 @@ export default function AddPlacePage() {
   useEffect(() => {
     fetchPlaces("");
   }, []);
+
+  useEffect(() => {
+    if (!tagQuery.trim()) { setTagResults([]); return; }
+    const timer = setTimeout(async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("user_id, username, profile_picture")
+        .ilike("username", `%${tagQuery}%`)
+        .limit(10);
+      const filtered = (data || []).filter(
+        p => p.user_id !== user?.id && !taggedUsers.some(t => t.user_id === p.user_id)
+      );
+      setTagResults(filtered);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [tagQuery, taggedUsers, user?.id]);
 
   const fetchPlaces = async (search: string) => {
     // Fetch review counts
@@ -96,7 +116,7 @@ export default function AddPlacePage() {
       return;
     }
     setSaving(true);
-    const { error } = await supabase.from("reviews").insert({
+    const { error, data: insertedReviews } = await supabase.from("reviews").insert({
       user_id: user.id,
       place_id: selectedPlace.id,
       rating: rating > 0 ? rating : null,
@@ -105,11 +125,23 @@ export default function AddPlacePage() {
       visit_month: unknownDate ? null : visitMonth,
       duration_days: durationDays || null,
       liked,
-    });
+    }).select("id");
 
     // Auto-remove from wishlist if present
     if (!error) {
       await supabase.from("wishlists").delete().eq("user_id", user.id).eq("place_id", selectedPlace.id);
+
+      // Save tags
+      if (taggedUsers.length > 0 && insertedReviews && insertedReviews[0]) {
+        const reviewId = insertedReviews[0].id;
+        await supabase.from("review_tags").insert(
+          taggedUsers.map(t => ({
+            review_id: reviewId,
+            tagged_user_id: t.user_id,
+            tagged_by_user_id: user.id,
+          }))
+        );
+      }
     }
 
     // If this is a favorite flow, also save as favorite
@@ -253,6 +285,55 @@ export default function AddPlacePage() {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Tag people */}
+            <div>
+              <p className="text-sm font-semibold text-foreground mb-2">Tag people that visited with you...</p>
+              {taggedUsers.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {taggedUsers.map(u => (
+                    <div key={u.user_id} className="flex items-center gap-1.5 bg-card border border-border rounded-full px-2.5 py-1">
+                      <Avatar className="w-4 h-4">
+                        {u.profile_picture ? <AvatarImage src={u.profile_picture} /> : <AvatarFallback className="text-[8px]">{u.username[0]?.toUpperCase()}</AvatarFallback>}
+                      </Avatar>
+                      <span className="text-xs font-medium text-foreground">{u.username}</span>
+                      <button onClick={() => setTaggedUsers(prev => prev.filter(t => t.user_id !== u.user_id))} className="ml-0.5">
+                        <X className="w-3 h-3 text-muted-foreground" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="relative">
+                <input
+                  type="text"
+                  value={tagQuery}
+                  onChange={(e) => setTagQuery(e.target.value)}
+                  placeholder="Search by username..."
+                  className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                {tagResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl overflow-hidden z-20 max-h-40 overflow-y-auto">
+                    {tagResults.map(p => (
+                      <button
+                        key={p.user_id}
+                        onClick={() => {
+                          setTaggedUsers(prev => [...prev, p]);
+                          setTagQuery("");
+                          setTagResults([]);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/50 text-left"
+                      >
+                        <Avatar className="w-6 h-6">
+                          {p.profile_picture ? <AvatarImage src={p.profile_picture} /> : <AvatarFallback className="text-[10px]">{p.username[0]?.toUpperCase()}</AvatarFallback>}
+                        </Avatar>
+                        <span className="text-sm text-foreground">{p.username}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
           </div>

@@ -13,6 +13,7 @@ import { WishlistTab } from "@/components/WishlistTab";
 import { MapTab, SoloMapChart, CompareMapChart, fetchUserMapData } from "@/components/MapTab";
 import type { UserMapData } from "@/components/MapTab";
 import { LikesTab } from "@/components/LikesTab";
+import { TagsTab } from "@/components/TagsTab";
 import { FollowingTab } from "@/components/FollowingTab";
 import { FollowersTab } from "@/components/FollowersTab";
 import { ReviewsTab } from "@/components/ReviewsTab";
@@ -34,7 +35,7 @@ interface FavoriteSlot {
   place_type: string;
 }
 
-type SubPage = null | "Countries" | "Cities" | "Diary" | "Map" | "Lists" | "Wishlist" | "Likes" | "Reviews" | "Following" | "Followers" | "CountriesByRating" | "CitiesByRating";
+type SubPage = null | "Countries" | "Cities" | "Diary" | "Map" | "Lists" | "Wishlist" | "Likes" | "Tags" | "Reviews" | "Following" | "Followers" | "CountriesByRating" | "CitiesByRating";
 
 export default function ProfilePage() {
   const { user, profile, signOut } = useAuth();
@@ -284,6 +285,7 @@ export default function ProfilePage() {
     { label: "Lists", value: `${listsCount}`, subPage: "Lists" },
     { label: "Wishlist", value: `${wishlistCount}`, subPage: "Wishlist" },
     { label: "Likes", value: `${likesCount}`, subPage: "Likes" },
+    { label: "Tags", value: "", subPage: "Tags" },
     { label: "Reviews", value: `${writtenReviewsCount}`, subPage: "Reviews" },
     { label: "Following", value: `${followingCount}`, subPage: "Following" },
     { label: "Followers", value: `${followersCount}`, subPage: "Followers" },
@@ -392,6 +394,8 @@ export default function ProfilePage() {
         return <WishlistTab userId={uid} readOnly={!isOwnProfile} />;
       case "Likes":
         return <LikesTab userId={uid} />;
+      case "Tags":
+        return <TagsTab userId={uid} />;
       case "Reviews":
         return <ReviewsTab userId={uid} />;
       case "Following":
