@@ -285,6 +285,7 @@ export default function ProfilePage() {
     { label: "Lists", value: `${listsCount}`, subPage: "Lists" },
     { label: "Wishlist", value: `${wishlistCount}`, subPage: "Wishlist" },
     { label: "Likes", value: `${likesCount}`, subPage: "Likes" },
+    { label: "Tags", value: "", subPage: "Tags" },
     { label: "Reviews", value: `${writtenReviewsCount}`, subPage: "Reviews" },
     { label: "Following", value: `${followingCount}`, subPage: "Following" },
     { label: "Followers", value: `${followersCount}`, subPage: "Followers" },
