@@ -13,6 +13,7 @@ import { WishlistTab } from "@/components/WishlistTab";
 import { MapTab, SoloMapChart, CompareMapChart, fetchUserMapData } from "@/components/MapTab";
 import type { UserMapData } from "@/components/MapTab";
 import { LikesTab } from "@/components/LikesTab";
+import { TagsTab } from "@/components/TagsTab";
 import { FollowingTab } from "@/components/FollowingTab";
 import { FollowersTab } from "@/components/FollowersTab";
 import { ReviewsTab } from "@/components/ReviewsTab";
