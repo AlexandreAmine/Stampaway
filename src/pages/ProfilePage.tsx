@@ -66,6 +66,8 @@ export default function ProfilePage() {
   const [followersCount, setFollowersCount] = useState(0);
   const [likesCount, setLikesCount] = useState(0);
   const [writtenReviewsCount, setWrittenReviewsCount] = useState(0);
+  const [mapMyData, setMapMyData] = useState<UserMapData | null>(null);
+  const [mapTheirData, setMapTheirData] = useState<UserMapData | null>(null);
 
   const [cityDistribution, setCityDistribution] = useState<number[]>(Array(10).fill(0));
   const [countryDistribution, setCountryDistribution] = useState<number[]>(Array(10).fill(0));
