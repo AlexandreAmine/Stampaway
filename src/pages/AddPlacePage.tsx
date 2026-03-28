@@ -287,6 +287,55 @@ export default function AddPlacePage() {
               )}
             </div>
 
+            {/* Tag people */}
+            <div>
+              <p className="text-sm font-semibold text-foreground mb-2">Tag people that visited with you...</p>
+              {taggedUsers.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {taggedUsers.map(u => (
+                    <div key={u.user_id} className="flex items-center gap-1.5 bg-card border border-border rounded-full px-2.5 py-1">
+                      <Avatar className="w-4 h-4">
+                        {u.profile_picture ? <AvatarImage src={u.profile_picture} /> : <AvatarFallback className="text-[8px]">{u.username[0]?.toUpperCase()}</AvatarFallback>}
+                      </Avatar>
+                      <span className="text-xs font-medium text-foreground">{u.username}</span>
+                      <button onClick={() => setTaggedUsers(prev => prev.filter(t => t.user_id !== u.user_id))} className="ml-0.5">
+                        <X className="w-3 h-3 text-muted-foreground" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="relative">
+                <input
+                  type="text"
+                  value={tagQuery}
+                  onChange={(e) => setTagQuery(e.target.value)}
+                  placeholder="Search by username..."
+                  className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                {tagResults.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl overflow-hidden z-20 max-h-40 overflow-y-auto">
+                    {tagResults.map(p => (
+                      <button
+                        key={p.user_id}
+                        onClick={() => {
+                          setTaggedUsers(prev => [...prev, p]);
+                          setTagQuery("");
+                          setTagResults([]);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/50 text-left"
+                      >
+                        <Avatar className="w-6 h-6">
+                          {p.profile_picture ? <AvatarImage src={p.profile_picture} /> : <AvatarFallback className="text-[10px]">{p.username[0]?.toUpperCase()}</AvatarFallback>}
+                        </Avatar>
+                        <span className="text-sm text-foreground">{p.username}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
