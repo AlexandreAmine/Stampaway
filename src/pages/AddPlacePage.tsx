@@ -48,6 +48,9 @@ export default function AddPlacePage() {
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [saving, setSaving] = useState(false);
   const [recentSearches, setRecentSearches] = useState<PlaceResult[]>([]);
+  const [tagQuery, setTagQuery] = useState("");
+  const [tagResults, setTagResults] = useState<{ user_id: string; username: string; profile_picture: string | null }[]>([]);
+  const [taggedUsers, setTaggedUsers] = useState<{ user_id: string; username: string; profile_picture: string | null }[]>([]);
 
   useEffect(() => {
     try {
