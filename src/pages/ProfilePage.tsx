@@ -280,7 +280,7 @@ export default function ProfilePage() {
     { label: "Countries", value: `${countriesCount} / ${totalCountries}`, subPage: "Countries" },
     { label: "Cities", value: `${citiesCount}`, subPage: "Cities" },
     { label: "Diary", value: "", subPage: "Diary" },
-    { label: "Map", value: "", subPage: "Map" },
+    
     { label: "Lists", value: `${listsCount}`, subPage: "Lists" },
     { label: "Wishlist", value: `${wishlistCount}`, subPage: "Wishlist" },
     { label: "Likes", value: `${likesCount}`, subPage: "Likes" },
