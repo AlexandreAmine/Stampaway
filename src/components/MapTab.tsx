@@ -117,7 +117,10 @@ async function fetchUserMapData(userId: string): Promise<UserMapData> {
 }
 
 // ─── Solo Map ───
-const SoloMapChart = memo(({ data, onCountryClick, onCityClick }: {
+export { fetchUserMapData };
+export type { UserMapData };
+
+export const SoloMapChart = memo(({ data, onCountryClick, onCityClick }: {
   data: UserMapData;
   onCountryClick?: (alpha2: string) => void;
   onCityClick?: (placeId: string) => void;
