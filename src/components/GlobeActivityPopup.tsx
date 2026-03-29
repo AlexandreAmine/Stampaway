@@ -1,6 +1,9 @@
-import { Star, Calendar, Clock, MessageSquare, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Star, Calendar, Clock, MessageSquare, X, Users } from "lucide-react";
 import { getFlagEmoji } from "@/lib/countryFlags";
 import { motion, AnimatePresence } from "framer-motion";
+import { supabase } from "@/integrations/supabase/client";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 interface GlobeActivityPopupProps {
   activity: {
@@ -25,7 +28,63 @@ interface GlobeActivityPopupProps {
 
 const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+interface TaggedPerson {
+  username: string;
+  profile_picture: string | null;
+}
+
+interface Comment {
+  id: string;
+  comment_text: string;
+  username: string;
+}
+
 export function GlobeActivityPopup({ activity, onClose, onNavigate }: GlobeActivityPopupProps) {
+  const [taggedPeople, setTaggedPeople] = useState<TaggedPerson[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
+
+  useEffect(() => {
+    if (!activity) { setTaggedPeople([]); setComments([]); return; }
+
+    // Fetch tagged people
+    (async () => {
+      const { data: tags } = await supabase
+        .from("review_tags")
+        .select("tagged_user_id")
+        .eq("review_id", activity.id);
+      if (tags && tags.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, username, profile_picture")
+          .in("user_id", tags.map(t => t.tagged_user_id));
+        setTaggedPeople((profiles || []).map(p => ({ username: p.username, profile_picture: p.profile_picture })));
+      } else {
+        setTaggedPeople([]);
+      }
+    })();
+
+    // Fetch comments
+    (async () => {
+      const { data: cmts } = await supabase
+        .from("review_comments")
+        .select("id, comment_text, user_id")
+        .eq("review_id", activity.id)
+        .order("created_at", { ascending: true })
+        .limit(3);
+      if (cmts && cmts.length > 0) {
+        const userIds = [...new Set(cmts.map(c => c.user_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, username")
+          .in("user_id", userIds);
+        const pMap = new Map((profiles || []).map(p => [p.user_id, p.username]));
+        setComments(cmts.map(c => ({ id: c.id, comment_text: c.comment_text, username: pMap.get(c.user_id) || "User" })));
+      } else {
+        setComments([]);
+      }
+    })();
+  }, [activity?.id]);
+
   if (!activity) return null;
 
   const flag = getFlagEmoji(activity.place_country);
@@ -88,11 +147,44 @@ export function GlobeActivityPopup({ activity, onClose, onNavigate }: GlobeActiv
             )}
           </div>
 
+          {/* Tagged people */}
+          {taggedPeople.length > 0 && (
+            <div className="flex items-center gap-1.5 mt-2">
+              <Users className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+              <div className="flex items-center gap-1 flex-wrap">
+                <span className="text-xs text-muted-foreground">with</span>
+                {taggedPeople.map((p, i) => (
+                  <div key={i} className="flex items-center gap-1">
+                    <Avatar className="w-4 h-4">
+                      {p.profile_picture ? <AvatarImage src={p.profile_picture} /> : <AvatarFallback className="text-[7px]">{p.username[0]?.toUpperCase()}</AvatarFallback>}
+                    </Avatar>
+                    <span className="text-xs font-medium text-foreground">{p.username}</span>
+                    {i < taggedPeople.length - 1 && <span className="text-xs text-muted-foreground">,</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Review text preview */}
           {activity.review_text && (
             <div className="flex items-start gap-1.5 mt-2">
               <MessageSquare className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
               <p className="text-xs text-muted-foreground line-clamp-2">{activity.review_text}</p>
+            </div>
+          )}
+
+          {/* Comments */}
+          {comments.length > 0 && (
+            <div className="mt-2 space-y-1">
+              {comments.map(c => (
+                <div key={c.id} className="flex items-start gap-1.5">
+                  <MessageSquare className="w-3 h-3 text-primary mt-0.5 shrink-0" />
+                  <p className="text-xs text-muted-foreground line-clamp-1">
+                    <span className="font-semibold text-foreground">{c.username}</span> {c.comment_text}
+                  </p>
+                </div>
+              ))}
             </div>
           )}
 
