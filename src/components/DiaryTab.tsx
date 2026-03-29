@@ -178,12 +178,20 @@ export function DiaryTab({ userId }: { userId?: string }) {
                   )}
                 </button>
                 {isOwnProfile && (
-                  <button
-                    onClick={() => handleDelete(entry.id)}
-                    className="self-center p-2 shrink-0"
-                  >
-                    <Trash2 className="w-4 h-4 text-destructive" />
-                  </button>
+                  <div className="flex flex-col gap-1 self-center shrink-0">
+                    <button
+                      onClick={() => setEditingEntry(entry)}
+                      className="p-1.5"
+                    >
+                      <Pencil className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(entry.id)}
+                      className="p-1.5"
+                    >
+                      <Trash2 className="w-4 h-4 text-destructive" />
+                    </button>
+                  </div>
                 )}
               </div>
             ))}
