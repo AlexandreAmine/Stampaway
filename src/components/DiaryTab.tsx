@@ -200,6 +200,14 @@ export function DiaryTab({ userId }: { userId?: string }) {
       ))}
         </div>
       )}
+      {editingEntry && (
+        <DiaryEditSheet
+          entry={editingEntry}
+          open={!!editingEntry}
+          onClose={() => setEditingEntry(null)}
+          onSaved={() => fetchDiary()}
+        />
+      )}
     </motion.div>
   );
 }
