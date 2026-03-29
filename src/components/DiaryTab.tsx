@@ -35,6 +35,7 @@ export function DiaryTab({ userId }: { userId?: string }) {
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [section, setSection] = useState<"country" | "city">("country");
+  const [editingEntry, setEditingEntry] = useState<DiaryEntry | null>(null);
   const targetUserId = userId || user?.id;
   const isOwnProfile = !userId || userId === user?.id;
 
