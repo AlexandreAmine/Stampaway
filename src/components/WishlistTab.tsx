@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
+import { PosterWishlistButton } from "@/components/PosterWishlistButton";
 import { FavoritePicker } from "@/components/FavoritePicker";
 import { toast } from "sonner";
 import {
