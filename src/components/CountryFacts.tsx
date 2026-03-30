@@ -41,13 +41,13 @@ export function CountryFacts({ countryName, placeId }: CountryFactsProps) {
     try {
       // Check cache first
       const { data: cached } = await supabase
-        .from("country_facts" as any)
+        .from("country_facts")
         .select("facts")
         .eq("country_name", countryName)
-        .maybeSingle();
+        .maybeSingle() as any;
 
       if (cached?.facts) {
-        setFacts(cached.facts as unknown as Facts);
+        setFacts(cached.facts as Facts);
         setLoading(false);
         return;
       }
