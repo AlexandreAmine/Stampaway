@@ -265,6 +265,7 @@ export default function PlacePage() {
     } else {
       await supabase.from("wishlists").insert({ user_id: user.id, place_id: id });
       setInWishlist(true);
+      toast.success(`${place?.name} added to wishlist`, { duration: 2000 });
     }
     setTogglingWishlist(false);
   };
