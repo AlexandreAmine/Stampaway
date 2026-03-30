@@ -5,6 +5,7 @@ import { Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
+import { PosterWishlistButton } from "@/components/PosterWishlistButton";
 import { StarRating } from "@/components/StarRating";
 import { ReviewCard } from "@/components/ReviewCard";
 
@@ -38,6 +39,7 @@ export function LikesTab({ userId }: { userId?: string }) {
   const [likedLists, setLikedLists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const targetUserId = userId || user?.id;
+  const isOtherUser = !!userId && userId !== user?.id;
 
   useEffect(() => {
     if (!targetUserId) return;
@@ -191,7 +193,8 @@ export function LikesTab({ userId }: { userId?: string }) {
           <div className="grid grid-cols-3 gap-3">
             {countries.map((item) => (
               <button key={item.id} onClick={() => navigate(`/place/${item.place.id}`)} className="relative text-left">
-                <div className="aspect-[3/4] w-full">
+                <div className="aspect-[3/4] w-full relative">
+                  {isOtherUser && <PosterWishlistButton placeId={item.place.id} placeName={item.place.name} />}
                   <DestinationPoster placeId={item.place.id} name={item.place.name} country={item.place.country} type="country" image={item.place.image} className="w-full h-full" />
                 </div>
                 <div className="mt-1.5 flex justify-center">
@@ -211,7 +214,8 @@ export function LikesTab({ userId }: { userId?: string }) {
           <div className="grid grid-cols-3 gap-3">
             {cities.map((item) => (
               <button key={item.id} onClick={() => navigate(`/place/${item.place.id}`)} className="relative text-left">
-                <div className="aspect-[3/4] w-full">
+                <div className="aspect-[3/4] w-full relative">
+                  {isOtherUser && <PosterWishlistButton placeId={item.place.id} placeName={item.place.name} />}
                   <DestinationPoster placeId={item.place.id} name={item.place.name} country={item.place.country} type="city" image={item.place.image} className="w-full h-full" />
                 </div>
                 <div className="mt-1.5 flex justify-center">

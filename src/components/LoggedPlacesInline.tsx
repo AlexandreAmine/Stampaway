@@ -5,6 +5,7 @@ import { ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
+import { PosterWishlistButton } from "@/components/PosterWishlistButton";
 import { StarRating } from "@/components/StarRating";
 import {
   DropdownMenu,
@@ -164,7 +165,8 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
       <div className="grid grid-cols-3 gap-3">
         {sorted.map((r, i) => (
           <button key={r.place_id + i} onClick={() => navigate(`/place/${r.place_id}`)} className="relative text-left">
-            <div className="aspect-[3/4] w-full">
+            <div className="aspect-[3/4] w-full relative">
+              {isOtherUser && <PosterWishlistButton placeId={r.place_id} placeName={r.name} />}
               <DestinationPoster placeId={r.place_id} name={r.name} country={r.country} type={type} image={r.image} className="w-full h-full" />
             </div>
             {r.rating != null ? (

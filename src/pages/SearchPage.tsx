@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
+import { PosterWishlistButton } from "@/components/PosterWishlistButton";
 import { ListPreviewPosters } from "@/components/ListPreviewPosters";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
@@ -141,8 +142,9 @@ export default function SearchPage() {
                 } catch { /* ignore */ }
                 navigate(`/place/${p.id}`);
               }}
-              className="aspect-[3/4] w-full"
+              className="aspect-[3/4] w-full relative"
             >
+              <PosterWishlistButton placeId={p.id} placeName={p.name} />
               <DestinationPoster placeId={p.id} name={p.name} country={p.country} type={p.type as "city" | "country"} image={p.image} className="w-full h-full" />
             </motion.button>
           ))}

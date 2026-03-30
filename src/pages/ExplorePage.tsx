@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
+import { PosterWishlistButton } from "@/components/PosterWishlistButton";
 import { ReviewCard } from "@/components/ReviewCard";
 import { ListPreviewPosters } from "@/components/ListPreviewPosters";
 import {
@@ -444,7 +445,8 @@ export default function ExplorePage() {
                             onClick={() => navigate(`/place/${place.id}`)}
                             className="flex-shrink-0 w-[130px]"
                           >
-                            <div className="aspect-[3/4] w-full">
+                            <div className="aspect-[3/4] w-full relative">
+                              <PosterWishlistButton placeId={place.id} placeName={place.name} />
                               <DestinationPoster
                                 placeId={place.id}
                                 name={place.name}

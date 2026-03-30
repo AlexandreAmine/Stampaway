@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Users, List, MessageSquare, Bookmark } from "lucide-react";
+import { ChevronLeft, ChevronRight, Users, List, MessageSquare, Bookmark, Plus } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,7 @@ import { StarRating } from "@/components/StarRating";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getFlagUrl } from "@/lib/countryFlags";
 import { CountryFacts } from "@/components/CountryFacts";
+import { toast } from "sonner";
 
 interface PlaceData {
   id: string;
@@ -264,6 +265,7 @@ export default function PlacePage() {
     } else {
       await supabase.from("wishlists").insert({ user_id: user.id, place_id: id });
       setInWishlist(true);
+      toast.success(`${place?.name} added to wishlist`, { duration: 2000 });
     }
     setTogglingWishlist(false);
   };
@@ -299,12 +301,20 @@ export default function PlacePage() {
           <ChevronLeft className="w-5 h-5 text-foreground" />
         </button>
         {user && (
-          <button
-            onClick={toggleWishlist}
-            className="absolute top-12 right-5 w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"
-          >
-            <Bookmark className={`w-5 h-5 transition-colors ${inWishlist ? "text-primary fill-primary" : "text-foreground"}`} />
-          </button>
+          <div className="absolute top-12 right-5 flex items-center gap-2">
+            <button
+              onClick={toggleWishlist}
+              className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"
+            >
+              <Bookmark className={`w-5 h-5 transition-colors ${inWishlist ? "text-primary fill-primary" : "text-foreground"}`} />
+            </button>
+            <button
+              onClick={() => navigate(`/add?placeId=${id}&placeName=${encodeURIComponent(place?.name || "")}&placeCountry=${encodeURIComponent(place?.country || "")}&placeImage=${encodeURIComponent(place?.image || "")}`)}
+              className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"
+            >
+              <Plus className="w-5 h-5 text-foreground" />
+            </button>
+          </div>
         )}
       </div>
 
