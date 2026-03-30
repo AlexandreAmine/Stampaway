@@ -301,12 +301,20 @@ export default function PlacePage() {
           <ChevronLeft className="w-5 h-5 text-foreground" />
         </button>
         {user && (
-          <button
-            onClick={toggleWishlist}
-            className="absolute top-12 right-5 w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"
-          >
-            <Bookmark className={`w-5 h-5 transition-colors ${inWishlist ? "text-primary fill-primary" : "text-foreground"}`} />
-          </button>
+          <div className="absolute top-12 right-5 flex items-center gap-2">
+            <button
+              onClick={toggleWishlist}
+              className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"
+            >
+              <Bookmark className={`w-5 h-5 transition-colors ${inWishlist ? "text-primary fill-primary" : "text-foreground"}`} />
+            </button>
+            <button
+              onClick={() => navigate(`/add?placeId=${id}&placeName=${encodeURIComponent(place?.name || "")}&placeCountry=${encodeURIComponent(place?.country || "")}&placeImage=${encodeURIComponent(place?.image || "")}`)}
+              className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"
+            >
+              <Plus className="w-5 h-5 text-foreground" />
+            </button>
+          </div>
         )}
       </div>
 
