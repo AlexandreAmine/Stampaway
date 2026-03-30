@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, MessageSquare } from "lucide-react";
+import { ChevronLeft, MessageSquare, SlidersHorizontal } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { StarRating } from "@/components/StarRating";
 import { ReviewCard } from "@/components/ReviewCard";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type Section = "visitors" | "reviews" | "lists" | "wanttovisit";
 
