@@ -156,11 +156,21 @@ export default function SearchPage() {
         <div className="space-y-3">
           {lists.map((l: any) => (
             <motion.button key={l.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} onClick={() => navigate(`/list/${l.id}`)} className="w-full text-left bg-card rounded-xl p-4 border border-border">
-              <p className="text-sm font-semibold text-foreground">{l.name}</p>
-              {l.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{l.description}</p>}
-              <div className="flex items-center gap-2 mt-2">
-                {l.profiles && <p className="text-xs text-muted-foreground">by {(l.profiles as any).username}</p>}
-                <span className="text-xs text-muted-foreground">• {l.item_count ?? "?"} destination{(l.item_count ?? 0) !== 1 ? "s" : ""}</span>
+              <div className="flex items-center gap-3">
+                {l.profiles && (
+                  <Avatar className="w-8 h-8 shrink-0">
+                    <AvatarImage src={l.profiles.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(l.profiles.username || "?")}&background=3B82F6&color=fff`} />
+                    <AvatarFallback>{l.profiles.username?.[0]?.toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground">{l.name}</p>
+                  {l.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{l.description}</p>}
+                  <div className="flex items-center gap-2 mt-1">
+                    {l.profiles && <p className="text-xs text-muted-foreground">by {l.profiles.username}</p>}
+                    <span className="text-xs text-muted-foreground">• {l.item_count ?? "?"} destination{(l.item_count ?? 0) !== 1 ? "s" : ""}</span>
+                  </div>
+                </div>
               </div>
               <ListPreviewPosters listId={l.id} />
             </motion.button>
