@@ -9,6 +9,7 @@ import { RatingHistogram } from "@/components/RatingHistogram";
 import { StarRating } from "@/components/StarRating";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getFlagUrl } from "@/lib/countryFlags";
+import { CountryFacts } from "@/components/CountryFacts";
 
 interface PlaceData {
   id: string;
@@ -486,6 +487,9 @@ export default function PlacePage() {
                 </div>
               </button>
             )}
+
+            {/* Country Key Facts */}
+            <CountryFacts countryName={place.name} placeId={place.id} />
           </motion.div>
         )}
       </div>
