@@ -10,6 +10,7 @@ import { StarRating } from "@/components/StarRating";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getFlagUrl } from "@/lib/countryFlags";
 import { CountryFacts } from "@/components/CountryFacts";
+import { toast } from "sonner";
 
 interface PlaceData {
   id: string;
