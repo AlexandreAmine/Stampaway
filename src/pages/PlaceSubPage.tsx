@@ -23,6 +23,9 @@ export default function PlaceSubPage() {
   const [placeName, setPlaceName] = useState("");
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reviewFilter, setReviewFilter] = useState<"most_liked" | "most_recent" | "friends_first">("most_liked");
+  const [reviewLikeCounts, setReviewLikeCounts] = useState<Map<string, number>>(new Map());
+  const [friendIds, setFriendIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (id && section) fetchData();
