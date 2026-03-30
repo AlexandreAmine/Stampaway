@@ -213,7 +213,8 @@ export function LikesTab({ userId }: { userId?: string }) {
           <div className="grid grid-cols-3 gap-3">
             {cities.map((item) => (
               <button key={item.id} onClick={() => navigate(`/place/${item.place.id}`)} className="relative text-left">
-                <div className="aspect-[3/4] w-full">
+                <div className="aspect-[3/4] w-full relative">
+                  {isOtherUser && <PosterWishlistButton placeId={item.place.id} placeName={item.place.name} />}
                   <DestinationPoster placeId={item.place.id} name={item.place.name} country={item.place.country} type="city" image={item.place.image} className="w-full h-full" />
                 </div>
                 <div className="mt-1.5 flex justify-center">

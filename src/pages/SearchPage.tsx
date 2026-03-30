@@ -142,8 +142,9 @@ export default function SearchPage() {
                 } catch { /* ignore */ }
                 navigate(`/place/${p.id}`);
               }}
-              className="aspect-[3/4] w-full"
+              className="aspect-[3/4] w-full relative"
             >
+              <PosterWishlistButton placeId={p.id} placeName={p.name} />
               <DestinationPoster placeId={p.id} name={p.name} country={p.country} type={p.type as "city" | "country"} image={p.image} className="w-full h-full" />
             </motion.button>
           ))}

@@ -235,9 +235,10 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
               <div className="grid grid-cols-3 gap-3">
                 {group.items.map((item) => (
                   <div key={item.id} className="relative aspect-[3/4] cursor-pointer" onClick={() => navigate(`/place/${item.place.id}`)}>
+                    {readOnly && <PosterWishlistButton placeId={item.place.id} placeName={item.place.name} />}
                     <DestinationPoster placeId={item.place.id} name={item.place.name} country={item.place.country} type={item.place.type as "city" | "country"} image={item.place.image} className="w-full h-full" />
                     {!readOnly && (
-                      <button onClick={() => handleRemove(item.id)} className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center">
+                      <button onClick={(e) => { e.stopPropagation(); handleRemove(item.id); }} className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center">
                         <X className="w-3 h-3 text-white" />
                       </button>
                     )}
@@ -251,9 +252,10 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
         <div className="grid grid-cols-3 gap-3">
           {sorted.map((item) => (
             <div key={item.id} className="relative aspect-[3/4] cursor-pointer" onClick={() => navigate(`/place/${item.place.id}`)}>
+              {readOnly && <PosterWishlistButton placeId={item.place.id} placeName={item.place.name} />}
               <DestinationPoster placeId={item.place.id} name={item.place.name} country={item.place.country} type={item.place.type as "city" | "country"} image={item.place.image} className="w-full h-full" />
               {!readOnly && (
-                <button onClick={() => handleRemove(item.id)} className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center">
+                <button onClick={(e) => { e.stopPropagation(); handleRemove(item.id); }} className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center">
                   <X className="w-3 h-3 text-white" />
                 </button>
               )}
