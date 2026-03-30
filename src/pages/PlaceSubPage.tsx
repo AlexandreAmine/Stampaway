@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, MessageSquare } from "lucide-react";
+import { ChevronLeft, MessageSquare, SlidersHorizontal } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,6 +7,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { StarRating } from "@/components/StarRating";
 import { ReviewCard } from "@/components/ReviewCard";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type Section = "visitors" | "reviews" | "lists" | "wanttovisit";
 
@@ -17,6 +23,9 @@ export default function PlaceSubPage() {
   const [placeName, setPlaceName] = useState("");
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reviewFilter, setReviewFilter] = useState<"most_liked" | "most_recent" | "friends_first">("most_liked");
+  const [reviewLikeCounts, setReviewLikeCounts] = useState<Map<string, number>>(new Map());
+  const [friendIds, setFriendIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (id && section) fetchData();
@@ -73,6 +82,26 @@ export default function PlaceSubPage() {
       const userIds = unique.map((r) => r.user_id);
       const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
 
+      // Fetch like counts for all reviews
+      const reviewIds = unique.map((r) => r.id);
+      const likeCounts = new Map<string, number>();
+      if (reviewIds.length > 0) {
+        const { data: likes } = await supabase
+          .from("review_likes")
+          .select("review_id")
+          .in("review_id", reviewIds);
+        (likes || []).forEach((l) => {
+          likeCounts.set(l.review_id, (likeCounts.get(l.review_id) || 0) + 1);
+        });
+      }
+      setReviewLikeCounts(likeCounts);
+
+      // Fetch friend IDs
+      if (user) {
+        const { data: following } = await supabase.from("followers").select("following_id").eq("follower_id", user.id);
+        setFriendIds((following || []).map((f) => f.following_id));
+      }
+
       setData(
         unique.map((r) => {
           const p = (profiles || []).find((pr: any) => pr.user_id === r.user_id);
@@ -124,6 +153,26 @@ export default function PlaceSubPage() {
             <h1 className="text-xl font-bold text-foreground">{title}</h1>
             <p className="text-xs text-muted-foreground">{placeName}</p>
           </div>
+          {section === "reviews" && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="ml-auto w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center">
+                  <SlidersHorizontal className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setReviewFilter("most_liked")} className={reviewFilter === "most_liked" ? "bg-accent" : ""}>
+                  Most liked
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setReviewFilter("most_recent")} className={reviewFilter === "most_recent" ? "bg-accent" : ""}>
+                  Most recent
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setReviewFilter("friends_first")} className={reviewFilter === "friends_first" ? "bg-accent" : ""}>
+                  Friend reviews first
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {loading ? (
@@ -156,22 +205,37 @@ export default function PlaceSubPage() {
               ))}
 
             {section === "reviews" &&
-              data.map((rv: any) => (
-                <ReviewCard
-                  key={rv.id}
-                  review={{
-                    id: rv.id,
-                    user_id: rv.user_id,
-                    rating: rv.rating,
-                    review_text: rv.review_text,
-                    created_at: rv.created_at,
-                    profile_username: rv.profile?.username,
-                    profile_picture: rv.profile?.profile_picture,
-                    place_name: placeName,
-                  }}
-                  showImage={false}
-                />
-              ))}
+              (() => {
+                let sorted = [...data];
+                if (reviewFilter === "most_liked") {
+                  sorted.sort((a, b) => (reviewLikeCounts.get(b.id) || 0) - (reviewLikeCounts.get(a.id) || 0));
+                } else if (reviewFilter === "most_recent") {
+                  sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                } else if (reviewFilter === "friends_first") {
+                  sorted.sort((a, b) => {
+                    const aFriend = friendIds.includes(a.user_id) ? 1 : 0;
+                    const bFriend = friendIds.includes(b.user_id) ? 1 : 0;
+                    if (bFriend !== aFriend) return bFriend - aFriend;
+                    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                  });
+                }
+                return sorted.map((rv: any) => (
+                  <ReviewCard
+                    key={rv.id}
+                    review={{
+                      id: rv.id,
+                      user_id: rv.user_id,
+                      rating: rv.rating,
+                      review_text: rv.review_text,
+                      created_at: rv.created_at,
+                      profile_username: rv.profile?.username,
+                      profile_picture: rv.profile?.profile_picture,
+                    }}
+                    showImage={false}
+                    hidePlaceName
+                  />
+                ));
+              })()}
 
             {section === "lists" &&
               data.map((l: any, i: number) => (
