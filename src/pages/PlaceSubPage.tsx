@@ -153,6 +153,26 @@ export default function PlaceSubPage() {
             <h1 className="text-xl font-bold text-foreground">{title}</h1>
             <p className="text-xs text-muted-foreground">{placeName}</p>
           </div>
+          {section === "reviews" && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="ml-auto w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center">
+                  <SlidersHorizontal className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setReviewFilter("most_liked")} className={reviewFilter === "most_liked" ? "bg-accent" : ""}>
+                  Most liked
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setReviewFilter("most_recent")} className={reviewFilter === "most_recent" ? "bg-accent" : ""}>
+                  Most recent
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setReviewFilter("friends_first")} className={reviewFilter === "friends_first" ? "bg-accent" : ""}>
+                  Friend reviews first
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
 
         {loading ? (
@@ -185,22 +205,37 @@ export default function PlaceSubPage() {
               ))}
 
             {section === "reviews" &&
-              data.map((rv: any) => (
-                <ReviewCard
-                  key={rv.id}
-                  review={{
-                    id: rv.id,
-                    user_id: rv.user_id,
-                    rating: rv.rating,
-                    review_text: rv.review_text,
-                    created_at: rv.created_at,
-                    profile_username: rv.profile?.username,
-                    profile_picture: rv.profile?.profile_picture,
-                    place_name: placeName,
-                  }}
-                  showImage={false}
-                />
-              ))}
+              (() => {
+                let sorted = [...data];
+                if (reviewFilter === "most_liked") {
+                  sorted.sort((a, b) => (reviewLikeCounts.get(b.id) || 0) - (reviewLikeCounts.get(a.id) || 0));
+                } else if (reviewFilter === "most_recent") {
+                  sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                } else if (reviewFilter === "friends_first") {
+                  sorted.sort((a, b) => {
+                    const aFriend = friendIds.includes(a.user_id) ? 1 : 0;
+                    const bFriend = friendIds.includes(b.user_id) ? 1 : 0;
+                    if (bFriend !== aFriend) return bFriend - aFriend;
+                    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                  });
+                }
+                return sorted.map((rv: any) => (
+                  <ReviewCard
+                    key={rv.id}
+                    review={{
+                      id: rv.id,
+                      user_id: rv.user_id,
+                      rating: rv.rating,
+                      review_text: rv.review_text,
+                      created_at: rv.created_at,
+                      profile_username: rv.profile?.username,
+                      profile_picture: rv.profile?.profile_picture,
+                    }}
+                    showImage={false}
+                    hidePlaceName
+                  />
+                ));
+              })()}
 
             {section === "lists" &&
               data.map((l: any, i: number) => (
