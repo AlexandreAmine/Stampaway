@@ -30,7 +30,7 @@ interface ReviewCardProps {
   hidePlaceName?: boolean;
 }
 
-export function ReviewCard({ review, showImage = true }: ReviewCardProps) {
+export function ReviewCard({ review, showImage = true, hidePlaceName = false }: ReviewCardProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [likeCount, setLikeCount] = useState(0);
