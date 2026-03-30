@@ -27,6 +27,7 @@ interface ReviewCardProps {
     place_image?: string;
   };
   showImage?: boolean;
+  hidePlaceName?: boolean;
 }
 
 export function ReviewCard({ review, showImage = true }: ReviewCardProps) {
