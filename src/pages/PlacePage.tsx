@@ -487,6 +487,9 @@ export default function PlacePage() {
                 </div>
               </button>
             )}
+
+            {/* Country Key Facts */}
+            <CountryFacts countryName={place.name} placeId={place.id} />
           </motion.div>
         )}
       </div>
