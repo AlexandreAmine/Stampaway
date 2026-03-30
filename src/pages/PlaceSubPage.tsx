@@ -82,6 +82,26 @@ export default function PlaceSubPage() {
       const userIds = unique.map((r) => r.user_id);
       const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
 
+      // Fetch like counts for all reviews
+      const reviewIds = unique.map((r) => r.id);
+      const likeCounts = new Map<string, number>();
+      if (reviewIds.length > 0) {
+        const { data: likes } = await supabase
+          .from("review_likes")
+          .select("review_id")
+          .in("review_id", reviewIds);
+        (likes || []).forEach((l) => {
+          likeCounts.set(l.review_id, (likeCounts.get(l.review_id) || 0) + 1);
+        });
+      }
+      setReviewLikeCounts(likeCounts);
+
+      // Fetch friend IDs
+      if (user) {
+        const { data: following } = await supabase.from("followers").select("following_id").eq("follower_id", user.id);
+        setFriendIds((following || []).map((f) => f.following_id));
+      }
+
       setData(
         unique.map((r) => {
           const p = (profiles || []).find((pr: any) => pr.user_id === r.user_id);
