@@ -39,6 +39,7 @@ export function LikesTab({ userId }: { userId?: string }) {
   const [likedLists, setLikedLists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const targetUserId = userId || user?.id;
+  const isOtherUser = !!userId && userId !== user?.id;
 
   useEffect(() => {
     if (!targetUserId) return;
