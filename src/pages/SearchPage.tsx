@@ -63,21 +63,30 @@ export default function SearchPage() {
     } else if (activeFilter === "Lists") {
       let qb = supabase.from("lists").select("id, name, description, user_id");
       if (q) qb = qb.ilike("name", `%${q}%`);
-      qb = qb.order("created_at", { ascending: false }).limit(30);
+      qb = qb.limit(100);
       const { data } = await qb;
       if (data && data.length > 0) {
         const userIds = [...new Set(data.map((l: any) => l.user_id))];
         const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
         const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
         
-        // Get item counts for each list
+        // Get item counts and like counts for each list
+        const listIds = data.map((l: any) => l.id);
+        const { data: allLikes } = await supabase.from("list_likes").select("list_id").in("list_id", listIds);
+        const likeCountMap = new Map<string, number>();
+        (allLikes || []).forEach((lk: any) => {
+          likeCountMap.set(lk.list_id, (likeCountMap.get(lk.list_id) || 0) + 1);
+        });
+
         const enriched = await Promise.all(
           data.map(async (l: any) => {
             const { count } = await supabase.from("list_items").select("*", { count: "exact", head: true }).eq("list_id", l.id);
-            return { ...l, item_count: count || 0, profiles: profileMap.get(l.user_id) || null };
+            return { ...l, item_count: count || 0, like_count: likeCountMap.get(l.id) || 0, profiles: profileMap.get(l.user_id) || null };
           })
         );
-        setLists(enriched);
+        // Sort by most liked
+        enriched.sort((a, b) => b.like_count - a.like_count);
+        setLists(enriched.slice(0, 30));
       } else {
         setLists([]);
       }
