@@ -63,21 +63,30 @@ export default function SearchPage() {
     } else if (activeFilter === "Lists") {
       let qb = supabase.from("lists").select("id, name, description, user_id");
       if (q) qb = qb.ilike("name", `%${q}%`);
-      qb = qb.order("created_at", { ascending: false }).limit(30);
+      qb = qb.limit(100);
       const { data } = await qb;
       if (data && data.length > 0) {
         const userIds = [...new Set(data.map((l: any) => l.user_id))];
         const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
         const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
         
-        // Get item counts for each list
+        // Get item counts and like counts for each list
+        const listIds = data.map((l: any) => l.id);
+        const { data: allLikes } = await supabase.from("list_likes").select("list_id").in("list_id", listIds);
+        const likeCountMap = new Map<string, number>();
+        (allLikes || []).forEach((lk: any) => {
+          likeCountMap.set(lk.list_id, (likeCountMap.get(lk.list_id) || 0) + 1);
+        });
+
         const enriched = await Promise.all(
           data.map(async (l: any) => {
             const { count } = await supabase.from("list_items").select("*", { count: "exact", head: true }).eq("list_id", l.id);
-            return { ...l, item_count: count || 0, profiles: profileMap.get(l.user_id) || null };
+            return { ...l, item_count: count || 0, like_count: likeCountMap.get(l.id) || 0, profiles: profileMap.get(l.user_id) || null };
           })
         );
-        setLists(enriched);
+        // Sort by most liked
+        enriched.sort((a, b) => b.like_count - a.like_count);
+        setLists(enriched.slice(0, 30));
       } else {
         setLists([]);
       }
@@ -147,11 +156,21 @@ export default function SearchPage() {
         <div className="space-y-3">
           {lists.map((l: any) => (
             <motion.button key={l.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} onClick={() => navigate(`/list/${l.id}`)} className="w-full text-left bg-card rounded-xl p-4 border border-border">
-              <p className="text-sm font-semibold text-foreground">{l.name}</p>
-              {l.description && <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{l.description}</p>}
-              <div className="flex items-center gap-2 mt-2">
-                {l.profiles && <p className="text-xs text-muted-foreground">by {(l.profiles as any).username}</p>}
-                <span className="text-xs text-muted-foreground">• {l.item_count ?? "?"} destination{(l.item_count ?? 0) !== 1 ? "s" : ""}</span>
+              <div className="flex items-center gap-3">
+                {l.profiles && (
+                  <Avatar className="w-8 h-8 shrink-0">
+                    <AvatarImage src={l.profiles.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(l.profiles.username || "?")}&background=3B82F6&color=fff`} />
+                    <AvatarFallback>{l.profiles.username?.[0]?.toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground">{l.name}</p>
+                  {l.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{l.description}</p>}
+                  <div className="flex items-center gap-2 mt-1">
+                    {l.profiles && <p className="text-xs text-muted-foreground">by {l.profiles.username}</p>}
+                    <span className="text-xs text-muted-foreground">• {l.item_count ?? "?"} destination{(l.item_count ?? 0) !== 1 ? "s" : ""}</span>
+                  </div>
+                </div>
               </div>
               <ListPreviewPosters listId={l.id} />
             </motion.button>
