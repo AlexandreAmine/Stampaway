@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      country_facts: {
+        Row: {
+          country_name: string
+          created_at: string
+          facts: Json
+          id: string
+        }
+        Insert: {
+          country_name: string
+          created_at?: string
+          facts: Json
+          id?: string
+        }
+        Update: {
+          country_name?: string
+          created_at?: string
+          facts?: Json
+          id?: string
+        }
+        Relationships: []
+      }
       favorite_places: {
         Row: {
           created_at: string
