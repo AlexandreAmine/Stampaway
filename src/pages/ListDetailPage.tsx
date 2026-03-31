@@ -1,22 +1,27 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Heart } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export default function ListDetailPage() {
   const { listId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [list, setList] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
   const [owner, setOwner] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [likeCount, setLikeCount] = useState(0);
+  const [liked, setLiked] = useState(false);
+  const [toggling, setToggling] = useState(false);
 
   useEffect(() => {
     if (!listId) return;
-    const fetch = async () => {
+    const fetchData = async () => {
       const { data: listData } = await supabase.from("lists").select("id, name, description, user_id").eq("id", listId).single();
       if (!listData) { setLoading(false); return; }
       setList(listData);
@@ -33,10 +38,36 @@ export default function ListDetailPage() {
         id: i.id,
         place: i.places,
       })));
+
+      // Fetch like count
+      const { count } = await supabase.from("list_likes").select("*", { count: "exact", head: true }).eq("list_id", listId);
+      setLikeCount(count || 0);
+
+      // Check if current user liked
+      if (profile && user) {
+        const { data: myLike } = await supabase.from("list_likes").select("id").eq("list_id", listId).eq("user_id", user.id).maybeSingle();
+        setLiked(!!myLike);
+      }
+
       setLoading(false);
     };
-    fetch();
-  }, [listId]);
+    fetchData();
+  }, [listId, user]);
+
+  const toggleLike = async () => {
+    if (!user || !listId || toggling) return;
+    setToggling(true);
+    if (liked) {
+      await supabase.from("list_likes").delete().eq("list_id", listId).eq("user_id", user.id);
+      setLiked(false);
+      setLikeCount(c => Math.max(0, c - 1));
+    } else {
+      await supabase.from("list_likes").insert({ list_id: listId, user_id: user.id });
+      setLiked(true);
+      setLikeCount(c => c + 1);
+    }
+    setToggling(false);
+  };
 
   if (loading) {
     return (
@@ -62,7 +93,13 @@ export default function ListDetailPage() {
           <button onClick={() => navigate(-1)}>
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
-          <h1 className="text-xl font-bold text-foreground">{list.name}</h1>
+          <h1 className="text-xl font-bold text-foreground flex-1">{list.name}</h1>
+          {user && (
+            <button onClick={toggleLike} className="flex items-center gap-1.5 active:scale-95 transition-transform">
+              <Heart className={`w-5 h-5 transition-colors ${liked ? "text-red-500 fill-red-500" : "text-muted-foreground"}`} />
+              {likeCount > 0 && <span className="text-sm text-muted-foreground">{likeCount}</span>}
+            </button>
+          )}
         </div>
 
         {owner && (
