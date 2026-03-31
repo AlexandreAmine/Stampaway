@@ -231,6 +231,24 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
             />
           </div>
 
+          {/* Sub-category ratings */}
+          <div>
+            <p className="text-sm font-semibold text-foreground mb-3">Category Ratings</p>
+            <div className="grid grid-cols-2 gap-3">
+              {SUB_CATEGORIES.map((cat) => (
+                <div key={cat} className="space-y-1">
+                  <p className="text-[10px] text-muted-foreground leading-tight">{cat}</p>
+                  <StarRating
+                    rating={subRatings[cat] || 0}
+                    size={16}
+                    interactive
+                    onChange={(val) => setSubRatings(prev => ({ ...prev, [cat]: val }))}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Date */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">

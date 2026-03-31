@@ -163,6 +163,13 @@ export default function ReviewDetailPage() {
           </div>
         </motion.div>
 
+        {/* Sub-category ratings */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.22 }} className="mb-4">
+          <div className="bg-card rounded-xl p-4 border border-border">
+            <SubRatingsDisplay reviewId={reviewId!} />
+          </div>
+        </motion.div>
+
         {/* Review text */}
         {review.review_text && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }} className="mb-4">
