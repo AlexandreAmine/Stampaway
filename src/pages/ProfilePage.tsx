@@ -82,17 +82,25 @@ export default function ProfilePage() {
   useEffect(() => {
     setSubPage(null);
     setRatingFilter(undefined);
+    setIsBlocked(false);
+    setHasPendingRequest(false);
     if (isOwnProfile && viewingUserId) {
       supabase.from("profiles").select("username, profile_picture, bio, country").eq("user_id", viewingUserId).single().then(({ data }) => {
         if (data) setOwnProfileFull(data);
       });
       setViewedProfile(null);
     } else if (viewingUserId) {
-      supabase.from("profiles").select("username, profile_picture, bio, country").eq("user_id", viewingUserId).single().then(({ data }) => {
-        if (data) setViewedProfile(data);
+      supabase.from("profiles").select("username, profile_picture, bio, country, is_private").eq("user_id", viewingUserId).single().then(({ data }) => {
+        if (data) setViewedProfile(data as any);
       });
+      // Check if blocked
+      if (user) {
+        supabase.from("blocked_users").select("id").or(`and(blocker_id.eq.${user.id},blocked_id.eq.${viewingUserId}),and(blocker_id.eq.${viewingUserId},blocked_id.eq.${user.id})`).then(({ data }) => {
+          setIsBlocked((data || []).length > 0);
+        });
+      }
     }
-  }, [viewingUserId, isOwnProfile]);
+  }, [viewingUserId, isOwnProfile, user]);
 
   const [isFollowing, setIsFollowing] = useState(false);
   const [togglingFollow, setTogglingFollow] = useState(false);
