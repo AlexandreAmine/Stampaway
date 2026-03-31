@@ -237,8 +237,11 @@ export default function HomePage() {
       {/* Globe section - fixed behind content */}
       <div className="sticky top-0 z-0">
         {/* Header */}
-        <div className="pt-12 pb-2 px-5 text-center relative z-10">
+        <div className="pt-12 pb-2 px-5 flex items-center justify-between relative z-10">
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Travel'D</h1>
+          <button onClick={() => setNotifOpen(true)} className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center">
+            <Bell className="w-5 h-5 text-foreground" />
+          </button>
         </div>
 
         <div ref={containerRef} className="relative mx-auto flex items-center justify-center overflow-hidden" style={{ height: globeHeight }}>
