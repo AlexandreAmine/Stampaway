@@ -293,27 +293,30 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
             <ChevronDown className="w-3.5 h-3.5" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-[220px]">
-            {regularSorts.map((key) => (
-              <DropdownMenuItem
-                key={key}
-                onClick={() => setSort(key)}
-                className={sort === key ? "text-primary font-semibold" : ""}
-              >
-                {sortLabels[key]}
-              </DropdownMenuItem>
-            ))}
+            <DropdownMenuItem onClick={() => setSort("your-highest")} className={sort === "your-highest" ? "text-primary font-semibold" : ""}>
+              {sortLabels["your-highest"]}
+            </DropdownMenuItem>
             <CategorySortDropdown
               label={sortLabels["category-highest"]}
               onSelect={(cat) => { setSelectedCategory(cat); setSort("category-highest"); }}
               selectedCategory={selectedCategory}
               isActive={sort === "category-highest"}
             />
+            <DropdownMenuItem onClick={() => setSort("avg-highest")} className={sort === "avg-highest" ? "text-primary font-semibold" : ""}>
+              {sortLabels["avg-highest"]}
+            </DropdownMenuItem>
             <CategorySortDropdown
               label="Average categories highest first"
               onSelect={(cat) => { setAvgSelectedCategory(cat); setSort("avg-category-highest"); }}
               selectedCategory={avgSelectedCategory}
               isActive={sort === "avg-category-highest"}
             />
+            <DropdownMenuItem onClick={() => setSort("newest")} className={sort === "newest" ? "text-primary font-semibold" : ""}>
+              {sortLabels["newest"]}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSort("longest")} className={sort === "longest" ? "text-primary font-semibold" : ""}>
+              {sortLabels["longest"]}
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
