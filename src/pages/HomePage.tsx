@@ -41,6 +41,7 @@ export default function HomePage() {
   const [globeWidth, setGlobeWidth] = useState(380);
   const [selectedActivity, setSelectedActivity] = useState<FriendActivity | null>(null);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     if (containerRef.current) {
