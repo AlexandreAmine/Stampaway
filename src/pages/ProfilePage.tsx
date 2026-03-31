@@ -562,6 +562,8 @@ export default function ProfilePage() {
           </div>
         )}
 
+        {/* Content visible when not blocked and not private-restricted */}
+        {(isOwnProfile || (!isBlocked && (!viewedProfile?.is_private || isFollowing))) && <>
         {/* Admin Stats */}
         {isOwnProfile && user && <AdminStats userId={user.id} />}
 
