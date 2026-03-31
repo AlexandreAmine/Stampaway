@@ -144,6 +144,19 @@ export default function AddPlacePage() {
           }))
         );
       }
+
+      // Save sub-ratings
+      const subEntries = Object.entries(subRatings).filter(([, v]) => v > 0);
+      if (subEntries.length > 0 && insertedReviews && insertedReviews[0]) {
+        const reviewId = insertedReviews[0].id;
+        await supabase.from("review_sub_ratings").insert(
+          subEntries.map(([category, rating]) => ({
+            review_id: reviewId,
+            category,
+            rating,
+          }))
+        );
+      }
     }
 
     // If this is a favorite flow, also save as favorite
