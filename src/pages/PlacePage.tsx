@@ -386,23 +386,22 @@ export default function PlacePage() {
             </button>
             <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
               {friendVisitors.map((fv: any) => (
-                <div
+                <button
                   key={fv.id || fv.user_id}
+                  onClick={() => navigate(`/review/${fv.review_id}`)}
                   className="flex-shrink-0 flex items-center gap-1.5 bg-card border border-border rounded-full pl-1 pr-3 py-1"
                 >
-                  <button onClick={() => navigate(fv.user_id === user?.id ? "/profile" : `/profile/${fv.user_id}`)}>
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage src={fv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fv.profile?.username || "?")}&background=3B82F6&color=fff`} />
-                      <AvatarFallback>{fv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                  </button>
-                  <button onClick={() => navigate(`/review/${fv.review_id}`)} className="flex items-center gap-0.5">
+                  <Avatar className="w-8 h-8" onClick={(e) => { e.stopPropagation(); navigate(fv.user_id === user?.id ? "/profile" : `/profile/${fv.user_id}`); }}>
+                    <AvatarImage src={fv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fv.profile?.username || "?")}&background=3B82F6&color=fff`} />
+                    <AvatarFallback>{fv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex items-center gap-0.5">
                     {fv.rating != null && (
                       <StarRating rating={Number(fv.rating)} size={12} />
                     )}
                     {fv.has_review && <MessageSquare className="w-3 h-3 text-primary" />}
-                  </button>
-                </div>
+                  </div>
+                </button>
               ))}
             </div>
           </motion.div>
