@@ -354,15 +354,23 @@ export default function PlacePage() {
 
         {/* My Review */}
         {myReview && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="bg-card rounded-xl p-4 border border-border mb-5">
-            <p className="text-xs text-primary font-medium mb-1">You rated this</p>
-            <div className="flex items-center gap-2">
-              <StarRating rating={myReview.rating} size={14} liked={myReview.liked} />
-              <span className="text-sm font-semibold text-foreground">{myReview.rating}</span>
-            </div>
-            {myReview.review_text && (
-              <p className="text-xs text-muted-foreground mt-2">{myReview.review_text}</p>
-            )}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+            <button
+              onClick={() => setEditSheetOpen(true)}
+              className="w-full bg-card rounded-xl p-4 border border-border mb-5 text-left"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs text-primary font-medium">You rated this</p>
+                <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+              </div>
+              <div className="flex items-center gap-2">
+                <StarRating rating={myReview.rating} size={14} liked={myReview.liked} />
+                <span className="text-sm font-semibold text-foreground">{myReview.rating}</span>
+              </div>
+              {myReview.review_text && (
+                <p className="text-xs text-muted-foreground mt-2">{myReview.review_text}</p>
+              )}
+            </button>
           </motion.div>
         )}
 
