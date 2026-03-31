@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { ChevronRight, ChevronLeft, LogOut, Plus, X, UserPlus, UserMinus, Pencil } from "lucide-react";
+import { ChevronRight, ChevronLeft, Settings, Plus, X, UserPlus, UserMinus, Pencil } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -38,7 +38,7 @@ interface FavoriteSlot {
 type SubPage = null | "Countries" | "Cities" | "Diary" | "Map" | "Lists" | "Wishlist" | "Likes" | "Tags" | "Reviews" | "Following" | "Followers" | "CountriesByRating" | "CitiesByRating";
 
 export default function ProfilePage() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile } = useAuth();
   const { userId: paramUserId } = useParams<{ userId?: string }>();
   const navigate = useNavigate();
 
@@ -475,7 +475,7 @@ export default function ProfilePage() {
                 <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
                 {countryFlag && <span className="text-lg">{countryFlag}</span>}
               </div>
-              {isOwnProfile && <p className="text-xs text-muted-foreground">{user?.email}</p>}
+              {isOwnProfile && profileCountry && <span className="text-xs text-muted-foreground">{profileCountry}</span>}
             </div>
           </div>
           {isOwnProfile ? (
@@ -483,8 +483,8 @@ export default function ProfilePage() {
               <button onClick={() => setEditOpen(true)} className="p-2">
                 <Pencil className="w-5 h-5 text-muted-foreground" />
               </button>
-              <button onClick={signOut} className="p-2">
-                <LogOut className="w-5 h-5 text-muted-foreground" />
+              <button onClick={() => navigate("/settings")} className="p-2">
+                <Settings className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
           ) : user && (

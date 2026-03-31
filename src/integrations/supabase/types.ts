@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      blocked_users: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       country_facts: {
         Row: {
           country_name: string
@@ -69,6 +90,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      follow_requests: {
+        Row: {
+          created_at: string
+          id: string
+          requester_id: string
+          target_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          requester_id: string
+          target_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          requester_id?: string
+          target_id?: string
+        }
+        Relationships: []
       }
       followers: {
         Row: {
@@ -220,6 +262,7 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          is_private: boolean
           profile_picture: string | null
           updated_at: string
           user_id: string
@@ -231,6 +274,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          is_private?: boolean
           profile_picture?: string | null
           updated_at?: string
           user_id: string
@@ -242,6 +286,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          is_private?: boolean
           profile_picture?: string | null
           updated_at?: string
           user_id?: string
@@ -319,6 +364,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      review_sub_ratings: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          rating: number
+          review_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          rating: number
+          review_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          rating?: number
+          review_id?: string
+        }
+        Relationships: []
       }
       review_tags: {
         Row: {

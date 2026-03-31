@@ -40,6 +40,8 @@ export default function AddPlacePage() {
   );
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
+  const SUB_CATEGORIES = ["Affordability", "Natural Beauty", "Culture & Heritage", "Safety & Security", "Food", "Hospitality & People", "Weather", "Entertainment & Nightlife"] as const;
+  const [subRatings, setSubRatings] = useState<Record<string, number>>({});
   const [visitYear, setVisitYear] = useState(new Date().getFullYear());
   const [visitMonth, setVisitMonth] = useState(new Date().getMonth() + 1);
   const [durationDays, setDurationDays] = useState<number | "">("");
@@ -142,6 +144,19 @@ export default function AddPlacePage() {
           }))
         );
       }
+
+      // Save sub-ratings
+      const subEntries = Object.entries(subRatings).filter(([, v]) => v > 0);
+      if (subEntries.length > 0 && insertedReviews && insertedReviews[0]) {
+        const reviewId = insertedReviews[0].id;
+        await supabase.from("review_sub_ratings").insert(
+          subEntries.map(([category, rating]) => ({
+            review_id: reviewId,
+            category,
+            rating,
+          }))
+        );
+      }
     }
 
     // If this is a favorite flow, also save as favorite
@@ -229,8 +244,16 @@ export default function AddPlacePage() {
                 value={reviewText}
                 onChange={(e) => setReviewText(e.target.value)}
                 placeholder="Add a review..."
-                className="w-full h-32 bg-card rounded-xl p-4 text-sm text-foreground placeholder:text-muted-foreground resize-none border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full h-24 bg-card rounded-xl p-4 text-sm text-foreground placeholder:text-muted-foreground resize-none border border-border focus:outline-none focus:ring-1 focus:ring-primary"
               />
+              <div className="mt-3 space-y-2">
+                {SUB_CATEGORIES.map((cat) => (
+                  <div key={cat} className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">{cat}</span>
+                    <StarRating rating={subRatings[cat] || 0} size={16} interactive onChange={(v) => setSubRatings(prev => ({ ...prev, [cat]: v }))} />
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-3">
@@ -289,7 +312,7 @@ export default function AddPlacePage() {
 
             {/* Tag people */}
             <div>
-              <p className="text-sm font-semibold text-foreground mb-2">Tag people that visited with you...</p>
+              <p className="text-sm font-semibold text-foreground mb-2">Tag people that visited with you</p>
               {taggedUsers.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-2">
                   {taggedUsers.map(u => (
