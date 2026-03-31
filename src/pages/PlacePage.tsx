@@ -348,6 +348,13 @@ export default function PlacePage() {
               <StarRating rating={avgRating} size={14} />
               <p className="text-xs text-muted-foreground mt-0.5">{ratingsCount} ratings</p>
             </div>
+            <button
+              onClick={() => navigate(`/place/${id}/categories`)}
+              className="flex items-center gap-1 ml-auto"
+            >
+              <BarChart3 className="w-4 h-4 text-primary" />
+              <span className="text-xs text-primary font-medium">Category ratings</span>
+            </button>
           </div>
           <RatingHistogram distribution={distribution} />
         </motion.div>
