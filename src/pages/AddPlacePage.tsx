@@ -289,7 +289,7 @@ export default function AddPlacePage() {
 
             {/* Tag people */}
             <div>
-              <p className="text-sm font-semibold text-foreground mb-2">Tag people that visited with you...</p>
+              <p className="text-sm font-semibold text-foreground mb-2">Tag people that visited with you</p>
               {taggedUsers.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-2">
                   {taggedUsers.map(u => (
