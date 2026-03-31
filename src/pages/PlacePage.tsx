@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Users, List, MessageSquare, Bookmark, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Users, List, MessageSquare, Bookmark, Plus, BarChart3 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
