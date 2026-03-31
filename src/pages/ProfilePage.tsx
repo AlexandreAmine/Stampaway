@@ -511,14 +511,16 @@ export default function ProfilePage() {
                 <Settings className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
-          ) : user && (
+          ) : user && !isBlocked && (
             <button
               onClick={toggleFollow}
               disabled={togglingFollow}
               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
                 isFollowing
                   ? "bg-card border border-border text-foreground"
-                  : "bg-primary text-primary-foreground"
+                  : hasPendingRequest
+                    ? "bg-muted text-muted-foreground border border-border"
+                    : "bg-primary text-primary-foreground"
               }`}
             >
               {isFollowing ? (
@@ -526,6 +528,8 @@ export default function ProfilePage() {
                   <UserMinus className="w-3.5 h-3.5" />
                   Unfollow
                 </>
+              ) : hasPendingRequest ? (
+                <span>Requested</span>
               ) : (
                 <>
                   <UserPlus className="w-3.5 h-3.5" />
