@@ -378,7 +378,7 @@ export default function HomePage() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
-                onClick={() => navigate(`/place/${a.place_id}`)}
+                onClick={() => handlePinClick(a)}
                 className="flex items-center gap-3 py-2.5 w-full text-left"
               >
                 <button
