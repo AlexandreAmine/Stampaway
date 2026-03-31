@@ -20,19 +20,11 @@ import {
 } from "@/lib/continents";
 import { CategorySortDropdown, type SubRatingCategory } from "@/components/CategorySortDropdown";
 
-type CountrySort = "recent" | "avg-highest" | "by-continent" | "category-avg";
-type CitySort = "recent" | "avg-highest" | "by-country" | "category-avg";
+type WishSort = "recent" | "avg-highest" | "category-avg";
 
-const COUNTRY_SORT_LABELS: Record<string, string> = {
+const SORT_LABELS: Record<WishSort, string> = {
   recent: "Recently added",
   "avg-highest": "Average highest first",
-  "by-continent": "By continent",
-  "category-avg": "Categories average highest first",
-};
-const CITY_SORT_LABELS: Record<string, string> = {
-  recent: "Recently added",
-  "avg-highest": "Average highest first",
-  "by-country": "By country",
   "category-avg": "Categories average highest first",
 };
 
@@ -62,9 +54,9 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
   const [loading, setLoading] = useState(true);
   const [subTab, setSubTab] = useState<"country" | "city">("country");
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [countrySort, setCountrySort] = useState<CountrySort>("recent");
-  const [citySort, setCitySort] = useState<CitySort>("recent");
+  const [sort, setSort] = useState<WishSort>("recent");
   const [selectedCategory, setSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
+  const [grouped, setGrouped] = useState(false);
   const targetUserId = userId || user?.id;
 
   useEffect(() => {
@@ -113,9 +105,8 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
   };
 
   // Fetch category avg when sort is category-avg
-  const currentSort = subTab === "country" ? countrySort : citySort;
   useEffect(() => {
-    if (currentSort !== "category-avg" || items.length === 0) return;
+    if (sort !== "category-avg" || items.length === 0) return;
     const filtered = items.filter((i) => i.place.type === subTab);
     const placeIds = filtered.map((i) => i.place.id);
     if (placeIds.length === 0) return;
@@ -145,7 +136,7 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
         return { ...item, _catAvg: a ? a.sum / a.count : 0 };
       }));
     })();
-  }, [currentSort, selectedCategory, items.length, subTab]);
+  }, [sort, selectedCategory, items.length, subTab]);
 
   const handleAdd = async (placeId: string) => {
     if (!user) return;
@@ -166,68 +157,60 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
   const filtered = items.filter((i) => i.place.type === subTab);
 
   const getSorted = () => {
-    if (subTab === "country") {
-      switch (countrySort) {
-        case "recent":
-          return [...filtered].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        case "avg-highest":
-          return [...filtered].sort((a, b) => (b.avg_rating ?? 0) - (a.avg_rating ?? 0));
-        case "by-continent":
-          return [...filtered].sort((a, b) => {
-            const ca = CONTINENT_ORDER.indexOf(getContinent(a.place.name));
-            const cb = CONTINENT_ORDER.indexOf(getContinent(b.place.name));
-            if (ca !== cb) return ca - cb;
-            return a.place.name.localeCompare(b.place.name);
-          });
-        case "category-avg":
-          return [...filtered].sort((a, b) => (b._catAvg ?? 0) - (a._catAvg ?? 0));
-      }
-    } else {
-      switch (citySort) {
-        case "recent":
-          return [...filtered].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        case "avg-highest":
-          return [...filtered].sort((a, b) => (b.avg_rating ?? 0) - (a.avg_rating ?? 0));
-        case "by-country":
-          return [...filtered].sort((a, b) => {
-            const cmp = a.place.country.localeCompare(b.place.country);
-            if (cmp !== 0) return cmp;
-            return a.place.name.localeCompare(b.place.name);
-          });
-        case "category-avg":
-          return [...filtered].sort((a, b) => (b._catAvg ?? 0) - (a._catAvg ?? 0));
-      }
+    switch (sort) {
+      case "recent":
+        return [...filtered].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      case "avg-highest":
+        return [...filtered].sort((a, b) => (b.avg_rating ?? 0) - (a.avg_rating ?? 0));
+      case "category-avg":
+        return [...filtered].sort((a, b) => (b._catAvg ?? 0) - (a._catAvg ?? 0));
     }
     return filtered;
   };
 
   const sorted = getSorted();
 
-  const sortLabels = subTab === "country" ? COUNTRY_SORT_LABELS : CITY_SORT_LABELS;
-  const currentSortKey = subTab === "country" ? countrySort : citySort;
-  const currentSortLabel = currentSortKey === "category-avg"
+  const currentLabel = sort === "category-avg"
     ? `${selectedCategory}`
-    : sortLabels[currentSortKey];
+    : SORT_LABELS[sort];
 
-  const isGrouped = (subTab === "country" && countrySort === "by-continent") || (subTab === "city" && citySort === "by-country");
+  const groupLabel = subTab === "country" ? "By continent" : "By country";
+
+  // Grouping
   const groups: { label: string; items: WishlistItem[] }[] = [];
-  if (isGrouped) {
+  if (grouped) {
     const map = new Map<string, WishlistItem[]>();
     sorted.forEach((item) => {
       const key = subTab === "country" ? getContinent(item.place.name) : item.place.country;
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(item);
     });
-    map.forEach((items, label) => groups.push({ label, items }));
+    if (subTab === "country") {
+      CONTINENT_ORDER.forEach((c) => { if (map.has(c)) groups.push({ label: c, items: map.get(c)! }); });
+    } else {
+      [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([label, items]) => groups.push({ label, items }));
+    }
   }
 
   if (loading) {
     return <div className="flex items-center justify-center h-40"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   }
 
-  const sortOptions = subTab === "country"
-    ? ["recent", "avg-highest", "by-continent"] as const
-    : ["recent", "avg-highest", "by-country"] as const;
+  const renderGrid = (gridItems: WishlistItem[]) => (
+    <div className="grid grid-cols-3 gap-3">
+      {gridItems.map((item) => (
+        <div key={item.id} className="relative aspect-[3/4] cursor-pointer" onClick={() => navigate(`/place/${item.place.id}`)}>
+          {readOnly && <PosterWishlistButton placeId={item.place.id} placeName={item.place.name} />}
+          <DestinationPoster placeId={item.place.id} name={item.place.name} country={item.place.country} type={item.place.type as "city" | "country"} image={item.place.image} className="w-full h-full" />
+          {!readOnly && (
+            <button onClick={(e) => { e.stopPropagation(); handleRemove(item.id); }} className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center">
+              <X className="w-3 h-3 text-white" />
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
@@ -236,7 +219,7 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
           {(["country", "city"] as const).map((t) => (
             <button
               key={t}
-              onClick={() => setSubTab(t)}
+              onClick={() => { setSubTab(t); setGrouped(false); }}
               className={`text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors ${
                 subTab === t ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"
               }`}
@@ -245,81 +228,65 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded-lg px-3 py-1.5 hover:text-foreground transition-colors">
-              {currentSortLabel}
-              <ChevronDown className="w-3.5 h-3.5" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[220px]">
-              {sortOptions.map((key) => (
-                <DropdownMenuItem
-                  key={key}
-                  onClick={() => subTab === "country" ? setCountrySort(key as CountrySort) : setCitySort(key as CitySort)}
-                  className={currentSortKey === key ? "text-primary font-semibold" : ""}
-                >
-                  {sortLabels[key]}
-                </DropdownMenuItem>
-              ))}
-              <CategorySortDropdown
-                label="Categories average highest first"
-                onSelect={(cat) => {
-                  setSelectedCategory(cat);
-                  if (subTab === "country") setCountrySort("category-avg");
-                  else setCitySort("category-avg");
-                }}
-                selectedCategory={selectedCategory}
-                isActive={currentSortKey === "category-avg"}
-              />
-            </DropdownMenuContent>
-          </DropdownMenu>
-          {!readOnly && (
-            <button onClick={() => setPickerOpen(true)} className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-              <Plus className="w-4 h-4 text-primary" />
-            </button>
-          )}
-        </div>
+        {!readOnly && (
+          <button onClick={() => setPickerOpen(true)} className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <Plus className="w-4 h-4 text-primary" />
+          </button>
+        )}
       </div>
 
       {filtered.length === 0 ? (
         <div className="flex items-center justify-center h-32">
           <p className="text-sm text-muted-foreground">No {subTab === "country" ? "countries" : "cities"} in wishlist</p>
         </div>
-      ) : isGrouped ? (
-        <div className="space-y-5">
-          {groups.map((group) => (
-            <div key={group.label}>
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.label}</h3>
-              <div className="grid grid-cols-3 gap-3">
-                {group.items.map((item) => (
-                  <div key={item.id} className="relative aspect-[3/4] cursor-pointer" onClick={() => navigate(`/place/${item.place.id}`)}>
-                    {readOnly && <PosterWishlistButton placeId={item.place.id} placeName={item.place.name} />}
-                    <DestinationPoster placeId={item.place.id} name={item.place.name} country={item.place.country} type={item.place.type as "city" | "country"} image={item.place.image} className="w-full h-full" />
-                    {!readOnly && (
-                      <button onClick={(e) => { e.stopPropagation(); handleRemove(item.id); }} className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center">
-                        <X className="w-3 h-3 text-white" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
       ) : (
-        <div className="grid grid-cols-3 gap-3">
-          {sorted.map((item) => (
-            <div key={item.id} className="relative aspect-[3/4] cursor-pointer" onClick={() => navigate(`/place/${item.place.id}`)}>
-              {readOnly && <PosterWishlistButton placeId={item.place.id} placeName={item.place.name} />}
-              <DestinationPoster placeId={item.place.id} name={item.place.name} country={item.place.country} type={item.place.type as "city" | "country"} image={item.place.image} className="w-full h-full" />
-              {!readOnly && (
-                <button onClick={(e) => { e.stopPropagation(); handleRemove(item.id); }} className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center">
-                  <X className="w-3 h-3 text-white" />
-                </button>
-              )}
+        <>
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setGrouped((g) => !g)}
+              className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
+                grouped ? "bg-primary text-primary-foreground" : "text-muted-foreground border border-border hover:text-foreground"
+              }`}
+            >
+              {groupLabel}
+            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded-lg px-3 py-1.5 hover:text-foreground transition-colors">
+                {currentLabel}
+                <ChevronDown className="w-3.5 h-3.5" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-[220px]">
+                {(["recent", "avg-highest"] as WishSort[]).map((key) => (
+                  <DropdownMenuItem
+                    key={key}
+                    onClick={() => setSort(key)}
+                    className={sort === key ? "text-primary font-semibold" : ""}
+                  >
+                    {SORT_LABELS[key]}
+                  </DropdownMenuItem>
+                ))}
+                <CategorySortDropdown
+                  label="Categories average highest first"
+                  onSelect={(cat) => { setSelectedCategory(cat); setSort("category-avg"); }}
+                  selectedCategory={selectedCategory}
+                  isActive={sort === "category-avg"}
+                />
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+          {grouped ? (
+            <div className="space-y-5">
+              {groups.map((group) => (
+                <div key={group.label}>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.label}</h3>
+                  {renderGrid(group.items)}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
+          ) : (
+            renderGrid(sorted)
+          )}
+        </>
       )}
 
       <FavoritePicker

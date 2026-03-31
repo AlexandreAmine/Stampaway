@@ -13,16 +13,33 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CategorySortDropdown, SUB_RATING_CATEGORIES, type SubRatingCategory } from "@/components/CategorySortDropdown";
+import { CategorySortDropdown, type SubRatingCategory } from "@/components/CategorySortDropdown";
+import {
+  EUROPE_COUNTRIES, ASIA_COUNTRIES, NORTH_AMERICA_COUNTRIES,
+  SOUTH_AMERICA_COUNTRIES, AFRICA_COUNTRIES, OCEANIA_COUNTRIES,
+} from "@/lib/continents";
 
-type SortOption = "your-highest" | "avg-highest" | "newest" | "longest" | "category-highest";
+type SortOption = "your-highest" | "category-highest" | "avg-highest" | "avg-category-highest" | "newest" | "longest";
+
+const CONTINENT_ORDER = ["Europe", "Asia", "North America", "South America", "Africa", "Oceania", "Other"];
+
+function getContinent(country: string): string {
+  if (EUROPE_COUNTRIES.includes(country)) return "Europe";
+  if (ASIA_COUNTRIES.includes(country)) return "Asia";
+  if (NORTH_AMERICA_COUNTRIES.includes(country)) return "North America";
+  if (SOUTH_AMERICA_COUNTRIES.includes(country)) return "South America";
+  if (AFRICA_COUNTRIES.includes(country)) return "Africa";
+  if (OCEANIA_COUNTRIES.includes(country)) return "Oceania";
+  return "Other";
+}
 
 const getSortLabels = (name?: string): Record<SortOption, string> => ({
   "your-highest": name ? `${name}'s highest first` : "Your highest first",
+  "category-highest": name ? `${name}'s categories highest first` : "Your categories highest first",
   "avg-highest": "Average highest first",
-  "newest": "Newest visited first",
-  "longest": "Highest total duration first",
-  "category-highest": name ? `${name}'s Categories highest first` : "Categories highest first",
+  "avg-category-highest": "Average categories highest first",
+  "newest": name ? `${name}'s newest visited first` : "Newest visited first",
+  "longest": name ? `${name}'s highest total duration first` : "Highest total duration first",
 });
 
 interface PlaceEntry {
@@ -38,6 +55,7 @@ interface PlaceEntry {
   image: string | null;
   avg_rating?: number;
   _catRating?: number;
+  _avgCatRating?: number;
 }
 
 export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername }: { type: "city" | "country"; userId?: string; ratingFilter?: number; profileUsername?: string }) {
@@ -47,6 +65,8 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<SortOption>("your-highest");
   const [selectedCategory, setSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
+  const [avgSelectedCategory, setAvgSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
+  const [grouped, setGrouped] = useState(false);
   const targetUserId = userId || user?.id;
 
   useEffect(() => {
@@ -75,7 +95,6 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
         image: r.places.image,
       }));
 
-      // Fetch average ratings
       const placeIds = [...new Set(entries.map((e) => e.place_id))];
       if (placeIds.length > 0) {
         const { data: allReviews } = await supabase
@@ -96,7 +115,6 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
         }
       }
 
-      // Deduplicate
       const seen = new Set<string>();
       const deduped = entries.filter((e) => {
         if (seen.has(e.place_id)) return false;
@@ -109,11 +127,10 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
     })();
   }, [targetUserId, type]);
 
-  // Fetch category ratings when sort is category-highest
+  // Fetch user's category ratings
   useEffect(() => {
     if (sort !== "category-highest" || places.length === 0 || !targetUserId) return;
     (async () => {
-      // Get user's reviews for these places
       const placeIds = places.map((p) => p.place_id);
       const { data: userReviews } = await supabase
         .from("reviews")
@@ -141,6 +158,42 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
     })();
   }, [sort, selectedCategory, places.length, targetUserId]);
 
+  // Fetch average category ratings (all users)
+  useEffect(() => {
+    if (sort !== "avg-category-highest" || places.length === 0) return;
+    (async () => {
+      const placeIds = places.map((p) => p.place_id);
+      const { data: allReviews } = await supabase
+        .from("reviews")
+        .select("id, place_id")
+        .in("place_id", placeIds);
+      if (!allReviews || allReviews.length === 0) return;
+
+      const reviewIds = allReviews.map((r) => r.id);
+      const reviewPlaceMap = new Map(allReviews.map((r) => [r.id, r.place_id]));
+
+      const { data: subRatings } = await supabase
+        .from("review_sub_ratings")
+        .select("review_id, category, rating")
+        .in("review_id", reviewIds)
+        .eq("category", avgSelectedCategory);
+
+      const catMap: Record<string, { sum: number; count: number }> = {};
+      (subRatings || []).forEach((sr: any) => {
+        const pid = reviewPlaceMap.get(sr.review_id);
+        if (!pid) return;
+        if (!catMap[pid]) catMap[pid] = { sum: 0, count: 0 };
+        catMap[pid].sum += Number(sr.rating);
+        catMap[pid].count++;
+      });
+
+      setPlaces((prev) => prev.map((p) => {
+        const a = catMap[p.place_id];
+        return { ...p, _avgCatRating: a ? a.sum / a.count : 0 };
+      }));
+    })();
+  }, [sort, avgSelectedCategory, places.length]);
+
   const filtered = ratingFilter != null
     ? places.filter((p) => p.rating != null && p.rating === ratingFilter)
     : places;
@@ -163,13 +216,14 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
         return (b.duration_days ?? 0) - (a.duration_days ?? 0);
       case "category-highest":
         return (b._catRating ?? 0) - (a._catRating ?? 0);
+      case "avg-category-highest":
+        return (b._avgCatRating ?? 0) - (a._avgCatRating ?? 0);
       default:
         return 0;
     }
   });
 
   if (loading) return <div className="flex items-center justify-center h-40"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
-
   if (places.length === 0) return <div className="flex items-center justify-center h-40"><p className="text-sm text-muted-foreground">No {type === "city" ? "cities" : "countries"} logged yet</p></div>;
   if (ratingFilter != null && sorted.length === 0) return <div className="flex items-center justify-center h-40"><p className="text-sm text-muted-foreground">No {type === "city" ? "cities" : "countries"} with this rating</p></div>;
 
@@ -178,18 +232,69 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
 
   const currentLabel = sort === "category-highest"
     ? `${selectedCategory}`
+    : sort === "avg-category-highest"
+    ? `${avgSelectedCategory}`
     : sortLabels[sort];
+
+  const groupLabel = type === "country" ? "By continent" : "By country";
+
+  // Grouping logic
+  const groups: { label: string; items: typeof sorted }[] = [];
+  if (grouped) {
+    const map = new Map<string, typeof sorted>();
+    sorted.forEach((item) => {
+      const key = type === "country" ? getContinent(item.name) : item.country;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(item);
+    });
+    if (type === "country") {
+      CONTINENT_ORDER.forEach((c) => { if (map.has(c)) groups.push({ label: c, items: map.get(c)! }); });
+    } else {
+      [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([label, items]) => groups.push({ label, items }));
+    }
+  }
+
+  const sortOrder: SortOption[] = ["your-highest", "category-highest", "avg-highest", "avg-category-highest", "newest", "longest"];
+  const regularSorts: SortOption[] = ["your-highest", "avg-highest", "newest", "longest"];
+
+  const renderGrid = (items: typeof sorted) => (
+    <div className="grid grid-cols-3 gap-3">
+      {items.map((r, i) => (
+        <button key={r.place_id + i} onClick={() => navigate(`/place/${r.place_id}`)} className="relative text-left">
+          <div className="aspect-[3/4] w-full relative">
+            {isOtherUser && <PosterWishlistButton placeId={r.place_id} placeName={r.name} />}
+            <DestinationPoster placeId={r.place_id} name={r.name} country={r.country} type={type} image={r.image} className="w-full h-full" />
+          </div>
+          {r.rating != null ? (
+            <div className="mt-1.5 flex justify-center">
+              <StarRating rating={r.rating} size={12} liked={r.liked} />
+            </div>
+          ) : (
+            <p className="mt-1.5 text-[10px] text-muted-foreground text-center">No rating</p>
+          )}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <div className="flex justify-end mb-3">
+      <div className="flex items-center justify-between mb-3">
+        <button
+          onClick={() => setGrouped((g) => !g)}
+          className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
+            grouped ? "bg-primary text-primary-foreground" : "text-muted-foreground border border-border hover:text-foreground"
+          }`}
+        >
+          {groupLabel}
+        </button>
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded-lg px-3 py-1.5 hover:text-foreground transition-colors">
             {currentLabel}
             <ChevronDown className="w-3.5 h-3.5" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-[220px]">
-            {(["your-highest", "avg-highest", "newest", "longest"] as SortOption[]).map((key) => (
+            {regularSorts.map((key) => (
               <DropdownMenuItem
                 key={key}
                 onClick={() => setSort(key)}
@@ -199,31 +304,33 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
               </DropdownMenuItem>
             ))}
             <CategorySortDropdown
-              label={isOtherUser ? `${profileUsername}'s Categories highest first` : "Categories highest first"}
+              label={sortLabels["category-highest"]}
               onSelect={(cat) => { setSelectedCategory(cat); setSort("category-highest"); }}
               selectedCategory={selectedCategory}
               isActive={sort === "category-highest"}
             />
+            <CategorySortDropdown
+              label="Average categories highest first"
+              onSelect={(cat) => { setAvgSelectedCategory(cat); setSort("avg-category-highest"); }}
+              selectedCategory={avgSelectedCategory}
+              isActive={sort === "avg-category-highest"}
+            />
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="grid grid-cols-3 gap-3">
-        {sorted.map((r, i) => (
-          <button key={r.place_id + i} onClick={() => navigate(`/place/${r.place_id}`)} className="relative text-left">
-            <div className="aspect-[3/4] w-full relative">
-              {isOtherUser && <PosterWishlistButton placeId={r.place_id} placeName={r.name} />}
-              <DestinationPoster placeId={r.place_id} name={r.name} country={r.country} type={type} image={r.image} className="w-full h-full" />
+
+      {grouped ? (
+        <div className="space-y-5">
+          {groups.map((group) => (
+            <div key={group.label}>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.label}</h3>
+              {renderGrid(group.items)}
             </div>
-            {r.rating != null ? (
-              <div className="mt-1.5 flex justify-center">
-                <StarRating rating={r.rating} size={12} liked={r.liked} />
-              </div>
-            ) : (
-              <p className="mt-1.5 text-[10px] text-muted-foreground text-center">No rating</p>
-            )}
-          </button>
-        ))}
-      </div>
+          ))}
+        </div>
+      ) : (
+        renderGrid(sorted)
+      )}
     </motion.div>
   );
 }
