@@ -46,7 +46,7 @@ export default function PlacePage() {
   const [togglingWishlist, setTogglingWishlist] = useState(false);
   const [countryCities, setCountryCities] = useState<any[]>([]);
   const [wishlistCities, setWishlistCities] = useState<any[]>([]);
-
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
   useEffect(() => {
     if (id) fetchAll();
   }, [id, user]);
