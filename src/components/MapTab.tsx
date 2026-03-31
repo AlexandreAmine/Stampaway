@@ -358,6 +358,9 @@ export function MapTab({ userId }: { userId?: string }) {
             </tbody>
           </table>
         </div>
+
+        {/* Visited Together Section */}
+        <VisitedTogether myUserId={user!.id} theirUserId={targetUserId!} theirUsername={theirUsername} />
       </motion.div>
     );
   }
