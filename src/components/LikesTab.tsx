@@ -362,27 +362,30 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
               <ChevronDown className="w-3.5 h-3.5" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-[220px]">
-              {regularSorts.map((key) => (
-                <DropdownMenuItem
-                  key={key}
-                  onClick={() => setDestSort(key)}
-                  className={destSort === key ? "text-primary font-semibold" : ""}
-                >
-                  {sortLabels[key]}
-                </DropdownMenuItem>
-              ))}
+              <DropdownMenuItem onClick={() => setDestSort("your-highest")} className={destSort === "your-highest" ? "text-primary font-semibold" : ""}>
+                {sortLabels["your-highest"]}
+              </DropdownMenuItem>
               <CategorySortDropdown
                 label={sortLabels["category-highest"]}
                 onSelect={(cat) => { setSelectedCategory(cat); setDestSort("category-highest"); }}
                 selectedCategory={selectedCategory}
                 isActive={destSort === "category-highest"}
               />
+              <DropdownMenuItem onClick={() => setDestSort("avg-highest")} className={destSort === "avg-highest" ? "text-primary font-semibold" : ""}>
+                {sortLabels["avg-highest"]}
+              </DropdownMenuItem>
               <CategorySortDropdown
                 label="Average categories highest first"
                 onSelect={(cat) => { setAvgSelectedCategory(cat); setDestSort("avg-category-highest"); }}
                 selectedCategory={avgSelectedCategory}
                 isActive={destSort === "avg-category-highest"}
               />
+              <DropdownMenuItem onClick={() => setDestSort("newest")} className={destSort === "newest" ? "text-primary font-semibold" : ""}>
+                {sortLabels["newest"]}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setDestSort("longest")} className={destSort === "longest" ? "text-primary font-semibold" : ""}>
+                {sortLabels["longest"]}
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
