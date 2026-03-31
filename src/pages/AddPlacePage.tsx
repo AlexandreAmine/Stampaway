@@ -73,15 +73,25 @@ export default function AddPlacePage() {
   useEffect(() => {
     if (!tagQuery.trim()) { setTagResults([]); return; }
     const timer = setTimeout(async () => {
-      const { data } = await supabase
+      // Search profiles
+      const { data: profiles } = await supabase
         .from("profiles")
-        .select("user_id, username, profile_picture")
+        .select("user_id, username, profile_picture, is_private")
         .ilike("username", `%${tagQuery}%`)
-        .limit(10);
-      const filtered = (data || []).filter(
-        p => p.user_id !== user?.id && !taggedUsers.some(t => t.user_id === p.user_id)
+        .limit(20);
+
+      // Get list of users I follow
+      const { data: following } = user?.id
+        ? await supabase.from("followers").select("following_id").eq("follower_id", user.id)
+        : { data: [] };
+      const followingIds = new Set((following || []).map(f => f.following_id));
+
+      const filtered = (profiles || []).filter(
+        p => p.user_id !== user?.id
+          && !taggedUsers.some(t => t.user_id === p.user_id)
+          && (!p.is_private || followingIds.has(p.user_id)) // only public or followed
       );
-      setTagResults(filtered);
+      setTagResults(filtered.slice(0, 10));
     }, 200);
     return () => clearTimeout(timer);
   }, [tagQuery, taggedUsers, user?.id]);
