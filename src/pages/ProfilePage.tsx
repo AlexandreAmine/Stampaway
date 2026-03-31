@@ -541,9 +541,24 @@ export default function ProfilePage() {
         </div>
 
         {/* Bio */}
-        {profileBio && (
+        {!isBlocked && profileBio && (
           <div className="mb-4">
             <RichBio text={profileBio} />
+          </div>
+        )}
+
+        {/* Blocked state */}
+        {!isOwnProfile && isBlocked && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <p className="text-sm text-muted-foreground">This content is not available.</p>
+          </div>
+        )}
+
+        {/* Private account - not following */}
+        {!isOwnProfile && !isBlocked && viewedProfile?.is_private && !isFollowing && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <p className="text-sm font-semibold text-foreground mb-1">This account is private</p>
+            <p className="text-xs text-muted-foreground">Follow this account to see their content.</p>
           </div>
         )}
 
