@@ -151,6 +151,20 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
           }))
         );
       }
+
+      // Update sub-ratings: delete all existing, re-insert
+      await supabase.from("review_sub_ratings").delete().eq("review_id", entry.id);
+      const subEntries = Object.entries(subRatings).filter(([, v]) => v > 0);
+      if (subEntries.length > 0) {
+        await supabase.from("review_sub_ratings").insert(
+          subEntries.map(([category, rating]) => ({
+            review_id: entry.id,
+            category,
+            rating,
+          }))
+        );
+      }
+
       toast.success("Entry updated");
       onSaved();
       onClose();
