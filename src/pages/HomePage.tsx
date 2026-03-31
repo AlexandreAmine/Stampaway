@@ -41,12 +41,48 @@ export default function HomePage() {
   const [globeWidth, setGlobeWidth] = useState(380);
   const [selectedActivity, setSelectedActivity] = useState<FriendActivity | null>(null);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     if (containerRef.current) {
       setGlobeWidth(Math.min(containerRef.current.offsetWidth, 500));
     }
   }, []);
+
+  // Fetch unread notification count
+  useEffect(() => {
+    if (!user) return;
+    const fetchUnreadCount = async () => {
+      const lastRead = localStorage.getItem(`notif_last_read_${user.id}`);
+      const lastReadDate = lastRead || "1970-01-01T00:00:00Z";
+
+      const [followersRes, requestsRes] = await Promise.all([
+        supabase.from("followers").select("id", { count: "exact", head: true }).eq("following_id", user.id).gt("created_at", lastReadDate),
+        supabase.from("follow_requests").select("id", { count: "exact", head: true }).eq("target_id", user.id).gt("created_at", lastReadDate),
+      ]);
+
+      // Review likes
+      const { data: myReviews } = await supabase.from("reviews").select("id").eq("user_id", user.id);
+      const myReviewIds = (myReviews || []).map(r => r.id);
+      let rlCount = 0;
+      if (myReviewIds.length > 0) {
+        const { count } = await supabase.from("review_likes").select("id", { count: "exact", head: true }).in("review_id", myReviewIds).neq("user_id", user.id).gt("created_at", lastReadDate);
+        rlCount = count || 0;
+      }
+
+      // List likes
+      const { data: myLists } = await supabase.from("lists").select("id").eq("user_id", user.id);
+      const myListIds = (myLists || []).map(l => l.id);
+      let llCount = 0;
+      if (myListIds.length > 0) {
+        const { count } = await supabase.from("list_likes").select("id", { count: "exact", head: true }).in("list_id", myListIds).neq("user_id", user.id).gt("created_at", lastReadDate);
+        llCount = count || 0;
+      }
+
+      setUnreadCount((followersRes.count || 0) + (requestsRes.count || 0) + rlCount + llCount);
+    };
+    fetchUnreadCount();
+  }, [user, notifOpen]);
 
   useEffect(() => {
     if (!user) return;
@@ -239,8 +275,17 @@ export default function HomePage() {
         {/* Header */}
         <div className="pt-12 pb-2 px-5 flex items-center justify-between relative z-10">
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Travel'D</h1>
-          <button onClick={() => setNotifOpen(true)} className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center">
+          <button onClick={() => {
+            setNotifOpen(true);
+            if (user) localStorage.setItem(`notif_last_read_${user.id}`, new Date().toISOString());
+            setUnreadCount(0);
+          }} className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center relative">
             <Bell className="w-5 h-5 text-foreground" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
           </button>
         </div>
 
@@ -309,7 +354,7 @@ export default function HomePage() {
             <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
           </div>
 
-          <h2 className="text-xl font-bold text-foreground mb-4">Friends activities</h2>
+          <h2 className="text-xl font-bold text-foreground mb-4">Recent friend activities</h2>
 
           {!hasFollowing && !loading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-4">
@@ -333,7 +378,7 @@ export default function HomePage() {
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.04 }}
-                onClick={() => navigate(`/place/${a.place_id}`)}
+                onClick={() => handlePinClick(a)}
                 className="flex items-center gap-3 py-2.5 w-full text-left"
               >
                 <button
