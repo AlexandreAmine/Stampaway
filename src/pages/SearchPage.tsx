@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Search } from "lucide-react";
+import { ChevronLeft, Search, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,21 +9,37 @@ import { PosterWishlistButton } from "@/components/PosterWishlistButton";
 import { ListPreviewPosters } from "@/components/ListPreviewPosters";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { CategorySortDropdown, SUB_RATING_CATEGORIES, type SubRatingCategory } from "@/components/CategorySortDropdown";
 
-const filterTabs = ["Destinations", "Lists", "Users"] as const;
+const filterTabs = ["Countries", "Cities", "Lists", "Users"] as const;
 type FilterTab = (typeof filterTabs)[number];
+
+type DestSort = "most-popular" | "avg-highest" | "category-avg";
+
+const DEST_SORT_LABELS: Record<string, string> = {
+  "most-popular": "Most popular",
+  "avg-highest": "Average highest first",
+  "category-avg": "Categories average highest first",
+};
 
 export default function SearchPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [activeFilter, setActiveFilter] = useState<FilterTab>("Destinations");
+  const [activeFilter, setActiveFilter] = useState<FilterTab>("Countries");
   const [query, setQuery] = useState("");
   const [places, setPlaces] = useState<any[]>([]);
   const [lists, setLists] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
-  const [reviews, setReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+  const [destSort, setDestSort] = useState<DestSort>("most-popular");
+  const [selectedCategory, setSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
 
   useEffect(() => {
     if (!user) return;
@@ -42,25 +58,23 @@ export default function SearchPage() {
   const search = async () => {
     setLoading(true);
     const q = query.trim();
+    const placeType = activeFilter === "Countries" ? "country" : activeFilter === "Cities" ? "city" : null;
 
-    if (activeFilter === "Destinations") {
+    if (placeType) {
       const { data: counts } = await supabase.rpc("get_place_review_counts");
       const countMap = new Map((counts || []).map((c: any) => [c.place_id, Number(c.review_count)]));
 
-      let qb = supabase.from("places").select("id, name, country, type, image");
+      let qb = supabase.from("places").select("id, name, country, type, image").eq("type", placeType);
       if (q) qb = qb.ilike("name", `%${q}%`);
       qb = qb.limit(200);
       const { data } = await qb;
-      const sorted = (data || []).sort((a, b) => {
-        const diff = (countMap.get(b.id) || 0) - (countMap.get(a.id) || 0);
+      const withCounts = (data || []).map((p: any) => ({ ...p, review_count: countMap.get(p.id) || 0 }));
+      // Default sort by most popular
+      withCounts.sort((a: any, b: any) => {
+        const diff = b.review_count - a.review_count;
         return diff !== 0 ? diff : a.name.localeCompare(b.name);
-      }).slice(0, 30);
-      setPlaces(sorted);
-
-      // Save clicked destinations to recent searches
-      if (q && sorted.length > 0) {
-        // We'll save when user clicks, not on search
-      }
+      });
+      setPlaces(withCounts.slice(0, 60));
     } else if (activeFilter === "Lists") {
       let qb = supabase.from("lists").select("id, name, description, user_id");
       if (q) qb = qb.ilike("name", `%${q}%`);
@@ -70,22 +84,18 @@ export default function SearchPage() {
         const userIds = [...new Set(data.map((l: any) => l.user_id))];
         const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
         const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
-        
-        // Get item counts and like counts for each list
         const listIds = data.map((l: any) => l.id);
         const { data: allLikes } = await supabase.from("list_likes").select("list_id").in("list_id", listIds);
         const likeCountMap = new Map<string, number>();
         (allLikes || []).forEach((lk: any) => {
           likeCountMap.set(lk.list_id, (likeCountMap.get(lk.list_id) || 0) + 1);
         });
-
         const enriched = await Promise.all(
           data.map(async (l: any) => {
             const { count } = await supabase.from("list_items").select("*", { count: "exact", head: true }).eq("list_id", l.id);
             return { ...l, item_count: count || 0, like_count: likeCountMap.get(l.id) || 0, profiles: profileMap.get(l.user_id) || null };
           })
         );
-        // Sort by most liked
         enriched.sort((a, b) => b.like_count - a.like_count);
         setLists(enriched.slice(0, 30));
       } else {
@@ -97,43 +107,119 @@ export default function SearchPage() {
       qb = qb.order("username").limit(30);
       const { data } = await qb;
       setUsers(data || []);
-    } else if (activeFilter === "Reviews") {
-      let qb = supabase.from("reviews").select("id, rating, review_text, liked, created_at, place_id, user_id, places!inner(name, country, type, image)");
-      if (q) qb = qb.ilike("places.name", `%${q}%`);
-      qb = qb.order("created_at", { ascending: false }).limit(30);
-      const { data } = await qb;
-      if (data && data.length > 0) {
-        const userIds = [...new Set(data.map((r: any) => r.user_id))];
-        const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
-        const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
-        setReviews(data.map((r: any) => ({ ...r, profiles: profileMap.get(r.user_id) || null })));
-      } else {
-        setReviews([]);
-      }
     }
     setLoading(false);
   };
 
-  const renderResults = () => {
-    if (loading) {
-      return (
-        <div className="flex items-center justify-center h-40">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-      );
+  // Sort places based on selected sort (applied client-side after fetch)
+  const getSortedPlaces = () => {
+    if (destSort === "most-popular") {
+      return [...places].sort((a, b) => {
+        const diff = (b.review_count || 0) - (a.review_count || 0);
+        return diff !== 0 ? diff : a.name.localeCompare(b.name);
+      });
     }
+    if (destSort === "avg-highest") {
+      return [...places].sort((a, b) => (b._avg ?? 0) - (a._avg ?? 0));
+    }
+    if (destSort === "category-avg") {
+      return [...places].sort((a, b) => (b._catAvg ?? 0) - (a._catAvg ?? 0));
+    }
+    return places;
+  };
 
-    if (activeFilter === "Destinations") {
-      if (!places.length) return <EmptyState text="No destinations found" />;
-      return (
+  // Fetch avg ratings and category ratings when sort changes
+  useEffect(() => {
+    if ((activeFilter !== "Countries" && activeFilter !== "Cities") || places.length === 0) return;
+    if (destSort === "most-popular") return;
+
+    (async () => {
+      const placeIds = places.map((p) => p.id);
+      if (destSort === "avg-highest") {
+        const { data: reviews } = await supabase.from("reviews").select("place_id, rating").in("place_id", placeIds);
+        const avgMap: Record<string, { sum: number; count: number }> = {};
+        (reviews || []).forEach((r: any) => {
+          if (r.rating == null) return;
+          if (!avgMap[r.place_id]) avgMap[r.place_id] = { sum: 0, count: 0 };
+          avgMap[r.place_id].sum += Number(r.rating);
+          avgMap[r.place_id].count++;
+        });
+        setPlaces((prev) => prev.map((p) => {
+          const a = avgMap[p.id];
+          return { ...p, _avg: a ? a.sum / a.count : 0 };
+        }));
+      } else if (destSort === "category-avg") {
+        // Get all review IDs for these places, then sub-ratings for selected category
+        const { data: reviews } = await supabase.from("reviews").select("id, place_id").in("place_id", placeIds);
+        if (!reviews || reviews.length === 0) return;
+        const reviewIds = reviews.map((r) => r.id);
+        const reviewPlaceMap = new Map(reviews.map((r) => [r.id, r.place_id]));
+
+        const { data: subRatings } = await supabase
+          .from("review_sub_ratings")
+          .select("review_id, category, rating")
+          .in("review_id", reviewIds)
+          .eq("category", selectedCategory);
+
+        const catMap: Record<string, { sum: number; count: number }> = {};
+        (subRatings || []).forEach((sr: any) => {
+          const pid = reviewPlaceMap.get(sr.review_id);
+          if (!pid) return;
+          if (!catMap[pid]) catMap[pid] = { sum: 0, count: 0 };
+          catMap[pid].sum += Number(sr.rating);
+          catMap[pid].count++;
+        });
+        setPlaces((prev) => prev.map((p) => {
+          const a = catMap[p.id];
+          return { ...p, _catAvg: a ? a.sum / a.count : 0 };
+        }));
+      }
+    })();
+  }, [destSort, selectedCategory, places.length, activeFilter]);
+
+  const sortedPlaces = getSortedPlaces();
+
+  const renderDestinations = () => {
+    if (loading) return <LoadingSpinner />;
+    const isDestTab = activeFilter === "Countries" || activeFilter === "Cities";
+    if (!isDestTab) return null;
+    if (!sortedPlaces.length) return <EmptyState text={`No ${activeFilter.toLowerCase()} found`} />;
+
+    const currentLabel = destSort === "category-avg"
+      ? `${selectedCategory}`
+      : DEST_SORT_LABELS[destSort];
+
+    return (
+      <>
+        <div className="flex justify-end mb-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded-lg px-3 py-1.5 hover:text-foreground transition-colors">
+              {currentLabel}
+              <ChevronDown className="w-3.5 h-3.5" />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[220px]">
+              <DropdownMenuItem onClick={() => setDestSort("most-popular")} className={destSort === "most-popular" ? "text-primary font-semibold" : ""}>
+                Most popular
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setDestSort("avg-highest")} className={destSort === "avg-highest" ? "text-primary font-semibold" : ""}>
+                Average highest first
+              </DropdownMenuItem>
+              <CategorySortDropdown
+                label="Categories average highest first"
+                onSelect={(cat) => { setSelectedCategory(cat); setDestSort("category-avg"); }}
+                selectedCategory={selectedCategory}
+                isActive={destSort === "category-avg"}
+              />
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
         <div className="grid grid-cols-3 gap-3">
-          {places.map((p) => (
+          {sortedPlaces.map((p) => (
             <motion.button
               key={p.id}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               onClick={() => {
-                // Save to recent searches
                 try {
                   const saved = JSON.parse(localStorage.getItem("recentSearches") || "[]");
                   const filtered = saved.filter((s: any) => s.id !== p.id);
@@ -149,8 +235,14 @@ export default function SearchPage() {
             </motion.button>
           ))}
         </div>
-      );
-    }
+      </>
+    );
+  };
+
+  const renderResults = () => {
+    if (activeFilter === "Countries" || activeFilter === "Cities") return renderDestinations();
+
+    if (loading) return <LoadingSpinner />;
 
     if (activeFilter === "Lists") {
       if (!lists.length) return <EmptyState text="No lists found" />;
@@ -197,7 +289,6 @@ export default function SearchPage() {
                   </Avatar>
                   <div>
                     <p className="text-sm font-semibold text-foreground">{u.username}</p>
-                    
                   </div>
                 </button>
                 {!isMe && !isFollowing && (
@@ -224,30 +315,6 @@ export default function SearchPage() {
       );
     }
 
-    if (activeFilter === "Reviews") {
-      if (!reviews.length) return <EmptyState text="No reviews found" />;
-      return (
-        <div className="space-y-3">
-          {reviews.map((r: any) => (
-            <motion.button
-              key={r.id}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              onClick={() => navigate(`/place/${r.place_id}`)}
-              className="w-full text-left bg-card rounded-xl p-4 border border-border"
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <p className="text-sm font-semibold text-foreground">{(r.places as any)?.name}</p>
-                <span className="text-xs text-muted-foreground">⭐ {r.rating}</span>
-              </div>
-              {r.review_text && <p className="text-xs text-muted-foreground line-clamp-2">{r.review_text}</p>}
-              {r.profiles && <p className="text-xs text-muted-foreground mt-2">by {(r.profiles as any)?.username}</p>}
-            </motion.button>
-          ))}
-        </div>
-      );
-    }
-
     return null;
   };
 
@@ -267,7 +334,7 @@ export default function SearchPage() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search destinations, lists and users..."
+            placeholder="Search countries, cities, lists and users..."
             className="w-full bg-card rounded-xl py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
@@ -298,6 +365,14 @@ function EmptyState({ text }: { text: string }) {
   return (
     <div className="flex items-center justify-center h-40">
       <p className="text-sm text-muted-foreground">{text}</p>
+    </div>
+  );
+}
+
+function LoadingSpinner() {
+  return (
+    <div className="flex items-center justify-center h-40">
+      <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
     </div>
   );
 }

@@ -18,19 +18,22 @@ import {
   EUROPE_COUNTRIES, ASIA_COUNTRIES, NORTH_AMERICA_COUNTRIES,
   SOUTH_AMERICA_COUNTRIES, AFRICA_COUNTRIES, OCEANIA_COUNTRIES,
 } from "@/lib/continents";
+import { CategorySortDropdown, type SubRatingCategory } from "@/components/CategorySortDropdown";
 
-type CountrySort = "recent" | "avg-highest" | "by-continent";
-type CitySort = "recent" | "avg-highest" | "by-country";
+type CountrySort = "recent" | "avg-highest" | "by-continent" | "category-avg";
+type CitySort = "recent" | "avg-highest" | "by-country" | "category-avg";
 
-const COUNTRY_SORT_LABELS: Record<CountrySort, string> = {
+const COUNTRY_SORT_LABELS: Record<string, string> = {
   recent: "Recently added",
   "avg-highest": "Average highest first",
   "by-continent": "By continent",
+  "category-avg": "Categories average highest first",
 };
-const CITY_SORT_LABELS: Record<CitySort, string> = {
+const CITY_SORT_LABELS: Record<string, string> = {
   recent: "Recently added",
   "avg-highest": "Average highest first",
   "by-country": "By country",
+  "category-avg": "Categories average highest first",
 };
 
 const CONTINENT_ORDER = ["Europe", "Asia", "North America", "South America", "Africa", "Oceania", "Other"];
@@ -49,6 +52,7 @@ interface WishlistItem {
   created_at: string;
   place: { id: string; name: string; country: string; type: string; image: string | null };
   avg_rating?: number;
+  _catAvg?: number;
 }
 
 export function WishlistTab({ userId, readOnly = false }: { userId?: string; readOnly?: boolean }) {
@@ -60,6 +64,7 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
   const [pickerOpen, setPickerOpen] = useState(false);
   const [countrySort, setCountrySort] = useState<CountrySort>("recent");
   const [citySort, setCitySort] = useState<CitySort>("recent");
+  const [selectedCategory, setSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
   const targetUserId = userId || user?.id;
 
   useEffect(() => {
@@ -81,7 +86,6 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
         place: { id: w.places.id, name: w.places.name, country: w.places.country, type: w.places.type, image: w.places.image },
       }));
 
-      // Fetch average ratings
       const placeIds = [...new Set(mapped.map((m) => m.place.id))];
       if (placeIds.length > 0) {
         const { data: reviews } = await supabase
@@ -108,6 +112,41 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
     setLoading(false);
   };
 
+  // Fetch category avg when sort is category-avg
+  const currentSort = subTab === "country" ? countrySort : citySort;
+  useEffect(() => {
+    if (currentSort !== "category-avg" || items.length === 0) return;
+    const filtered = items.filter((i) => i.place.type === subTab);
+    const placeIds = filtered.map((i) => i.place.id);
+    if (placeIds.length === 0) return;
+
+    (async () => {
+      const { data: reviews } = await supabase.from("reviews").select("id, place_id").in("place_id", placeIds);
+      if (!reviews || reviews.length === 0) return;
+      const reviewIds = reviews.map((r) => r.id);
+      const reviewPlaceMap = new Map(reviews.map((r) => [r.id, r.place_id]));
+
+      const { data: subRatings } = await supabase
+        .from("review_sub_ratings")
+        .select("review_id, category, rating")
+        .in("review_id", reviewIds)
+        .eq("category", selectedCategory);
+
+      const catMap: Record<string, { sum: number; count: number }> = {};
+      (subRatings || []).forEach((sr: any) => {
+        const pid = reviewPlaceMap.get(sr.review_id);
+        if (!pid) return;
+        if (!catMap[pid]) catMap[pid] = { sum: 0, count: 0 };
+        catMap[pid].sum += Number(sr.rating);
+        catMap[pid].count++;
+      });
+      setItems((prev) => prev.map((item) => {
+        const a = catMap[item.place.id];
+        return { ...item, _catAvg: a ? a.sum / a.count : 0 };
+      }));
+    })();
+  }, [currentSort, selectedCategory, items.length, subTab]);
+
   const handleAdd = async (placeId: string) => {
     if (!user) return;
     const exists = items.some((i) => i.place.id === placeId);
@@ -133,14 +172,15 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
           return [...filtered].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         case "avg-highest":
           return [...filtered].sort((a, b) => (b.avg_rating ?? 0) - (a.avg_rating ?? 0));
-        case "by-continent": {
+        case "by-continent":
           return [...filtered].sort((a, b) => {
             const ca = CONTINENT_ORDER.indexOf(getContinent(a.place.name));
             const cb = CONTINENT_ORDER.indexOf(getContinent(b.place.name));
             if (ca !== cb) return ca - cb;
             return a.place.name.localeCompare(b.place.name);
           });
-        }
+        case "category-avg":
+          return [...filtered].sort((a, b) => (b._catAvg ?? 0) - (a._catAvg ?? 0));
       }
     } else {
       switch (citySort) {
@@ -154,15 +194,21 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
             if (cmp !== 0) return cmp;
             return a.place.name.localeCompare(b.place.name);
           });
+        case "category-avg":
+          return [...filtered].sort((a, b) => (b._catAvg ?? 0) - (a._catAvg ?? 0));
       }
     }
     return filtered;
   };
 
   const sorted = getSorted();
-  const currentSortLabel = subTab === "country" ? COUNTRY_SORT_LABELS[countrySort] : CITY_SORT_LABELS[citySort];
 
-  // Group items for "by-continent" or "by-country" display
+  const sortLabels = subTab === "country" ? COUNTRY_SORT_LABELS : CITY_SORT_LABELS;
+  const currentSortKey = subTab === "country" ? countrySort : citySort;
+  const currentSortLabel = currentSortKey === "category-avg"
+    ? `${selectedCategory}`
+    : sortLabels[currentSortKey];
+
   const isGrouped = (subTab === "country" && countrySort === "by-continent") || (subTab === "city" && citySort === "by-country");
   const groups: { label: string; items: WishlistItem[] }[] = [];
   if (isGrouped) {
@@ -178,6 +224,10 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
   if (loading) {
     return <div className="flex items-center justify-center h-40"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   }
+
+  const sortOptions = subTab === "country"
+    ? ["recent", "avg-highest", "by-continent"] as const
+    : ["recent", "avg-highest", "by-country"] as const;
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
@@ -201,18 +251,26 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
               {currentSortLabel}
               <ChevronDown className="w-3.5 h-3.5" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[200px]">
-              {subTab === "country"
-                ? (Object.keys(COUNTRY_SORT_LABELS) as CountrySort[]).map((key) => (
-                    <DropdownMenuItem key={key} onClick={() => setCountrySort(key)} className={countrySort === key ? "text-primary font-semibold" : ""}>
-                      {COUNTRY_SORT_LABELS[key]}
-                    </DropdownMenuItem>
-                  ))
-                : (Object.keys(CITY_SORT_LABELS) as CitySort[]).map((key) => (
-                    <DropdownMenuItem key={key} onClick={() => setCitySort(key)} className={citySort === key ? "text-primary font-semibold" : ""}>
-                      {CITY_SORT_LABELS[key]}
-                    </DropdownMenuItem>
-                  ))}
+            <DropdownMenuContent align="end" className="min-w-[220px]">
+              {sortOptions.map((key) => (
+                <DropdownMenuItem
+                  key={key}
+                  onClick={() => subTab === "country" ? setCountrySort(key as CountrySort) : setCitySort(key as CitySort)}
+                  className={currentSortKey === key ? "text-primary font-semibold" : ""}
+                >
+                  {sortLabels[key]}
+                </DropdownMenuItem>
+              ))}
+              <CategorySortDropdown
+                label="Categories average highest first"
+                onSelect={(cat) => {
+                  setSelectedCategory(cat);
+                  if (subTab === "country") setCountrySort("category-avg");
+                  else setCitySort("category-avg");
+                }}
+                selectedCategory={selectedCategory}
+                isActive={currentSortKey === "category-avg"}
+              />
             </DropdownMenuContent>
           </DropdownMenu>
           {!readOnly && (

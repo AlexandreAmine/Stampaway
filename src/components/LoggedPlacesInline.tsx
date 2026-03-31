@@ -13,14 +13,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { CategorySortDropdown, SUB_RATING_CATEGORIES, type SubRatingCategory } from "@/components/CategorySortDropdown";
 
-type SortOption = "your-highest" | "avg-highest" | "newest" | "longest";
+type SortOption = "your-highest" | "avg-highest" | "newest" | "longest" | "category-highest";
 
 const getSortLabels = (name?: string): Record<SortOption, string> => ({
   "your-highest": name ? `${name}'s highest first` : "Your highest first",
   "avg-highest": "Average highest first",
   "newest": "Newest visited first",
   "longest": "Highest total duration first",
+  "category-highest": name ? `${name}'s Categories highest first` : "Categories highest first",
 });
 
 interface PlaceEntry {
@@ -35,6 +37,7 @@ interface PlaceEntry {
   type: string;
   image: string | null;
   avg_rating?: number;
+  _catRating?: number;
 }
 
 export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername }: { type: "city" | "country"; userId?: string; ratingFilter?: number; profileUsername?: string }) {
@@ -43,6 +46,7 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
   const [places, setPlaces] = useState<PlaceEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<SortOption>("your-highest");
+  const [selectedCategory, setSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
   const targetUserId = userId || user?.id;
 
   useEffect(() => {
@@ -50,14 +54,15 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
     (async () => {
       const { data } = await supabase
         .from("reviews")
-        .select("place_id, rating, liked, visit_year, visit_month, duration_days, places!inner(name, country, type, image)")
+        .select("id, place_id, rating, liked, visit_year, visit_month, duration_days, places!inner(name, country, type, image)")
         .eq("user_id", targetUserId)
         .eq("places.type", type)
         .order("created_at", { ascending: false });
 
       if (!data) { setLoading(false); return; }
 
-      const entries: PlaceEntry[] = data.map((r: any) => ({
+      const entries: (PlaceEntry & { review_id: string })[] = data.map((r: any) => ({
+        review_id: r.id,
         place_id: r.place_id,
         rating: r.rating != null ? Number(r.rating) : null,
         liked: r.liked || false,
@@ -70,14 +75,13 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
         image: r.places.image,
       }));
 
-      // Fetch average ratings for all these places
+      // Fetch average ratings
       const placeIds = [...new Set(entries.map((e) => e.place_id))];
       if (placeIds.length > 0) {
         const { data: allReviews } = await supabase
           .from("reviews")
           .select("place_id, rating")
           .in("place_id", placeIds);
-
         if (allReviews) {
           const avgMap: Record<string, { sum: number; count: number }> = {};
           allReviews.forEach((r: any) => {
@@ -87,12 +91,12 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
           });
           entries.forEach((e) => {
             const a = avgMap[e.place_id];
-            e.avg_rating = a ? a.sum / a.count : e.rating;
+            e.avg_rating = a ? a.sum / a.count : e.rating ?? undefined;
           });
         }
       }
 
-      // Deduplicate: keep only the latest entry per place (data is ordered by created_at desc)
+      // Deduplicate
       const seen = new Set<string>();
       const deduped = entries.filter((e) => {
         if (seen.has(e.place_id)) return false;
@@ -105,20 +109,49 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
     })();
   }, [targetUserId, type]);
 
-  // Apply rating filter if provided
+  // Fetch category ratings when sort is category-highest
+  useEffect(() => {
+    if (sort !== "category-highest" || places.length === 0 || !targetUserId) return;
+    (async () => {
+      // Get user's reviews for these places
+      const placeIds = places.map((p) => p.place_id);
+      const { data: userReviews } = await supabase
+        .from("reviews")
+        .select("id, place_id")
+        .eq("user_id", targetUserId)
+        .in("place_id", placeIds);
+      if (!userReviews || userReviews.length === 0) return;
+
+      const reviewIds = userReviews.map((r) => r.id);
+      const reviewPlaceMap = new Map(userReviews.map((r) => [r.id, r.place_id]));
+
+      const { data: subRatings } = await supabase
+        .from("review_sub_ratings")
+        .select("review_id, category, rating")
+        .in("review_id", reviewIds)
+        .eq("category", selectedCategory);
+
+      const catMap: Record<string, number> = {};
+      (subRatings || []).forEach((sr: any) => {
+        const pid = reviewPlaceMap.get(sr.review_id);
+        if (pid) catMap[pid] = Number(sr.rating);
+      });
+
+      setPlaces((prev) => prev.map((p) => ({ ...p, _catRating: catMap[p.place_id] ?? 0 })));
+    })();
+  }, [sort, selectedCategory, places.length, targetUserId]);
+
   const filtered = ratingFilter != null
     ? places.filter((p) => p.rating != null && p.rating === ratingFilter)
     : places;
 
   const sorted = [...filtered].sort((a, b) => {
     switch (sort) {
-      case "your-highest": {
-        // Null ratings go to bottom
+      case "your-highest":
         if (a.rating === null && b.rating === null) return 0;
         if (a.rating === null) return 1;
         if (b.rating === null) return -1;
         return b.rating - a.rating;
-      }
       case "avg-highest":
         return (b.avg_rating ?? b.rating ?? 0) - (a.avg_rating ?? a.rating ?? 0);
       case "newest": {
@@ -128,6 +161,8 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
       }
       case "longest":
         return (b.duration_days ?? 0) - (a.duration_days ?? 0);
+      case "category-highest":
+        return (b._catRating ?? 0) - (a._catRating ?? 0);
       default:
         return 0;
     }
@@ -141,16 +176,20 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
   const isOtherUser = !!userId && userId !== user?.id;
   const sortLabels = getSortLabels(isOtherUser ? profileUsername : undefined);
 
+  const currentLabel = sort === "category-highest"
+    ? `${selectedCategory}`
+    : sortLabels[sort];
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div className="flex justify-end mb-3">
         <DropdownMenu>
           <DropdownMenuTrigger className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded-lg px-3 py-1.5 hover:text-foreground transition-colors">
-            {sortLabels[sort]}
+            {currentLabel}
             <ChevronDown className="w-3.5 h-3.5" />
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[200px]">
-            {(Object.keys(sortLabels) as SortOption[]).map((key) => (
+          <DropdownMenuContent align="end" className="min-w-[220px]">
+            {(["your-highest", "avg-highest", "newest", "longest"] as SortOption[]).map((key) => (
               <DropdownMenuItem
                 key={key}
                 onClick={() => setSort(key)}
@@ -159,6 +198,12 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
                 {sortLabels[key]}
               </DropdownMenuItem>
             ))}
+            <CategorySortDropdown
+              label={isOtherUser ? `${profileUsername}'s Categories highest first` : "Categories highest first"}
+              onSelect={(cat) => { setSelectedCategory(cat); setSort("category-highest"); }}
+              selectedCategory={selectedCategory}
+              isActive={sort === "category-highest"}
+            />
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
