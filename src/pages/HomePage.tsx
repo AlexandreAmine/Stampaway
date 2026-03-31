@@ -354,7 +354,7 @@ export default function HomePage() {
             <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
           </div>
 
-          <h2 className="text-xl font-bold text-foreground mb-4">Friends activities</h2>
+          <h2 className="text-xl font-bold text-foreground mb-4">Recent friend activities</h2>
 
           {!hasFollowing && !loading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-4">
