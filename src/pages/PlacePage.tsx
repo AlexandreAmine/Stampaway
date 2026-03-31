@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Users, List, MessageSquare, Bookmark, Plus, BarChart3 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Users, List, MessageSquare, Bookmark, Plus, BarChart3, Pencil } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +11,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getFlagUrl } from "@/lib/countryFlags";
 import { CountryFacts } from "@/components/CountryFacts";
 import { toast } from "sonner";
+import { DiaryEditSheet } from "@/components/DiaryEditSheet";
 
 interface PlaceData {
   id: string;
@@ -45,7 +46,7 @@ export default function PlacePage() {
   const [togglingWishlist, setTogglingWishlist] = useState(false);
   const [countryCities, setCountryCities] = useState<any[]>([]);
   const [wishlistCities, setWishlistCities] = useState<any[]>([]);
-
+  const [editSheetOpen, setEditSheetOpen] = useState(false);
   useEffect(() => {
     if (id) fetchAll();
   }, [id, user]);
@@ -347,21 +348,36 @@ export default function PlacePage() {
               <StarRating rating={avgRating} size={14} />
               <p className="text-xs text-muted-foreground mt-0.5">{ratingsCount} ratings</p>
             </div>
+            <button
+              onClick={() => navigate(`/place/${id}/categories`)}
+              className="flex items-center gap-1 ml-auto"
+            >
+              <BarChart3 className="w-4 h-4 text-primary" />
+              <span className="text-xs text-primary font-medium">Category ratings</span>
+            </button>
           </div>
           <RatingHistogram distribution={distribution} />
         </motion.div>
 
         {/* My Review */}
         {myReview && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="bg-card rounded-xl p-4 border border-border mb-5">
-            <p className="text-xs text-primary font-medium mb-1">You rated this</p>
-            <div className="flex items-center gap-2">
-              <StarRating rating={myReview.rating} size={14} liked={myReview.liked} />
-              <span className="text-sm font-semibold text-foreground">{myReview.rating}</span>
-            </div>
-            {myReview.review_text && (
-              <p className="text-xs text-muted-foreground mt-2">{myReview.review_text}</p>
-            )}
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+            <button
+              onClick={() => setEditSheetOpen(true)}
+              className="w-full bg-card rounded-xl p-4 border border-border mb-5 text-left"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs text-primary font-medium">You rated this</p>
+                <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
+              </div>
+              <div className="flex items-center gap-2">
+                <StarRating rating={myReview.rating} size={14} liked={myReview.liked} />
+                <span className="text-sm font-semibold text-foreground">{myReview.rating}</span>
+              </div>
+              {myReview.review_text && (
+                <p className="text-xs text-muted-foreground mt-2">{myReview.review_text}</p>
+              )}
+            </button>
           </motion.div>
         )}
 
@@ -377,23 +393,22 @@ export default function PlacePage() {
             </button>
             <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
               {friendVisitors.map((fv: any) => (
-                <div
+                <button
                   key={fv.id || fv.user_id}
+                  onClick={() => navigate(`/review/${fv.review_id}`)}
                   className="flex-shrink-0 flex items-center gap-1.5 bg-card border border-border rounded-full pl-1 pr-3 py-1"
                 >
-                  <button onClick={() => navigate(fv.user_id === user?.id ? "/profile" : `/profile/${fv.user_id}`)}>
-                    <Avatar className="w-8 h-8">
-                      <AvatarImage src={fv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fv.profile?.username || "?")}&background=3B82F6&color=fff`} />
-                      <AvatarFallback>{fv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                  </button>
-                  <button onClick={() => navigate(`/review/${fv.review_id}`)} className="flex items-center gap-0.5">
+                  <Avatar className="w-8 h-8" onClick={(e) => { e.stopPropagation(); navigate(fv.user_id === user?.id ? "/profile" : `/profile/${fv.user_id}`); }}>
+                    <AvatarImage src={fv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fv.profile?.username || "?")}&background=3B82F6&color=fff`} />
+                    <AvatarFallback>{fv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex items-center gap-0.5">
                     {fv.rating != null && (
                       <StarRating rating={Number(fv.rating)} size={12} />
                     )}
                     {fv.has_review && <MessageSquare className="w-3 h-3 text-primary" />}
-                  </button>
-                </div>
+                  </div>
+                </button>
               ))}
             </div>
           </motion.div>
@@ -446,11 +461,6 @@ export default function PlacePage() {
             <List className="w-5 h-5 text-primary" />
             <span className="text-lg font-bold text-foreground">{formatCount(listsCount)}</span>
             <span className="text-[10px] text-muted-foreground">Lists</span>
-          </button>
-          <button onClick={() => navigate(`/place/${id}/categories`)} className="flex flex-col items-center gap-1">
-            <BarChart3 className="w-5 h-5 text-primary" />
-            <span className="text-lg font-bold text-foreground">—</span>
-            <span className="text-[10px] text-muted-foreground">Ratings</span>
           </button>
         </motion.div>
 
@@ -508,6 +518,31 @@ export default function PlacePage() {
           </motion.div>
         )}
       </div>
+
+      {/* Edit sheet for my review */}
+      {myReview && place && (
+        <DiaryEditSheet
+          entry={{
+            id: myReview.id,
+            rating: myReview.rating,
+            liked: myReview.liked,
+            review_text: myReview.review_text,
+            visit_year: myReview.visit_year,
+            visit_month: myReview.visit_month,
+            duration_days: myReview.duration_days,
+            place: {
+              id: place.id,
+              name: place.name,
+              country: place.country,
+              type: place.type,
+              image: place.image,
+            },
+          }}
+          open={editSheetOpen}
+          onClose={() => setEditSheetOpen(false)}
+          onSaved={() => fetchAll()}
+        />
+      )}
     </div>
   );
 }
