@@ -56,14 +56,11 @@ export function SubRatingsDisplay({ reviewId, compact = false }: SubRatingsDispl
 
   if (compact) {
     return (
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+      <div className="flex flex-col gap-0.5">
         {subRatings.map((sr) => (
           <div key={sr.category} className="flex items-center justify-between gap-1">
-            <span className="text-[10px] text-muted-foreground truncate">{SHORT_LABELS[sr.category] || sr.category}</span>
-            <div className="flex items-center gap-0.5">
-              <StarRating rating={Number(sr.rating)} size={8} />
-              <span className="text-[10px] font-semibold text-foreground">{sr.rating}</span>
-            </div>
+            <span className="text-[9px] text-muted-foreground truncate">{SHORT_LABELS[sr.category] || sr.category}</span>
+            <span className="text-[9px] font-semibold text-foreground shrink-0">{sr.rating}</span>
           </div>
         ))}
       </div>
