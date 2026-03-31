@@ -518,6 +518,31 @@ export default function PlacePage() {
           </motion.div>
         )}
       </div>
+
+      {/* Edit sheet for my review */}
+      {myReview && place && (
+        <DiaryEditSheet
+          entry={{
+            id: myReview.id,
+            rating: myReview.rating,
+            liked: myReview.liked,
+            review_text: myReview.review_text,
+            visit_year: myReview.visit_year,
+            visit_month: myReview.visit_month,
+            duration_days: myReview.duration_days,
+            place: {
+              id: place.id,
+              name: place.name,
+              country: place.country,
+              type: place.type,
+              image: place.image,
+            },
+          }}
+          open={editSheetOpen}
+          onClose={() => setEditSheetOpen(false)}
+          onSaved={() => fetchAll()}
+        />
+      )}
     </div>
   );
 }
