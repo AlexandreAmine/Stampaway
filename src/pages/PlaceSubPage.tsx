@@ -141,7 +141,7 @@ export default function PlaceSubPage() {
     setLoading(false);
   };
 
-  const title = section === "visitors" ? "Visitors" : section === "reviews" ? "Reviews" : section === "wanttovisit" ? "Want to go" : "Lists";
+  const title = section === "visitors" ? "Visitors" : section === "reviews" ? "Reviews" : section === "wanttovisit" ? "Want to go" : section === "categories" ? "Category Ratings" : "Lists";
 
   return (
     <div className="min-h-screen bg-background pb-24">
