@@ -38,7 +38,7 @@ interface FavoriteSlot {
 type SubPage = null | "Countries" | "Cities" | "Diary" | "Map" | "Lists" | "Wishlist" | "Likes" | "Tags" | "Reviews" | "Following" | "Followers" | "CountriesByRating" | "CitiesByRating";
 
 export default function ProfilePage() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile } = useAuth();
   const { userId: paramUserId } = useParams<{ userId?: string }>();
   const navigate = useNavigate();
 
