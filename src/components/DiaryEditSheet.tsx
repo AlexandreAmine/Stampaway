@@ -52,6 +52,9 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
   const [unknownDate, setUnknownDate] = useState(!entry.visit_year && !entry.visit_month);
   const [saving, setSaving] = useState(false);
 
+  // Sub-ratings
+  const [subRatings, setSubRatings] = useState<Record<string, number>>({});
+
   // Tags
   const [tagQuery, setTagQuery] = useState("");
   const [tagResults, setTagResults] = useState<TaggedUser[]>([]);
