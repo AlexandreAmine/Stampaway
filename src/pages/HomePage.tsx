@@ -49,6 +49,41 @@ export default function HomePage() {
     }
   }, []);
 
+  // Fetch unread notification count
+  useEffect(() => {
+    if (!user) return;
+    const fetchUnreadCount = async () => {
+      const lastRead = localStorage.getItem(`notif_last_read_${user.id}`);
+      const lastReadDate = lastRead || "1970-01-01T00:00:00Z";
+
+      const [followersRes, requestsRes] = await Promise.all([
+        supabase.from("followers").select("id", { count: "exact", head: true }).eq("following_id", user.id).gt("created_at", lastReadDate),
+        supabase.from("follow_requests").select("id", { count: "exact", head: true }).eq("target_id", user.id).gt("created_at", lastReadDate),
+      ]);
+
+      // Review likes
+      const { data: myReviews } = await supabase.from("reviews").select("id").eq("user_id", user.id);
+      const myReviewIds = (myReviews || []).map(r => r.id);
+      let rlCount = 0;
+      if (myReviewIds.length > 0) {
+        const { count } = await supabase.from("review_likes").select("id", { count: "exact", head: true }).in("review_id", myReviewIds).neq("user_id", user.id).gt("created_at", lastReadDate);
+        rlCount = count || 0;
+      }
+
+      // List likes
+      const { data: myLists } = await supabase.from("lists").select("id").eq("user_id", user.id);
+      const myListIds = (myLists || []).map(l => l.id);
+      let llCount = 0;
+      if (myListIds.length > 0) {
+        const { count } = await supabase.from("list_likes").select("id", { count: "exact", head: true }).in("list_id", myListIds).neq("user_id", user.id).gt("created_at", lastReadDate);
+        llCount = count || 0;
+      }
+
+      setUnreadCount((followersRes.count || 0) + (requestsRes.count || 0) + rlCount + llCount);
+    };
+    fetchUnreadCount();
+  }, [user, notifOpen]);
+
   useEffect(() => {
     if (!user) return;
 
