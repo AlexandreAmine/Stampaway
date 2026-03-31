@@ -176,10 +176,12 @@ export default function PlaceSubPage() {
           )}
         </div>
 
-        {loading ? (
+        {loading && section !== "categories" ? (
           <div className="flex justify-center py-12">
             <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
+        ) : section === "categories" ? (
+          <PlaceCategoryRatings placeId={id!} userId={user?.id} />
         ) : data.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-12">No {title.toLowerCase()} yet</p>
         ) : (
