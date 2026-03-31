@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Star, UserPlus } from "lucide-react";
+import { Star, UserPlus, Bell } from "lucide-react";
 import { getFlagEmoji } from "@/lib/countryFlags";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
