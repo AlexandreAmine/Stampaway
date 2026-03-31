@@ -275,8 +275,17 @@ export default function HomePage() {
         {/* Header */}
         <div className="pt-12 pb-2 px-5 flex items-center justify-between relative z-10">
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Travel'D</h1>
-          <button onClick={() => setNotifOpen(true)} className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center">
+          <button onClick={() => {
+            setNotifOpen(true);
+            if (user) localStorage.setItem(`notif_last_read_${user.id}`, new Date().toISOString());
+            setUnreadCount(0);
+          }} className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center relative">
             <Bell className="w-5 h-5 text-foreground" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
           </button>
         </div>
 
