@@ -123,10 +123,21 @@ export default function ProfilePage() {
       await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", viewingUserId);
       setIsFollowing(false);
       setFollowersCount((c) => Math.max(0, c - 1));
+    } else if (hasPendingRequest) {
+      // Cancel request
+      await supabase.from("follow_requests").delete().eq("requester_id", user.id).eq("target_id", viewingUserId);
+      setHasPendingRequest(false);
     } else {
-      await supabase.from("followers").insert({ follower_id: user.id, following_id: viewingUserId });
-      setIsFollowing(true);
-      setFollowersCount((c) => c + 1);
+      // Check if target is private
+      const isTargetPrivate = viewedProfile?.is_private;
+      if (isTargetPrivate) {
+        await supabase.from("follow_requests").insert({ requester_id: user.id, target_id: viewingUserId });
+        setHasPendingRequest(true);
+      } else {
+        await supabase.from("followers").insert({ follower_id: user.id, following_id: viewingUserId });
+        setIsFollowing(true);
+        setFollowersCount((c) => c + 1);
+      }
     }
     setTogglingFollow(false);
   };
