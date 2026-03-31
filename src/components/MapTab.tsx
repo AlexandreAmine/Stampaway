@@ -487,3 +487,113 @@ function TopCountriesByCities({ userId }: { userId: string }) {
     </div>
   );
 }
+
+// ─── Visited Together ───
+function VisitedTogether({ myUserId, theirUserId, theirUsername }: { myUserId: string; theirUserId: string; theirUsername: string }) {
+  const navigate = useNavigate();
+  const [countries, setCountries] = useState<{ name: string; placeId: string }[]>([]);
+  const [cities, setCities] = useState<{ name: string; country: string; placeId: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      // Find reviews where I tagged them
+      const { data: myTags } = await supabase
+        .from("review_tags")
+        .select("review_id")
+        .eq("tagged_by_user_id", myUserId)
+        .eq("tagged_user_id", theirUserId);
+
+      // Find reviews where they tagged me
+      const { data: theirTags } = await supabase
+        .from("review_tags")
+        .select("review_id")
+        .eq("tagged_by_user_id", theirUserId)
+        .eq("tagged_user_id", myUserId);
+
+      const reviewIds = new Set([
+        ...(myTags || []).map(t => t.review_id),
+        ...(theirTags || []).map(t => t.review_id),
+      ]);
+
+      if (reviewIds.size === 0) { setLoading(false); return; }
+
+      const { data: reviews } = await supabase
+        .from("reviews")
+        .select("place_id, places!inner(id, name, country, type)")
+        .in("id", Array.from(reviewIds));
+
+      const countryMap = new Map<string, { name: string; placeId: string }>();
+      const cityMap = new Map<string, { name: string; country: string; placeId: string }>();
+
+      (reviews || []).forEach((r: any) => {
+        if (r.places.type === "country") {
+          countryMap.set(r.places.id, { name: r.places.name, placeId: r.places.id });
+        } else {
+          cityMap.set(r.places.id, { name: r.places.name, country: r.places.country, placeId: r.places.id });
+        }
+      });
+
+      setCountries(Array.from(countryMap.values()).sort((a, b) => a.name.localeCompare(b.name)));
+      setCities(Array.from(cityMap.values()).sort((a, b) => a.name.localeCompare(b.name)));
+      setLoading(false);
+    })();
+  }, [myUserId, theirUserId]);
+
+  if (loading) return null;
+  if (countries.length === 0 && cities.length === 0) return null;
+
+  return (
+    <div className="mt-6">
+      <p className="text-sm font-semibold text-foreground mb-3">
+        Visited together with {theirUsername}
+      </p>
+      <div className="grid grid-cols-2 gap-4">
+        {countries.length > 0 && (
+          <div>
+            <p className="text-xs text-muted-foreground font-medium mb-2">
+              Countries ({countries.length})
+            </p>
+            <div className="space-y-1">
+              {countries.map(c => {
+                const code = getCountryCode(c.name);
+                const flag = code
+                  ? String.fromCodePoint(...code.split("").map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65))
+                  : "";
+                return (
+                  <button
+                    key={c.placeId}
+                    onClick={() => navigate(`/place/${c.placeId}`)}
+                    className="w-full flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left"
+                  >
+                    <span className="text-sm">{flag}</span>
+                    <span className="text-xs text-foreground">{c.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        {cities.length > 0 && (
+          <div>
+            <p className="text-xs text-muted-foreground font-medium mb-2">
+              Cities ({cities.length})
+            </p>
+            <div className="space-y-1">
+              {cities.map(c => (
+                <button
+                  key={c.placeId}
+                  onClick={() => navigate(`/place/${c.placeId}`)}
+                  className="w-full flex items-center gap-1.5 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left"
+                >
+                  <span className="text-xs text-foreground">{c.name}</span>
+                  <span className="text-[10px] text-muted-foreground">({c.country})</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
