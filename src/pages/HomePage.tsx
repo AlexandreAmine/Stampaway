@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Star, UserPlus } from "lucide-react";
+import { Star, UserPlus, Bell } from "lucide-react";
 import { getFlagEmoji } from "@/lib/countryFlags";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getPlaceCoordinates } from "@/lib/cityCoordinates";
 import { countryLabels, cityLabels } from "@/lib/globeLabels";
 import { GlobeActivityPopup } from "@/components/GlobeActivityPopup";
+import { NotificationsSheet } from "@/components/NotificationsSheet";
 import Globe from "react-globe.gl";
 
 interface FriendActivity {
@@ -39,6 +40,7 @@ export default function HomePage() {
   const [hasFollowing, setHasFollowing] = useState(true);
   const [globeWidth, setGlobeWidth] = useState(380);
   const [selectedActivity, setSelectedActivity] = useState<FriendActivity | null>(null);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   useEffect(() => {
     if (containerRef.current) {
@@ -235,8 +237,11 @@ export default function HomePage() {
       {/* Globe section - fixed behind content */}
       <div className="sticky top-0 z-0">
         {/* Header */}
-        <div className="pt-12 pb-2 px-5 text-center relative z-10">
+        <div className="pt-12 pb-2 px-5 flex items-center justify-between relative z-10">
           <h1 className="text-2xl font-bold text-foreground tracking-tight">Travel'D</h1>
+          <button onClick={() => setNotifOpen(true)} className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center">
+            <Bell className="w-5 h-5 text-foreground" />
+          </button>
         </div>
 
         <div ref={containerRef} className="relative mx-auto flex items-center justify-center overflow-hidden" style={{ height: globeHeight }}>
@@ -364,6 +369,8 @@ export default function HomePage() {
           </div>
         </div>
       </div>
+
+      <NotificationsSheet open={notifOpen} onClose={() => setNotifOpen(false)} />
     </div>
   );
 }

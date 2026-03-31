@@ -6,6 +6,11 @@ import { StarRating } from "@/components/StarRating";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 
+const SUB_CATEGORIES = [
+  "Affordability", "Natural Beauty", "Culture & Heritage", "Safety & Security",
+  "Food", "Hospitality & People", "Weather", "Entertainment & Nightlife",
+];
+
 interface DiaryEntry {
   id: string;
   rating: number | null;
@@ -47,13 +52,16 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
   const [unknownDate, setUnknownDate] = useState(!entry.visit_year && !entry.visit_month);
   const [saving, setSaving] = useState(false);
 
+  // Sub-ratings
+  const [subRatings, setSubRatings] = useState<Record<string, number>>({});
+
   // Tags
   const [tagQuery, setTagQuery] = useState("");
   const [tagResults, setTagResults] = useState<TaggedUser[]>([]);
   const [taggedUsers, setTaggedUsers] = useState<TaggedUser[]>([]);
   const [loadingTags, setLoadingTags] = useState(true);
 
-  // Load existing tags
+  // Load existing tags and sub-ratings
   useEffect(() => {
     if (!open) return;
     (async () => {
@@ -73,6 +81,16 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
       } else {
         setTaggedUsers([]);
       }
+
+      // Load sub-ratings
+      const { data: subs } = await supabase
+        .from("review_sub_ratings")
+        .select("category, rating")
+        .eq("review_id", entry.id);
+      const sr: Record<string, number> = {};
+      (subs || []).forEach(s => { sr[s.category] = Number(s.rating); });
+      setSubRatings(sr);
+
       setLoadingTags(false);
     })();
   }, [entry.id, open]);
@@ -133,6 +151,20 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
           }))
         );
       }
+
+      // Update sub-ratings: delete all existing, re-insert
+      await supabase.from("review_sub_ratings").delete().eq("review_id", entry.id);
+      const subEntries = Object.entries(subRatings).filter(([, v]) => v > 0);
+      if (subEntries.length > 0) {
+        await supabase.from("review_sub_ratings").insert(
+          subEntries.map(([category, rating]) => ({
+            review_id: entry.id,
+            category,
+            rating,
+          }))
+        );
+      }
+
       toast.success("Entry updated");
       onSaved();
       onClose();
@@ -197,6 +229,24 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
               placeholder="Add a review..."
               className="w-full h-28 bg-background rounded-xl p-4 text-sm text-foreground placeholder:text-muted-foreground resize-none border border-border focus:outline-none focus:ring-1 focus:ring-primary"
             />
+          </div>
+
+          {/* Sub-category ratings */}
+          <div>
+            <p className="text-sm font-semibold text-foreground mb-3">Category Ratings</p>
+            <div className="grid grid-cols-2 gap-3">
+              {SUB_CATEGORIES.map((cat) => (
+                <div key={cat} className="space-y-1">
+                  <p className="text-[10px] text-muted-foreground leading-tight">{cat}</p>
+                  <StarRating
+                    rating={subRatings[cat] || 0}
+                    size={16}
+                    interactive
+                    onChange={(val) => setSubRatings(prev => ({ ...prev, [cat]: val }))}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Date */}

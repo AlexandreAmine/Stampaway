@@ -4,6 +4,7 @@ import { getFlagEmoji } from "@/lib/countryFlags";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { SubRatingsDisplay } from "@/components/SubRatingsDisplay";
 
 interface GlobeActivityPopupProps {
   activity: {
@@ -125,26 +126,33 @@ export function GlobeActivityPopup({ activity, onClose, onNavigate }: GlobeActiv
             )}
           </button>
 
-          {/* Info chips */}
-          <div className="flex flex-wrap gap-2 mb-2">
-            {activity.rating != null && (
-              <div className="flex items-center gap-1 bg-primary/10 text-primary rounded-full px-2.5 py-1">
-                <Star className="w-3.5 h-3.5 fill-primary" />
-                <span className="text-sm font-bold">{activity.rating}</span>
+          {/* Info chips + sub ratings side by side */}
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <div className="flex flex-wrap gap-2 mb-2">
+                {activity.rating != null && (
+                  <div className="flex items-center gap-1 bg-primary/10 text-primary rounded-full px-2.5 py-1">
+                    <Star className="w-3.5 h-3.5 fill-primary" />
+                    <span className="text-sm font-bold">{activity.rating}</span>
+                  </div>
+                )}
+                {activity.visit_month != null && activity.visit_year != null && (
+                  <div className="flex items-center gap-1 bg-muted rounded-full px-2.5 py-1">
+                    <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">{monthNames[activity.visit_month - 1]} {activity.visit_year}</span>
+                  </div>
+                )}
+                {activity.duration_days != null && (
+                  <div className="flex items-center gap-1 bg-muted rounded-full px-2.5 py-1">
+                    <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-xs text-muted-foreground">{activity.duration_days}d</span>
+                  </div>
+                )}
               </div>
-            )}
-            {activity.visit_month != null && activity.visit_year != null && (
-              <div className="flex items-center gap-1 bg-muted rounded-full px-2.5 py-1">
-                <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">{monthNames[activity.visit_month - 1]} {activity.visit_year}</span>
-              </div>
-            )}
-            {activity.duration_days != null && (
-              <div className="flex items-center gap-1 bg-muted rounded-full px-2.5 py-1">
-                <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">{activity.duration_days}d</span>
-              </div>
-            )}
+            </div>
+            <div className="shrink-0 w-[140px]">
+              <SubRatingsDisplay reviewId={activity.id} compact />
+            </div>
           </div>
 
           {/* Tagged people */}

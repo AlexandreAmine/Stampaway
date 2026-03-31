@@ -8,6 +8,7 @@ import { StarRating } from "@/components/StarRating";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { ReviewComments } from "@/components/ReviewComments";
+import { SubRatingsDisplay } from "@/components/SubRatingsDisplay";
 
 export default function ReviewDetailPage() {
   const { reviewId } = useParams<{ reviewId: string }>();
@@ -159,6 +160,13 @@ export default function ReviewDetailPage() {
                 <span className="text-xs">{review.duration_days} {review.duration_days === 1 ? "day" : "days"}</span>
               </div>
             )}
+          </div>
+        </motion.div>
+
+        {/* Sub-category ratings */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.22 }} className="mb-4">
+          <div className="bg-card rounded-xl p-4 border border-border">
+            <SubRatingsDisplay reviewId={reviewId!} />
           </div>
         </motion.div>
 

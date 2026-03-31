@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Users, List, MessageSquare, Bookmark, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Users, List, MessageSquare, Bookmark, Plus, BarChart3 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -446,6 +446,11 @@ export default function PlacePage() {
             <List className="w-5 h-5 text-primary" />
             <span className="text-lg font-bold text-foreground">{formatCount(listsCount)}</span>
             <span className="text-[10px] text-muted-foreground">Lists</span>
+          </button>
+          <button onClick={() => navigate(`/place/${id}/categories`)} className="flex flex-col items-center gap-1">
+            <BarChart3 className="w-5 h-5 text-primary" />
+            <span className="text-lg font-bold text-foreground">—</span>
+            <span className="text-[10px] text-muted-foreground">Ratings</span>
           </button>
         </motion.div>
 

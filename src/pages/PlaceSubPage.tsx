@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { StarRating } from "@/components/StarRating";
 import { ReviewCard } from "@/components/ReviewCard";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { PlaceCategoryRatings } from "@/components/SubRatingsDisplay";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type Section = "visitors" | "reviews" | "lists" | "wanttovisit";
+type Section = "visitors" | "reviews" | "lists" | "wanttovisit" | "categories";
 
 export default function PlaceSubPage() {
   const { id, section } = useParams<{ id: string; section: string }>();
@@ -140,7 +141,7 @@ export default function PlaceSubPage() {
     setLoading(false);
   };
 
-  const title = section === "visitors" ? "Visitors" : section === "reviews" ? "Reviews" : section === "wanttovisit" ? "Want to go" : "Lists";
+  const title = section === "visitors" ? "Visitors" : section === "reviews" ? "Reviews" : section === "wanttovisit" ? "Want to go" : section === "categories" ? "Category Ratings" : "Lists";
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -175,10 +176,12 @@ export default function PlaceSubPage() {
           )}
         </div>
 
-        {loading ? (
+        {loading && section !== "categories" ? (
           <div className="flex justify-center py-12">
             <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
+        ) : section === "categories" ? (
+          <PlaceCategoryRatings placeId={id!} userId={user?.id} />
         ) : data.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-12">No {title.toLowerCase()} yet</p>
         ) : (

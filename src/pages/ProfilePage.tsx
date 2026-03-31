@@ -46,9 +46,11 @@ export default function ProfilePage() {
   const viewingUserId = paramUserId || user?.id;
   const isOwnProfile = !paramUserId || paramUserId === user?.id;
 
-  const [viewedProfile, setViewedProfile] = useState<{ username: string; profile_picture: string | null; bio: string | null; country: string | null } | null>(null);
+  const [viewedProfile, setViewedProfile] = useState<{ username: string; profile_picture: string | null; bio: string | null; country: string | null; is_private?: boolean } | null>(null);
   const [ownProfileFull, setOwnProfileFull] = useState<{ username: string; profile_picture: string | null; bio: string | null; country: string | null } | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [hasPendingRequest, setHasPendingRequest] = useState(false);
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerType, setPickerType] = useState<"city" | "country">("city");
@@ -80,26 +82,37 @@ export default function ProfilePage() {
   useEffect(() => {
     setSubPage(null);
     setRatingFilter(undefined);
+    setIsBlocked(false);
+    setHasPendingRequest(false);
     if (isOwnProfile && viewingUserId) {
       supabase.from("profiles").select("username, profile_picture, bio, country").eq("user_id", viewingUserId).single().then(({ data }) => {
         if (data) setOwnProfileFull(data);
       });
       setViewedProfile(null);
     } else if (viewingUserId) {
-      supabase.from("profiles").select("username, profile_picture, bio, country").eq("user_id", viewingUserId).single().then(({ data }) => {
-        if (data) setViewedProfile(data);
+      supabase.from("profiles").select("username, profile_picture, bio, country, is_private").eq("user_id", viewingUserId).single().then(({ data }) => {
+        if (data) setViewedProfile(data as any);
       });
+      // Check if blocked
+      if (user) {
+        supabase.from("blocked_users").select("id").or(`and(blocker_id.eq.${user.id},blocked_id.eq.${viewingUserId}),and(blocker_id.eq.${viewingUserId},blocked_id.eq.${user.id})`).then(({ data }) => {
+          setIsBlocked((data || []).length > 0);
+        });
+      }
     }
-  }, [viewingUserId, isOwnProfile]);
+  }, [viewingUserId, isOwnProfile, user]);
 
   const [isFollowing, setIsFollowing] = useState(false);
   const [togglingFollow, setTogglingFollow] = useState(false);
 
-  // Check follow status
+  // Check follow status + pending request
   useEffect(() => {
     if (!user || isOwnProfile || !viewingUserId) return;
     supabase.from("followers").select("id").eq("follower_id", user.id).eq("following_id", viewingUserId).maybeSingle().then(({ data }) => {
       setIsFollowing(!!data);
+    });
+    supabase.from("follow_requests").select("id").eq("requester_id", user.id).eq("target_id", viewingUserId).maybeSingle().then(({ data }) => {
+      setHasPendingRequest(!!data);
     });
   }, [user, viewingUserId, isOwnProfile]);
 
@@ -110,10 +123,21 @@ export default function ProfilePage() {
       await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", viewingUserId);
       setIsFollowing(false);
       setFollowersCount((c) => Math.max(0, c - 1));
+    } else if (hasPendingRequest) {
+      // Cancel request
+      await supabase.from("follow_requests").delete().eq("requester_id", user.id).eq("target_id", viewingUserId);
+      setHasPendingRequest(false);
     } else {
-      await supabase.from("followers").insert({ follower_id: user.id, following_id: viewingUserId });
-      setIsFollowing(true);
-      setFollowersCount((c) => c + 1);
+      // Check if target is private
+      const isTargetPrivate = viewedProfile?.is_private;
+      if (isTargetPrivate) {
+        await supabase.from("follow_requests").insert({ requester_id: user.id, target_id: viewingUserId });
+        setHasPendingRequest(true);
+      } else {
+        await supabase.from("followers").insert({ follower_id: user.id, following_id: viewingUserId });
+        setIsFollowing(true);
+        setFollowersCount((c) => c + 1);
+      }
     }
     setTogglingFollow(false);
   };
@@ -487,14 +511,16 @@ export default function ProfilePage() {
                 <Settings className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
-          ) : user && (
+          ) : user && !isBlocked && (
             <button
               onClick={toggleFollow}
               disabled={togglingFollow}
               className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
                 isFollowing
                   ? "bg-card border border-border text-foreground"
-                  : "bg-primary text-primary-foreground"
+                  : hasPendingRequest
+                    ? "bg-muted text-muted-foreground border border-border"
+                    : "bg-primary text-primary-foreground"
               }`}
             >
               {isFollowing ? (
@@ -502,6 +528,8 @@ export default function ProfilePage() {
                   <UserMinus className="w-3.5 h-3.5" />
                   Unfollow
                 </>
+              ) : hasPendingRequest ? (
+                <span>Requested</span>
               ) : (
                 <>
                   <UserPlus className="w-3.5 h-3.5" />
@@ -513,12 +541,29 @@ export default function ProfilePage() {
         </div>
 
         {/* Bio */}
-        {profileBio && (
+        {!isBlocked && profileBio && (
           <div className="mb-4">
             <RichBio text={profileBio} />
           </div>
         )}
 
+        {/* Blocked state */}
+        {!isOwnProfile && isBlocked && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <p className="text-sm text-muted-foreground">This content is not available.</p>
+          </div>
+        )}
+
+        {/* Private account - not following */}
+        {!isOwnProfile && !isBlocked && viewedProfile?.is_private && !isFollowing && (
+          <div className="flex flex-col items-center justify-center py-20">
+            <p className="text-sm font-semibold text-foreground mb-1">This account is private</p>
+            <p className="text-xs text-muted-foreground">Follow this account to see their content.</p>
+          </div>
+        )}
+
+        {/* Content visible when not blocked and not private-restricted */}
+        {(isOwnProfile || (!isBlocked && (!viewedProfile?.is_private || isFollowing))) && <>
         {/* Admin Stats */}
         {isOwnProfile && user && <AdminStats userId={user.id} />}
 
@@ -620,6 +665,7 @@ export default function ProfilePage() {
             </button>
           ))}
         </div>
+        </>}
       </div>
 
       {isOwnProfile && <FavoritePicker open={pickerOpen} onClose={() => setPickerOpen(false)} type={pickerType} onSelect={handleFavoriteSelected} />}
