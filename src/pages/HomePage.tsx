@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getPlaceCoordinates } from "@/lib/cityCoordinates";
 import { countryLabels, cityLabels } from "@/lib/globeLabels";
 import { GlobeActivityPopup } from "@/components/GlobeActivityPopup";
+import { NotificationsSheet } from "@/components/NotificationsSheet";
 import Globe from "react-globe.gl";
 
 interface FriendActivity {
