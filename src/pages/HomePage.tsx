@@ -40,6 +40,7 @@ export default function HomePage() {
   const [hasFollowing, setHasFollowing] = useState(true);
   const [globeWidth, setGlobeWidth] = useState(380);
   const [selectedActivity, setSelectedActivity] = useState<FriendActivity | null>(null);
+  const [notifOpen, setNotifOpen] = useState(false);
 
   useEffect(() => {
     if (containerRef.current) {
