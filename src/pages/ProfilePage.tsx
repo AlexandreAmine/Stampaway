@@ -46,9 +46,11 @@ export default function ProfilePage() {
   const viewingUserId = paramUserId || user?.id;
   const isOwnProfile = !paramUserId || paramUserId === user?.id;
 
-  const [viewedProfile, setViewedProfile] = useState<{ username: string; profile_picture: string | null; bio: string | null; country: string | null } | null>(null);
+  const [viewedProfile, setViewedProfile] = useState<{ username: string; profile_picture: string | null; bio: string | null; country: string | null; is_private?: boolean } | null>(null);
   const [ownProfileFull, setOwnProfileFull] = useState<{ username: string; profile_picture: string | null; bio: string | null; country: string | null } | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [hasPendingRequest, setHasPendingRequest] = useState(false);
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerType, setPickerType] = useState<"city" | "country">("city");
