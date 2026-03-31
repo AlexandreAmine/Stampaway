@@ -665,6 +665,7 @@ export default function ProfilePage() {
             </button>
           ))}
         </div>
+        </>}
       </div>
 
       {isOwnProfile && <FavoritePicker open={pickerOpen} onClose={() => setPickerOpen(false)} type={pickerType} onSelect={handleFavoriteSelected} />}
