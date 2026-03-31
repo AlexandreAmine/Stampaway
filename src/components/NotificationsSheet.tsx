@@ -141,7 +141,8 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
     await supabase.from("followers").insert({ follower_id: requesterId, following_id: user.id });
     // Remove request
     await supabase.from("follow_requests").delete().eq("id", requestId);
-    toast.success("Follow request accepted");
+    const profile = items.find(i => i.id === requestId);
+    toast.success(`${profile?.username || "User"} started following you`);
     fetchAll();
   };
 
