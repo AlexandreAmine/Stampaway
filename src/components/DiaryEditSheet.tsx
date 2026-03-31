@@ -6,6 +6,11 @@ import { StarRating } from "@/components/StarRating";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 
+const SUB_CATEGORIES = [
+  "Affordability", "Natural Beauty", "Culture & Heritage", "Safety & Security",
+  "Food", "Hospitality & People", "Weather", "Entertainment & Nightlife",
+];
+
 interface DiaryEntry {
   id: string;
   rating: number | null;
