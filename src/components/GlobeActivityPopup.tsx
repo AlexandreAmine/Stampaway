@@ -4,6 +4,7 @@ import { getFlagEmoji } from "@/lib/countryFlags";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { SubRatingsDisplay } from "@/components/SubRatingsDisplay";
 
 interface GlobeActivityPopupProps {
   activity: {
