@@ -462,11 +462,6 @@ export default function PlacePage() {
             <span className="text-lg font-bold text-foreground">{formatCount(listsCount)}</span>
             <span className="text-[10px] text-muted-foreground">Lists</span>
           </button>
-          <button onClick={() => navigate(`/place/${id}/categories`)} className="flex flex-col items-center gap-1">
-            <BarChart3 className="w-5 h-5 text-primary" />
-            <span className="text-lg font-bold text-foreground">—</span>
-            <span className="text-[10px] text-muted-foreground">Ratings</span>
-          </button>
         </motion.div>
 
         {/* Country-specific: Cities in country */}
