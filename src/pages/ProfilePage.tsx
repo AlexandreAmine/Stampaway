@@ -475,7 +475,7 @@ export default function ProfilePage() {
                 <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
                 {countryFlag && <span className="text-lg">{countryFlag}</span>}
               </div>
-              {isOwnProfile && <p className="text-xs text-muted-foreground">{user?.email}</p>}
+              {isOwnProfile && profileCountry && <span className="text-xs text-muted-foreground">{profileCountry}</span>}
             </div>
           </div>
           {isOwnProfile ? (
