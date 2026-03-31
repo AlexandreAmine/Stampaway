@@ -8,6 +8,7 @@ import { StarRating } from "@/components/StarRating";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { ReviewComments } from "@/components/ReviewComments";
+import { SubRatingsDisplay } from "@/components/SubRatingsDisplay";
 
 export default function ReviewDetailPage() {
   const { reviewId } = useParams<{ reviewId: string }>();
