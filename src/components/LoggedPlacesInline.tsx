@@ -254,8 +254,7 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
     }
   }
 
-  const sortOrder: SortOption[] = ["your-highest", "category-highest", "avg-highest", "avg-category-highest", "newest", "longest"];
-  const regularSorts: SortOption[] = ["your-highest", "avg-highest", "newest", "longest"];
+  // unused sortOrder removed
 
   const renderGrid = (items: typeof sorted) => (
     <div className="grid grid-cols-3 gap-3">
