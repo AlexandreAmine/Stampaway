@@ -105,11 +105,14 @@ export default function ProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [togglingFollow, setTogglingFollow] = useState(false);
 
-  // Check follow status
+  // Check follow status + pending request
   useEffect(() => {
     if (!user || isOwnProfile || !viewingUserId) return;
     supabase.from("followers").select("id").eq("follower_id", user.id).eq("following_id", viewingUserId).maybeSingle().then(({ data }) => {
       setIsFollowing(!!data);
+    });
+    supabase.from("follow_requests").select("id").eq("requester_id", user.id).eq("target_id", viewingUserId).maybeSingle().then(({ data }) => {
+      setHasPendingRequest(!!data);
     });
   }, [user, viewingUserId, isOwnProfile]);
 
