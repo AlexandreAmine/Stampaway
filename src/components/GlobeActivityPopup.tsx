@@ -92,114 +92,117 @@ export function GlobeActivityPopup({ activity, onClose, onNavigate }: GlobeActiv
   const avatarUrl = activity.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(activity.username)}&background=3B82F6&color=fff&size=40`;
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ y: 60, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 60, opacity: 0 }}
-        transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="absolute bottom-0 left-0 right-0 z-30 px-4 pb-4"
-      >
-        <div className="bg-card border border-border rounded-2xl p-4 shadow-2xl backdrop-blur-sm">
-          {/* Close button */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onClose(); }}
-            className="absolute top-3 right-3 w-7 h-7 rounded-full bg-muted flex items-center justify-center"
-          >
-            <X className="w-4 h-4 text-muted-foreground" />
-          </button>
+    <AnimatePresence mode="wait">
+      {activity && (
+        <motion.div
+          key={activity.id}
+          initial={{ y: 60, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 60, opacity: 0 }}
+          transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          className="absolute bottom-0 left-0 right-0 z-30 px-4 pb-4"
+        >
+          <div className="bg-card border border-border rounded-2xl p-4 shadow-2xl backdrop-blur-sm">
+            {/* Close button */}
+            <button
+              onClick={(e) => { e.stopPropagation(); onClose(); }}
+              className="absolute top-3 right-3 w-7 h-7 rounded-full bg-muted flex items-center justify-center"
+            >
+              <X className="w-4 h-4 text-muted-foreground" />
+            </button>
 
-          {/* User info row */}
-          <div className="flex items-center gap-2 mb-3">
-            <img src={avatarUrl} alt={activity.username} className="w-8 h-8 rounded-full object-cover" />
-            <span className="text-sm font-semibold text-foreground">{activity.username}</span>
-          </div>
-
-          {/* Destination */}
-          <button onClick={onNavigate} className="w-full text-left">
-            <div className="flex items-center gap-2 mb-2">
-              {flag && <span className="text-lg">{flag}</span>}
-              <h3 className="text-lg font-bold text-foreground">{activity.place_name}</h3>
+            {/* User info row */}
+            <div className="flex items-center gap-2 mb-3">
+              <img src={avatarUrl} alt={activity.username} className="w-8 h-8 rounded-full object-cover" />
+              <span className="text-sm font-semibold text-foreground">{activity.username}</span>
             </div>
-            {activity.place_type === "city" && (
-              <p className="text-xs text-muted-foreground -mt-1 mb-2 ml-8">{activity.place_country}</p>
-            )}
-          </button>
 
-          {/* Info chips + sub ratings side by side */}
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <div className="flex flex-wrap gap-2 mb-2">
-                {activity.rating != null && (
-                  <div className="flex items-center gap-1 bg-primary/10 text-primary rounded-full px-2.5 py-1">
-                    <Star className="w-3.5 h-3.5 fill-primary" />
-                    <span className="text-sm font-bold">{activity.rating}</span>
-                  </div>
-                )}
-                {activity.visit_month != null && activity.visit_year != null && (
-                  <div className="flex items-center gap-1 bg-muted rounded-full px-2.5 py-1">
-                    <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">{monthNames[activity.visit_month - 1]} {activity.visit_year}</span>
-                  </div>
-                )}
-                {activity.duration_days != null && (
-                  <div className="flex items-center gap-1 bg-muted rounded-full px-2.5 py-1">
-                    <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="text-xs text-muted-foreground">{activity.duration_days}d</span>
-                  </div>
-                )}
+            {/* Destination */}
+            <button onClick={onNavigate} className="w-full text-left">
+              <div className="flex items-center gap-2 mb-2">
+                {flag && <span className="text-lg">{flag}</span>}
+                <h3 className="text-lg font-bold text-foreground">{activity.place_name}</h3>
+              </div>
+              {activity.place_type === "city" && (
+                <p className="text-xs text-muted-foreground -mt-1 mb-2 ml-8">{activity.place_country}</p>
+              )}
+            </button>
+
+            {/* Info chips + sub ratings side by side */}
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {activity.rating != null && (
+                    <div className="flex items-center gap-1 bg-primary/10 text-primary rounded-full px-2.5 py-1">
+                      <Star className="w-3.5 h-3.5 fill-primary" />
+                      <span className="text-sm font-bold">{activity.rating}</span>
+                    </div>
+                  )}
+                  {activity.visit_month != null && activity.visit_year != null && (
+                    <div className="flex items-center gap-1 bg-muted rounded-full px-2.5 py-1">
+                      <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">{monthNames[activity.visit_month - 1]} {activity.visit_year}</span>
+                    </div>
+                  )}
+                  {activity.duration_days != null && (
+                    <div className="flex items-center gap-1 bg-muted rounded-full px-2.5 py-1">
+                      <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">{activity.duration_days}d</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="shrink-0 w-[130px]">
+                <SubRatingsDisplay reviewId={activity.id} compact />
               </div>
             </div>
-            <div className="shrink-0 w-[140px]">
-              <SubRatingsDisplay reviewId={activity.id} compact />
-            </div>
-          </div>
 
-          {/* Tagged people */}
-          {taggedPeople.length > 0 && (
-            <div className="flex items-center gap-1.5 mt-2">
-              <Users className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-              <div className="flex items-center gap-1 flex-wrap">
-                <span className="text-xs text-muted-foreground">with</span>
-                {taggedPeople.map((p, i) => (
-                  <div key={i} className="flex items-center gap-1">
-                    <Avatar className="w-4 h-4">
-                      {p.profile_picture ? <AvatarImage src={p.profile_picture} /> : <AvatarFallback className="text-[7px]">{p.username[0]?.toUpperCase()}</AvatarFallback>}
-                    </Avatar>
-                    <span className="text-xs font-medium text-foreground">{p.username}</span>
-                    {i < taggedPeople.length - 1 && <span className="text-xs text-muted-foreground">,</span>}
+            {/* Tagged people */}
+            {taggedPeople.length > 0 && (
+              <div className="flex items-center gap-1.5 mt-2">
+                <Users className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <div className="flex items-center gap-1 flex-wrap">
+                  <span className="text-xs text-muted-foreground">with</span>
+                  {taggedPeople.map((p, i) => (
+                    <div key={i} className="flex items-center gap-1">
+                      <Avatar className="w-4 h-4">
+                        {p.profile_picture ? <AvatarImage src={p.profile_picture} /> : <AvatarFallback className="text-[7px]">{p.username[0]?.toUpperCase()}</AvatarFallback>}
+                      </Avatar>
+                      <span className="text-xs font-medium text-foreground">{p.username}</span>
+                      {i < taggedPeople.length - 1 && <span className="text-xs text-muted-foreground">,</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Review text preview */}
+            {activity.review_text && (
+              <div className="flex items-start gap-1.5 mt-2">
+                <MessageSquare className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground line-clamp-2">{activity.review_text}</p>
+              </div>
+            )}
+
+            {/* Comments */}
+            {comments.length > 0 && (
+              <div className="mt-2 space-y-1">
+                {comments.map(c => (
+                  <div key={c.id} className="flex items-start gap-1.5">
+                    <MessageSquare className="w-3 h-3 text-primary mt-0.5 shrink-0" />
+                    <p className="text-xs text-muted-foreground line-clamp-1">
+                      <span className="font-semibold text-foreground">{c.username}</span> {c.comment_text}
+                    </p>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Review text preview */}
-          {activity.review_text && (
-            <div className="flex items-start gap-1.5 mt-2">
-              <MessageSquare className="w-3.5 h-3.5 text-muted-foreground mt-0.5 shrink-0" />
-              <p className="text-xs text-muted-foreground line-clamp-2">{activity.review_text}</p>
-            </div>
-          )}
-
-          {/* Comments */}
-          {comments.length > 0 && (
-            <div className="mt-2 space-y-1">
-              {comments.map(c => (
-                <div key={c.id} className="flex items-start gap-1.5">
-                  <MessageSquare className="w-3 h-3 text-primary mt-0.5 shrink-0" />
-                  <p className="text-xs text-muted-foreground line-clamp-1">
-                    <span className="font-semibold text-foreground">{c.username}</span> {c.comment_text}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Tap hint */}
-          <p className="text-[10px] text-muted-foreground/50 text-center mt-3">Tap destination to view details</p>
-        </div>
-      </motion.div>
+            {/* Tap hint */}
+            <p className="text-[10px] text-muted-foreground/50 text-center mt-3">Tap destination to view details</p>
+          </div>
+        </motion.div>
+      )}
     </AnimatePresence>
   );
 }
