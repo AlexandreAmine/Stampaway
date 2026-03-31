@@ -231,8 +231,16 @@ export default function AddPlacePage() {
                 value={reviewText}
                 onChange={(e) => setReviewText(e.target.value)}
                 placeholder="Add a review..."
-                className="w-full h-32 bg-card rounded-xl p-4 text-sm text-foreground placeholder:text-muted-foreground resize-none border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full h-24 bg-card rounded-xl p-4 text-sm text-foreground placeholder:text-muted-foreground resize-none border border-border focus:outline-none focus:ring-1 focus:ring-primary"
               />
+              <div className="mt-3 space-y-2">
+                {SUB_CATEGORIES.map((cat) => (
+                  <div key={cat} className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">{cat}</span>
+                    <StarRating rating={subRatings[cat] || 0} size={16} interactive onChange={(v) => setSubRatings(prev => ({ ...prev, [cat]: v }))} />
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-3">
