@@ -61,7 +61,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
   const [taggedUsers, setTaggedUsers] = useState<TaggedUser[]>([]);
   const [loadingTags, setLoadingTags] = useState(true);
 
-  // Load existing tags
+  // Load existing tags and sub-ratings
   useEffect(() => {
     if (!open) return;
     (async () => {
@@ -81,6 +81,16 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
       } else {
         setTaggedUsers([]);
       }
+
+      // Load sub-ratings
+      const { data: subs } = await supabase
+        .from("review_sub_ratings")
+        .select("category, rating")
+        .eq("review_id", entry.id);
+      const sr: Record<string, number> = {};
+      (subs || []).forEach(s => { sr[s.category] = Number(s.rating); });
+      setSubRatings(sr);
+
       setLoadingTags(false);
     })();
   }, [entry.id, open]);
