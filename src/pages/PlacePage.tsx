@@ -11,6 +11,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getFlagUrl } from "@/lib/countryFlags";
 import { CountryFacts } from "@/components/CountryFacts";
 import { toast } from "sonner";
+import { DiaryEditSheet } from "@/components/DiaryEditSheet";
 
 interface PlaceData {
   id: string;
