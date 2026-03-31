@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { StarRating } from "@/components/StarRating";
 import { ReviewCard } from "@/components/ReviewCard";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { PlaceCategoryRatings } from "@/components/SubRatingsDisplay";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type Section = "visitors" | "reviews" | "lists" | "wanttovisit";
+type Section = "visitors" | "reviews" | "lists" | "wanttovisit" | "categories";
 
 export default function PlaceSubPage() {
   const { id, section } = useParams<{ id: string; section: string }>();
