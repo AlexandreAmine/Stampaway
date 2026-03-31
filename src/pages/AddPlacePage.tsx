@@ -40,6 +40,8 @@ export default function AddPlacePage() {
   );
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
+  const SUB_CATEGORIES = ["Affordability", "Natural Beauty", "Culture & Heritage", "Safety & Security", "Food", "Hospitality & People", "Weather", "Entertainment & Nightlife"] as const;
+  const [subRatings, setSubRatings] = useState<Record<string, number>>({});
   const [visitYear, setVisitYear] = useState(new Date().getFullYear());
   const [visitMonth, setVisitMonth] = useState(new Date().getMonth() + 1);
   const [durationDays, setDurationDays] = useState<number | "">("");
