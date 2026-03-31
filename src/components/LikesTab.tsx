@@ -296,7 +296,7 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
   }
 
   const sortLabels = getSortLabels(isOtherUser ? profileUsername : undefined);
-  const regularSorts: DestSort[] = ["your-highest", "avg-highest", "newest", "longest"];
+  // dropdown order handled inline below
   const currentLabel = destSort === "category-highest"
     ? `${selectedCategory}`
     : destSort === "avg-category-highest"
