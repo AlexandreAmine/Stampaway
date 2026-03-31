@@ -417,7 +417,7 @@ export default function ProfilePage() {
       case "Wishlist":
         return <WishlistTab userId={uid} readOnly={!isOwnProfile} />;
       case "Likes":
-        return <LikesTab userId={uid} />;
+        return <LikesTab userId={uid} profileUsername={!isOwnProfile ? displayName : undefined} />;
       case "Tags":
         return <TagsTab userId={uid} />;
       case "Reviews":

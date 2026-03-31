@@ -15,7 +15,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CategorySortDropdown, SUB_RATING_CATEGORIES, type SubRatingCategory } from "@/components/CategorySortDropdown";
+import { CategorySortDropdown, type SubRatingCategory } from "@/components/CategorySortDropdown";
+import {
+  EUROPE_COUNTRIES, ASIA_COUNTRIES, NORTH_AMERICA_COUNTRIES,
+  SOUTH_AMERICA_COUNTRIES, AFRICA_COUNTRIES, OCEANIA_COUNTRIES,
+} from "@/lib/continents";
 
 const filterTabs = ["Countries", "Cities", "Lists", "Users"] as const;
 type FilterTab = (typeof filterTabs)[number];
@@ -27,6 +31,17 @@ const DEST_SORT_LABELS: Record<string, string> = {
   "avg-highest": "Average highest first",
   "category-avg": "Categories average highest first",
 };
+
+const CONTINENT_ORDER = ["Europe", "Asia", "North America", "South America", "Africa", "Oceania", "Other"];
+function getContinent(country: string): string {
+  if (EUROPE_COUNTRIES.includes(country)) return "Europe";
+  if (ASIA_COUNTRIES.includes(country)) return "Asia";
+  if (NORTH_AMERICA_COUNTRIES.includes(country)) return "North America";
+  if (SOUTH_AMERICA_COUNTRIES.includes(country)) return "South America";
+  if (AFRICA_COUNTRIES.includes(country)) return "Africa";
+  if (OCEANIA_COUNTRIES.includes(country)) return "Oceania";
+  return "Other";
+}
 
 export default function SearchPage() {
   const navigate = useNavigate();
@@ -40,6 +55,7 @@ export default function SearchPage() {
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
   const [destSort, setDestSort] = useState<DestSort>("most-popular");
   const [selectedCategory, setSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
+  const [grouped, setGrouped] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -69,7 +85,6 @@ export default function SearchPage() {
       qb = qb.limit(200);
       const { data } = await qb;
       const withCounts = (data || []).map((p: any) => ({ ...p, review_count: countMap.get(p.id) || 0 }));
-      // Default sort by most popular
       withCounts.sort((a: any, b: any) => {
         const diff = b.review_count - a.review_count;
         return diff !== 0 ? diff : a.name.localeCompare(b.name);
@@ -111,7 +126,6 @@ export default function SearchPage() {
     setLoading(false);
   };
 
-  // Sort places based on selected sort (applied client-side after fetch)
   const getSortedPlaces = () => {
     if (destSort === "most-popular") {
       return [...places].sort((a, b) => {
@@ -128,7 +142,6 @@ export default function SearchPage() {
     return places;
   };
 
-  // Fetch avg ratings and category ratings when sort changes
   useEffect(() => {
     if ((activeFilter !== "Countries" && activeFilter !== "Cities") || places.length === 0) return;
     if (destSort === "most-popular") return;
@@ -149,7 +162,6 @@ export default function SearchPage() {
           return { ...p, _avg: a ? a.sum / a.count : 0 };
         }));
       } else if (destSort === "category-avg") {
-        // Get all review IDs for these places, then sub-ratings for selected category
         const { data: reviews } = await supabase.from("reviews").select("id, place_id").in("place_id", placeIds);
         if (!reviews || reviews.length === 0) return;
         const reviewIds = reviews.map((r) => r.id);
@@ -189,9 +201,60 @@ export default function SearchPage() {
       ? `${selectedCategory}`
       : DEST_SORT_LABELS[destSort];
 
+    const groupLabel = activeFilter === "Countries" ? "By continent" : "By country";
+
+    // Grouping
+    const groups: { label: string; items: any[] }[] = [];
+    if (grouped) {
+      const map = new Map<string, any[]>();
+      sortedPlaces.forEach((p) => {
+        const key = activeFilter === "Countries" ? getContinent(p.name) : p.country;
+        if (!map.has(key)) map.set(key, []);
+        map.get(key)!.push(p);
+      });
+      if (activeFilter === "Countries") {
+        CONTINENT_ORDER.forEach((c) => { if (map.has(c)) groups.push({ label: c, items: map.get(c)! }); });
+      } else {
+        [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([label, items]) => groups.push({ label, items }));
+      }
+    }
+
+    const renderPlaceGrid = (items: any[]) => (
+      <div className="grid grid-cols-3 gap-3">
+        {items.map((p: any) => (
+          <motion.button
+            key={p.id}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            onClick={() => {
+              try {
+                const saved = JSON.parse(localStorage.getItem("recentSearches") || "[]");
+                const filtered = saved.filter((s: any) => s.id !== p.id);
+                const updated = [{ id: p.id, name: p.name, country: p.country, type: p.type, image: p.image }, ...filtered].slice(0, 15);
+                localStorage.setItem("recentSearches", JSON.stringify(updated));
+              } catch { /* ignore */ }
+              navigate(`/place/${p.id}`);
+            }}
+            className="aspect-[3/4] w-full relative"
+          >
+            <PosterWishlistButton placeId={p.id} placeName={p.name} />
+            <DestinationPoster placeId={p.id} name={p.name} country={p.country} type={p.type as "city" | "country"} image={p.image} className="w-full h-full" />
+          </motion.button>
+        ))}
+      </div>
+    );
+
     return (
       <>
-        <div className="flex justify-end mb-3">
+        <div className="flex items-center justify-between mb-3">
+          <button
+            onClick={() => setGrouped((g) => !g)}
+            className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
+              grouped ? "bg-primary text-primary-foreground" : "text-muted-foreground border border-border hover:text-foreground"
+            }`}
+          >
+            {groupLabel}
+          </button>
           <DropdownMenu>
             <DropdownMenuTrigger className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded-lg px-3 py-1.5 hover:text-foreground transition-colors">
               {currentLabel}
@@ -213,28 +276,18 @@ export default function SearchPage() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <div className="grid grid-cols-3 gap-3">
-          {sortedPlaces.map((p) => (
-            <motion.button
-              key={p.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              onClick={() => {
-                try {
-                  const saved = JSON.parse(localStorage.getItem("recentSearches") || "[]");
-                  const filtered = saved.filter((s: any) => s.id !== p.id);
-                  const updated = [{ id: p.id, name: p.name, country: p.country, type: p.type, image: p.image }, ...filtered].slice(0, 15);
-                  localStorage.setItem("recentSearches", JSON.stringify(updated));
-                } catch { /* ignore */ }
-                navigate(`/place/${p.id}`);
-              }}
-              className="aspect-[3/4] w-full relative"
-            >
-              <PosterWishlistButton placeId={p.id} placeName={p.name} />
-              <DestinationPoster placeId={p.id} name={p.name} country={p.country} type={p.type as "city" | "country"} image={p.image} className="w-full h-full" />
-            </motion.button>
-          ))}
-        </div>
+        {grouped ? (
+          <div className="space-y-5">
+            {groups.map((group) => (
+              <div key={group.label}>
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.label}</h3>
+                {renderPlaceGrid(group.items)}
+              </div>
+            ))}
+          </div>
+        ) : (
+          renderPlaceGrid(sortedPlaces)
+        )}
       </>
     );
   };
@@ -343,7 +396,7 @@ export default function SearchPage() {
           {filterTabs.map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveFilter(tab)}
+              onClick={() => { setActiveFilter(tab); setGrouped(false); }}
               className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                 activeFilter === tab
                   ? "bg-foreground text-background"
