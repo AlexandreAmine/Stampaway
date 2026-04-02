@@ -15,7 +15,7 @@ export default function SettingsPage() {
   const { user, signOut } = useAuth();
   const [isPrivate, setIsPrivate] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [section, setSection] = useState<null | "privacy" | "blocked" | "password" | "delete">(null);
+  const [section, setSection] = useState<null | "privacy" | "blocked" | "activity" | "password" | "delete">(null);
 
   // Password change
   const [currentPassword, setCurrentPassword] = useState("");
