@@ -1,7 +1,7 @@
 import { Globe, Map, Search, User, Plus } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useEffect, useState } from "react";
 
 const tabs = [
   { path: "/", label: "Friends", icon: Globe },
@@ -11,8 +11,21 @@ const tabs = [
   { path: "/profile", label: "Profile", icon: User },
 ];
 
-// Shared routes that can be reached from any tab
-const SHARED_ROUTES = ["/review", "/place", "/country", "/list", "/logged-places"];
+const ACTIVE_TAB_STORAGE_KEY = "traveld-active-tab";
+
+// Shared routes that should stay inside the current tab context
+const SHARED_ROUTES = ["/review", "/place", "/country", "/list", "/logged-places", "/profile/"];
+
+function isTabPath(path: string | null | undefined): path is string {
+  return !!path && tabs.some((tab) => tab.path === path);
+}
+
+function getStoredActiveTab(): string {
+  if (typeof window === "undefined") return "/";
+
+  const storedTab = window.sessionStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+  return isTabPath(storedTab) ? storedTab : "/";
+}
 
 function isSharedRoute(pathname: string): boolean {
   return SHARED_ROUTES.some(r => pathname.startsWith(r));
@@ -24,44 +37,53 @@ function getOwnTabRoot(pathname: string): string | null {
   if (pathname.startsWith("/explore")) return "/explore";
   if (pathname.startsWith("/add")) return "/add";
   if (pathname.startsWith("/search")) return "/search";
-  if (pathname.startsWith("/profile") || pathname.startsWith("/settings")) return "/profile";
+  if (pathname === "/profile" || pathname.startsWith("/settings")) return "/profile";
   return null;
 }
 
 export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
-  const tabHistory = useRef<Record<string, string>>({
-    "/": "/",
-    "/explore": "/explore",
-    "/add": "/add",
-    "/search": "/search",
-    "/profile": "/profile",
-  });
   const [activeTab, setActiveTab] = useState<string>(() => {
     const ownTab = getOwnTabRoot(window.location.pathname);
-    return ownTab || "/";
+    return ownTab || getStoredActiveTab();
   });
 
   useEffect(() => {
     const ownTab = getOwnTabRoot(location.pathname);
-    if (ownTab) {
-      setActiveTab(ownTab);
-      tabHistory.current[ownTab] = location.pathname + location.search;
-    } else if (isSharedRoute(location.pathname)) {
-      tabHistory.current[activeTab] = location.pathname + location.search;
-    }
-  }, [location.pathname, location.search]);
+    const stateTab = isTabPath((location.state as { tabRoot?: string } | null)?.tabRoot)
+      ? (location.state as { tabRoot?: string }).tabRoot
+      : null;
 
-  const handleTabClick = useCallback((tabPath: string) => {
-    if (activeTab === tabPath) {
-      tabHistory.current[tabPath] = tabPath;
-      navigate(tabPath);
-    } else {
-      const savedPath = tabHistory.current[tabPath] || tabPath;
-      navigate(savedPath);
+    const resolvedTab = ownTab || stateTab || (isSharedRoute(location.pathname) ? getStoredActiveTab() : "/");
+
+    setActiveTab(resolvedTab);
+    window.sessionStorage.setItem(ACTIVE_TAB_STORAGE_KEY, resolvedTab);
+
+    if (ownTab) {
+      return;
     }
-  }, [navigate, activeTab]);
+
+    if (isSharedRoute(location.pathname) && stateTab !== resolvedTab) {
+      const currentState = typeof location.state === "object" && location.state !== null
+        ? (location.state as Record<string, unknown>)
+        : {};
+
+      navigate(`${location.pathname}${location.search}${location.hash}`, {
+        replace: true,
+        state: { ...currentState, tabRoot: resolvedTab },
+      });
+    }
+  }, [location.pathname, location.search, location.hash, location.state, navigate]);
+
+  const handleTabClick = (tabPath: string) => {
+    setActiveTab(tabPath);
+    window.sessionStorage.setItem(ACTIVE_TAB_STORAGE_KEY, tabPath);
+
+    if (location.pathname !== tabPath) {
+      navigate(tabPath);
+    }
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-nav-bg border-t border-border safe-bottom">

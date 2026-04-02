@@ -342,6 +342,7 @@ export default function HomePage() {
             onNavigate={() => {
               if (selectedActivity) navigate(`/place/${selectedActivity.place_id}`);
             }}
+            onProfileNavigate={(userId) => navigate(userId === user?.id ? "/profile" : `/profile/${userId}`)}
           />
         </div>
       </div>

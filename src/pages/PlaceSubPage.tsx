@@ -189,20 +189,16 @@ export default function PlaceSubPage() {
             {section === "visitors" &&
               data.map((v: any) => (
                 <div key={v.user_id} className="flex items-center gap-3 w-full">
-                  <button onClick={() => navigate(v.user_id === user?.id ? "/profile" : `/profile/${v.user_id}`)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                  <button onClick={() => navigate(v.user_id === user?.id ? "/profile" : `/profile/${v.user_id}`)} className="flex items-center gap-3 min-w-0 w-1/2 text-left">
                     <Avatar className="w-9 h-9">
                       <AvatarImage src={v.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(v.profile?.username || "?")}&background=3B82F6&color=fff`} />
                       <AvatarFallback>{v.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <p className="text-sm text-foreground flex-1">{v.profile?.username || "User"}</p>
                   </button>
-                  <button onClick={() => navigate(`/review/${v.id}`)} className="flex items-center gap-1.5 active:scale-95 transition-transform min-w-[40px] justify-end">
-                    {v.rating != null && (
-                      <>
-                        <StarRating rating={Number(v.rating)} size={12} liked={v.liked} />
-                        {v.has_review && <MessageSquare className="w-3 h-3 text-primary" />}
-                      </>
-                    )}
+                  <button onClick={() => navigate(`/review/${v.id}`)} className="flex items-center justify-end gap-1.5 active:scale-95 transition-transform w-1/2 min-h-9 text-right">
+                    {v.rating != null && <StarRating rating={Number(v.rating)} size={12} liked={v.liked} />}
+                    {v.has_review && <MessageSquare className="w-3 h-3 text-primary" />}
                   </button>
                 </div>
               ))}
