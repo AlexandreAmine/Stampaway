@@ -314,7 +314,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
 
           {/* Tags */}
           <div>
-            <p className="text-sm font-semibold text-foreground mb-2">Tag people that visited with you...</p>
+            <p className="text-sm font-semibold text-foreground mb-2">Tag people that visited with you</p>
             {loadingTags ? (
               <div className="flex items-center justify-center h-8">
                 <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
