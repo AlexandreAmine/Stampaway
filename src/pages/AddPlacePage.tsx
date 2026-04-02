@@ -205,7 +205,7 @@ export default function AddPlacePage() {
 
   if (step === "review" && selectedPlace) {
     return (
-      <div className="min-h-screen bg-[hsl(0,0%,4%)] pb-24">
+      <div className="min-h-screen bg-[hsl(0,0%,4%)] pb-32 overflow-y-auto">
         <div className="pt-12 px-5">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
