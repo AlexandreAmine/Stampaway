@@ -1,7 +1,7 @@
 import { Globe, Map, Search, User, Plus } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useEffect, useState } from "react";
 
 const tabs = [
   { path: "/", label: "Friends", icon: Globe },
@@ -11,8 +11,17 @@ const tabs = [
   { path: "/profile", label: "Profile", icon: User },
 ];
 
-// Shared routes that can be reached from any tab
-const SHARED_ROUTES = ["/review", "/place", "/country", "/list", "/logged-places"];
+const ACTIVE_TAB_STORAGE_KEY = "traveld-active-tab";
+
+// Shared routes that should stay inside the current tab context
+const SHARED_ROUTES = ["/review", "/place", "/country", "/list", "/logged-places", "/profile/"];
+
+function getStoredActiveTab(): string {
+  if (typeof window === "undefined") return "/";
+
+  const storedTab = window.sessionStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+  return tabs.some((tab) => tab.path === storedTab) ? storedTab! : "/";
+}
 
 function isSharedRoute(pathname: string): boolean {
   return SHARED_ROUTES.some(r => pathname.startsWith(r));
@@ -24,44 +33,36 @@ function getOwnTabRoot(pathname: string): string | null {
   if (pathname.startsWith("/explore")) return "/explore";
   if (pathname.startsWith("/add")) return "/add";
   if (pathname.startsWith("/search")) return "/search";
-  if (pathname.startsWith("/profile") || pathname.startsWith("/settings")) return "/profile";
+  if (pathname === "/profile" || pathname.startsWith("/settings")) return "/profile";
   return null;
 }
 
 export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
-  const tabHistory = useRef<Record<string, string>>({
-    "/": "/",
-    "/explore": "/explore",
-    "/add": "/add",
-    "/search": "/search",
-    "/profile": "/profile",
-  });
   const [activeTab, setActiveTab] = useState<string>(() => {
     const ownTab = getOwnTabRoot(window.location.pathname);
-    return ownTab || "/";
+    return ownTab || getStoredActiveTab();
   });
 
   useEffect(() => {
     const ownTab = getOwnTabRoot(location.pathname);
     if (ownTab) {
       setActiveTab(ownTab);
-      tabHistory.current[ownTab] = location.pathname + location.search;
+      window.sessionStorage.setItem(ACTIVE_TAB_STORAGE_KEY, ownTab);
     } else if (isSharedRoute(location.pathname)) {
-      tabHistory.current[activeTab] = location.pathname + location.search;
+      setActiveTab(getStoredActiveTab());
     }
-  }, [location.pathname, location.search]);
+  }, [location.pathname]);
 
-  const handleTabClick = useCallback((tabPath: string) => {
-    if (activeTab === tabPath) {
-      tabHistory.current[tabPath] = tabPath;
+  const handleTabClick = (tabPath: string) => {
+    setActiveTab(tabPath);
+    window.sessionStorage.setItem(ACTIVE_TAB_STORAGE_KEY, tabPath);
+
+    if (location.pathname !== tabPath) {
       navigate(tabPath);
-    } else {
-      const savedPath = tabHistory.current[tabPath] || tabPath;
-      navigate(savedPath);
     }
-  }, [navigate, activeTab]);
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-nav-bg border-t border-border safe-bottom">
