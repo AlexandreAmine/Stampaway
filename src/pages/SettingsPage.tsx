@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { YourActivity } from "@/components/YourActivity";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
