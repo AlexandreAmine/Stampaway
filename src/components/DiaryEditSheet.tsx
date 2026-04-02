@@ -187,7 +187,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative bg-card w-full max-w-lg rounded-t-2xl border border-border max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom pb-8">
+      <div className="relative bg-card w-full max-w-lg rounded-t-2xl border border-border max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom pb-40">
         <div className="sticky top-0 bg-card z-10 flex items-center justify-between p-4 border-b border-border">
           <h2 className="text-lg font-bold text-foreground">Edit Entry</h2>
           <div className="flex items-center gap-3">
