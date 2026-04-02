@@ -272,6 +272,14 @@ export default function SettingsPage() {
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
 
+          <button onClick={() => setSection("activity")} className="flex items-center justify-between py-4 border-b border-border w-full text-left">
+            <div className="flex items-center gap-3">
+              <Activity className="w-5 h-5 text-muted-foreground" />
+              <span className="text-sm font-semibold text-foreground">Your Activity</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </button>
+
           <button onClick={() => setSection("password")} className="flex items-center justify-between py-4 border-b border-border w-full text-left">
             <div className="flex items-center gap-3">
               <KeyRound className="w-5 h-5 text-muted-foreground" />
