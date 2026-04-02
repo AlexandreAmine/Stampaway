@@ -196,14 +196,14 @@ export default function PlaceSubPage() {
                     </Avatar>
                     <p className="text-sm text-foreground flex-1">{v.profile?.username || "User"}</p>
                   </button>
-                  {v.rating != null ? (
-                    <button onClick={() => navigate(`/review/${v.id}`)} className="flex items-center gap-1.5 active:scale-95 transition-transform">
-                      <StarRating rating={Number(v.rating)} size={12} liked={v.liked} />
-                      {v.has_review && <MessageSquare className="w-3 h-3 text-primary" />}
-                    </button>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">logged</span>
-                  )}
+                  <button onClick={() => navigate(`/review/${v.id}`)} className="flex items-center gap-1.5 active:scale-95 transition-transform min-w-[40px] justify-end">
+                    {v.rating != null && (
+                      <>
+                        <StarRating rating={Number(v.rating)} size={12} liked={v.liked} />
+                        {v.has_review && <MessageSquare className="w-3 h-3 text-primary" />}
+                      </>
+                    )}
+                  </button>
                 </div>
               ))}
 
