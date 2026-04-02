@@ -38,19 +38,24 @@ export function BottomNav() {
     "/search": "/search",
     "/profile": "/profile",
   });
+  // Track which tab the user is currently "on" (persists through shared routes)
+  const activeTab = useRef<string>("/");
 
   // Track current location to its tab
   useEffect(() => {
-    const tabRoot = getTabRoot(location.pathname);
-    if (tabRoot) {
-      tabHistory.current[tabRoot] = location.pathname + location.search;
+    const ownTab = getOwnTabRoot(location.pathname);
+    if (ownTab) {
+      // User navigated to a tab-owned route
+      activeTab.current = ownTab;
+      tabHistory.current[ownTab] = location.pathname + location.search;
+    } else if (isSharedRoute(location.pathname)) {
+      // Shared route — keep on current active tab and save it there
+      tabHistory.current[activeTab.current] = location.pathname + location.search;
     }
   }, [location.pathname, location.search]);
 
   const handleTabClick = useCallback((tabPath: string) => {
-    const currentTabRoot = getTabRoot(location.pathname);
-
-    if (currentTabRoot === tabPath) {
+    if (activeTab.current === tabPath) {
       // Clicking the same tab → reset to root
       tabHistory.current[tabPath] = tabPath;
       navigate(tabPath);
@@ -59,14 +64,13 @@ export function BottomNav() {
       const savedPath = tabHistory.current[tabPath] || tabPath;
       navigate(savedPath);
     }
-  }, [location.pathname, navigate]);
+  }, [navigate]);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-nav-bg border-t border-border safe-bottom">
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
         {tabs.map((tab) => {
-          const currentTabRoot = getTabRoot(location.pathname);
-          const isActive = currentTabRoot === tab.path;
+          const isActive = activeTab.current === tab.path;
           const Icon = tab.icon;
 
           if (tab.isCenter) {
