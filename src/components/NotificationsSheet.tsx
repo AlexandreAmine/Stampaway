@@ -162,7 +162,7 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
           <h2 className="text-lg font-bold text-foreground">Activity</h2>
           <button onClick={onClose}><X className="w-5 h-5 text-muted-foreground" /></button>
         </div>
-        <div className="p-4">
+<div className="p-4 pb-16">
           {loading ? (
             <div className="flex justify-center py-12"><div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
           ) : items.length === 0 ? (

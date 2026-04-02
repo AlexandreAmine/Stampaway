@@ -11,13 +11,20 @@ const tabs = [
   { path: "/profile", label: "Profile", icon: User },
 ];
 
-// Map any pathname to its root tab
-function getTabRoot(pathname: string): string | null {
-  if (pathname === "/" || pathname.startsWith("/review") || pathname.startsWith("/place") || pathname.startsWith("/country") || pathname.startsWith("/list") || pathname.startsWith("/logged-places")) return "/";
+// Shared routes that can be reached from any tab
+const SHARED_ROUTES = ["/review", "/place", "/country", "/list", "/logged-places"];
+
+function isSharedRoute(pathname: string): boolean {
+  return SHARED_ROUTES.some(r => pathname.startsWith(r));
+}
+
+// Map any pathname to its root tab (returns null for shared routes)
+function getOwnTabRoot(pathname: string): string | null {
+  if (pathname === "/") return "/";
   if (pathname.startsWith("/explore")) return "/explore";
   if (pathname.startsWith("/add")) return "/add";
   if (pathname.startsWith("/search")) return "/search";
-  if (pathname.startsWith("/profile")) return "/profile";
+  if (pathname.startsWith("/profile") || pathname.startsWith("/settings")) return "/profile";
   return null;
 }
 

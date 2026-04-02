@@ -67,8 +67,8 @@ export default function AddPlacePage() {
   }, [query]);
 
   useEffect(() => {
-    fetchPlaces("");
-  }, []);
+    if (!query) fetchPlaces("");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!tagQuery.trim()) { setTagResults([]); return; }
