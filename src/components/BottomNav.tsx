@@ -1,7 +1,7 @@
 import { Globe, Map, Search, User, Plus } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 const tabs = [
   { path: "/", label: "Friends", icon: Globe },
@@ -38,39 +38,36 @@ export function BottomNav() {
     "/search": "/search",
     "/profile": "/profile",
   });
-  // Track which tab the user is currently "on" (persists through shared routes)
-  const activeTab = useRef<string>("/");
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    const ownTab = getOwnTabRoot(window.location.pathname);
+    return ownTab || "/";
+  });
 
-  // Track current location to its tab
   useEffect(() => {
     const ownTab = getOwnTabRoot(location.pathname);
     if (ownTab) {
-      // User navigated to a tab-owned route
-      activeTab.current = ownTab;
+      setActiveTab(ownTab);
       tabHistory.current[ownTab] = location.pathname + location.search;
     } else if (isSharedRoute(location.pathname)) {
-      // Shared route — keep on current active tab and save it there
-      tabHistory.current[activeTab.current] = location.pathname + location.search;
+      tabHistory.current[activeTab] = location.pathname + location.search;
     }
   }, [location.pathname, location.search]);
 
   const handleTabClick = useCallback((tabPath: string) => {
-    if (activeTab.current === tabPath) {
-      // Clicking the same tab → reset to root
+    if (activeTab === tabPath) {
       tabHistory.current[tabPath] = tabPath;
       navigate(tabPath);
     } else {
-      // Switching tabs → restore last URL for that tab
       const savedPath = tabHistory.current[tabPath] || tabPath;
       navigate(savedPath);
     }
-  }, [navigate]);
+  }, [navigate, activeTab]);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-nav-bg border-t border-border safe-bottom">
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
         {tabs.map((tab) => {
-          const isActive = activeTab.current === tab.path;
+          const isActive = activeTab === tab.path;
           const Icon = tab.icon;
 
           if (tab.isCenter) {
