@@ -25,6 +25,7 @@ interface GlobeActivityPopupProps {
   } | null;
   onClose: () => void;
   onNavigate: () => void;
+  onProfileNavigate: (userId: string) => void;
 }
 
 const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -40,7 +41,7 @@ interface Comment {
   username: string;
 }
 
-export function GlobeActivityPopup({ activity, onClose, onNavigate }: GlobeActivityPopupProps) {
+export function GlobeActivityPopup({ activity, onClose, onNavigate, onProfileNavigate }: GlobeActivityPopupProps) {
   const [taggedPeople, setTaggedPeople] = useState<TaggedPerson[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
 
@@ -113,8 +114,24 @@ export function GlobeActivityPopup({ activity, onClose, onNavigate }: GlobeActiv
 
             {/* User info row */}
             <div className="flex items-center gap-2 mb-3">
-              <img src={avatarUrl} alt={activity.username} className="w-8 h-8 rounded-full object-cover" />
-              <span className="text-sm font-semibold text-foreground">{activity.username}</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onProfileNavigate(activity.user_id);
+                }}
+                className="shrink-0"
+              >
+                <img src={avatarUrl} alt={activity.username} className="w-8 h-8 rounded-full object-cover" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onProfileNavigate(activity.user_id);
+                }}
+                className="text-sm font-semibold text-foreground"
+              >
+                {activity.username}
+              </button>
             </div>
 
             {/* Destination */}
