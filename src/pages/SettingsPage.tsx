@@ -117,6 +117,10 @@ export default function SettingsPage() {
   if (loading) return <div className="min-h-screen bg-background" />;
 
   // Sub-sections
+  if (section === "activity") {
+    return <YourActivity onBack={() => setSection(null)} />;
+  }
+
   if (section === "privacy") {
     return (
       <div className="min-h-screen bg-background pb-24">
