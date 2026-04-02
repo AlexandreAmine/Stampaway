@@ -62,13 +62,10 @@ export default function AddPlacePage() {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => fetchPlaces(query), 200);
+    const delay = query ? 200 : 0; // fetch immediately on mount
+    const timer = setTimeout(() => fetchPlaces(query), delay);
     return () => clearTimeout(timer);
-  }, [query]);
-
-  useEffect(() => {
-    if (!query) fetchPlaces("");
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [query]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!tagQuery.trim()) { setTagResults([]); return; }
