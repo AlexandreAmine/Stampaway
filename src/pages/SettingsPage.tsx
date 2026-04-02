@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Lock, Shield, KeyRound, LogOut, Trash2, ChevronRight } from "lucide-react";
+import { ChevronLeft, Lock, Shield, KeyRound, LogOut, Trash2, ChevronRight, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
