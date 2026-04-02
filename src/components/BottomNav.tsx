@@ -16,11 +16,15 @@ const ACTIVE_TAB_STORAGE_KEY = "traveld-active-tab";
 // Shared routes that should stay inside the current tab context
 const SHARED_ROUTES = ["/review", "/place", "/country", "/list", "/logged-places", "/profile/"];
 
+function isTabPath(path: string | null | undefined): path is string {
+  return !!path && tabs.some((tab) => tab.path === path);
+}
+
 function getStoredActiveTab(): string {
   if (typeof window === "undefined") return "/";
 
   const storedTab = window.sessionStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
-  return tabs.some((tab) => tab.path === storedTab) ? storedTab! : "/";
+  return isTabPath(storedTab) ? storedTab : "/";
 }
 
 function isSharedRoute(pathname: string): boolean {
@@ -47,13 +51,30 @@ export function BottomNav() {
 
   useEffect(() => {
     const ownTab = getOwnTabRoot(location.pathname);
+    const stateTab = isTabPath((location.state as { tabRoot?: string } | null)?.tabRoot)
+      ? (location.state as { tabRoot?: string }).tabRoot
+      : null;
+
+    const resolvedTab = ownTab || stateTab || (isSharedRoute(location.pathname) ? getStoredActiveTab() : "/");
+
+    setActiveTab(resolvedTab);
+    window.sessionStorage.setItem(ACTIVE_TAB_STORAGE_KEY, resolvedTab);
+
     if (ownTab) {
-      setActiveTab(ownTab);
-      window.sessionStorage.setItem(ACTIVE_TAB_STORAGE_KEY, ownTab);
-    } else if (isSharedRoute(location.pathname)) {
-      setActiveTab(getStoredActiveTab());
+      return;
     }
-  }, [location.pathname]);
+
+    if (isSharedRoute(location.pathname) && stateTab !== resolvedTab) {
+      const currentState = typeof location.state === "object" && location.state !== null
+        ? (location.state as Record<string, unknown>)
+        : {};
+
+      navigate(`${location.pathname}${location.search}${location.hash}`, {
+        replace: true,
+        state: { ...currentState, tabRoot: resolvedTab },
+      });
+    }
+  }, [location.pathname, location.search, location.hash, location.state, navigate]);
 
   const handleTabClick = (tabPath: string) => {
     setActiveTab(tabPath);
