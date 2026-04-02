@@ -62,13 +62,10 @@ export default function AddPlacePage() {
   }, []);
 
   useEffect(() => {
-    const timer = setTimeout(() => fetchPlaces(query), 200);
+    const delay = query ? 200 : 0; // fetch immediately on mount
+    const timer = setTimeout(() => fetchPlaces(query), delay);
     return () => clearTimeout(timer);
-  }, [query]);
-
-  useEffect(() => {
-    fetchPlaces("");
-  }, []);
+  }, [query]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!tagQuery.trim()) { setTagResults([]); return; }
@@ -97,20 +94,18 @@ export default function AddPlacePage() {
   }, [tagQuery, taggedUsers, user?.id]);
 
   const fetchPlaces = async (search: string) => {
-    // Fetch review counts
-    const { data: counts } = await supabase.rpc("get_place_review_counts");
-    const countMap = new Map((counts || []).map((c: any) => [c.place_id, Number(c.review_count)]));
-
-    let q = supabase.from("places").select("id, name, country, type, image");
-    if (isFavoriteFlow) {
-      q = q.eq("type", favoriteType);
-    }
-    if (search) {
-      q = q.ilike("name", `%${search}%`);
-    }
-    q = q.limit(200);
-    const { data } = await q;
-    const sorted = (data || []).sort((a, b) => {
+    // Fetch review counts and places in parallel
+    const [countsRes, placesRes] = await Promise.all([
+      supabase.rpc("get_place_review_counts"),
+      (() => {
+        let q = supabase.from("places").select("id, name, country, type, image");
+        if (isFavoriteFlow) q = q.eq("type", favoriteType);
+        if (search) q = q.ilike("name", `%${search}%`);
+        return q.limit(500);
+      })(),
+    ]);
+    const countMap = new Map((countsRes.data || []).map((c: any) => [c.place_id, Number(c.review_count)]));
+    const sorted = (placesRes.data || []).sort((a, b) => {
       const diff = (countMap.get(b.id) || 0) - (countMap.get(a.id) || 0);
       return diff !== 0 ? diff : a.name.localeCompare(b.name);
     }).slice(0, 30);
