@@ -187,7 +187,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative bg-card w-full max-w-lg rounded-t-2xl border border-border max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom">
+      <div className="relative bg-card w-full max-w-lg rounded-t-2xl border border-border max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom pb-8">
         <div className="sticky top-0 bg-card z-10 flex items-center justify-between p-4 border-b border-border">
           <h2 className="text-lg font-bold text-foreground">Edit Entry</h2>
           <div className="flex items-center gap-3">
@@ -314,7 +314,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
 
           {/* Tags */}
           <div>
-            <p className="text-sm font-semibold text-foreground mb-2">Tag people that visited with you...</p>
+            <p className="text-sm font-semibold text-foreground mb-2">Tag people that visited with you</p>
             {loadingTags ? (
               <div className="flex items-center justify-center h-8">
                 <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Lock, Shield, KeyRound, LogOut, Trash2, ChevronRight } from "lucide-react";
+import { ChevronLeft, Lock, Shield, KeyRound, LogOut, Trash2, ChevronRight, Activity } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,13 +8,14 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { YourActivity } from "@/components/YourActivity";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const [isPrivate, setIsPrivate] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [section, setSection] = useState<null | "privacy" | "blocked" | "password" | "delete">(null);
+  const [section, setSection] = useState<null | "privacy" | "blocked" | "activity" | "password" | "delete">(null);
 
   // Password change
   const [currentPassword, setCurrentPassword] = useState("");
@@ -116,6 +117,10 @@ export default function SettingsPage() {
   if (loading) return <div className="min-h-screen bg-background" />;
 
   // Sub-sections
+  if (section === "activity") {
+    return <YourActivity onBack={() => setSection(null)} />;
+  }
+
   if (section === "privacy") {
     return (
       <div className="min-h-screen bg-background pb-24">
@@ -263,6 +268,14 @@ export default function SettingsPage() {
             <div className="flex items-center gap-3">
               <Shield className="w-5 h-5 text-muted-foreground" />
               <span className="text-sm font-semibold text-foreground">Blocked Users</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </button>
+
+          <button onClick={() => setSection("activity")} className="flex items-center justify-between py-4 border-b border-border w-full text-left">
+            <div className="flex items-center gap-3">
+              <Activity className="w-5 h-5 text-muted-foreground" />
+              <span className="text-sm font-semibold text-foreground">Your Activity</span>
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
