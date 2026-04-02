@@ -371,7 +371,7 @@ export default function HomePage() {
             <p className="text-sm text-muted-foreground">No recent activity from friends yet.</p>
           ) : null}
 
-          <div className="space-y-1 pb-20">
+          <div className="space-y-1 pb-36">
             {activities.map((a, i) => (
               <motion.button
                 key={a.id}
