@@ -234,8 +234,13 @@ export default function PlacePage() {
     setLoading(false);
   };
 
-  const fetchDescription = async (name: string, type: string, country: string) => {
+  const fetchDescription = async (name: string, type: string, country: string, dbDescription?: string | null) => {
     setLoadingDesc(true);
+    if (dbDescription) {
+      setDescription(dbDescription);
+      setLoadingDesc(false);
+      return;
+    }
     try {
       const searchTerm = type === "city" ? `${name} ${country}` : name;
       const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchTerm)}`);
