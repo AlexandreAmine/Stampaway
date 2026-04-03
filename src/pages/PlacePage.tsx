@@ -465,6 +465,11 @@ export default function PlacePage() {
           </button>
         </motion.div>
 
+        {/* City Key Facts */}
+        {place.type === "city" && (
+          <CityFacts cityName={place.name} countryName={place.country} placeId={place.id} />
+        )}
+
         {/* Country-specific: Cities in country */}
         {place.type === "country" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-6">
