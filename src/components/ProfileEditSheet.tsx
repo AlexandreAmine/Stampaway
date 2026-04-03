@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { ALL_COUNTRIES, getFlagEmoji } from "@/lib/countryFlags";
 
 interface ProfileEditSheetProps {
   open: boolean;
@@ -24,15 +25,45 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
   const [username, setUsername] = useState(currentData.username);
   const [bio, setBio] = useState(currentData.bio || "");
   const [country, setCountry] = useState(currentData.country || "");
+  const [countryQuery, setCountryQuery] = useState(currentData.country || "");
+  const [showCountrySuggestions, setShowCountrySuggestions] = useState(false);
   const [saving, setSaving] = useState(false);
+  const countryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) {
       setUsername(currentData.username);
       setBio(currentData.bio || "");
       setCountry(currentData.country || "");
+      setCountryQuery(currentData.country || "");
     }
   }, [open, currentData]);
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (countryRef.current && !countryRef.current.contains(e.target as Node)) {
+        setShowCountrySuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filteredCountries = countryQuery.trim()
+    ? ALL_COUNTRIES.filter(c => c.toLowerCase().includes(countryQuery.toLowerCase())).slice(0, 8)
+    : [];
+
+  const handleSelectCountry = (c: string) => {
+    setCountry(c);
+    setCountryQuery(c);
+    setShowCountrySuggestions(false);
+  };
+
+  const handleClearCountry = () => {
+    setCountry("");
+    setCountryQuery("");
+  };
 
   const handleSave = async () => {
     if (!user || !username.trim()) return;
@@ -84,15 +115,41 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
             />
             <p className="text-xs text-muted-foreground mt-1 text-right">{bio.length}/300</p>
           </div>
-          <div>
+          <div ref={countryRef} className="relative">
             <Label className="text-muted-foreground text-xs">Country</Label>
-            <Input
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              placeholder="e.g. France"
-              maxLength={60}
-              className="mt-1"
-            />
+            <div className="relative mt-1">
+              <Input
+                value={countryQuery}
+                onChange={(e) => {
+                  setCountryQuery(e.target.value);
+                  setCountry("");
+                  setShowCountrySuggestions(true);
+                }}
+                onFocus={() => setShowCountrySuggestions(true)}
+                placeholder="Start typing a country..."
+                maxLength={60}
+              />
+              {country && (
+                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  <span className="text-base">{getFlagEmoji(country)}</span>
+                  <button onClick={handleClearCountry} className="text-muted-foreground hover:text-foreground text-xs">✕</button>
+                </div>
+              )}
+            </div>
+            {showCountrySuggestions && filteredCountries.length > 0 && !country && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl overflow-hidden z-50 max-h-40 overflow-y-auto">
+                {filteredCountries.map(c => (
+                  <button
+                    key={c}
+                    onClick={() => handleSelectCountry(c)}
+                    className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/50 text-left"
+                  >
+                    <span className="text-base">{getFlagEmoji(c)}</span>
+                    <span className="text-sm text-foreground">{c}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <Button onClick={handleSave} disabled={saving || !username.trim()} className="w-full">
             {saving ? "Saving..." : "Save"}
