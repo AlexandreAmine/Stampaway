@@ -10,6 +10,7 @@ import { StarRating } from "@/components/StarRating";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getFlagUrl } from "@/lib/countryFlags";
 import { CountryFacts } from "@/components/CountryFacts";
+import { CityFacts } from "@/components/CityFacts";
 import { toast } from "sonner";
 import { DiaryEditSheet } from "@/components/DiaryEditSheet";
 
@@ -463,6 +464,11 @@ export default function PlacePage() {
             <span className="text-[10px] text-muted-foreground">Lists</span>
           </button>
         </motion.div>
+
+        {/* City Key Facts */}
+        {place.type === "city" && (
+          <CityFacts cityName={place.name} countryName={place.country} placeId={place.id} />
+        )}
 
         {/* Country-specific: Cities in country */}
         {place.type === "country" && (

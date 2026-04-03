@@ -35,6 +35,30 @@ export type Database = {
         }
         Relationships: []
       }
+      city_facts: {
+        Row: {
+          city_name: string
+          country_name: string
+          created_at: string
+          facts: Json
+          id: string
+        }
+        Insert: {
+          city_name: string
+          country_name: string
+          created_at?: string
+          facts: Json
+          id?: string
+        }
+        Update: {
+          city_name?: string
+          country_name?: string
+          created_at?: string
+          facts?: Json
+          id?: string
+        }
+        Relationships: []
+      }
       country_facts: {
         Row: {
           country_name: string
