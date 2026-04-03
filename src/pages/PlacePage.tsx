@@ -10,6 +10,7 @@ import { StarRating } from "@/components/StarRating";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getFlagUrl } from "@/lib/countryFlags";
 import { CountryFacts } from "@/components/CountryFacts";
+import { CityFacts } from "@/components/CityFacts";
 import { toast } from "sonner";
 import { DiaryEditSheet } from "@/components/DiaryEditSheet";
 
