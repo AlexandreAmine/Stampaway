@@ -67,8 +67,8 @@ export default function PlacePage() {
       setInWishlist(!!wl);
     }
 
-    // Fetch description from Wikipedia
-    fetchDescription(placeData.name, placeData.type, placeData.country);
+    // Fetch description - use DB description first, fallback to Wikipedia
+    fetchDescription(placeData.name, placeData.type, placeData.country, (placeData as any).description);
 
     // Fetch all reviews for this place
     const { data: allReviews } = await supabase
@@ -234,8 +234,13 @@ export default function PlacePage() {
     setLoading(false);
   };
 
-  const fetchDescription = async (name: string, type: string, country: string) => {
+  const fetchDescription = async (name: string, type: string, country: string, dbDescription?: string | null) => {
     setLoadingDesc(true);
+    if (dbDescription) {
+      setDescription(dbDescription);
+      setLoadingDesc(false);
+      return;
+    }
     try {
       const searchTerm = type === "city" ? `${name} ${country}` : name;
       const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchTerm)}`);
