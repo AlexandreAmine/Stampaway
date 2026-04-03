@@ -67,8 +67,8 @@ export default function PlacePage() {
       setInWishlist(!!wl);
     }
 
-    // Fetch description from Wikipedia
-    fetchDescription(placeData.name, placeData.type, placeData.country);
+    // Fetch description - use DB description first, fallback to Wikipedia
+    fetchDescription(placeData.name, placeData.type, placeData.country, (placeData as any).description);
 
     // Fetch all reviews for this place
     const { data: allReviews } = await supabase
