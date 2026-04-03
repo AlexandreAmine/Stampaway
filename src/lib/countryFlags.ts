@@ -54,10 +54,15 @@ const countryCodeMap: Record<string, string> = {
   "Uruguay": "UY", "Uzbekistan": "UZ", "Vanuatu": "VU",
   "Vatican City": "VA", "Venezuela": "VE", "Vietnam": "VN", "Yemen": "YE",
   "Zambia": "ZM", "Zimbabwe": "ZW",
-  // Common aliases
+// Common aliases
   "USA": "US", "UK": "GB", "UAE": "AE", "DR Congo": "CD",
   "Republic of the Congo": "CG", "The Gambia": "GM", "The Bahamas": "BS",
 };
+
+// Canonical country names (no aliases) for autocomplete
+export const ALL_COUNTRIES: string[] = Object.keys(countryCodeMap).filter(
+  k => !["USA", "UK", "UAE", "DR Congo", "Republic of the Congo", "The Gambia", "The Bahamas", "Czechia", "Côte d'Ivoire", "Timor-Leste"].includes(k)
+).sort();
 
 export function getCountryCode(countryName: string): string | null {
   return countryCodeMap[countryName] || null;
