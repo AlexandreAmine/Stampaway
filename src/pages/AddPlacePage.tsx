@@ -32,6 +32,7 @@ export default function AddPlacePage() {
   const preSelectedPlaceImage = searchParams.get("placeImage");
 
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [step, setStep] = useState<Step>(preSelectedPlaceId ? "review" : "search");
   const [query, setQuery] = useState("");
   const [selectedPlace, setSelectedPlace] = useState<PlaceResult | null>(
