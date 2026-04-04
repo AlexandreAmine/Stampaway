@@ -19,7 +19,7 @@ const ACTIVE_TAB_STORAGE_KEY = "traveld-active-tab";
 const SHARED_ROUTES = ["/review", "/place", "/country", "/list", "/logged-places", "/profile/"];
 
 function isTabPath(path: string | null | undefined): path is string {
-  return !!path && tabs.some((tab) => tab.path === path);
+  return !!path && tabDefs.some((tab) => tab.path === path);
 }
 
 function getStoredActiveTab(): string {
