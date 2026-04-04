@@ -33,6 +33,7 @@ interface FriendActivity {
 
 export default function HomePage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const globeRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
