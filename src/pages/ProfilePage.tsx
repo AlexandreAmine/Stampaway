@@ -3,6 +3,8 @@ import { ChevronRight, ChevronLeft, Settings, Plus, X, UserPlus, UserMinus, Penc
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
 import { RatingHistogram } from "@/components/RatingHistogram";
 import { FavoritePicker } from "@/components/FavoritePicker";
 import { DestinationPoster } from "@/components/DestinationPoster";
@@ -39,6 +41,13 @@ type SubPage = null | "Countries" | "Cities" | "Diary" | "Map" | "Lists" | "Wish
 
 export default function ProfilePage() {
   const { user, profile } = useAuth();
+  const { t } = useLanguage();
+  const subPageLabels: Record<string, string> = {
+    Countries: t("profile.countries"), Cities: t("profile.cities"), Diary: t("profile.diary"),
+    Reviews: t("profile.reviews"), Lists: t("profile.lists"), Map: t("profile.map"),
+    Wishlist: t("profile.wishlist"), Likes: t("profile.likes"), Tags: t("profile.tags"),
+    Following: t("profile.following"), Followers: t("profile.followers"),
+  };
   const { userId: paramUserId } = useParams<{ userId?: string }>();
   const navigate = useNavigate();
 
@@ -302,17 +311,17 @@ export default function ProfilePage() {
   };
 
   const stats: { label: string; value: string; subPage: SubPage }[] = [
-    { label: "Countries", value: `${countriesCount} / ${totalCountries}`, subPage: "Countries" },
-    { label: "Cities", value: `${citiesCount}`, subPage: "Cities" },
-    { label: "Diary", value: "", subPage: "Diary" },
+    { label: t("profile.countries"), value: `${countriesCount} / ${totalCountries}`, subPage: "Countries" },
+    { label: t("profile.cities"), value: `${citiesCount}`, subPage: "Cities" },
+    { label: t("profile.diary"), value: "", subPage: "Diary" },
     
-    { label: "Lists", value: `${listsCount}`, subPage: "Lists" },
-    { label: "Wishlist", value: `${wishlistCount}`, subPage: "Wishlist" },
-    { label: "Likes", value: `${likesCount}`, subPage: "Likes" },
-    { label: "Tags", value: "", subPage: "Tags" },
-    { label: "Reviews", value: `${writtenReviewsCount}`, subPage: "Reviews" },
-    { label: "Following", value: `${followingCount}`, subPage: "Following" },
-    { label: "Followers", value: `${followersCount}`, subPage: "Followers" },
+    { label: t("profile.lists"), value: `${listsCount}`, subPage: "Lists" },
+    { label: t("profile.wishlist"), value: `${wishlistCount}`, subPage: "Wishlist" },
+    { label: t("profile.likes"), value: `${likesCount}`, subPage: "Likes" },
+    { label: t("profile.tags"), value: "", subPage: "Tags" },
+    { label: t("profile.reviews"), value: `${writtenReviewsCount}`, subPage: "Reviews" },
+    { label: t("profile.following"), value: `${followingCount}`, subPage: "Following" },
+    { label: t("profile.followers"), value: `${followersCount}`, subPage: "Followers" },
   ];
 
   const handleRemoveFavorite = async (type: "city" | "country", slotIndex: number) => {
@@ -526,14 +535,14 @@ export default function ProfilePage() {
               {isFollowing ? (
                 <>
                   <UserMinus className="w-3.5 h-3.5" />
-                  Unfollow
+                  {t("profile.unfollow")}
                 </>
               ) : hasPendingRequest ? (
-                <span>Requested</span>
+                <span>{t("profile.requested")}</span>
               ) : (
                 <>
                   <UserPlus className="w-3.5 h-3.5" />
-                  Follow
+                  {t("profile.follow")}
                 </>
               )}
             </button>
@@ -588,7 +597,7 @@ export default function ProfilePage() {
               onClick={() => setSubPage("Map")}
               className="flex items-center justify-between w-full mb-3"
             >
-              <h2 className="text-lg font-bold text-foreground">Map</h2>
+              <h2 className="text-lg font-bold text-foreground">{t("profile.map")}</h2>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </button>
             <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ height: 220 }}>

@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { StarRating } from "@/components/StarRating";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -31,6 +32,7 @@ export default function AddPlacePage() {
   const preSelectedPlaceImage = searchParams.get("placeImage");
 
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [step, setStep] = useState<Step>(preSelectedPlaceId ? "review" : "search");
   const [query, setQuery] = useState("");
   const [selectedPlace, setSelectedPlace] = useState<PlaceResult | null>(
@@ -381,7 +383,7 @@ export default function AddPlacePage() {
           <h1 className="text-xl font-bold text-foreground">
             {isFavoriteFlow
               ? `Add a Favorite ${favoriteType === "city" ? "City" : "Country"}`
-              : "Add a Destination"}
+              : t("add.title")}
           </h1>
         </div>
 

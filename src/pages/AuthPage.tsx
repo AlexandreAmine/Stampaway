@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 
 export default function AuthPage() {
   const { user, loading, signIn, signUp } = useAuth();
+  const { t } = useLanguage();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -56,7 +58,7 @@ export default function AuthPage() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Username"
+              placeholder={t("auth.username")}
               className="w-full bg-card rounded-xl py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
             />
           )}
@@ -64,7 +66,7 @@ export default function AuthPage() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email"
+            placeholder={t("auth.email")}
             required
             className="w-full bg-card rounded-xl py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
           />
@@ -72,7 +74,7 @@ export default function AuthPage() {
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="Password"
+            placeholder={t("auth.password")}
             required
             minLength={6}
             className="w-full bg-card rounded-xl py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
@@ -82,17 +84,17 @@ export default function AuthPage() {
             disabled={submitting}
             className="w-full bg-primary text-primary-foreground rounded-xl py-3 text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
-            {submitting ? "..." : isLogin ? "Sign In" : "Create Account"}
+            {submitting ? "..." : isLogin ? t("auth.signIn") : t("auth.createAccount")}
           </button>
         </form>
 
         <p className="text-center text-sm text-muted-foreground mt-6">
-          {isLogin ? "Don't have an account?" : "Already have an account?"}{" "}
+          {isLogin ? t("auth.noAccount") : t("auth.haveAccount")}{" "}
           <button
             onClick={() => setIsLogin(!isLogin)}
             className="text-primary font-semibold"
           >
-            {isLogin ? "Sign Up" : "Sign In"}
+            {isLogin ? t("auth.signUp") : t("auth.signIn")}
           </button>
         </p>
       </motion.div>

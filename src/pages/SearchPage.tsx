@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { PosterWishlistButton } from "@/components/PosterWishlistButton";
 import { ListPreviewPosters } from "@/components/ListPreviewPosters";
@@ -46,6 +48,13 @@ function getContinent(country: string): string {
 export default function SearchPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useLanguage();
+  const filterTabLabels: Record<FilterTab, string> = {
+    Countries: t("search.countries"),
+    Cities: t("search.cities"),
+    Lists: t("search.lists"),
+    Users: t("search.users"),
+  };
   const [activeFilter, setActiveFilter] = useState<FilterTab>("Countries");
   const [query, setQuery] = useState("");
   const [places, setPlaces] = useState<any[]>([]);
@@ -195,13 +204,13 @@ export default function SearchPage() {
     if (loading) return <LoadingSpinner />;
     const isDestTab = activeFilter === "Countries" || activeFilter === "Cities";
     if (!isDestTab) return null;
-    if (!sortedPlaces.length) return <EmptyState text={`No ${activeFilter.toLowerCase()} found`} />;
+    if (!sortedPlaces.length) return <EmptyState text={t("noResults")} />;
 
     const currentLabel = destSort === "category-avg"
       ? `${selectedCategory}`
-      : DEST_SORT_LABELS[destSort];
+      : destSort === "most-popular" ? t("search.mostPopular") : t("search.avgHighest");
 
-    const groupLabel = activeFilter === "Countries" ? "By continent" : "By country";
+    const groupLabel = activeFilter === "Countries" ? t("profile.byContinent") : t("profile.byCountry");
 
     // Grouping
     const groups: { label: string; items: any[] }[] = [];
@@ -262,13 +271,13 @@ export default function SearchPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-[220px]">
               <DropdownMenuItem onClick={() => setDestSort("most-popular")} className={destSort === "most-popular" ? "text-primary font-semibold" : ""}>
-                Most popular
+                {t("search.mostPopular")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setDestSort("avg-highest")} className={destSort === "avg-highest" ? "text-primary font-semibold" : ""}>
-                Average highest first
+                {t("search.avgHighest")}
               </DropdownMenuItem>
               <CategorySortDropdown
-                label="Categories average highest first"
+                label={t("search.catAvgHighest")}
                 onSelect={(cat) => { setSelectedCategory(cat); setDestSort("category-avg"); }}
                 selectedCategory={selectedCategory}
                 isActive={destSort === "category-avg"}
@@ -378,7 +387,7 @@ export default function SearchPage() {
           <button onClick={() => navigate(-1)}>
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
-          <h1 className="text-xl font-bold text-foreground">Search</h1>
+          <h1 className="text-xl font-bold text-foreground">{t("nav.search")}</h1>
         </div>
 
         <div className="relative mb-5">
@@ -387,7 +396,7 @@ export default function SearchPage() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search countries, cities, lists and users..."
+            placeholder={t("search.placeholder")}
             className="w-full bg-card rounded-xl py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
@@ -403,7 +412,7 @@ export default function SearchPage() {
                   : "bg-card text-muted-foreground border border-border"
               }`}
             >
-              {tab}
+              {filterTabLabels[tab]}
             </button>
           ))}
         </div>

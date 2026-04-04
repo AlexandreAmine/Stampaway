@@ -2,13 +2,15 @@ import { Globe, Map, Search, User, Plus } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
 
-const tabs = [
-  { path: "/", label: "Friends", icon: Globe },
-  { path: "/explore", label: "Explore", icon: Map },
-  { path: "/add", label: "Add", icon: Plus, isCenter: true },
-  { path: "/search", label: "Search", icon: Search },
-  { path: "/profile", label: "Profile", icon: User },
+const tabDefs = [
+  { path: "/", labelKey: "nav.home" as TranslationKey, icon: Globe },
+  { path: "/explore", labelKey: "nav.explore" as TranslationKey, icon: Map },
+  { path: "/add", labelKey: "nav.add" as TranslationKey, icon: Plus, isCenter: true },
+  { path: "/search", labelKey: "nav.search" as TranslationKey, icon: Search },
+  { path: "/profile", labelKey: "nav.profile" as TranslationKey, icon: User },
 ];
 
 const ACTIVE_TAB_STORAGE_KEY = "traveld-active-tab";
@@ -17,7 +19,7 @@ const ACTIVE_TAB_STORAGE_KEY = "traveld-active-tab";
 const SHARED_ROUTES = ["/review", "/place", "/country", "/list", "/logged-places", "/profile/"];
 
 function isTabPath(path: string | null | undefined): path is string {
-  return !!path && tabs.some((tab) => tab.path === path);
+  return !!path && tabDefs.some((tab) => tab.path === path);
 }
 
 function getStoredActiveTab(): string {
@@ -42,6 +44,7 @@ function getOwnTabRoot(pathname: string): string | null {
 }
 
 export function BottomNav() {
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>(() => {
@@ -88,7 +91,7 @@ export function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-nav-bg border-t border-border safe-bottom">
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
-        {tabs.map((tab) => {
+        {tabDefs.map((tab) => {
           const isActive = activeTab === tab.path;
           const Icon = tab.icon;
 
@@ -121,7 +124,7 @@ export function BottomNav() {
               <span
                 className={`text-[10px] font-medium transition-colors ${isActive ? "text-nav-active" : "text-nav-inactive"}`}
               >
-                {tab.label}
+                {t(tab.labelKey)}
               </span>
             </button>
           );

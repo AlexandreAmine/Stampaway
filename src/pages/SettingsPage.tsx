@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Lock, Shield, KeyRound, LogOut, Trash2, ChevronRight, Activity } from "lucide-react";
+import { ChevronLeft, Lock, Shield, KeyRound, LogOut, Trash2, ChevronRight, Activity, Globe } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { languageNames, Language } from "@/i18n/translations";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -13,22 +15,20 @@ import { YourActivity } from "@/components/YourActivity";
 export default function SettingsPage() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { t, language, setLanguage } = useLanguage();
   const [isPrivate, setIsPrivate] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [section, setSection] = useState<null | "privacy" | "blocked" | "activity" | "password" | "delete">(null);
+  const [section, setSection] = useState<null | "privacy" | "blocked" | "activity" | "language" | "password" | "delete">(null);
 
-  // Password change
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
 
-  // Blocked users
   const [blockedUsers, setBlockedUsers] = useState<{ id: string; blocked_id: string; username: string; profile_picture: string | null }[]>([]);
   const [blockQuery, setBlockQuery] = useState("");
   const [blockSearchResults, setBlockSearchResults] = useState<{ user_id: string; username: string; profile_picture: string | null }[]>([]);
 
-  // Delete account
   const [deleteConfirm, setDeleteConfirm] = useState("");
 
   useEffect(() => {
@@ -44,10 +44,9 @@ export default function SettingsPage() {
     const newVal = !isPrivate;
     setIsPrivate(newVal);
     await supabase.from("profiles").update({ is_private: newVal } as any).eq("user_id", user.id);
-    toast.success(newVal ? "Account set to private" : "Account set to public");
+    toast.success(newVal ? t("toast.accountPrivate") : t("toast.accountPublic"));
   };
 
-  // Fetch blocked users
   useEffect(() => {
     if (section !== "blocked" || !user) return;
     (async () => {
@@ -62,26 +61,23 @@ export default function SettingsPage() {
     })();
   }, [section, user]);
 
-  // Search users to block
   useEffect(() => {
     if (!blockQuery.trim() || !user) { setBlockSearchResults([]); return; }
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       const { data } = await supabase.from("profiles").select("user_id, username, profile_picture").ilike("username", `%${blockQuery}%`).neq("user_id", user.id).limit(10);
       setBlockSearchResults(data || []);
     }, 300);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
   }, [blockQuery, user]);
 
   const handleBlock = async (targetId: string) => {
     if (!user) return;
     await supabase.from("blocked_users").insert({ blocker_id: user.id, blocked_id: targetId });
-    // Also unfollow in both directions
     await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", targetId);
     await supabase.from("followers").delete().eq("follower_id", targetId).eq("following_id", user.id);
     setBlockQuery("");
     setBlockSearchResults([]);
-    toast.success("User blocked");
-    // Refresh blocked list
+    toast.success(t("toast.userBlocked"));
     setSection(null);
     setTimeout(() => setSection("blocked"), 50);
   };
@@ -89,36 +85,67 @@ export default function SettingsPage() {
   const handleUnblock = async (id: string) => {
     await supabase.from("blocked_users").delete().eq("id", id);
     setBlockedUsers(prev => prev.filter(b => b.id !== id));
-    toast.success("User unblocked");
+    toast.success(t("toast.userUnblocked"));
   };
 
   const handleChangePassword = async () => {
     if (!user) return;
-    if (newPassword !== confirmPassword) { toast.error("Passwords don't match"); return; }
-    if (newPassword.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+    if (newPassword !== confirmPassword) { toast.error(t("toast.passwordMismatch")); return; }
+    if (newPassword.length < 6) { toast.error(t("toast.passwordTooShort")); return; }
     setChangingPassword(true);
-    // Verify current password by re-signing in
     const { error: signInErr } = await supabase.auth.signInWithPassword({ email: user.email!, password: currentPassword });
-    if (signInErr) { toast.error("Current password is incorrect"); setChangingPassword(false); return; }
+    if (signInErr) { toast.error(t("toast.wrongPassword")); setChangingPassword(false); return; }
     const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) { toast.error("Failed to update password"); } else { toast.success("Password updated"); setSection(null); }
+    if (error) { toast.error(t("toast.passwordFailed")); } else { toast.success(t("toast.passwordUpdated")); setSection(null); }
     setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
     setChangingPassword(false);
   };
 
   const handleDeleteAccount = async () => {
-    if (deleteConfirm !== "DELETE") { toast.error("Please type DELETE to confirm"); return; }
-    // Sign out - actual deletion would need admin/edge function
-    toast.success("Account deletion requested. You will be signed out.");
+    if (deleteConfirm !== "DELETE") { toast.error(t("toast.typeDelete")); return; }
+    toast.success(t("toast.accountDeleted"));
     await signOut();
     navigate("/auth");
   };
 
   if (loading) return <div className="min-h-screen bg-background" />;
 
-  // Sub-sections
   if (section === "activity") {
     return <YourActivity onBack={() => setSection(null)} />;
+  }
+
+  if (section === "language") {
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <div className="pt-12 px-5">
+          <div className="flex items-center gap-3 mb-8">
+            <button onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
+            <h1 className="text-xl font-bold text-foreground">{t("settings.language")}</h1>
+          </div>
+          <p className="text-sm text-muted-foreground mb-6">{t("settings.selectLanguage")}</p>
+          <div className="space-y-1">
+            {(Object.keys(languageNames) as Language[]).map((lang) => (
+              <button
+                key={lang}
+                onClick={() => setLanguage(lang)}
+                className={`w-full flex items-center justify-between py-3.5 px-4 rounded-xl text-left transition-colors ${
+                  language === lang ? "bg-primary/10 border border-primary" : "hover:bg-muted/50"
+                }`}
+              >
+                <span className={`text-sm font-medium ${language === lang ? "text-primary" : "text-foreground"}`}>
+                  {languageNames[lang]}
+                </span>
+                {language === lang && (
+                  <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                    <span className="text-primary-foreground text-xs">✓</span>
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (section === "privacy") {
@@ -127,19 +154,17 @@ export default function SettingsPage() {
         <div className="pt-12 px-5">
           <div className="flex items-center gap-3 mb-8">
             <button onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
-            <h1 className="text-xl font-bold text-foreground">Account Privacy</h1>
+            <h1 className="text-xl font-bold text-foreground">{t("settings.accountPrivacy")}</h1>
           </div>
           <div className="flex items-center justify-between py-4 border-b border-border">
             <div>
-              <p className="text-sm font-semibold text-foreground">Private Account</p>
-              <p className="text-xs text-muted-foreground mt-0.5">Only followers can see your full profile</p>
+              <p className="text-sm font-semibold text-foreground">{t("settings.privateAccount")}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{t("settings.privateDesc")}</p>
             </div>
             <Switch checked={isPrivate} onCheckedChange={togglePrivacy} />
           </div>
           {isPrivate && (
-            <p className="text-xs text-muted-foreground mt-3">
-              When your account is private, only people you approve can see your countries, cities, diary, lists, and reviews. Your profile picture, username, and bio are always visible.
-            </p>
+            <p className="text-xs text-muted-foreground mt-3">{t("settings.privateInfo")}</p>
           )}
         </div>
       </div>
@@ -152,15 +177,10 @@ export default function SettingsPage() {
         <div className="pt-12 px-5">
           <div className="flex items-center gap-3 mb-6">
             <button onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
-            <h1 className="text-xl font-bold text-foreground">Blocked Users</h1>
+            <h1 className="text-xl font-bold text-foreground">{t("settings.blockedUsers")}</h1>
           </div>
           <div className="relative mb-4">
-            <Input
-              value={blockQuery}
-              onChange={e => setBlockQuery(e.target.value)}
-              placeholder="Search username to block..."
-              className="w-full"
-            />
+            <Input value={blockQuery} onChange={e => setBlockQuery(e.target.value)} placeholder={t("settings.searchToBlock")} className="w-full" />
             {blockSearchResults.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl overflow-hidden z-20 max-h-40 overflow-y-auto">
                 {blockSearchResults.map(p => (
@@ -175,7 +195,7 @@ export default function SettingsPage() {
             )}
           </div>
           {blockedUsers.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center mt-8">No blocked users</p>
+            <p className="text-sm text-muted-foreground text-center mt-8">{t("settings.noBlocked")}</p>
           ) : (
             <div className="space-y-2">
               {blockedUsers.map(b => (
@@ -186,7 +206,7 @@ export default function SettingsPage() {
                     </Avatar>
                     <span className="text-sm font-medium text-foreground">{b.username}</span>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => handleUnblock(b.id)}>Unblock</Button>
+                  <Button variant="outline" size="sm" onClick={() => handleUnblock(b.id)}>{t("settings.unblock")}</Button>
                 </div>
               ))}
             </div>
@@ -202,24 +222,24 @@ export default function SettingsPage() {
         <div className="pt-12 px-5">
           <div className="flex items-center gap-3 mb-8">
             <button onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
-            <h1 className="text-xl font-bold text-foreground">Change Password</h1>
+            <h1 className="text-xl font-bold text-foreground">{t("settings.changePassword")}</h1>
           </div>
           <p className="text-xs text-muted-foreground mb-4">{user?.email}</p>
           <div className="space-y-4">
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Current Password</label>
+              <label className="text-xs text-muted-foreground mb-1 block">{t("settings.currentPassword")}</label>
               <Input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">New Password</label>
+              <label className="text-xs text-muted-foreground mb-1 block">{t("settings.newPassword")}</label>
               <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Confirm New Password</label>
+              <label className="text-xs text-muted-foreground mb-1 block">{t("settings.confirmPassword")}</label>
               <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
             </div>
             <Button onClick={handleChangePassword} disabled={changingPassword || !currentPassword || !newPassword} className="w-full">
-              {changingPassword ? "Updating..." : "Update Password"}
+              {changingPassword ? t("settings.updating") : t("settings.updatePassword")}
             </Button>
           </div>
         </div>
@@ -233,33 +253,32 @@ export default function SettingsPage() {
         <div className="pt-12 px-5">
           <div className="flex items-center gap-3 mb-8">
             <button onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
-            <h1 className="text-xl font-bold text-foreground">Delete Account</h1>
+            <h1 className="text-xl font-bold text-foreground">{t("settings.deleteAccount")}</h1>
           </div>
-          <p className="text-sm text-foreground mb-2">This action is irreversible. All your data will be permanently deleted.</p>
-          <p className="text-xs text-muted-foreground mb-4">Type <strong>DELETE</strong> to confirm.</p>
+          <p className="text-sm text-foreground mb-2">{t("settings.deleteWarning")}</p>
+          <p className="text-xs text-muted-foreground mb-4">{t("settings.typeDelete")}</p>
           <Input value={deleteConfirm} onChange={e => setDeleteConfirm(e.target.value)} placeholder="Type DELETE" className="mb-4" />
           <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleteConfirm !== "DELETE"} className="w-full">
-            Delete My Account
+            {t("settings.deleteMyAccount")}
           </Button>
         </div>
       </div>
     );
   }
 
-  // Main settings menu
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="pt-12 px-5">
         <div className="flex items-center gap-3 mb-8">
           <button onClick={() => navigate(-1)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
-          <h1 className="text-xl font-bold text-foreground">Settings</h1>
+          <h1 className="text-xl font-bold text-foreground">{t("settings.title")}</h1>
         </div>
 
         <div className="space-y-0">
           <button onClick={() => setSection("privacy")} className="flex items-center justify-between py-4 border-b border-border w-full text-left">
             <div className="flex items-center gap-3">
               <Lock className="w-5 h-5 text-muted-foreground" />
-              <span className="text-sm font-semibold text-foreground">Account Privacy</span>
+              <span className="text-sm font-semibold text-foreground">{t("settings.accountPrivacy")}</span>
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
@@ -267,7 +286,7 @@ export default function SettingsPage() {
           <button onClick={() => setSection("blocked")} className="flex items-center justify-between py-4 border-b border-border w-full text-left">
             <div className="flex items-center gap-3">
               <Shield className="w-5 h-5 text-muted-foreground" />
-              <span className="text-sm font-semibold text-foreground">Blocked Users</span>
+              <span className="text-sm font-semibold text-foreground">{t("settings.blockedUsers")}</span>
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
@@ -275,27 +294,38 @@ export default function SettingsPage() {
           <button onClick={() => setSection("activity")} className="flex items-center justify-between py-4 border-b border-border w-full text-left">
             <div className="flex items-center gap-3">
               <Activity className="w-5 h-5 text-muted-foreground" />
-              <span className="text-sm font-semibold text-foreground">Your Activity</span>
+              <span className="text-sm font-semibold text-foreground">{t("settings.yourActivity")}</span>
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </button>
+
+          <button onClick={() => setSection("language")} className="flex items-center justify-between py-4 border-b border-border w-full text-left">
+            <div className="flex items-center gap-3">
+              <Globe className="w-5 h-5 text-muted-foreground" />
+              <span className="text-sm font-semibold text-foreground">{t("settings.language")}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">{languageNames[language]}</span>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </div>
           </button>
 
           <button onClick={() => setSection("password")} className="flex items-center justify-between py-4 border-b border-border w-full text-left">
             <div className="flex items-center gap-3">
               <KeyRound className="w-5 h-5 text-muted-foreground" />
-              <span className="text-sm font-semibold text-foreground">Change Password</span>
+              <span className="text-sm font-semibold text-foreground">{t("settings.changePassword")}</span>
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
 
           <button onClick={async () => { await signOut(); navigate("/auth"); }} className="flex items-center gap-3 py-4 border-b border-border w-full text-left">
             <LogOut className="w-5 h-5 text-muted-foreground" />
-            <span className="text-sm font-semibold text-foreground">Sign Out</span>
+            <span className="text-sm font-semibold text-foreground">{t("settings.signOut")}</span>
           </button>
 
           <button onClick={() => setSection("delete")} className="flex items-center gap-3 py-4 w-full text-left">
             <Trash2 className="w-5 h-5 text-destructive" />
-            <span className="text-sm font-semibold text-destructive">Delete Account</span>
+            <span className="text-sm font-semibold text-destructive">{t("settings.deleteAccount")}</span>
           </button>
         </div>
       </div>

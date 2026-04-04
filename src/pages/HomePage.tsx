@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { getPlaceCoordinates } from "@/lib/cityCoordinates";
 import { countryLabels, cityLabels } from "@/lib/globeLabels";
 import { GlobeActivityPopup } from "@/components/GlobeActivityPopup";
@@ -32,6 +33,7 @@ interface FriendActivity {
 
 export default function HomePage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const globeRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -274,7 +276,7 @@ export default function HomePage() {
       <div className="sticky top-0 z-0">
         {/* Header */}
         <div className="pt-12 pb-2 px-5 flex items-center justify-between relative z-10">
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">Travel'D</h1>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("home.title")}</h1>
           <button onClick={() => {
             setNotifOpen(true);
             if (user) localStorage.setItem(`notif_last_read_${user.id}`, new Date().toISOString());
@@ -355,21 +357,21 @@ export default function HomePage() {
             <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
           </div>
 
-          <h2 className="text-xl font-bold text-foreground mb-4">Recent friend activities</h2>
+          <h2 className="text-xl font-bold text-foreground mb-4">{t("home.recentActivity")}</h2>
 
           {!hasFollowing && !loading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-4">
-              <p className="text-sm text-muted-foreground text-center">Follow friends to see their travel activities here!</p>
+              <p className="text-sm text-muted-foreground text-center">{t("home.followFriends")}</p>
               <button
                 onClick={() => navigate("/search")}
                 className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full text-sm font-medium"
               >
                 <UserPlus className="w-4 h-4" />
-                Find friends
+                {t("home.findFriends")}
               </button>
             </div>
           ) : activities.length === 0 && !loading ? (
-            <p className="text-sm text-muted-foreground">No recent activity from friends yet.</p>
+            <p className="text-sm text-muted-foreground">{t("home.noActivity")}</p>
           ) : null}
 
           <div className="space-y-1 pb-36">
