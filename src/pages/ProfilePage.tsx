@@ -41,6 +41,13 @@ type SubPage = null | "Countries" | "Cities" | "Diary" | "Map" | "Lists" | "Wish
 
 export default function ProfilePage() {
   const { user, profile } = useAuth();
+  const { t } = useLanguage();
+  const subPageLabels: Record<string, string> = {
+    Countries: t("profile.countries"), Cities: t("profile.cities"), Diary: t("profile.diary"),
+    Reviews: t("profile.reviews"), Lists: t("profile.lists"), Map: t("profile.map"),
+    Wishlist: t("profile.wishlist"), Likes: t("profile.likes"), Tags: t("profile.tags"),
+    Following: t("profile.following"), Followers: t("profile.followers"),
+  };
   const { userId: paramUserId } = useParams<{ userId?: string }>();
   const navigate = useNavigate();
 
