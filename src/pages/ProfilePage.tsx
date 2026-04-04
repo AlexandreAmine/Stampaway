@@ -535,14 +535,14 @@ export default function ProfilePage() {
               {isFollowing ? (
                 <>
                   <UserMinus className="w-3.5 h-3.5" />
-                  Unfollow
+                  {t("profile.unfollow")}
                 </>
               ) : hasPendingRequest ? (
-                <span>Requested</span>
+                <span>{t("profile.requested")}</span>
               ) : (
                 <>
                   <UserPlus className="w-3.5 h-3.5" />
-                  Follow
+                  {t("profile.follow")}
                 </>
               )}
             </button>
