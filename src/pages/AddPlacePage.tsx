@@ -382,7 +382,7 @@ export default function AddPlacePage() {
           <h1 className="text-xl font-bold text-foreground">
             {isFavoriteFlow
               ? `Add a Favorite ${favoriteType === "city" ? "City" : "Country"}`
-              : "Add a Destination"}
+              : t("add.title")}
           </h1>
         </div>
 
