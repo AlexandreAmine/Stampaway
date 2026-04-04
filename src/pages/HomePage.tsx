@@ -357,21 +357,21 @@ export default function HomePage() {
             <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
           </div>
 
-          <h2 className="text-xl font-bold text-foreground mb-4">Recent friend activities</h2>
+          <h2 className="text-xl font-bold text-foreground mb-4">{t("home.recentActivity")}</h2>
 
           {!hasFollowing && !loading ? (
             <div className="flex flex-col items-center justify-center py-16 gap-4">
-              <p className="text-sm text-muted-foreground text-center">Follow friends to see their travel activities here!</p>
+              <p className="text-sm text-muted-foreground text-center">{t("home.followFriends")}</p>
               <button
                 onClick={() => navigate("/search")}
                 className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full text-sm font-medium"
               >
                 <UserPlus className="w-4 h-4" />
-                Find friends
+                {t("home.findFriends")}
               </button>
             </div>
           ) : activities.length === 0 && !loading ? (
-            <p className="text-sm text-muted-foreground">No recent activity from friends yet.</p>
+            <p className="text-sm text-muted-foreground">{t("home.noActivity")}</p>
           ) : null}
 
           <div className="space-y-1 pb-36">
