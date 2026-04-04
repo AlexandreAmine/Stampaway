@@ -44,6 +44,7 @@ function getOwnTabRoot(pathname: string): string | null {
 }
 
 export function BottomNav() {
+  const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>(() => {
