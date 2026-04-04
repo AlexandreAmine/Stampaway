@@ -411,7 +411,7 @@ export default function SearchPage() {
                   : "bg-card text-muted-foreground border border-border"
               }`}
             >
-              {tab}
+              {filterTabLabels[tab]}
             </button>
           ))}
         </div>
