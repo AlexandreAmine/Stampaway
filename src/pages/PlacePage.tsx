@@ -333,7 +333,15 @@ export default function PlacePage() {
             <h1 className="text-2xl font-bold text-foreground">{place.name}</h1>
           </div>
           {place.type === "city" && (
-            <p className="text-sm text-muted-foreground mb-4">{place.country}</p>
+            <p
+              className="text-sm text-muted-foreground mb-4 cursor-pointer hover:underline"
+              onClick={async () => {
+                const { data } = await supabase.from("places").select("id").eq("type", "country").eq("name", place.country).maybeSingle();
+                if (data) navigate(`/place/${data.id}`);
+              }}
+            >
+              {place.country}
+            </p>
           )}
         </motion.div>
 
