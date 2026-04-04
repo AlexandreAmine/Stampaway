@@ -204,13 +204,13 @@ export default function SearchPage() {
     if (loading) return <LoadingSpinner />;
     const isDestTab = activeFilter === "Countries" || activeFilter === "Cities";
     if (!isDestTab) return null;
-    if (!sortedPlaces.length) return <EmptyState text={`No ${activeFilter.toLowerCase()} found`} />;
+    if (!sortedPlaces.length) return <EmptyState text={t("noResults")} />;
 
     const currentLabel = destSort === "category-avg"
       ? `${selectedCategory}`
-      : DEST_SORT_LABELS[destSort];
+      : destSort === "most-popular" ? t("search.mostPopular") : t("search.avgHighest");
 
-    const groupLabel = activeFilter === "Countries" ? "By continent" : "By country";
+    const groupLabel = activeFilter === "Countries" ? t("profile.byContinent") : t("profile.byCountry");
 
     // Grouping
     const groups: { label: string; items: any[] }[] = [];
