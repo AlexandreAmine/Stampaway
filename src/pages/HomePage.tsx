@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { getPlaceCoordinates } from "@/lib/cityCoordinates";
 import { countryLabels, cityLabels } from "@/lib/globeLabels";
 import { GlobeActivityPopup } from "@/components/GlobeActivityPopup";
