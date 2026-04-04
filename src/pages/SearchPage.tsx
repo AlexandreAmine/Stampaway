@@ -271,13 +271,13 @@ export default function SearchPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-[220px]">
               <DropdownMenuItem onClick={() => setDestSort("most-popular")} className={destSort === "most-popular" ? "text-primary font-semibold" : ""}>
-                Most popular
+                {t("search.mostPopular")}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setDestSort("avg-highest")} className={destSort === "avg-highest" ? "text-primary font-semibold" : ""}>
-                Average highest first
+                {t("search.avgHighest")}
               </DropdownMenuItem>
               <CategorySortDropdown
-                label="Categories average highest first"
+                label={t("search.catAvgHighest")}
                 onSelect={(cat) => { setSelectedCategory(cat); setDestSort("category-avg"); }}
                 selectedCategory={selectedCategory}
                 isActive={destSort === "category-avg"}
