@@ -48,7 +48,13 @@ function getContinent(country: string): string {
 export default function SearchPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [activeFilter, setActiveFilter] = useState<FilterTab>("Countries");
+  const { t } = useLanguage();
+  const filterTabLabels: Record<FilterTab, string> = {
+    Countries: t("search.countries"),
+    Cities: t("search.cities"),
+    Lists: t("search.lists"),
+    Users: t("search.users"),
+  };
   const [query, setQuery] = useState("");
   const [places, setPlaces] = useState<any[]>([]);
   const [lists, setLists] = useState<any[]>([]);
