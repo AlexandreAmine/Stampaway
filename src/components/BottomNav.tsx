@@ -91,7 +91,7 @@ export function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-nav-bg border-t border-border safe-bottom">
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto px-2">
-        {tabs.map((tab) => {
+        {tabDefs.map((tab) => {
           const isActive = activeTab === tab.path;
           const Icon = tab.icon;
 
@@ -124,7 +124,7 @@ export function BottomNav() {
               <span
                 className={`text-[10px] font-medium transition-colors ${isActive ? "text-nav-active" : "text-nav-inactive"}`}
               >
-                {tab.label}
+                {t(tab.labelKey)}
               </span>
             </button>
           );
