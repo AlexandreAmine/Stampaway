@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { PosterWishlistButton } from "@/components/PosterWishlistButton";
 import { ListPreviewPosters } from "@/components/ListPreviewPosters";
