@@ -311,17 +311,17 @@ export default function ProfilePage() {
   };
 
   const stats: { label: string; value: string; subPage: SubPage }[] = [
-    { label: "Countries", value: `${countriesCount} / ${totalCountries}`, subPage: "Countries" },
-    { label: "Cities", value: `${citiesCount}`, subPage: "Cities" },
-    { label: "Diary", value: "", subPage: "Diary" },
+    { label: t("profile.countries"), value: `${countriesCount} / ${totalCountries}`, subPage: "Countries" },
+    { label: t("profile.cities"), value: `${citiesCount}`, subPage: "Cities" },
+    { label: t("profile.diary"), value: "", subPage: "Diary" },
     
-    { label: "Lists", value: `${listsCount}`, subPage: "Lists" },
-    { label: "Wishlist", value: `${wishlistCount}`, subPage: "Wishlist" },
-    { label: "Likes", value: `${likesCount}`, subPage: "Likes" },
-    { label: "Tags", value: "", subPage: "Tags" },
-    { label: "Reviews", value: `${writtenReviewsCount}`, subPage: "Reviews" },
-    { label: "Following", value: `${followingCount}`, subPage: "Following" },
-    { label: "Followers", value: `${followersCount}`, subPage: "Followers" },
+    { label: t("profile.lists"), value: `${listsCount}`, subPage: "Lists" },
+    { label: t("profile.wishlist"), value: `${wishlistCount}`, subPage: "Wishlist" },
+    { label: t("profile.likes"), value: `${likesCount}`, subPage: "Likes" },
+    { label: t("profile.tags"), value: "", subPage: "Tags" },
+    { label: t("profile.reviews"), value: `${writtenReviewsCount}`, subPage: "Reviews" },
+    { label: t("profile.following"), value: `${followingCount}`, subPage: "Following" },
+    { label: t("profile.followers"), value: `${followersCount}`, subPage: "Followers" },
   ];
 
   const handleRemoveFavorite = async (type: "city" | "country", slotIndex: number) => {
