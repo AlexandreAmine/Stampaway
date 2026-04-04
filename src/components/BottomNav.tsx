@@ -2,13 +2,15 @@ import { Globe, Map, Search, User, Plus } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
 
-const tabs = [
-  { path: "/", label: "Friends", icon: Globe },
-  { path: "/explore", label: "Explore", icon: Map },
-  { path: "/add", label: "Add", icon: Plus, isCenter: true },
-  { path: "/search", label: "Search", icon: Search },
-  { path: "/profile", label: "Profile", icon: User },
+const tabDefs = [
+  { path: "/", labelKey: "nav.home" as TranslationKey, icon: Globe },
+  { path: "/explore", labelKey: "nav.explore" as TranslationKey, icon: Map },
+  { path: "/add", labelKey: "nav.add" as TranslationKey, icon: Plus, isCenter: true },
+  { path: "/search", labelKey: "nav.search" as TranslationKey, icon: Search },
+  { path: "/profile", labelKey: "nav.profile" as TranslationKey, icon: User },
 ];
 
 const ACTIVE_TAB_STORAGE_KEY = "traveld-active-tab";
