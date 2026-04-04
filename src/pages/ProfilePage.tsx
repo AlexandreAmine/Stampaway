@@ -597,7 +597,7 @@ export default function ProfilePage() {
               onClick={() => setSubPage("Map")}
               className="flex items-center justify-between w-full mb-3"
             >
-              <h2 className="text-lg font-bold text-foreground">Map</h2>
+              <h2 className="text-lg font-bold text-foreground">{t("profile.map")}</h2>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </button>
             <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ height: 220 }}>
