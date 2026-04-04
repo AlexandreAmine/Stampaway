@@ -386,7 +386,7 @@ export default function SearchPage() {
           <button onClick={() => navigate(-1)}>
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
-          <h1 className="text-xl font-bold text-foreground">Search</h1>
+          <h1 className="text-xl font-bold text-foreground">{t("nav.search")}</h1>
         </div>
 
         <div className="relative mb-5">
@@ -395,7 +395,7 @@ export default function SearchPage() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search countries, cities, lists and users..."
+            placeholder={t("search.placeholder")}
             className="w-full bg-card rounded-xl py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
