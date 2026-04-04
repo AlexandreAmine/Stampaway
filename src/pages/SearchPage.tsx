@@ -55,6 +55,7 @@ export default function SearchPage() {
     Lists: t("search.lists"),
     Users: t("search.users"),
   };
+  const [activeFilter, setActiveFilter] = useState<FilterTab>("Countries");
   const [query, setQuery] = useState("");
   const [places, setPlaces] = useState<any[]>([]);
   const [lists, setLists] = useState<any[]>([]);
