@@ -75,7 +75,7 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
     (async () => {
       const { data } = await supabase
         .from("reviews")
-        .select("id, place_id, rating, liked, visit_year, visit_month, duration_days, places!inner(name, country, type, image)")
+        .select("id, place_id, rating, liked, visit_year, visit_month, duration_days, created_at, places!inner(name, country, type, image)")
         .eq("user_id", targetUserId)
         .eq("places.type", type)
         .order("created_at", { ascending: false });
