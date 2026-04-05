@@ -133,14 +133,15 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
     if (!user) return;
     setSaving(true);
 
+    const hasFullDate = visitYear !== "" && visitMonth !== "";
     const { error } = await supabase
       .from("reviews")
       .update({
         rating: rating > 0 ? rating : null,
         liked,
         review_text: reviewText || null,
-        visit_year: unknownDate ? null : visitYear,
-        visit_month: unknownDate ? null : visitMonth,
+        visit_year: hasFullDate ? visitYear : null,
+        visit_month: hasFullDate ? visitMonth : null,
         duration_days: durationDays || null,
       })
       .eq("id", entry.id);
