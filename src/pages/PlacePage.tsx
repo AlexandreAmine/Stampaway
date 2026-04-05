@@ -111,14 +111,15 @@ export default function PlacePage() {
       );
     }
 
-    // My review
+    // My review (newest visit date)
     if (user) {
-      const mine = reviews.find((r) => r.user_id === user.id);
-      setMyReview(mine || null);
+      const myReviews = reviews.filter((r) => r.user_id === user.id);
+      const newest = dedupeByNewest(myReviews, (r) => r.user_id);
+      setMyReview(newest[0] || null);
     }
 
-    // Average & distribution (exclude null ratings)
-    const ratedReviews = reviews.filter((r) => r.rating !== null && r.rating !== undefined);
+    // Average & distribution - use one review per user (newest date)
+    const ratedReviews = uniqueReviews.filter((r) => r.rating !== null && r.rating !== undefined);
     if (ratedReviews.length > 0) {
       const sum = ratedReviews.reduce((a, r) => a + Number(r.rating), 0);
       setAvgRating(Math.round((sum / ratedReviews.length) * 10) / 10);
