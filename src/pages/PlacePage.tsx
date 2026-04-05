@@ -13,6 +13,7 @@ import { CountryFacts } from "@/components/CountryFacts";
 import { CityFacts } from "@/components/CityFacts";
 import { toast } from "sonner";
 import { DiaryEditSheet } from "@/components/DiaryEditSheet";
+import { dedupeByNewest } from "@/lib/reviewDedup";
 
 interface PlaceData {
   id: string;
@@ -94,16 +95,9 @@ export default function PlacePage() {
       );
     }
 
-    // Unique visitors (most recent review per user)
-    const reviewsByUser = new Map<string, any>();
-    reviews.forEach((r) => {
-      const existing = reviewsByUser.get(r.user_id);
-      if (!existing || new Date(r.created_at) > new Date(existing.created_at)) {
-        reviewsByUser.set(r.user_id, r);
-      }
-    });
-    const uniqueReviews = Array.from(reviewsByUser.values());
-    const uniqueVisitorIds = [...reviewsByUser.keys()];
+    // Unique visitors (newest visit date per user, fallback to most recent created_at)
+    const uniqueReviews = dedupeByNewest(reviews, (r) => r.user_id);
+    const uniqueVisitorIds = uniqueReviews.map((r) => r.user_id);
     setVisitorsCount(uniqueVisitorIds.length);
     // ratingsCount set below after filtering
 
@@ -117,14 +111,15 @@ export default function PlacePage() {
       );
     }
 
-    // My review
+    // My review (newest visit date)
     if (user) {
-      const mine = reviews.find((r) => r.user_id === user.id);
-      setMyReview(mine || null);
+      const myReviews = reviews.filter((r) => r.user_id === user.id);
+      const newest = dedupeByNewest(myReviews, (r) => r.user_id);
+      setMyReview(newest[0] || null);
     }
 
-    // Average & distribution (exclude null ratings)
-    const ratedReviews = reviews.filter((r) => r.rating !== null && r.rating !== undefined);
+    // Average & distribution - use one review per user (newest date)
+    const ratedReviews = uniqueReviews.filter((r) => r.rating !== null && r.rating !== undefined);
     if (ratedReviews.length > 0) {
       const sum = ratedReviews.reduce((a, r) => a + Number(r.rating), 0);
       setAvgRating(Math.round((sum / ratedReviews.length) * 10) / 10);

@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { StarRating } from "@/components/StarRating";
 import { DestinationPoster } from "@/components/DestinationPoster";
+import { dedupeByNewest } from "@/lib/reviewDedup";
 
 interface LoggedPlace {
   place_id: string;
@@ -35,24 +36,25 @@ export default function LoggedPlacesPage() {
     setLoading(true);
     const { data } = await supabase
       .from("reviews")
-      .select("place_id, rating, review_text, created_at, places!inner(name, country, type, image)")
+      .select("place_id, rating, review_text, created_at, visit_year, visit_month, places!inner(name, country, type, image)")
       .eq("user_id", user!.id)
       .eq("places.type", type)
       .order("created_at", { ascending: false });
 
     if (data) {
-      setPlaces(
-        data.map((r: any) => ({
-          place_id: r.place_id,
-          place_name: r.places.name,
-          place_country: r.places.country,
-          place_image: r.places.image,
-          place_type: r.places.type,
-          rating: r.rating,
-          review_text: r.review_text,
-          created_at: r.created_at,
-        }))
-      );
+      const all = data.map((r: any) => ({
+        place_id: r.place_id,
+        place_name: r.places.name,
+        place_country: r.places.country,
+        place_image: r.places.image,
+        place_type: r.places.type,
+        rating: r.rating,
+        review_text: r.review_text,
+        created_at: r.created_at,
+        visit_year: r.visit_year,
+        visit_month: r.visit_month,
+      }));
+      setPlaces(dedupeByNewest(all, (r) => r.place_id));
     }
     setLoading(false);
   };

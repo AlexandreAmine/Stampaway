@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { PosterWishlistButton } from "@/components/PosterWishlistButton";
+import { dedupeByNewest } from "@/lib/reviewDedup";
 import { StarRating } from "@/components/StarRating";
 import {
   DropdownMenu,
@@ -74,14 +75,14 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
     (async () => {
       const { data } = await supabase
         .from("reviews")
-        .select("id, place_id, rating, liked, visit_year, visit_month, duration_days, places!inner(name, country, type, image)")
+        .select("id, place_id, rating, liked, visit_year, visit_month, duration_days, created_at, places!inner(name, country, type, image)")
         .eq("user_id", targetUserId)
         .eq("places.type", type)
         .order("created_at", { ascending: false });
 
       if (!data) { setLoading(false); return; }
 
-      const entries: (PlaceEntry & { review_id: string })[] = data.map((r: any) => ({
+      const allEntries: (PlaceEntry & { review_id: string; created_at: string })[] = data.map((r: any) => ({
         review_id: r.id,
         place_id: r.place_id,
         rating: r.rating != null ? Number(r.rating) : null,
@@ -93,7 +94,11 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
         country: r.places.country,
         type: r.places.type,
         image: r.places.image,
+        created_at: r.created_at || "",
       }));
+
+      // Deduplicate: keep newest visit date per place
+      const entries = dedupeByNewest(allEntries, (e) => e.place_id);
 
       const placeIds = [...new Set(entries.map((e) => e.place_id))];
       if (placeIds.length > 0) {
@@ -115,14 +120,7 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
         }
       }
 
-      const seen = new Set<string>();
-      const deduped = entries.filter((e) => {
-        if (seen.has(e.place_id)) return false;
-        seen.add(e.place_id);
-        return true;
-      });
-
-      setPlaces(deduped);
+      setPlaces(entries);
       setLoading(false);
     })();
   }, [targetUserId, type]);
