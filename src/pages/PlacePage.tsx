@@ -13,6 +13,7 @@ import { CountryFacts } from "@/components/CountryFacts";
 import { CityFacts } from "@/components/CityFacts";
 import { toast } from "sonner";
 import { DiaryEditSheet } from "@/components/DiaryEditSheet";
+import { dedupeByNewest } from "@/lib/reviewDedup";
 
 interface PlaceData {
   id: string;
