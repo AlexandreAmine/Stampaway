@@ -124,13 +124,15 @@ export default function AddPlacePage() {
       return;
     }
     setSaving(true);
+    // Only save date if both year AND month are selected
+    const hasFullDate = visitYear !== "" && visitMonth !== "";
     const { error, data: insertedReviews } = await supabase.from("reviews").insert({
       user_id: user.id,
       place_id: selectedPlace.id,
       rating: rating > 0 ? rating : null,
       review_text: reviewText || null,
-      visit_year: unknownDate ? null : visitYear,
-      visit_month: unknownDate ? null : visitMonth,
+      visit_year: hasFullDate ? visitYear : null,
+      visit_month: hasFullDate ? visitMonth : null,
       duration_days: durationDays || null,
       liked,
     }).select("id");
