@@ -459,7 +459,7 @@ const es: Record<TranslationKey, string> = {
   "search": "Buscar",
   "loading": "Cargando...",
   "noResults": "No se encontraron resultados",
-  "nav.home": "Inicio",
+  "nav.home": "Amigos",
   "nav.explore": "Explorar",
   "nav.add": "Añadir",
   "nav.search": "Buscar",
