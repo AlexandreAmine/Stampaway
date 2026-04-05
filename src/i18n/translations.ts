@@ -1047,7 +1047,7 @@ const nl: Record<TranslationKey, string> = {
   "search": "Zoeken",
   "loading": "Laden...",
   "noResults": "Geen resultaten gevonden",
-  "nav.home": "Home",
+  "nav.home": "Vrienden",
   "nav.explore": "Ontdekken",
   "nav.add": "Toevoegen",
   "nav.search": "Zoeken",
