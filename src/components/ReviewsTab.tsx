@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { StarRating } from "@/components/StarRating";
 import { DestinationPoster } from "@/components/DestinationPoster";
+import { dedupeByNewest } from "@/lib/reviewDedup";
 
 interface ReviewEntry {
   id: string;
