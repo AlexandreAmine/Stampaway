@@ -82,7 +82,7 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
 
       if (!data) { setLoading(false); return; }
 
-      const entries: (PlaceEntry & { review_id: string })[] = data.map((r: any) => ({
+      const allEntries: (PlaceEntry & { review_id: string; created_at: string })[] = data.map((r: any) => ({
         review_id: r.id,
         place_id: r.place_id,
         rating: r.rating != null ? Number(r.rating) : null,
@@ -94,7 +94,11 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
         country: r.places.country,
         type: r.places.type,
         image: r.places.image,
+        created_at: r.created_at || "",
       }));
+
+      // Deduplicate: keep newest visit date per place
+      const entries = dedupeByNewest(allEntries, (e) => e.place_id);
 
       const placeIds = [...new Set(entries.map((e) => e.place_id))];
       if (placeIds.length > 0) {
