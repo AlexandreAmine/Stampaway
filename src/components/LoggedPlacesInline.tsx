@@ -120,14 +120,7 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
         }
       }
 
-      const seen = new Set<string>();
-      const deduped = entries.filter((e) => {
-        if (seen.has(e.place_id)) return false;
-        seen.add(e.place_id);
-        return true;
-      });
-
-      setPlaces(deduped);
+      setPlaces(entries);
       setLoading(false);
     })();
   }, [targetUserId, type]);
