@@ -46,10 +46,9 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
   const [rating, setRating] = useState(entry.rating ? Number(entry.rating) : 0);
   const [liked, setLiked] = useState(entry.liked);
   const [reviewText, setReviewText] = useState(entry.review_text || "");
-  const [visitYear, setVisitYear] = useState(entry.visit_year || new Date().getFullYear());
-  const [visitMonth, setVisitMonth] = useState(entry.visit_month || 1);
+  const [visitYear, setVisitYear] = useState<number | "">(entry.visit_year || "");
+  const [visitMonth, setVisitMonth] = useState<number | "">(entry.visit_month || "");
   const [durationDays, setDurationDays] = useState<number | "">(entry.duration_days || "");
-  const [unknownDate, setUnknownDate] = useState(!entry.visit_year && !entry.visit_month);
   const [saving, setSaving] = useState(false);
 
   // Sub-ratings
