@@ -23,7 +23,7 @@ const en = {
   "noResults": "No results found",
 
   // Bottom nav
-  "nav.home": "Home",
+  "nav.home": "Friends",
   "nav.explore": "Explore",
   "nav.add": "Add",
   "nav.search": "Search",
