@@ -132,8 +132,8 @@ export default function AddPlacePage() {
       place_id: selectedPlace.id,
       rating: rating > 0 ? rating : null,
       review_text: reviewText || null,
-      visit_year: hasFullDate ? visitYear : null,
-      visit_month: hasFullDate ? visitMonth : null,
+      visit_year: hasYear ? visitYear : null,
+      visit_month: (hasYear && hasMonth) ? visitMonth : null,
       duration_days: durationDays || null,
       liked,
     }).select("id");
