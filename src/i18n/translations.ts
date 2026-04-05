@@ -851,7 +851,7 @@ const pt: Record<TranslationKey, string> = {
   "search": "Pesquisar",
   "loading": "Carregando...",
   "noResults": "Nenhum resultado encontrado",
-  "nav.home": "Início",
+  "nav.home": "Amigos",
   "nav.explore": "Explorar",
   "nav.add": "Adicionar",
   "nav.search": "Pesquisar",
