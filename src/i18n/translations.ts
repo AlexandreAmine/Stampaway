@@ -655,7 +655,7 @@ const it: Record<TranslationKey, string> = {
   "search": "Cerca",
   "loading": "Caricamento...",
   "noResults": "Nessun risultato trovato",
-  "nav.home": "Home",
+  "nav.home": "Amici",
   "nav.explore": "Esplora",
   "nav.add": "Aggiungi",
   "nav.search": "Cerca",
