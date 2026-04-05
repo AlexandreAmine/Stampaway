@@ -99,10 +99,9 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
     setRating(entry.rating ? Number(entry.rating) : 0);
     setLiked(entry.liked);
     setReviewText(entry.review_text || "");
-    setVisitYear(entry.visit_year || new Date().getFullYear());
-    setVisitMonth(entry.visit_month || 1);
+    setVisitYear(entry.visit_year || "");
+    setVisitMonth(entry.visit_month || "");
     setDurationDays(entry.duration_days || "");
-    setUnknownDate(!entry.visit_year && !entry.visit_month);
   }, [entry]);
 
   // Tag search
