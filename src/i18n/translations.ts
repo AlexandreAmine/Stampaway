@@ -263,7 +263,7 @@ const fr: Record<TranslationKey, string> = {
   "search": "Rechercher",
   "loading": "Chargement...",
   "noResults": "Aucun résultat trouvé",
-  "nav.home": "Accueil",
+  "nav.home": "Amis",
   "nav.explore": "Explorer",
   "nav.add": "Ajouter",
   "nav.search": "Recherche",
