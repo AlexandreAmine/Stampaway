@@ -33,22 +33,24 @@ export function ReviewsTab({ userId }: { userId?: string }) {
     (async () => {
       const { data } = await supabase
         .from("reviews")
-        .select("id, rating, review_text, created_at, places!inner(id, name, country, type, image)")
+        .select("id, rating, review_text, created_at, visit_year, visit_month, places!inner(id, name, country, type, image)")
         .eq("user_id", targetUserId)
         .not("review_text", "is", null)
         .neq("review_text", "")
         .order("created_at", { ascending: false });
 
       if (data) {
-        setReviews(
-          data.map((r: any) => ({
-            id: r.id,
-            rating: r.rating,
-            review_text: r.review_text,
-            created_at: r.created_at,
-            place: { id: r.places.id, name: r.places.name, country: r.places.country, type: r.places.type, image: r.places.image },
-          }))
-        );
+        const all = data.map((r: any) => ({
+          id: r.id,
+          rating: r.rating,
+          review_text: r.review_text,
+          created_at: r.created_at,
+          visit_year: r.visit_year,
+          visit_month: r.visit_month,
+          place: { id: r.places.id, name: r.places.name, country: r.places.country, type: r.places.type, image: r.places.image },
+        }));
+        // Deduplicate per place - keep newest visit date entry
+        setReviews(dedupeByNewest(all, (r) => r.place.id));
       }
       setLoading(false);
     })();
