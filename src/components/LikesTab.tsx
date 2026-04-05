@@ -85,20 +85,23 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
     // Liked destinations (countries & cities) - include visit info
     const { data: destData } = await supabase
       .from("reviews")
-      .select("id, rating, visit_year, visit_month, duration_days, places!inner(id, name, country, type, image)")
+      .select("id, rating, visit_year, visit_month, duration_days, created_at, places!inner(id, name, country, type, image)")
       .eq("user_id", targetUserId)
       .eq("liked", true)
       .order("created_at", { ascending: false });
 
     if (destData) {
-      const mapped: LikedEntry[] = destData.map((r: any) => ({
+      const allMapped = destData.map((r: any) => ({
         id: r.id,
         rating: r.rating,
         visit_year: r.visit_year,
         visit_month: r.visit_month,
         duration_days: r.duration_days,
+        created_at: r.created_at,
         place: { id: r.places.id, name: r.places.name, country: r.places.country, type: r.places.type, image: r.places.image },
       }));
+      // Deduplicate per place - keep newest visit date
+      const mapped: LikedEntry[] = dedupeByNewest(allMapped, (m) => m.place.id);
 
       // Fetch avg ratings
       const placeIds = [...new Set(mapped.map((m) => m.place.id))];
