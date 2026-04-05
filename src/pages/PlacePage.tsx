@@ -95,16 +95,9 @@ export default function PlacePage() {
       );
     }
 
-    // Unique visitors (most recent review per user)
-    const reviewsByUser = new Map<string, any>();
-    reviews.forEach((r) => {
-      const existing = reviewsByUser.get(r.user_id);
-      if (!existing || new Date(r.created_at) > new Date(existing.created_at)) {
-        reviewsByUser.set(r.user_id, r);
-      }
-    });
-    const uniqueReviews = Array.from(reviewsByUser.values());
-    const uniqueVisitorIds = [...reviewsByUser.keys()];
+    // Unique visitors (newest visit date per user, fallback to most recent created_at)
+    const uniqueReviews = dedupeByNewest(reviews, (r) => r.user_id);
+    const uniqueVisitorIds = uniqueReviews.map((r) => r.user_id);
     setVisitorsCount(uniqueVisitorIds.length);
     // ratingsCount set below after filtering
 
