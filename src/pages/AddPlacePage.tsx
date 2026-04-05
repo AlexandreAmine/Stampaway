@@ -44,11 +44,10 @@ export default function AddPlacePage() {
   const [reviewText, setReviewText] = useState("");
   const SUB_CATEGORIES = ["Affordability", "Natural Beauty", "Culture & Heritage", "Safety & Security", "Food", "Hospitality & People", "Weather", "Entertainment & Nightlife"] as const;
   const [subRatings, setSubRatings] = useState<Record<string, number>>({});
-  const [visitYear, setVisitYear] = useState(new Date().getFullYear());
-  const [visitMonth, setVisitMonth] = useState(new Date().getMonth() + 1);
+  const [visitYear, setVisitYear] = useState<number | "">(""); 
+  const [visitMonth, setVisitMonth] = useState<number | "">("");
   const [durationDays, setDurationDays] = useState<number | "">("");
   const [liked, setLiked] = useState(false);
-  const [unknownDate, setUnknownDate] = useState(false);
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [saving, setSaving] = useState(false);
   const [recentSearches, setRecentSearches] = useState<PlaceResult[]>([]);
@@ -125,13 +124,15 @@ export default function AddPlacePage() {
       return;
     }
     setSaving(true);
+    // Only save date if both year AND month are selected
+    const hasFullDate = visitYear !== "" && visitMonth !== "";
     const { error, data: insertedReviews } = await supabase.from("reviews").insert({
       user_id: user.id,
       place_id: selectedPlace.id,
       rating: rating > 0 ? rating : null,
       review_text: reviewText || null,
-      visit_year: unknownDate ? null : visitYear,
-      visit_month: unknownDate ? null : visitMonth,
+      visit_year: hasFullDate ? visitYear : null,
+      visit_month: hasFullDate ? visitMonth : null,
       duration_days: durationDays || null,
       liked,
     }).select("id");
@@ -264,57 +265,46 @@ export default function AddPlacePage() {
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-foreground">When did you visit?</p>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <span className="text-xs text-muted-foreground">I don't know</span>
-                  <input
-                    type="checkbox"
-                    checked={unknownDate}
-                    onChange={(e) => setUnknownDate(e.target.checked)}
-                    className="w-4 h-4 rounded border-border bg-card text-primary focus:ring-primary accent-primary"
-                  />
-                </label>
-              </div>
-              {!unknownDate && (
-                <div className="flex gap-3">
-                  <div className="flex-1">
-                    <label className="text-xs text-muted-foreground mb-1 block">Year</label>
-                    <select
-                      value={visitYear}
-                      onChange={(e) => setVisitYear(Number(e.target.value))}
-                      className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
-                    >
-                      {Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i).map((y) => (
-                        <option key={y} value={y}>{y}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex-1">
-                    <label className="text-xs text-muted-foreground mb-1 block">Month</label>
-                    <select
-                      value={visitMonth}
-                      onChange={(e) => setVisitMonth(Number(e.target.value))}
-                      className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
-                    >
-                      {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, i) => (
-                        <option key={i} value={i + 1}>{m}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex-1">
-                    <label className="text-xs text-muted-foreground mb-1 block">Duration</label>
-                    <input
-                      type="number"
-                      value={durationDays}
-                      onChange={(e) => setDurationDays(e.target.value ? Number(e.target.value) : "")}
-                      placeholder="Days"
-                      min={1}
-                      className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
-                    />
-                  </div>
+              <p className="text-sm font-semibold text-foreground">When did you visit?</p>
+              <div className="flex gap-3">
+                <div className="flex-1">
+                  <label className="text-xs text-muted-foreground mb-1 block">Year</label>
+                  <select
+                    value={visitYear}
+                    onChange={(e) => setVisitYear(e.target.value ? Number(e.target.value) : "")}
+                    className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="">—</option>
+                    {Array.from({ length: new Date().getFullYear() - 1977 + 1 }, (_, i) => new Date().getFullYear() - i).map((y) => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
                 </div>
-              )}
+                <div className="flex-1">
+                  <label className="text-xs text-muted-foreground mb-1 block">Month</label>
+                  <select
+                    value={visitMonth}
+                    onChange={(e) => setVisitMonth(e.target.value ? Number(e.target.value) : "")}
+                    className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                  >
+                    <option value="">—</option>
+                    {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, i) => (
+                      <option key={i} value={i + 1}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-muted-foreground mb-1 block">Duration</label>
+                  <input
+                    type="number"
+                    value={durationDays}
+                    onChange={(e) => setDurationDays(e.target.value ? Number(e.target.value) : "")}
+                    placeholder="Days"
+                    min={1}
+                    className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Tag people */}

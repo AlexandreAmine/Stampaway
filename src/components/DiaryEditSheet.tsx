@@ -46,10 +46,9 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
   const [rating, setRating] = useState(entry.rating ? Number(entry.rating) : 0);
   const [liked, setLiked] = useState(entry.liked);
   const [reviewText, setReviewText] = useState(entry.review_text || "");
-  const [visitYear, setVisitYear] = useState(entry.visit_year || new Date().getFullYear());
-  const [visitMonth, setVisitMonth] = useState(entry.visit_month || 1);
+  const [visitYear, setVisitYear] = useState<number | "">(entry.visit_year || "");
+  const [visitMonth, setVisitMonth] = useState<number | "">(entry.visit_month || "");
   const [durationDays, setDurationDays] = useState<number | "">(entry.duration_days || "");
-  const [unknownDate, setUnknownDate] = useState(!entry.visit_year && !entry.visit_month);
   const [saving, setSaving] = useState(false);
 
   // Sub-ratings
@@ -100,10 +99,9 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
     setRating(entry.rating ? Number(entry.rating) : 0);
     setLiked(entry.liked);
     setReviewText(entry.review_text || "");
-    setVisitYear(entry.visit_year || new Date().getFullYear());
-    setVisitMonth(entry.visit_month || 1);
+    setVisitYear(entry.visit_year || "");
+    setVisitMonth(entry.visit_month || "");
     setDurationDays(entry.duration_days || "");
-    setUnknownDate(!entry.visit_year && !entry.visit_month);
   }, [entry]);
 
   // Tag search
@@ -135,14 +133,15 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
     if (!user) return;
     setSaving(true);
 
+    const hasFullDate = visitYear !== "" && visitMonth !== "";
     const { error } = await supabase
       .from("reviews")
       .update({
         rating: rating > 0 ? rating : null,
         liked,
         review_text: reviewText || null,
-        visit_year: unknownDate ? null : visitYear,
-        visit_month: unknownDate ? null : visitMonth,
+        visit_year: hasFullDate ? visitYear : null,
+        visit_month: hasFullDate ? visitMonth : null,
         duration_days: durationDays || null,
       })
       .eq("id", entry.id);
@@ -259,57 +258,46 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
 
           {/* Date */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold text-foreground">When did you visit?</p>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <span className="text-xs text-muted-foreground">I don't know</span>
-                <input
-                  type="checkbox"
-                  checked={unknownDate}
-                  onChange={(e) => setUnknownDate(e.target.checked)}
-                  className="w-4 h-4 rounded border-border bg-card text-primary focus:ring-primary accent-primary"
-                />
-              </label>
-            </div>
-            {!unknownDate && (
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="text-xs text-muted-foreground mb-1 block">Year</label>
-                  <select
-                    value={visitYear}
-                    onChange={(e) => setVisitYear(Number(e.target.value))}
-                    className="w-full bg-background rounded-xl py-2.5 px-3 text-sm text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    {Array.from({ length: 30 }, (_, i) => new Date().getFullYear() - i).map(y => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex-1">
-                  <label className="text-xs text-muted-foreground mb-1 block">Month</label>
-                  <select
-                    value={visitMonth}
-                    onChange={(e) => setVisitMonth(Number(e.target.value))}
-                    className="w-full bg-background rounded-xl py-2.5 px-3 text-sm text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, i) => (
-                      <option key={i} value={i + 1}>{m}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex-1">
-                  <label className="text-xs text-muted-foreground mb-1 block">Duration</label>
-                  <input
-                    type="number"
-                    value={durationDays}
-                    onChange={(e) => setDurationDays(e.target.value ? Number(e.target.value) : "")}
-                    placeholder="Days"
-                    min={1}
-                    className="w-full bg-background rounded-xl py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
+            <p className="text-sm font-semibold text-foreground">When did you visit?</p>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="text-xs text-muted-foreground mb-1 block">Year</label>
+                <select
+                  value={visitYear}
+                  onChange={(e) => setVisitYear(e.target.value ? Number(e.target.value) : "")}
+                  className="w-full bg-background rounded-xl py-2.5 px-3 text-sm text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="">—</option>
+                  {Array.from({ length: new Date().getFullYear() - 1977 + 1 }, (_, i) => new Date().getFullYear() - i).map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
               </div>
-            )}
+              <div className="flex-1">
+                <label className="text-xs text-muted-foreground mb-1 block">Month</label>
+                <select
+                  value={visitMonth}
+                  onChange={(e) => setVisitMonth(e.target.value ? Number(e.target.value) : "")}
+                  className="w-full bg-background rounded-xl py-2.5 px-3 text-sm text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                >
+                  <option value="">—</option>
+                  {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, i) => (
+                    <option key={i} value={i + 1}>{m}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex-1">
+                <label className="text-xs text-muted-foreground mb-1 block">Duration</label>
+                <input
+                  type="number"
+                  value={durationDays}
+                  onChange={(e) => setDurationDays(e.target.value ? Number(e.target.value) : "")}
+                  placeholder="Days"
+                  min={1}
+                  className="w-full bg-background rounded-xl py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Tags */}
