@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { PosterWishlistButton } from "@/components/PosterWishlistButton";
+import { dedupeByNewest } from "@/lib/reviewDedup";
 import { StarRating } from "@/components/StarRating";
 import {
   DropdownMenu,
