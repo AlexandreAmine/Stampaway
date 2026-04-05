@@ -44,11 +44,10 @@ export default function AddPlacePage() {
   const [reviewText, setReviewText] = useState("");
   const SUB_CATEGORIES = ["Affordability", "Natural Beauty", "Culture & Heritage", "Safety & Security", "Food", "Hospitality & People", "Weather", "Entertainment & Nightlife"] as const;
   const [subRatings, setSubRatings] = useState<Record<string, number>>({});
-  const [visitYear, setVisitYear] = useState(new Date().getFullYear());
-  const [visitMonth, setVisitMonth] = useState(new Date().getMonth() + 1);
+  const [visitYear, setVisitYear] = useState<number | "">(""); 
+  const [visitMonth, setVisitMonth] = useState<number | "">("");
   const [durationDays, setDurationDays] = useState<number | "">("");
   const [liked, setLiked] = useState(false);
-  const [unknownDate, setUnknownDate] = useState(false);
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [saving, setSaving] = useState(false);
   const [recentSearches, setRecentSearches] = useState<PlaceResult[]>([]);
