@@ -766,43 +766,43 @@ function SharedWishlist({ myUserId, theirUserId, theirUsername }: { myUserId: st
   if (loading) return null;
   if (countries.length === 0 && cities.length === 0) return null;
 
+  const [wishTab, setWishTab] = useState<"country" | "city">("country");
+  const activeList = wishTab === "country" ? countries : cities;
+
   return (
     <div className="mt-6">
-      <p className="text-sm font-semibold text-foreground mb-3">
-        Shared wishlist with {theirUsername}
-      </p>
-      <div className="grid grid-cols-2 gap-4">
-        {countries.length > 0 && (
-          <div>
-            <p className="text-xs text-muted-foreground font-medium mb-2">Countries ({countries.length})</p>
-            <div className="space-y-1">
-              {countries.map((c) => {
-                const code = getCountryCode(c.name);
-                const flag = code ? String.fromCodePoint(...code.split("").map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65)) : "";
-                return (
-                  <button key={c.placeId} onClick={() => navigate(`/place/${c.placeId}`)} className="w-full flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left">
-                    <span className="text-sm">{flag}</span>
-                    <span className="text-xs text-foreground">{c.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-        {cities.length > 0 && (
-          <div>
-            <p className="text-xs text-muted-foreground font-medium mb-2">Cities ({cities.length})</p>
-            <div className="space-y-1">
-              {cities.map((c) => (
-                <button key={c.placeId} onClick={() => navigate(`/place/${c.placeId}`)} className="w-full flex items-center gap-1.5 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left">
-                  <span className="text-xs text-foreground">{c.name}</span>
-                  <span className="text-[10px] text-muted-foreground">({c.country})</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+      <p className="text-sm font-semibold text-foreground mb-2">Shared wishlist</p>
+      <div className="flex gap-2 mb-3">
+        {(["country", "city"] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setWishTab(t)}
+            className={`text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors ${
+              wishTab === t ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"
+            }`}
+          >
+            {t === "country" ? "Countries" : "Cities"}
+          </button>
+        ))}
       </div>
+
+      {activeList.length === 0 ? (
+        <p className="text-xs text-muted-foreground text-center py-4">No shared {wishTab === "country" ? "countries" : "cities"}</p>
+      ) : (
+        <div className="space-y-1">
+          {activeList.map((c) => {
+            const code = wishTab === "country" ? getCountryCode(c.name) : null;
+            const flag = code ? String.fromCodePoint(...code.split("").map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65)) : "";
+            return (
+              <button key={c.placeId} onClick={() => navigate(`/place/${c.placeId}`)} className="w-full flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left">
+                {flag && <span className="text-sm">{flag}</span>}
+                <span className="text-xs text-foreground">{c.name}</span>
+                {"country" in c && wishTab === "city" && <span className="text-[10px] text-muted-foreground">({(c as any).country})</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
