@@ -603,3 +603,198 @@ function VisitedTogether({ myUserId, theirUserId, theirUsername }: { myUserId: s
     </div>
   );
 }
+
+// ─── Rating Comparison ───
+function RatingComparison({ myUserId, theirUserId, theirUsername }: { myUserId: string; theirUserId: string; theirUsername: string }) {
+  const navigate = useNavigate();
+  const [countries, setCountries] = useState<{ name: string; placeId: string; myRating: number | null; theirRating: number | null }[]>([]);
+  const [cities, setCities] = useState<{ name: string; country: string; placeId: string; myRating: number | null; theirRating: number | null }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const [{ data: myReviews }, { data: theirReviews }] = await Promise.all([
+        supabase.from("reviews").select("place_id, rating, visit_year, visit_month, created_at, places!inner(id, name, country, type)").eq("user_id", myUserId),
+        supabase.from("reviews").select("place_id, rating, visit_year, visit_month, created_at, places!inner(id, name, country, type)").eq("user_id", theirUserId),
+      ]);
+
+      // Dedupe: keep newest per place per user
+      const newestByPlace = (reviews: any[]) => {
+        const map = new Map<string, any>();
+        reviews.sort((a: any, b: any) => {
+          if ((a.visit_year ?? 0) !== (b.visit_year ?? 0)) return (b.visit_year ?? 0) - (a.visit_year ?? 0);
+          if ((a.visit_month ?? 0) !== (b.visit_month ?? 0)) return (b.visit_month ?? 0) - (a.visit_month ?? 0);
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+        for (const r of reviews) {
+          if (!map.has(r.place_id)) map.set(r.place_id, r);
+        }
+        return map;
+      };
+
+      const myMap = newestByPlace(myReviews || []);
+      const theirMap = newestByPlace(theirReviews || []);
+
+      const sharedCountries: typeof countries = [];
+      const sharedCities: typeof cities = [];
+
+      for (const [placeId, myR] of myMap) {
+        const theirR = theirMap.get(placeId);
+        if (!theirR) continue;
+        const place = myR.places;
+        const entry = {
+          name: place.name,
+          country: place.country,
+          placeId: place.id,
+          myRating: myR.rating != null ? Number(myR.rating) : null,
+          theirRating: theirR.rating != null ? Number(theirR.rating) : null,
+        };
+        if (place.type === "country") sharedCountries.push(entry);
+        else sharedCities.push(entry);
+      }
+
+      // Sort by closest grades first (smallest difference)
+      const sortByClosest = (arr: typeof countries) => arr.sort((a, b) => {
+        const diffA = (a.myRating != null && a.theirRating != null) ? Math.abs(a.myRating - a.theirRating) : 999;
+        const diffB = (b.myRating != null && b.theirRating != null) ? Math.abs(b.myRating - b.theirRating) : 999;
+        return diffA - diffB;
+      });
+
+      sortByClosest(sharedCountries);
+      sortByClosest(sharedCities);
+
+      setCountries(sharedCountries);
+      setCities(sharedCities);
+      setLoading(false);
+    })();
+  }, [myUserId, theirUserId]);
+
+  if (loading) return null;
+  if (countries.length === 0 && cities.length === 0) return null;
+
+  const renderRow = (item: typeof countries[0], showCountry = false) => {
+    const code = !showCountry ? getCountryCode(item.name) : null;
+    const flag = code ? String.fromCodePoint(...code.split("").map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65)) : "";
+    return (
+      <button
+        key={item.placeId}
+        onClick={() => navigate(`/place/${item.placeId}`)}
+        className="w-full flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2 hover:bg-muted/50 transition-colors"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          {flag && <span className="text-sm">{flag}</span>}
+          <span className="text-xs text-foreground truncate">{item.name}</span>
+          {showCountry && <span className="text-[10px] text-muted-foreground">({item.country})</span>}
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="text-xs font-semibold text-primary">{item.myRating != null ? item.myRating.toFixed(1) : "—"}</span>
+          <span className="text-xs font-semibold" style={{ color: "hsl(40, 95%, 55%)" }}>{item.theirRating != null ? item.theirRating.toFixed(1) : "—"}</span>
+        </div>
+      </button>
+    );
+  };
+
+  return (
+    <div className="mt-6">
+      <p className="text-sm font-semibold text-foreground mb-1">Rating comparison</p>
+      <p className="text-[10px] text-muted-foreground mb-3">Sorted by closest grades first</p>
+
+      {/* Header row */}
+      <div className="flex items-center justify-end gap-3 mb-2 px-3">
+        <span className="text-[10px] font-medium text-primary">You</span>
+        <span className="text-[10px] font-medium" style={{ color: "hsl(40, 95%, 55%)" }}>{theirUsername}</span>
+      </div>
+
+      {countries.length > 0 && (
+        <div className="mb-4">
+          <p className="text-xs text-muted-foreground font-medium mb-2">Countries ({countries.length})</p>
+          <div className="space-y-1">{countries.map((c) => renderRow(c, false))}</div>
+        </div>
+      )}
+      {cities.length > 0 && (
+        <div>
+          <p className="text-xs text-muted-foreground font-medium mb-2">Cities ({cities.length})</p>
+          <div className="space-y-1">{cities.map((c) => renderRow(c, true))}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Shared Wishlist ───
+function SharedWishlist({ myUserId, theirUserId, theirUsername }: { myUserId: string; theirUserId: string; theirUsername: string }) {
+  const navigate = useNavigate();
+  const [countries, setCountries] = useState<{ name: string; placeId: string }[]>([]);
+  const [cities, setCities] = useState<{ name: string; country: string; placeId: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const [{ data: myWish }, { data: theirWish }] = await Promise.all([
+        supabase.from("wishlists").select("place_id, places!inner(id, name, country, type)").eq("user_id", myUserId),
+        supabase.from("wishlists").select("place_id, places!inner(id, name, country, type)").eq("user_id", theirUserId),
+      ]);
+
+      const theirSet = new Set((theirWish || []).map((w: any) => w.place_id));
+      const sharedCountries: typeof countries = [];
+      const sharedCities: typeof cities = [];
+
+      (myWish || []).forEach((w: any) => {
+        if (!theirSet.has(w.place_id)) return;
+        const p = w.places;
+        if (p.type === "country") sharedCountries.push({ name: p.name, placeId: p.id });
+        else sharedCities.push({ name: p.name, country: p.country, placeId: p.id });
+      });
+
+      sharedCountries.sort((a, b) => a.name.localeCompare(b.name));
+      sharedCities.sort((a, b) => a.name.localeCompare(b.name));
+
+      setCountries(sharedCountries);
+      setCities(sharedCities);
+      setLoading(false);
+    })();
+  }, [myUserId, theirUserId]);
+
+  if (loading) return null;
+  if (countries.length === 0 && cities.length === 0) return null;
+
+  return (
+    <div className="mt-6">
+      <p className="text-sm font-semibold text-foreground mb-3">
+        Shared wishlist with {theirUsername}
+      </p>
+      <div className="grid grid-cols-2 gap-4">
+        {countries.length > 0 && (
+          <div>
+            <p className="text-xs text-muted-foreground font-medium mb-2">Countries ({countries.length})</p>
+            <div className="space-y-1">
+              {countries.map((c) => {
+                const code = getCountryCode(c.name);
+                const flag = code ? String.fromCodePoint(...code.split("").map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65)) : "";
+                return (
+                  <button key={c.placeId} onClick={() => navigate(`/place/${c.placeId}`)} className="w-full flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left">
+                    <span className="text-sm">{flag}</span>
+                    <span className="text-xs text-foreground">{c.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        {cities.length > 0 && (
+          <div>
+            <p className="text-xs text-muted-foreground font-medium mb-2">Cities ({cities.length})</p>
+            <div className="space-y-1">
+              {cities.map((c) => (
+                <button key={c.placeId} onClick={() => navigate(`/place/${c.placeId}`)} className="w-full flex items-center gap-1.5 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left">
+                  <span className="text-xs text-foreground">{c.name}</span>
+                  <span className="text-[10px] text-muted-foreground">({c.country})</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
