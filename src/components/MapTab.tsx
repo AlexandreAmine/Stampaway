@@ -361,6 +361,12 @@ export function MapTab({ userId }: { userId?: string }) {
 
         {/* Visited Together Section */}
         <VisitedTogether myUserId={user!.id} theirUserId={targetUserId!} theirUsername={theirUsername} />
+
+        {/* Rating Comparison */}
+        <RatingComparison myUserId={user!.id} theirUserId={targetUserId!} theirUsername={theirUsername} />
+
+        {/* Shared Wishlist */}
+        <SharedWishlist myUserId={user!.id} theirUserId={targetUserId!} theirUsername={theirUsername} />
       </motion.div>
     );
   }
