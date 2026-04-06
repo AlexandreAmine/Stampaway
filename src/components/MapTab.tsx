@@ -695,7 +695,6 @@ function RatingComparison({ myUserId, theirUserId, theirUsername }: { myUserId: 
     );
   };
 
-  const [ratingTab, setRatingTab] = useState<"country" | "city">("country");
   const activeList = ratingTab === "country" ? countries : cities;
 
   return (
