@@ -767,7 +767,6 @@ function SharedWishlist({ myUserId, theirUserId, theirUsername }: { myUserId: st
   if (loading) return null;
   if (countries.length === 0 && cities.length === 0) return null;
 
-  const [wishTab, setWishTab] = useState<"country" | "city">("country");
   const activeList = wishTab === "country" ? countries : cities;
 
   return (
