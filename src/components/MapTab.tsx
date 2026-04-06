@@ -610,6 +610,7 @@ function RatingComparison({ myUserId, theirUserId, theirUsername }: { myUserId: 
   const [countries, setCountries] = useState<{ name: string; placeId: string; myRating: number | null; theirRating: number | null }[]>([]);
   const [cities, setCities] = useState<{ name: string; country: string; placeId: string; myRating: number | null; theirRating: number | null }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [ratingTab, setRatingTab] = useState<"country" | "city">("country");
 
   useEffect(() => {
     (async () => {
