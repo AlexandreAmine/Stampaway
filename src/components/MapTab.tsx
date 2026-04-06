@@ -672,7 +672,7 @@ function RatingComparison({ myUserId, theirUserId, theirUsername }: { myUserId: 
   if (loading) return null;
   if (countries.length === 0 && cities.length === 0) return null;
 
-  const renderRow = (item: typeof countries[0], showCountry = false) => {
+  const renderRow = (item: { name: string; country?: string; placeId: string; myRating: number | null; theirRating: number | null }, showCountry = false) => {
     const code = !showCountry ? getCountryCode(item.name) : null;
     const flag = code ? String.fromCodePoint(...code.split("").map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65)) : "";
     return (
