@@ -735,6 +735,7 @@ function SharedWishlist({ myUserId, theirUserId, theirUsername }: { myUserId: st
   const [countries, setCountries] = useState<{ name: string; placeId: string }[]>([]);
   const [cities, setCities] = useState<{ name: string; country: string; placeId: string }[]>([]);
   const [loading, setLoading] = useState(true);
+  const [wishTab, setWishTab] = useState<"country" | "city">("country");
 
   useEffect(() => {
     (async () => {
