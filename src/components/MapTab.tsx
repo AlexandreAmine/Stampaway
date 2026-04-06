@@ -694,28 +694,36 @@ function RatingComparison({ myUserId, theirUserId, theirUsername }: { myUserId: 
     );
   };
 
+  const [ratingTab, setRatingTab] = useState<"country" | "city">("country");
+  const activeList = ratingTab === "country" ? countries : cities;
+
   return (
     <div className="mt-6">
-      <p className="text-sm font-semibold text-foreground mb-1">Rating comparison</p>
-      <p className="text-[10px] text-muted-foreground mb-3">Sorted by closest grades first</p>
-
-      {/* Header row */}
-      <div className="flex items-center justify-end gap-3 mb-2 px-3">
-        <span className="text-[10px] font-medium text-primary">You</span>
-        <span className="text-[10px] font-medium" style={{ color: "hsl(40, 95%, 55%)" }}>{theirUsername}</span>
+      <p className="text-sm font-semibold text-foreground mb-2">Rating comparison</p>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex gap-2">
+          {(["country", "city"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setRatingTab(t)}
+              className={`text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors ${
+                ratingTab === t ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"
+              }`}
+            >
+              {t === "country" ? "Countries" : "Cities"}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] font-medium text-primary">You</span>
+          <span className="text-[10px] font-medium" style={{ color: "hsl(40, 95%, 55%)" }}>{theirUsername}</span>
+        </div>
       </div>
 
-      {countries.length > 0 && (
-        <div className="mb-4">
-          <p className="text-xs text-muted-foreground font-medium mb-2">Countries ({countries.length})</p>
-          <div className="space-y-1">{countries.map((c) => renderRow(c, false))}</div>
-        </div>
-      )}
-      {cities.length > 0 && (
-        <div>
-          <p className="text-xs text-muted-foreground font-medium mb-2">Cities ({cities.length})</p>
-          <div className="space-y-1">{cities.map((c) => renderRow(c, true))}</div>
-        </div>
+      {activeList.length === 0 ? (
+        <p className="text-xs text-muted-foreground text-center py-4">No shared {ratingTab === "country" ? "countries" : "cities"}</p>
+      ) : (
+        <div className="space-y-1">{activeList.map((c) => renderRow(c, ratingTab === "city"))}</div>
       )}
     </div>
   );
