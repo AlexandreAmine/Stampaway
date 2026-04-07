@@ -59,6 +59,8 @@ interface UserMapData {
   visitedCitiesCount: number;
   continentStats: Record<string, { visited: number; total: number }>;
   countryPlaceMap: Record<string, string>;
+  countryRatings: Record<string, number | null>; // alpha2 -> best rating
+  ratedCities: { name: string; coords: [number, number]; placeId: string; rating: number | null }[];
 }
 
 async function fetchUserMapData(userId: string): Promise<UserMapData> {
@@ -74,6 +76,8 @@ async function fetchUserMapData(userId: string): Promise<UserMapData> {
   const cityCountByCountry: Record<string, number> = {};
   let cityCount = 0;
   const fiveStars: { name: string; coords: [number, number]; placeId: string }[] = [];
+  const countryRatings: Record<string, number | null> = {};
+  const ratedCities: { name: string; coords: [number, number]; placeId: string; rating: number | null }[] = [];
 
   (res.data || []).forEach((r: any) => {
     const code = getCountryCode(r.places.country);
@@ -83,6 +87,14 @@ async function fetchUserMapData(userId: string): Promise<UserMapData> {
         placeMap[code] = r.place_id;
         visitedCountryNames.add(r.places.country);
         if (r.rating === 5) fiveStarCountryCodes.add(code);
+        // Store country rating (keep highest if multiple)
+        const existing = countryRatings[code];
+        const rating = r.rating != null ? Number(r.rating) : null;
+        if (rating != null && (existing == null || rating > existing)) {
+          countryRatings[code] = rating;
+        } else if (!(code in countryRatings)) {
+          countryRatings[code] = null;
+        }
       } else if (!placeMap[code]) {
         placeMap[code] = r.place_id;
       }
@@ -92,9 +104,14 @@ async function fetchUserMapData(userId: string): Promise<UserMapData> {
       cityCount++;
       const c = r.places.country;
       cityCountByCountry[c] = (cityCountByCountry[c] || 0) + 1;
+      const rating = r.rating != null ? Number(r.rating) : null;
       if (r.rating === 5) {
         const coords = getCityCoordinates(r.places.name);
         if (coords) fiveStars.push({ name: r.places.name, coords, placeId: r.place_id });
+      }
+      const coords = getCityCoordinates(r.places.name);
+      if (coords) {
+        ratedCities.push({ name: r.places.name, coords, placeId: r.place_id, rating });
       }
     }
   });
@@ -113,6 +130,8 @@ async function fetchUserMapData(userId: string): Promise<UserMapData> {
     visitedCitiesCount: cityCount,
     continentStats: cStats,
     countryPlaceMap: placeMap,
+    countryRatings,
+    ratedCities,
   };
 }
 
@@ -120,10 +139,24 @@ async function fetchUserMapData(userId: string): Promise<UserMapData> {
 export { fetchUserMapData };
 export type { UserMapData };
 
-export const SoloMapChart = memo(({ data, onCountryClick, onCityClick }: {
+function getRatingColor(rating: number | null | undefined): string {
+  if (rating == null) return "hsl(217, 91%, 60%)"; // blue - no grade
+  if (rating >= 4.5) return "hsl(0, 85%, 50%)";    // red
+  if (rating >= 3.5) return "hsl(25, 95%, 53%)";   // orange
+  if (rating >= 2) return "hsl(45, 95%, 50%)";     // yellow
+  return "hsl(75, 60%, 45%)";                       // green-yellow
+}
+
+function getCityDotColor(rating: number | null | undefined): string {
+  if (rating != null && rating === 5) return "hsl(0, 100%, 55%)"; // flashy red
+  return getRatingColor(rating);
+}
+
+export const SoloMapChart = memo(({ data, onCountryClick, onCityClick, coloredMode }: {
   data: UserMapData;
   onCountryClick?: (alpha2: string) => void;
   onCityClick?: (placeId: string) => void;
+  coloredMode?: boolean;
 }) => (
   <ComposableMap
     projection="geoMercator"
@@ -136,17 +169,12 @@ export const SoloMapChart = memo(({ data, onCountryClick, onCityClick }: {
           geographies.filter((geo) => geo.id !== ANTARCTICA_ID).map((geo) => {
             const alpha2 = numericToAlpha2[geo.id] || "";
             const isVisited = data.visitedCodes.has(alpha2);
-            const isFiveStar = data.fiveStarCountryCodes.has(alpha2);
-            const fill = isFiveStar
-              ? "hsl(25, 95%, 53%)"      // orange for 5/5 countries
-              : isVisited
-                ? "hsl(217, 91%, 60%)"    // blue for visited
-                : "hsl(0, 0%, 18%)";
-            const hoverFill = isFiveStar
-              ? "hsl(25, 95%, 63%)"
-              : isVisited
-                ? "hsl(217, 91%, 70%)"
-                : "hsl(0, 0%, 25%)";
+            let fill = "hsl(0, 0%, 18%)";
+            if (isVisited) {
+              fill = coloredMode
+                ? getRatingColor(data.countryRatings[alpha2])
+                : "hsl(217, 91%, 60%)";
+            }
             return (
               <Geography
                 key={geo.rsmKey}
@@ -157,7 +185,7 @@ export const SoloMapChart = memo(({ data, onCountryClick, onCityClick }: {
                 onClick={() => isVisited && onCountryClick?.(alpha2)}
                 style={{
                   default: { outline: "none", cursor: isVisited ? "pointer" : "default" },
-                  hover: { outline: "none", fill: hoverFill, cursor: isVisited ? "pointer" : "default" },
+                  hover: { outline: "none", fill: isVisited ? fill : "hsl(0, 0%, 25%)", opacity: isVisited ? 0.85 : 1, cursor: isVisited ? "pointer" : "default" },
                   pressed: { outline: "none" },
                 }}
               />
@@ -165,11 +193,11 @@ export const SoloMapChart = memo(({ data, onCountryClick, onCityClick }: {
           })
         }
       </Geographies>
-      {data.fiveStarCities.map((city) => (
+      {coloredMode && data.ratedCities.map((city) => (
         <Marker key={city.name} coordinates={[city.coords[1], city.coords[0]]}>
           <circle
-            r={5}
-            fill="hsl(35, 100%, 55%)"
+            r={city.rating === 5 ? 6 : 4}
+            fill={getCityDotColor(city.rating)}
             stroke="hsl(0, 0%, 10%)"
             strokeWidth={0.8}
             style={{ cursor: "pointer" }}
@@ -237,6 +265,7 @@ export function MapTab({ userId }: { userId?: string }) {
   const [myData, setMyData] = useState<UserMapData | null>(null);
   const [theirData, setTheirData] = useState<UserMapData | null>(null);
   const [theirUsername, setTheirUsername] = useState("");
+  const [coloredMode, setColoredMode] = useState(false);
 
   const targetUserId = userId || user?.id;
   const isOwnProfile = !userId || userId === user?.id;
@@ -382,13 +411,35 @@ export function MapTab({ userId }: { userId?: string }) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ height: 300 }}>
+      <div className="relative bg-card rounded-xl border border-border overflow-hidden" style={{ height: 300 }}>
+        <button
+          onClick={() => setColoredMode(!coloredMode)}
+          className={`absolute top-2 right-2 z-10 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors ${
+            coloredMode
+              ? "bg-primary text-primary-foreground"
+              : "bg-card/80 backdrop-blur-sm text-muted-foreground border border-border"
+          }`}
+        >
+          Colored ratings
+        </button>
         <SoloMapChart
           data={myData}
           onCountryClick={handleCountryClick}
           onCityClick={(placeId) => navigate(`/place/${placeId}`)}
+          coloredMode={coloredMode}
         />
       </div>
+
+      {coloredMode && (
+        <div className="mt-2 flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(0, 85%, 50%)" }} /><span>5 - 4.5</span></div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(25, 95%, 53%)" }} /><span>4 - 3.5</span></div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(45, 95%, 50%)" }} /><span>3 - 2</span></div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(75, 60%, 45%)" }} /><span>1.5 - 0.5</span></div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(217, 91%, 60%)" }} /><span>No grade</span></div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(0, 100%, 55%)" }} /><span>5★ city</span></div>
+        </div>
+      )}
 
       {/* Country stats */}
       <div className="mt-4 flex items-center justify-between">
