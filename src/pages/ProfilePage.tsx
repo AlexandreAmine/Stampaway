@@ -638,22 +638,7 @@ export default function ProfilePage() {
                     <span>Both</span>
                   </div>
                 </>
-              ) : (
-                <>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(217, 91%, 60%)" }} />
-                    <span>Visited</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(25, 95%, 53%)" }} />
-                    <span>5★ country</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded-full" style={{ background: "hsl(35, 100%, 55%)" }} />
-                    <span>5★ city</span>
-                  </div>
-                </>
-              )}
+              ) : null}
             </div>
           </div>
         )}
