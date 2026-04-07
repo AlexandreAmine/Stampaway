@@ -197,7 +197,7 @@ export const SoloMapChart = memo(({ data, onCountryClick, onCityClick, coloredMo
         <Marker key={city.name} coordinates={[city.coords[1], city.coords[0]]}>
           <circle
             r={5}
-            fill="hsl(217, 80%, 35%)"
+            fill="hsl(270, 70%, 50%)"
             stroke="hsl(0, 0%, 10%)"
             strokeWidth={0.8}
             style={{ cursor: "pointer" }}
