@@ -197,7 +197,7 @@ export const SoloMapChart = memo(({ data, onCountryClick, onCityClick, coloredMo
         <Marker key={city.name} coordinates={[city.coords[1], city.coords[0]]}>
           <circle
             r={5}
-            fill="hsl(45, 100%, 50%)"
+            fill="hsl(217, 80%, 35%)"
             stroke="hsl(0, 0%, 10%)"
             strokeWidth={0.8}
             style={{ cursor: "pointer" }}
@@ -437,7 +437,7 @@ export function MapTab({ userId }: { userId?: string }) {
           <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(45, 95%, 50%)" }} /><span>3 - 2</span></div>
           <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(75, 60%, 45%)" }} /><span>1.5 - 0.5</span></div>
           <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(217, 91%, 60%)" }} /><span>No grade</span></div>
-          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(45, 100%, 50%)" }} /><span>5★ city</span></div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(217, 80%, 35%)" }} /><span>5★ city</span></div>
         </div>
       )}
 
