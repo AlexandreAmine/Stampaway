@@ -76,6 +76,8 @@ async function fetchUserMapData(userId: string): Promise<UserMapData> {
   const cityCountByCountry: Record<string, number> = {};
   let cityCount = 0;
   const fiveStars: { name: string; coords: [number, number]; placeId: string }[] = [];
+  const countryRatings: Record<string, number | null> = {};
+  const ratedCities: { name: string; coords: [number, number]; placeId: string; rating: number | null }[] = [];
 
   (res.data || []).forEach((r: any) => {
     const code = getCountryCode(r.places.country);
@@ -85,6 +87,14 @@ async function fetchUserMapData(userId: string): Promise<UserMapData> {
         placeMap[code] = r.place_id;
         visitedCountryNames.add(r.places.country);
         if (r.rating === 5) fiveStarCountryCodes.add(code);
+        // Store country rating (keep highest if multiple)
+        const existing = countryRatings[code];
+        const rating = r.rating != null ? Number(r.rating) : null;
+        if (rating != null && (existing == null || rating > existing)) {
+          countryRatings[code] = rating;
+        } else if (!(code in countryRatings)) {
+          countryRatings[code] = null;
+        }
       } else if (!placeMap[code]) {
         placeMap[code] = r.place_id;
       }
@@ -94,9 +104,14 @@ async function fetchUserMapData(userId: string): Promise<UserMapData> {
       cityCount++;
       const c = r.places.country;
       cityCountByCountry[c] = (cityCountByCountry[c] || 0) + 1;
+      const rating = r.rating != null ? Number(r.rating) : null;
       if (r.rating === 5) {
         const coords = getCityCoordinates(r.places.name);
         if (coords) fiveStars.push({ name: r.places.name, coords, placeId: r.place_id });
+      }
+      const coords = getCityCoordinates(r.places.name);
+      if (coords) {
+        ratedCities.push({ name: r.places.name, coords, placeId: r.place_id, rating });
       }
     }
   });
@@ -115,6 +130,8 @@ async function fetchUserMapData(userId: string): Promise<UserMapData> {
     visitedCitiesCount: cityCount,
     continentStats: cStats,
     countryPlaceMap: placeMap,
+    countryRatings,
+    ratedCities,
   };
 }
 
