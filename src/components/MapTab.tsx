@@ -193,11 +193,11 @@ export const SoloMapChart = memo(({ data, onCountryClick, onCityClick, coloredMo
           })
         }
       </Geographies>
-      {coloredMode && data.ratedCities.map((city) => (
+      {coloredMode && data.fiveStarCities.map((city) => (
         <Marker key={city.name} coordinates={[city.coords[1], city.coords[0]]}>
           <circle
-            r={city.rating === 5 ? 6 : 4}
-            fill={getCityDotColor(city.rating)}
+            r={5}
+            fill="hsl(45, 100%, 50%)"
             stroke="hsl(0, 0%, 10%)"
             strokeWidth={0.8}
             style={{ cursor: "pointer" }}
@@ -437,7 +437,7 @@ export function MapTab({ userId }: { userId?: string }) {
           <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(45, 95%, 50%)" }} /><span>3 - 2</span></div>
           <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(75, 60%, 45%)" }} /><span>1.5 - 0.5</span></div>
           <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(217, 91%, 60%)" }} /><span>No grade</span></div>
-          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(0, 100%, 55%)" }} /><span>5★ city</span></div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(45, 100%, 50%)" }} /><span>5★ city</span></div>
         </div>
       )}
 
@@ -480,21 +480,6 @@ export function MapTab({ userId }: { userId?: string }) {
       {/* Top countries by cities - fetch inline */}
       <TopCountriesByCities userId={targetUserId!} />
 
-      {/* Legend */}
-      <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(217, 91%, 60%)" }} />
-          <span>Visited</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(25, 95%, 53%)" }} />
-          <span>5★ country</span>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-full" style={{ background: "hsl(35, 100%, 55%)" }} />
-          <span>5★ city</span>
-        </div>
-      </div>
     </motion.div>
   );
 }
