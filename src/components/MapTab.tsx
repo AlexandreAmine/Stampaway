@@ -265,6 +265,7 @@ export function MapTab({ userId }: { userId?: string }) {
   const [myData, setMyData] = useState<UserMapData | null>(null);
   const [theirData, setTheirData] = useState<UserMapData | null>(null);
   const [theirUsername, setTheirUsername] = useState("");
+  const [coloredMode, setColoredMode] = useState(false);
 
   const targetUserId = userId || user?.id;
   const isOwnProfile = !userId || userId === user?.id;
