@@ -193,11 +193,11 @@ export const SoloMapChart = memo(({ data, onCountryClick, onCityClick, coloredMo
           })
         }
       </Geographies>
-      {coloredMode && data.ratedCities.map((city) => (
+      {coloredMode && data.fiveStarCities.map((city) => (
         <Marker key={city.name} coordinates={[city.coords[1], city.coords[0]]}>
           <circle
-            r={city.rating === 5 ? 6 : 4}
-            fill={getCityDotColor(city.rating)}
+            r={5}
+            fill="hsl(45, 100%, 50%)"
             stroke="hsl(0, 0%, 10%)"
             strokeWidth={0.8}
             style={{ cursor: "pointer" }}
