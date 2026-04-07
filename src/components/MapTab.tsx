@@ -59,6 +59,8 @@ interface UserMapData {
   visitedCitiesCount: number;
   continentStats: Record<string, { visited: number; total: number }>;
   countryPlaceMap: Record<string, string>;
+  countryRatings: Record<string, number | null>; // alpha2 -> best rating
+  ratedCities: { name: string; coords: [number, number]; placeId: string; rating: number | null }[];
 }
 
 async function fetchUserMapData(userId: string): Promise<UserMapData> {
