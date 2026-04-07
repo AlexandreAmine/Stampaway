@@ -411,13 +411,35 @@ export function MapTab({ userId }: { userId?: string }) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ height: 300 }}>
+      <div className="relative bg-card rounded-xl border border-border overflow-hidden" style={{ height: 300 }}>
+        <button
+          onClick={() => setColoredMode(!coloredMode)}
+          className={`absolute top-2 right-2 z-10 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors ${
+            coloredMode
+              ? "bg-primary text-primary-foreground"
+              : "bg-card/80 backdrop-blur-sm text-muted-foreground border border-border"
+          }`}
+        >
+          Colored ratings
+        </button>
         <SoloMapChart
           data={myData}
           onCountryClick={handleCountryClick}
           onCityClick={(placeId) => navigate(`/place/${placeId}`)}
+          coloredMode={coloredMode}
         />
       </div>
+
+      {coloredMode && (
+        <div className="mt-2 flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(0, 85%, 50%)" }} /><span>5 - 4.5</span></div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(25, 95%, 53%)" }} /><span>4 - 3.5</span></div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(45, 95%, 50%)" }} /><span>3 - 2</span></div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(75, 60%, 45%)" }} /><span>1.5 - 0.5</span></div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(217, 91%, 60%)" }} /><span>No grade</span></div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(0, 100%, 55%)" }} /><span>5★ city</span></div>
+        </div>
+      )}
 
       {/* Country stats */}
       <div className="mt-4 flex items-center justify-between">
