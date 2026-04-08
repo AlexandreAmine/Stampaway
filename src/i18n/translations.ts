@@ -69,6 +69,7 @@ const en = {
   "profile.cities": "Cities",
   "profile.diary": "Diary",
   "profile.reviews": "Reviews",
+  "profile.yearlyGoals": "Yearly Goals",
   "profile.lists": "Lists",
   "profile.map": "Map",
   "profile.wishlist": "Wishlist",
