@@ -142,6 +142,66 @@ export default function AddPlacePage() {
     if (!error) {
       await supabase.from("wishlists").delete().eq("user_id", user.id).eq("place_id", selectedPlace.id);
 
+      // Auto-tick must-visit goal places
+      const currentYear = new Date().getFullYear();
+      await supabase.from("yearly_goal_places")
+        .update({ completed: true })
+        .eq("user_id", user.id)
+        .eq("place_id", selectedPlace.id)
+        .eq("year", currentYear)
+        .eq("completed", false);
+
+      // Check if this is a first-time visit (new destination) and user has yearly goals
+      const { data: previousReviews } = await supabase
+        .from("reviews")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("place_id", selectedPlace.id)
+        .neq("id", insertedReviews?.[0]?.id || "")
+        .limit(1);
+
+      const isNewDestination = !previousReviews || previousReviews.length === 0;
+
+      if (isNewDestination) {
+        const { data: yearlyGoals } = await supabase
+          .from("yearly_goals")
+          .select("continent, country_goal, city_goal")
+          .eq("user_id", user.id)
+          .eq("year", currentYear);
+
+        if (yearlyGoals && yearlyGoals.length > 0) {
+          const totalGoal = yearlyGoals.find(g => g.continent === "total");
+          const placeType = selectedPlace.type === "country" ? "country" : "city";
+          const goalKey = placeType === "country" ? "country_goal" : "city_goal";
+          const totalTarget = totalGoal?.[goalKey] || 0;
+
+          if (totalTarget > 0) {
+            // Count new destinations this year
+            const { data: allReviews } = await supabase
+              .from("reviews")
+              .select("place_id, visit_year, places!inner(type)")
+              .eq("user_id", user.id);
+
+            if (allReviews) {
+              const firstYear: Record<string, number | null> = {};
+              allReviews.forEach((r: any) => {
+                if (!(r.place_id in firstYear)) firstYear[r.place_id] = r.visit_year;
+                else if (r.visit_year && (firstYear[r.place_id] === null || r.visit_year < firstYear[r.place_id]!))
+                  firstYear[r.place_id] = r.visit_year;
+              });
+              const newCount = Object.entries(firstYear).filter(([pid, yr]) => {
+                if (yr !== currentYear) return false;
+                const rev = allReviews.find(r => r.place_id === pid);
+                return rev && (rev as any).places?.type === (placeType === "country" ? "country" : "city");
+              }).length;
+
+              const label = placeType === "country" ? "countries" : "cities";
+              toast.success(`🎉 New ${placeType}! ${newCount}/${totalTarget} new ${label} this year`, { duration: 2000 });
+            }
+          }
+        }
+      }
+
       // Save tags
       if (taggedUsers.length > 0 && insertedReviews && insertedReviews[0]) {
         const reviewId = insertedReviews[0].id;
