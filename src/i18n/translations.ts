@@ -891,6 +891,7 @@ const pt: Record<TranslationKey, string> = {
   "profile.cities": "Cidades",
   "profile.diary": "Diário",
   "profile.reviews": "Avaliações",
+  "profile.yearlyGoals": "Metas anuais",
   "profile.lists": "Listas",
   "profile.map": "Mapa",
   "profile.wishlist": "Desejos",
