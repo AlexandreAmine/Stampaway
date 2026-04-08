@@ -19,6 +19,7 @@ import { TagsTab } from "@/components/TagsTab";
 import { FollowingTab } from "@/components/FollowingTab";
 import { FollowersTab } from "@/components/FollowersTab";
 import { ReviewsTab } from "@/components/ReviewsTab";
+import { YearlyGoalsTab } from "@/components/YearlyGoalsTab";
 import { LoggedPlacesInline } from "@/components/LoggedPlacesInline";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminStats } from "@/components/AdminStats";
