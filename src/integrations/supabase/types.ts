@@ -545,6 +545,74 @@ export type Database = {
           },
         ]
       }
+      yearly_goal_places: {
+        Row: {
+          completed: boolean
+          created_at: string
+          id: string
+          place_id: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          id?: string
+          place_id: string
+          user_id: string
+          year?: number
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          id?: string
+          place_id?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "yearly_goal_places_place_id_fkey"
+            columns: ["place_id"]
+            isOneToOne: false
+            referencedRelation: "places"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      yearly_goals: {
+        Row: {
+          city_goal: number
+          continent: string
+          country_goal: number
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          city_goal?: number
+          continent?: string
+          country_goal?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          year?: number
+        }
+        Update: {
+          city_goal?: number
+          continent?: string
+          country_goal?: number
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
