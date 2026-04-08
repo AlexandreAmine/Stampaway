@@ -19,6 +19,7 @@ import { TagsTab } from "@/components/TagsTab";
 import { FollowingTab } from "@/components/FollowingTab";
 import { FollowersTab } from "@/components/FollowersTab";
 import { ReviewsTab } from "@/components/ReviewsTab";
+import { YearlyGoalsTab } from "@/components/YearlyGoalsTab";
 import { LoggedPlacesInline } from "@/components/LoggedPlacesInline";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminStats } from "@/components/AdminStats";
@@ -37,7 +38,7 @@ interface FavoriteSlot {
   place_type: string;
 }
 
-type SubPage = null | "Countries" | "Cities" | "Diary" | "Map" | "Lists" | "Wishlist" | "Likes" | "Tags" | "Reviews" | "Following" | "Followers" | "CountriesByRating" | "CitiesByRating";
+type SubPage = null | "Countries" | "Cities" | "Diary" | "Map" | "Lists" | "Wishlist" | "Likes" | "Tags" | "Reviews" | "YearlyGoals" | "Following" | "Followers" | "CountriesByRating" | "CitiesByRating";
 
 export default function ProfilePage() {
   const { user, profile } = useAuth();
@@ -46,7 +47,7 @@ export default function ProfilePage() {
     Countries: t("profile.countries"), Cities: t("profile.cities"), Diary: t("profile.diary"),
     Reviews: t("profile.reviews"), Lists: t("profile.lists"), Map: t("profile.map"),
     Wishlist: t("profile.wishlist"), Likes: t("profile.likes"), Tags: t("profile.tags"),
-    Following: t("profile.following"), Followers: t("profile.followers"),
+    Following: t("profile.following"), Followers: t("profile.followers"), YearlyGoals: t("profile.yearlyGoals"),
   };
   const { userId: paramUserId } = useParams<{ userId?: string }>();
   const navigate = useNavigate();
@@ -320,6 +321,7 @@ export default function ProfilePage() {
     { label: t("profile.likes"), value: `${likesCount}`, subPage: "Likes" },
     { label: t("profile.tags"), value: "", subPage: "Tags" },
     { label: t("profile.reviews"), value: `${writtenReviewsCount}`, subPage: "Reviews" },
+    { label: t("profile.yearlyGoals"), value: "", subPage: "YearlyGoals" },
     { label: t("profile.following"), value: `${followingCount}`, subPage: "Following" },
     { label: t("profile.followers"), value: `${followersCount}`, subPage: "Followers" },
   ];
@@ -431,6 +433,8 @@ export default function ProfilePage() {
         return <TagsTab userId={uid} />;
       case "Reviews":
         return <ReviewsTab userId={uid} />;
+      case "YearlyGoals":
+        return <YearlyGoalsTab userId={uid} />;
       case "Following":
         return <FollowingTab userId={uid} readOnly={!isOwnProfile} />;
       case "Followers":
