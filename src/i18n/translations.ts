@@ -300,6 +300,7 @@ const fr: Record<TranslationKey, string> = {
   "profile.cities": "Villes",
   "profile.diary": "Journal",
   "profile.reviews": "Avis",
+  "profile.yearlyGoals": "Objectifs annuels",
   "profile.lists": "Listes",
   "profile.map": "Carte",
   "profile.wishlist": "Envies",
