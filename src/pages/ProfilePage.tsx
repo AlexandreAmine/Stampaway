@@ -433,6 +433,8 @@ export default function ProfilePage() {
         return <TagsTab userId={uid} />;
       case "Reviews":
         return <ReviewsTab userId={uid} />;
+      case "YearlyGoals":
+        return <YearlyGoalsTab userId={uid} />;
       case "Following":
         return <FollowingTab userId={uid} readOnly={!isOwnProfile} />;
       case "Followers":
