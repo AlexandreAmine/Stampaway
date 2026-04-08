@@ -321,6 +321,7 @@ export default function ProfilePage() {
     { label: t("profile.likes"), value: `${likesCount}`, subPage: "Likes" },
     { label: t("profile.tags"), value: "", subPage: "Tags" },
     { label: t("profile.reviews"), value: `${writtenReviewsCount}`, subPage: "Reviews" },
+    { label: t("profile.yearlyGoals"), value: "", subPage: "YearlyGoals" },
     { label: t("profile.following"), value: `${followingCount}`, subPage: "Following" },
     { label: t("profile.followers"), value: `${followersCount}`, subPage: "Followers" },
   ];
