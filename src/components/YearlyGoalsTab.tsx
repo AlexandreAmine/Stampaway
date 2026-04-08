@@ -175,8 +175,8 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
 
   const labels = {
     yearlyGoals: { en: "Yearly Goals", fr: "Objectifs annuels", es: "Objetivos anuales", it: "Obiettivi annuali", pt: "Metas anuais", nl: "Jaardoelen" },
-    countries: { en: "Countries", fr: "Pays", es: "Países", it: "Paesi", pt: "Países", nl: "Landen" },
-    cities: { en: "Cities", fr: "Villes", es: "Ciudades", it: "Città", pt: "Cidades", nl: "Steden" },
+    countries: { en: "New Countries", fr: "Nouveaux pays", es: "Nuevos países", it: "Nuovi paesi", pt: "Novos países", nl: "Nieuwe landen" },
+    cities: { en: "New Cities", fr: "Nouvelles villes", es: "Nuevas ciudades", it: "Nuove città", pt: "Novas cidades", nl: "Nieuwe steden" },
     setGoals: { en: "Set Goals", fr: "Définir", es: "Definir", it: "Imposta", pt: "Definir", nl: "Instellen" },
     editGoals: { en: "Edit Goals", fr: "Modifier", es: "Editar", it: "Modifica", pt: "Editar", nl: "Bewerken" },
     noGoals: { en: "No goals set for this year yet.", fr: "Aucun objectif défini pour cette année.", es: "Sin objetivos este año.", it: "Nessun obiettivo per quest'anno.", pt: "Sem metas este ano.", nl: "Nog geen doelen voor dit jaar." },
