@@ -77,19 +77,38 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
   }, [userId, currentYear]);
 
   const fetchProgress = useCallback(async () => {
-    const { data: reviews } = await supabase
+    // Get all reviews for this user
+    const { data: allReviews } = await supabase
       .from("reviews")
-      .select("place_id, visit_year, places!inner(name, country, type)")
+      .select("place_id, visit_year, created_at, places!inner(name, country, type)")
       .eq("user_id", userId)
-      .eq("visit_year", currentYear);
+      .order("created_at", { ascending: true });
 
-    if (!reviews) return;
+    if (!allReviews) return;
+
+    // Find places first visited this year (new destinations only)
+    const firstVisitYear: Record<string, number | null> = {};
+    allReviews.forEach((r: any) => {
+      const pid = r.place_id;
+      if (!(pid in firstVisitYear)) {
+        firstVisitYear[pid] = r.visit_year;
+      } else if (r.visit_year && (firstVisitYear[pid] === null || (firstVisitYear[pid] !== null && r.visit_year < firstVisitYear[pid]!))) {
+        firstVisitYear[pid] = r.visit_year;
+      }
+    });
 
     const uniqueCountries = new Set<string>();
     const uniqueCities = new Set<string>();
     const byCont: Record<string, { countries: Set<string>; cities: Set<string> }> = {};
 
-    reviews.forEach((r: any) => {
+    // Only count places whose earliest visit_year is this year
+    const seenPlaces = new Set<string>();
+    allReviews.forEach((r: any) => {
+      const pid = r.place_id;
+      if (seenPlaces.has(pid)) return;
+      seenPlaces.add(pid);
+      if (firstVisitYear[pid] !== currentYear) return;
+
       const place = r.places;
       const continent = getContinentForCountry(place.country);
       if (!byCont[continent]) byCont[continent] = { countries: new Set(), cities: new Set() };
