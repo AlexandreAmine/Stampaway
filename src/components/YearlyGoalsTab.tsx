@@ -77,19 +77,38 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
   }, [userId, currentYear]);
 
   const fetchProgress = useCallback(async () => {
-    const { data: reviews } = await supabase
+    // Get all reviews for this user
+    const { data: allReviews } = await supabase
       .from("reviews")
-      .select("place_id, visit_year, places!inner(name, country, type)")
+      .select("place_id, visit_year, created_at, places!inner(name, country, type)")
       .eq("user_id", userId)
-      .eq("visit_year", currentYear);
+      .order("created_at", { ascending: true });
 
-    if (!reviews) return;
+    if (!allReviews) return;
+
+    // Find places first visited this year (new destinations only)
+    const firstVisitYear: Record<string, number | null> = {};
+    allReviews.forEach((r: any) => {
+      const pid = r.place_id;
+      if (!(pid in firstVisitYear)) {
+        firstVisitYear[pid] = r.visit_year;
+      } else if (r.visit_year && (firstVisitYear[pid] === null || (firstVisitYear[pid] !== null && r.visit_year < firstVisitYear[pid]!))) {
+        firstVisitYear[pid] = r.visit_year;
+      }
+    });
 
     const uniqueCountries = new Set<string>();
     const uniqueCities = new Set<string>();
     const byCont: Record<string, { countries: Set<string>; cities: Set<string> }> = {};
 
-    reviews.forEach((r: any) => {
+    // Only count places whose earliest visit_year is this year
+    const seenPlaces = new Set<string>();
+    allReviews.forEach((r: any) => {
+      const pid = r.place_id;
+      if (seenPlaces.has(pid)) return;
+      seenPlaces.add(pid);
+      if (firstVisitYear[pid] !== currentYear) return;
+
       const place = r.places;
       const continent = getContinentForCountry(place.country);
       if (!byCont[continent]) byCont[continent] = { countries: new Set(), cities: new Set() };
@@ -175,8 +194,8 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
 
   const labels = {
     yearlyGoals: { en: "Yearly Goals", fr: "Objectifs annuels", es: "Objetivos anuales", it: "Obiettivi annuali", pt: "Metas anuais", nl: "Jaardoelen" },
-    countries: { en: "Countries", fr: "Pays", es: "Países", it: "Paesi", pt: "Países", nl: "Landen" },
-    cities: { en: "Cities", fr: "Villes", es: "Ciudades", it: "Città", pt: "Cidades", nl: "Steden" },
+    countries: { en: "New Countries", fr: "Nouveaux pays", es: "Nuevos países", it: "Nuovi paesi", pt: "Novos países", nl: "Nieuwe landen" },
+    cities: { en: "New Cities", fr: "Nouvelles villes", es: "Nuevas ciudades", it: "Nuove città", pt: "Novas cidades", nl: "Nieuwe steden" },
     setGoals: { en: "Set Goals", fr: "Définir", es: "Definir", it: "Imposta", pt: "Definir", nl: "Instellen" },
     editGoals: { en: "Edit Goals", fr: "Modifier", es: "Editar", it: "Modifica", pt: "Editar", nl: "Bewerken" },
     noGoals: { en: "No goals set for this year yet.", fr: "Aucun objectif défini pour cette année.", es: "Sin objetivos este año.", it: "Nessun obiettivo per quest'anno.", pt: "Sem metas este ano.", nl: "Nog geen doelen voor dit jaar." },
