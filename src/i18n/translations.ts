@@ -1088,6 +1088,7 @@ const nl: Record<TranslationKey, string> = {
   "profile.cities": "Steden",
   "profile.diary": "Dagboek",
   "profile.reviews": "Beoordelingen",
+  "profile.yearlyGoals": "Jaardoelen",
   "profile.lists": "Lijsten",
   "profile.map": "Kaart",
   "profile.wishlist": "Verlanglijst",
