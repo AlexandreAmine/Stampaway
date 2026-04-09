@@ -454,7 +454,7 @@ export default function ProfilePage() {
               <ChevronLeft className="w-6 h-6 text-foreground" />
             </button>
             <h1 className="text-xl font-bold text-foreground">
-              {subPage === "CountriesByRating" ? `Countries · ${ratingFilter}★` : subPage === "CitiesByRating" ? `Cities · ${ratingFilter}★` : subPage}
+              {subPage === "CountriesByRating" ? `Countries · ${ratingFilter}★` : subPage === "CitiesByRating" ? `Cities · ${ratingFilter}★` : (subPageLabels[subPage] || subPage)}
             </h1>
           </div>
           {renderSubPage()}
