@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, X, Check, Target, Trophy, MapPin, Globe, Pencil } from "lucide-react";
+import { Plus, X, Check, Target, Trophy, MapPin, Globe, Pencil, BarChart3, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import {
@@ -25,6 +25,11 @@ const CONTINENT_LABELS: Record<string, Record<string, string>> = {
   Oceania: { en: "Oceania", fr: "Océanie", es: "Oceanía", it: "Oceania", pt: "Oceania", nl: "Oceanië" },
 };
 
+const CONTINENT_EMOJIS: Record<string, string> = {
+  total: "🌍", Europe: "🇪🇺", Asia: "🌏", "North America": "🌎",
+  "South America": "🌎", Africa: "🌍", Oceania: "🌏",
+};
+
 function getContinentForCountry(country: string): string {
   if (EUROPE_COUNTRIES.includes(country)) return "Europe";
   if (ASIA_COUNTRIES.includes(country)) return "Asia";
@@ -35,22 +40,14 @@ function getContinentForCountry(country: string): string {
   return "Other";
 }
 
-interface GoalRow {
-  continent: string;
-  country_goal: number;
-  city_goal: number;
-}
-
+interface GoalRow { continent: string; country_goal: number; city_goal: number; }
 interface GoalPlace {
-  id: string;
-  place_id: string;
-  completed: boolean;
+  id: string; place_id: string; completed: boolean;
   place?: { name: string; country: string; type: string; id: string };
 }
+interface YearlyGoalsTabProps { userId: string; }
 
-interface YearlyGoalsTabProps {
-  userId: string;
-}
+type TabView = "goals" | "stats";
 
 export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
   const { user } = useAuth();
@@ -65,7 +62,17 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
   const [editGoals, setEditGoals] = useState<Record<string, { countries: number; cities: number }>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [progress, setProgress] = useState<{ countriesVisited: number; citiesVisited: number; byContinent: Record<string, { countries: number; cities: number }> }>({ countriesVisited: 0, citiesVisited: 0, byContinent: {} });
+  const [activeTab, setActiveTab] = useState<TabView>("goals");
+  const [progress, setProgress] = useState<{
+    countriesVisited: number; citiesVisited: number;
+    byContinent: Record<string, { countries: number; cities: number }>;
+    totalCountriesEver: number; totalCitiesEver: number;
+    countriesThisYear: string[]; citiesThisYear: string[];
+  }>({
+    countriesVisited: 0, citiesVisited: 0, byContinent: {},
+    totalCountriesEver: 0, totalCitiesEver: 0,
+    countriesThisYear: [], citiesThisYear: [],
+  });
 
   const fetchGoals = useCallback(async () => {
     const [goalsRes, placesRes] = await Promise.all([
@@ -77,7 +84,6 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
   }, [userId, currentYear]);
 
   const fetchProgress = useCallback(async () => {
-    // Get all reviews for this user
     const { data: allReviews } = await supabase
       .from("reviews")
       .select("place_id, visit_year, created_at, places!inner(name, country, type)")
@@ -86,7 +92,6 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
 
     if (!allReviews) return;
 
-    // Find places first visited this year (new destinations only)
     const firstVisitYear: Record<string, number | null> = {};
     allReviews.forEach((r: any) => {
       const pid = r.place_id;
@@ -99,26 +104,35 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
 
     const uniqueCountries = new Set<string>();
     const uniqueCities = new Set<string>();
+    const allCountriesEver = new Set<string>();
+    const allCitiesEver = new Set<string>();
+    const countriesThisYear: string[] = [];
+    const citiesThisYear: string[] = [];
     const byCont: Record<string, { countries: Set<string>; cities: Set<string> }> = {};
 
-    // Only count places whose earliest visit_year is this year
     const seenPlaces = new Set<string>();
     allReviews.forEach((r: any) => {
       const pid = r.place_id;
       if (seenPlaces.has(pid)) return;
       seenPlaces.add(pid);
+      const place = r.places;
+
+      if (place.type === "country") allCountriesEver.add(place.name);
+      else allCitiesEver.add(place.name);
+
       if (firstVisitYear[pid] !== currentYear) return;
 
-      const place = r.places;
       const continent = getContinentForCountry(place.country);
       if (!byCont[continent]) byCont[continent] = { countries: new Set(), cities: new Set() };
 
       if (place.type === "country") {
         uniqueCountries.add(place.name);
         byCont[continent]?.countries.add(place.name);
+        countriesThisYear.push(place.name);
       } else {
         uniqueCities.add(place.name);
         byCont[continent]?.cities.add(place.name);
+        citiesThisYear.push(place.name);
       }
     });
 
@@ -127,7 +141,12 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
       byContNum[k] = { countries: v.countries.size, cities: v.cities.size };
     });
 
-    setProgress({ countriesVisited: uniqueCountries.size, citiesVisited: uniqueCities.size, byContinent: byContNum });
+    setProgress({
+      countriesVisited: uniqueCountries.size, citiesVisited: uniqueCities.size,
+      byContinent: byContNum,
+      totalCountriesEver: allCountriesEver.size, totalCitiesEver: allCitiesEver.size,
+      countriesThisYear, citiesThisYear,
+    });
   }, [userId, currentYear]);
 
   useEffect(() => { fetchGoals(); fetchProgress(); }, [fetchGoals, fetchProgress]);
@@ -165,12 +184,9 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
 
   const addGoalPlace = async (placeId: string) => {
     if (!user) return;
-    const existing = goalPlaces.find(p => p.place_id === placeId);
-    if (existing) { toast.error("Already added"); return; }
+    if (goalPlaces.find(p => p.place_id === placeId)) { toast.error("Already added"); return; }
     await supabase.from("yearly_goal_places").insert({ user_id: user.id, year: currentYear, place_id: placeId });
-    setSearchQuery("");
-    setSearchResults([]);
-    fetchGoals();
+    setSearchQuery(""); setSearchResults([]); fetchGoals();
   };
 
   const removeGoalPlace = async (id: string) => {
@@ -204,226 +220,393 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
     byContinent: { en: "By Continent", fr: "Par continent", es: "Por continente", it: "Per continente", pt: "Por continente", nl: "Per continent" },
     visited: { en: "visited", fr: "visité(s)", es: "visitados", it: "visitati", pt: "visitados", nl: "bezocht" },
     overall: { en: "Overall Progress", fr: "Progression globale", es: "Progreso global", it: "Progresso globale", pt: "Progresso global", nl: "Algemene voortgang" },
+    goalsTab: { en: "Goals", fr: "Objectifs", es: "Objetivos", it: "Obiettivi", pt: "Metas", nl: "Doelen" },
+    statsTab: { en: "Stats", fr: "Stats", es: "Estadísticas", it: "Statistiche", pt: "Estatísticas", nl: "Statistieken" },
+    thisYear: { en: "This Year", fr: "Cette année", es: "Este año", it: "Quest'anno", pt: "Este ano", nl: "Dit jaar" },
+    allTime: { en: "All Time", fr: "Depuis toujours", es: "Desde siempre", it: "Da sempre", pt: "Desde sempre", nl: "Altijd" },
+    newThisYear: { en: "New this year", fr: "Nouveaux cette année", es: "Nuevos este año", it: "Nuovi quest'anno", pt: "Novos este ano", nl: "Nieuw dit jaar" },
+    completionRate: { en: "Completion Rate", fr: "Taux de complétion", es: "Tasa de finalización", it: "Tasso completamento", pt: "Taxa de conclusão", nl: "Voltooiingspercentage" },
   };
   const l = (key: keyof typeof labels) => labels[key][language] || labels[key].en;
 
   const hasAnyGoal = goals.some(g => g.country_goal > 0 || g.city_goal > 0) || goalPlaces.length > 0;
 
+  const completedGoalPlaces = goalPlaces.filter(p => p.completed).length;
+  const totalGoalPlaces = goalPlaces.length;
+
   return (
-    <div className="space-y-6 pb-24">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-bold flex items-center gap-2">
-          <Trophy className="w-5 h-5 text-primary" />
-          {l("yearlyGoals")} {currentYear}
-        </h2>
-        {isOwn && (
-          <Button size="sm" variant="outline" onClick={editing ? handleSaveGoals : startEditing}>
-            {editing ? <Check className="w-4 h-4 mr-1" /> : <Pencil className="w-4 h-4 mr-1" />}
-            {editing ? t("save") : (hasAnyGoal ? l("editGoals") : l("setGoals"))}
-          </Button>
-        )}
+    <div className="space-y-5 pb-24">
+      {/* Tab switcher */}
+      <div className="flex gap-1 p-1 rounded-xl bg-muted/50">
+        <button
+          onClick={() => setActiveTab("goals")}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            activeTab === "goals"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Trophy className="w-4 h-4" />
+          {l("goalsTab")}
+        </button>
+        <button
+          onClick={() => setActiveTab("stats")}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            activeTab === "stats"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          {l("statsTab")}
+        </button>
       </div>
 
-      {/* Editing mode */}
-      {editing && (
-        <div className="space-y-4 rounded-xl border border-border p-4 bg-card">
-          {CONTINENTS.map(continent => (
-            <div key={continent} className="space-y-1">
-              <p className="text-sm font-medium text-foreground">
-                {CONTINENT_LABELS[continent]?.[language] || continent}
-              </p>
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="text-xs text-muted-foreground">{l("countries")}</label>
-                  <Input
-                    type="number" min={0} max={200}
-                    value={editGoals[continent]?.countries || 0}
-                    onChange={e => setEditGoals(prev => ({ ...prev, [continent]: { ...prev[continent], countries: parseInt(e.target.value) || 0 } }))}
-                    className="h-8"
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="text-xs text-muted-foreground">{l("cities")}</label>
-                  <Input
-                    type="number" min={0} max={500}
-                    value={editGoals[continent]?.cities || 0}
-                    onChange={e => setEditGoals(prev => ({ ...prev, [continent]: { ...prev[continent], cities: parseInt(e.target.value) || 0 } }))}
-                    className="h-8"
-                  />
-                </div>
-              </div>
+      {/* ==================== STATS TAB ==================== */}
+      {activeTab === "stats" && (
+        <div className="space-y-4">
+          {/* Year summary cards */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-border p-4 bg-card text-center space-y-1">
+              <Globe className="w-5 h-5 mx-auto text-primary" />
+              <p className="text-2xl font-bold text-foreground">{progress.countriesVisited}</p>
+              <p className="text-xs text-muted-foreground">{l("countries")} {currentYear}</p>
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* No goals state */}
-      {!hasAnyGoal && !editing && (
-        <div className="text-center py-12 text-muted-foreground">
-          <Target className="w-12 h-12 mx-auto mb-3 opacity-40" />
-          <p>{l("noGoals")}</p>
-        </div>
-      )}
-
-      {/* Overall progress */}
-      {hasAnyGoal && !editing && (
-        <>
-          <div className="rounded-xl border border-border p-4 bg-card space-y-4">
-            <h3 className="font-semibold text-sm">{l("overall")}</h3>
-            {totalCountryGoal > 0 && (
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="flex items-center gap-1"><Globe className="w-3 h-3" /> {l("countries")}</span>
-                  <span className="font-mono">{progress.countriesVisited}/{totalCountryGoal}</span>
-                </div>
-                <Progress value={countryPct} className="h-3" />
-                <p className="text-xs text-muted-foreground text-right">{countryPct}%</p>
-              </div>
-            )}
-            {totalCityGoal > 0 && (
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs">
-                  <span className="flex items-center gap-1"><MapPin className="w-3 h-3" /> {l("cities")}</span>
-                  <span className="font-mono">{progress.citiesVisited}/{totalCityGoal}</span>
-                </div>
-                <Progress value={cityPct} className="h-3" />
-                <p className="text-xs text-muted-foreground text-right">{cityPct}%</p>
-              </div>
-            )}
+            <div className="rounded-xl border border-border p-4 bg-card text-center space-y-1">
+              <MapPin className="w-5 h-5 mx-auto text-primary" />
+              <p className="text-2xl font-bold text-foreground">{progress.citiesVisited}</p>
+              <p className="text-xs text-muted-foreground">{l("cities")} {currentYear}</p>
+            </div>
           </div>
 
-          {/* By continent */}
-          {goals.filter(g => g.continent !== "total" && (g.country_goal > 0 || g.city_goal > 0)).length > 0 && (
+          {/* All-time stats */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-border p-4 bg-card text-center space-y-1">
+              <p className="text-2xl font-bold text-foreground">{progress.totalCountriesEver}</p>
+              <p className="text-xs text-muted-foreground">{l("allTime")} · {l("countries").toLowerCase()}</p>
+            </div>
+            <div className="rounded-xl border border-border p-4 bg-card text-center space-y-1">
+              <p className="text-2xl font-bold text-foreground">{progress.totalCitiesEver}</p>
+              <p className="text-xs text-muted-foreground">{l("allTime")} · {l("cities").toLowerCase()}</p>
+            </div>
+          </div>
+
+          {/* Goal completion */}
+          {hasAnyGoal && (
             <div className="rounded-xl border border-border p-4 bg-card space-y-3">
-              <h3 className="font-semibold text-sm">{l("byContinent")}</h3>
-              {goals.filter(g => g.continent !== "total" && (g.country_goal > 0 || g.city_goal > 0)).map(g => {
-                const contProgress = progress.byContinent[g.continent] || { countries: 0, cities: 0 };
-                const cPct = g.country_goal > 0 ? Math.min(100, Math.round((contProgress.countries / g.country_goal) * 100)) : 0;
-                const ciPct = g.city_goal > 0 ? Math.min(100, Math.round((contProgress.cities / g.city_goal) * 100)) : 0;
-                return (
-                  <div key={g.continent} className="space-y-2 pb-2 border-b border-border last:border-0">
-                    <p className="text-xs font-medium">{CONTINENT_LABELS[g.continent]?.[language] || g.continent}</p>
-                    {g.country_goal > 0 && (
-                      <div className="space-y-0.5">
-                        <div className="flex justify-between text-[11px] text-muted-foreground">
-                          <span>{l("countries")}</span>
-                          <span>{contProgress.countries}/{g.country_goal}</span>
-                        </div>
-                        <Progress value={cPct} className="h-2" />
-                      </div>
-                    )}
-                    {g.city_goal > 0 && (
-                      <div className="space-y-0.5">
-                        <div className="flex justify-between text-[11px] text-muted-foreground">
-                          <span>{l("cities")}</span>
-                          <span>{contProgress.cities}/{g.city_goal}</span>
-                        </div>
-                        <Progress value={ciPct} className="h-2" />
-                      </div>
-                    )}
+              <h3 className="font-semibold text-sm">{l("completionRate")}</h3>
+              {totalCountryGoal > 0 && (
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5 text-primary" /> {l("countries")}</span>
+                    <span className="font-mono text-primary font-semibold">{progress.countriesVisited}/{totalCountryGoal}</span>
                   </div>
-                );
-              })}
+                  <Progress value={countryPct} className="h-3" />
+                  <p className="text-[11px] text-muted-foreground text-right">{countryPct}%</p>
+                </div>
+              )}
+              {totalCityGoal > 0 && (
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-primary" /> {l("cities")}</span>
+                    <span className="font-mono text-primary font-semibold">{progress.citiesVisited}/{totalCityGoal}</span>
+                  </div>
+                  <Progress value={cityPct} className="h-3" />
+                  <p className="text-[11px] text-muted-foreground text-right">{cityPct}%</p>
+                </div>
+              )}
+              {totalGoalPlaces > 0 && (
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span className="flex items-center gap-1.5"><Target className="w-3.5 h-3.5 text-primary" /> {l("mustVisit")}</span>
+                    <span className="font-mono text-primary font-semibold">{completedGoalPlaces}/{totalGoalPlaces}</span>
+                  </div>
+                  <Progress value={totalGoalPlaces > 0 ? Math.round((completedGoalPlaces / totalGoalPlaces) * 100) : 0} className="h-3" />
+                </div>
+              )}
             </div>
           )}
 
-          {/* Must-visit places */}
-          <div className="rounded-xl border border-border p-4 bg-card space-y-3">
-            <h3 className="font-semibold text-sm flex items-center gap-2">
-              <Target className="w-4 h-4 text-primary" />
-              {l("mustVisit")}
-            </h3>
+          {/* By continent breakdown */}
+          {Object.keys(progress.byContinent).length > 0 && (
+            <div className="rounded-xl border border-border p-4 bg-card space-y-3">
+              <h3 className="font-semibold text-sm">{l("byContinent")}</h3>
+              {Object.entries(progress.byContinent).map(([continent, counts]) => (
+                <div key={continent} className="flex items-center justify-between py-1.5 border-b border-border last:border-0">
+                  <span className="text-sm flex items-center gap-2">
+                    <span>{CONTINENT_EMOJIS[continent] || "🌐"}</span>
+                    {CONTINENT_LABELS[continent]?.[language] || continent}
+                  </span>
+                  <div className="flex gap-3 text-xs text-muted-foreground">
+                    {counts.countries > 0 && <span>{counts.countries} <Globe className="w-3 h-3 inline" /></span>}
+                    {counts.cities > 0 && <span>{counts.cities} <MapPin className="w-3 h-3 inline" /></span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
-            {isOwn && (
-              <div className="relative">
-                <Input
-                  placeholder={l("addPlace")}
-                  value={searchQuery}
-                  onChange={e => handleSearchPlace(e.target.value)}
-                  className="h-9"
-                />
-                {searchResults.length > 0 && (
-                  <div className="absolute z-20 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                    {searchResults.map(place => (
-                      <button
-                        key={place.id}
-                        onClick={() => addGoalPlace(place.id)}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center gap-2"
-                      >
-                        {place.type === "country" ? <Globe className="w-3 h-3" /> : <MapPin className="w-3 h-3" />}
-                        <span>{place.name}</span>
-                        <span className="text-muted-foreground text-xs ml-auto">{place.country}</span>
-                      </button>
+          {/* New destinations list */}
+          {(progress.countriesThisYear.length > 0 || progress.citiesThisYear.length > 0) && (
+            <div className="rounded-xl border border-border p-4 bg-card space-y-3">
+              <h3 className="font-semibold text-sm">{l("newThisYear")}</h3>
+              {progress.countriesThisYear.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">{l("countries")}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {progress.countriesThisYear.map(c => (
+                      <span key={c} className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">{c}</span>
                     ))}
                   </div>
-                )}
-              </div>
-            )}
-
-            {/* Countries */}
-            {goalCountries.length > 0 && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">{l("countries")}</p>
-                <div className="space-y-1">
-                  {goalCountries.map(gp => (
-                    <div key={gp.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-muted/50 group">
-                      {isOwn && (
-                        <button onClick={() => toggleCompleted(gp.id, gp.completed)}
-                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${gp.completed ? "bg-primary border-primary" : "border-muted-foreground/40"}`}>
-                          {gp.completed && <Check className="w-3 h-3 text-primary-foreground" />}
-                        </button>
-                      )}
-                      {!isOwn && gp.completed && <Check className="w-4 h-4 text-primary" />}
-                      <span className={`text-sm flex-1 cursor-pointer ${gp.completed ? "line-through text-muted-foreground" : ""}`}
-                        onClick={() => navigate(`/place/${gp.place_id}`)}>
-                        {gp.place?.name}
-                      </span>
-                      {isOwn && (
-                        <button onClick={() => removeGoalPlace(gp.id)} className="opacity-0 group-hover:opacity-100">
-                          <X className="w-4 h-4 text-muted-foreground" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
                 </div>
-              </div>
-            )}
-
-            {/* Cities */}
-            {goalCities.length > 0 && (
-              <div>
-                <p className="text-xs text-muted-foreground mb-1">{l("cities")}</p>
-                <div className="space-y-1">
-                  {goalCities.map(gp => (
-                    <div key={gp.id} className="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-muted/50 group">
-                      {isOwn && (
-                        <button onClick={() => toggleCompleted(gp.id, gp.completed)}
-                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${gp.completed ? "bg-primary border-primary" : "border-muted-foreground/40"}`}>
-                          {gp.completed && <Check className="w-3 h-3 text-primary-foreground" />}
-                        </button>
-                      )}
-                      {!isOwn && gp.completed && <Check className="w-4 h-4 text-primary" />}
-                      <span className={`text-sm flex-1 cursor-pointer ${gp.completed ? "line-through text-muted-foreground" : ""}`}
-                        onClick={() => navigate(`/place/${gp.place_id}`)}>
-                        {gp.place?.name}
-                        <span className="text-muted-foreground text-xs ml-1">({gp.place?.country})</span>
-                      </span>
-                      {isOwn && (
-                        <button onClick={() => removeGoalPlace(gp.id)} className="opacity-0 group-hover:opacity-100">
-                          <X className="w-4 h-4 text-muted-foreground" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
+              )}
+              {progress.citiesThisYear.length > 0 && (
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1.5">{l("cities")}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {progress.citiesThisYear.map(c => (
+                      <span key={c} className="px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">{c}</span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
-            {goalPlaces.length === 0 && !isOwn && (
-              <p className="text-sm text-muted-foreground text-center py-4">—</p>
+      {/* ==================== GOALS TAB ==================== */}
+      {activeTab === "goals" && (
+        <>
+          {/* Header with edit button */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-primary" />
+              {currentYear}
+            </h2>
+            {isOwn && (
+              <Button size="sm" variant="outline" onClick={editing ? handleSaveGoals : startEditing} className="rounded-full">
+                {editing ? <Check className="w-4 h-4 mr-1" /> : <Pencil className="w-4 h-4 mr-1" />}
+                {editing ? t("save") : (hasAnyGoal ? l("editGoals") : l("setGoals"))}
+              </Button>
             )}
           </div>
+
+          {/* Editing mode */}
+          {editing && (
+            <div className="space-y-4 rounded-xl border border-border p-4 bg-card">
+              {CONTINENTS.map(continent => (
+                <div key={continent} className="space-y-1">
+                  <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <span>{CONTINENT_EMOJIS[continent]}</span>
+                    {CONTINENT_LABELS[continent]?.[language] || continent}
+                  </p>
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <label className="text-xs text-muted-foreground">{l("countries")}</label>
+                      <Input
+                        type="number" min={0} max={200}
+                        value={editGoals[continent]?.countries || 0}
+                        onChange={e => setEditGoals(prev => ({ ...prev, [continent]: { ...prev[continent], countries: parseInt(e.target.value) || 0 } }))}
+                        className="h-8"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-xs text-muted-foreground">{l("cities")}</label>
+                      <Input
+                        type="number" min={0} max={500}
+                        value={editGoals[continent]?.cities || 0}
+                        onChange={e => setEditGoals(prev => ({ ...prev, [continent]: { ...prev[continent], cities: parseInt(e.target.value) || 0 } }))}
+                        className="h-8"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* No goals state */}
+          {!hasAnyGoal && !editing && (
+            <div className="text-center py-16 text-muted-foreground">
+              <Target className="w-14 h-14 mx-auto mb-4 opacity-30" />
+              <p className="text-sm">{l("noGoals")}</p>
+              {isOwn && (
+                <Button size="sm" variant="outline" className="mt-4 rounded-full" onClick={startEditing}>
+                  <Plus className="w-4 h-4 mr-1" /> {l("setGoals")}
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Overall progress */}
+          {hasAnyGoal && !editing && (
+            <>
+              {(totalCountryGoal > 0 || totalCityGoal > 0) && (
+                <div className="rounded-xl border border-border p-4 bg-card space-y-4">
+                  <h3 className="font-semibold text-sm">{l("overall")}</h3>
+                  {totalCountryGoal > 0 && (
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-xs">
+                        <span className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5 text-primary" /> {l("countries")}</span>
+                        <span className="font-mono text-primary font-semibold">{progress.countriesVisited}/{totalCountryGoal}</span>
+                      </div>
+                      <Progress value={countryPct} className="h-3" />
+                      <p className="text-[11px] text-muted-foreground text-right">{countryPct}%</p>
+                    </div>
+                  )}
+                  {totalCityGoal > 0 && (
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between text-xs">
+                        <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-primary" /> {l("cities")}</span>
+                        <span className="font-mono text-primary font-semibold">{progress.citiesVisited}/{totalCityGoal}</span>
+                      </div>
+                      <Progress value={cityPct} className="h-3" />
+                      <p className="text-[11px] text-muted-foreground text-right">{cityPct}%</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* By continent */}
+              {goals.filter(g => g.continent !== "total" && (g.country_goal > 0 || g.city_goal > 0)).length > 0 && (
+                <div className="rounded-xl border border-border p-4 bg-card space-y-3">
+                  <h3 className="font-semibold text-sm">{l("byContinent")}</h3>
+                  {goals.filter(g => g.continent !== "total" && (g.country_goal > 0 || g.city_goal > 0)).map(g => {
+                    const contProgress = progress.byContinent[g.continent] || { countries: 0, cities: 0 };
+                    const cPct = g.country_goal > 0 ? Math.min(100, Math.round((contProgress.countries / g.country_goal) * 100)) : 0;
+                    const ciPct = g.city_goal > 0 ? Math.min(100, Math.round((contProgress.cities / g.city_goal) * 100)) : 0;
+                    return (
+                      <div key={g.continent} className="space-y-2 pb-3 border-b border-border last:border-0">
+                        <p className="text-xs font-medium flex items-center gap-1.5">
+                          <span>{CONTINENT_EMOJIS[g.continent]}</span>
+                          {CONTINENT_LABELS[g.continent]?.[language] || g.continent}
+                        </p>
+                        {g.country_goal > 0 && (
+                          <div className="space-y-0.5">
+                            <div className="flex justify-between text-[11px] text-muted-foreground">
+                              <span>{l("countries")}</span>
+                              <span className="font-mono">{contProgress.countries}/{g.country_goal}</span>
+                            </div>
+                            <Progress value={cPct} className="h-2" />
+                          </div>
+                        )}
+                        {g.city_goal > 0 && (
+                          <div className="space-y-0.5">
+                            <div className="flex justify-between text-[11px] text-muted-foreground">
+                              <span>{l("cities")}</span>
+                              <span className="font-mono">{contProgress.cities}/{g.city_goal}</span>
+                            </div>
+                            <Progress value={ciPct} className="h-2" />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Must-visit places */}
+              <div className="rounded-xl border border-border p-4 bg-card space-y-3">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <Target className="w-4 h-4 text-primary" />
+                  {l("mustVisit")}
+                  {totalGoalPlaces > 0 && (
+                    <span className="text-xs text-muted-foreground ml-auto">{completedGoalPlaces}/{totalGoalPlaces}</span>
+                  )}
+                </h3>
+
+                {isOwn && (
+                  <div className="relative">
+                    <Input
+                      placeholder={l("addPlace")}
+                      value={searchQuery}
+                      onChange={e => handleSearchPlace(e.target.value)}
+                      className="h-9"
+                    />
+                    {searchResults.length > 0 && (
+                      <div className="absolute z-20 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {searchResults.map(place => (
+                          <button
+                            key={place.id}
+                            onClick={() => addGoalPlace(place.id)}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center gap-2"
+                          >
+                            {place.type === "country" ? <Globe className="w-3 h-3" /> : <MapPin className="w-3 h-3" />}
+                            <span>{place.name}</span>
+                            <span className="text-muted-foreground text-xs ml-auto">{place.country}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Countries */}
+                {goalCountries.length > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1.5">{l("countries")}</p>
+                    <div className="space-y-0.5">
+                      {goalCountries.map(gp => (
+                        <div key={gp.id} className="flex items-center gap-2 py-2 px-2.5 rounded-lg hover:bg-muted/50 group transition-colors">
+                          {isOwn && (
+                            <button onClick={() => toggleCompleted(gp.id, gp.completed)}
+                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${gp.completed ? "bg-primary border-primary" : "border-muted-foreground/40"}`}>
+                              {gp.completed && <Check className="w-3 h-3 text-primary-foreground" />}
+                            </button>
+                          )}
+                          {!isOwn && gp.completed && <Check className="w-4 h-4 text-primary shrink-0" />}
+                          <span className={`text-sm flex-1 cursor-pointer ${gp.completed ? "line-through text-muted-foreground" : ""}`}
+                            onClick={() => navigate(`/place/${gp.place_id}`)}>
+                            {gp.place?.name}
+                          </span>
+                          {isOwn && (
+                            <button onClick={() => removeGoalPlace(gp.id)} className="opacity-0 group-hover:opacity-100 shrink-0">
+                              <X className="w-4 h-4 text-muted-foreground" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Cities */}
+                {goalCities.length > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1.5">{l("cities")}</p>
+                    <div className="space-y-0.5">
+                      {goalCities.map(gp => (
+                        <div key={gp.id} className="flex items-center gap-2 py-2 px-2.5 rounded-lg hover:bg-muted/50 group transition-colors">
+                          {isOwn && (
+                            <button onClick={() => toggleCompleted(gp.id, gp.completed)}
+                              className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${gp.completed ? "bg-primary border-primary" : "border-muted-foreground/40"}`}>
+                              {gp.completed && <Check className="w-3 h-3 text-primary-foreground" />}
+                            </button>
+                          )}
+                          {!isOwn && gp.completed && <Check className="w-4 h-4 text-primary shrink-0" />}
+                          <span className={`text-sm flex-1 cursor-pointer ${gp.completed ? "line-through text-muted-foreground" : ""}`}
+                            onClick={() => navigate(`/place/${gp.place_id}`)}>
+                            {gp.place?.name}
+                            <span className="text-muted-foreground text-xs ml-1">({gp.place?.country})</span>
+                          </span>
+                          {isOwn && (
+                            <button onClick={() => removeGoalPlace(gp.id)} className="opacity-0 group-hover:opacity-100 shrink-0">
+                              <X className="w-4 h-4 text-muted-foreground" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {goalPlaces.length === 0 && !isOwn && (
+                  <p className="text-sm text-muted-foreground text-center py-4">—</p>
+                )}
+              </div>
+            </>
+          )}
         </>
       )}
     </div>
