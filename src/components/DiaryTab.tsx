@@ -105,6 +105,14 @@ export function DiaryTab({ userId }: { userId?: string }) {
 
   const filtered = entries.filter((e) => e.place.type === section);
 
+  // Count unique places per year (deduplicate by place id)
+  const uniquePlacesPerYear: Record<string, Set<string>> = {};
+  filtered.forEach((e) => {
+    const key = String(e.visit_year || "Unknown");
+    if (!uniquePlacesPerYear[key]) uniquePlacesPerYear[key] = new Set();
+    uniquePlacesPerYear[key].add(e.place.id);
+  });
+
   // Group by year
   const grouped: Record<number | string, DiaryEntry[]> = {};
   filtered.forEach((e) => {
@@ -145,7 +153,12 @@ export function DiaryTab({ userId }: { userId?: string }) {
         <div className="space-y-6">
         {sortedYears.map((year) => (
         <div key={year}>
-          <h3 className="text-lg font-bold text-foreground mb-3">{year}</h3>
+          <h3 className="text-lg font-bold text-foreground mb-3">
+            {year}
+            <span className="text-sm font-normal text-muted-foreground ml-2">
+              ({uniquePlacesPerYear[String(year)]?.size || 0} {section === "country" ? (uniquePlacesPerYear[String(year)]?.size === 1 ? "country" : "countries") : (uniquePlacesPerYear[String(year)]?.size === 1 ? "city" : "cities")})
+            </span>
+          </h3>
           <div className="space-y-3">
             {grouped[year].map((entry) => (
               <div key={entry.id} className="flex gap-3 bg-card rounded-xl p-3 border border-border w-full">
