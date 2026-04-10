@@ -377,6 +377,14 @@ export default function SettingsPage() {
         </div>
 
         <div className="space-y-0">
+          <button onClick={() => setSection("personal")} className="flex items-center justify-between py-4 border-b border-border w-full text-left">
+            <div className="flex items-center gap-3">
+              <User className="w-5 h-5 text-muted-foreground" />
+              <span className="text-sm font-semibold text-foreground">{t("settings.personalDetails")}</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </button>
+
           <button onClick={() => setSection("privacy")} className="flex items-center justify-between py-4 border-b border-border w-full text-left">
             <div className="flex items-center gap-3">
               <Lock className="w-5 h-5 text-muted-foreground" />
