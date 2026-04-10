@@ -287,9 +287,11 @@ export type Database = {
           bio: string | null
           country: string | null
           created_at: string
+          date_of_birth: string | null
           email: string | null
           id: string
           is_private: boolean
+          phone: string | null
           profile_picture: string | null
           updated_at: string
           user_id: string
@@ -299,9 +301,11 @@ export type Database = {
           bio?: string | null
           country?: string | null
           created_at?: string
+          date_of_birth?: string | null
           email?: string | null
           id?: string
           is_private?: boolean
+          phone?: string | null
           profile_picture?: string | null
           updated_at?: string
           user_id: string
@@ -311,9 +315,11 @@ export type Database = {
           bio?: string | null
           country?: string | null
           created_at?: string
+          date_of_birth?: string | null
           email?: string | null
           id?: string
           is_private?: boolean
+          phone?: string | null
           profile_picture?: string | null
           updated_at?: string
           user_id?: string
