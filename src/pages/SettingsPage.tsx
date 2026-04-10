@@ -127,11 +127,8 @@ export default function SettingsPage() {
     const handleSavePersonal = async () => {
       if (!user) return;
       setSavingPersonal(true);
-      const updates: Record<string, any> = {};
-      if (personalPhone) updates.phone = personalPhone;
-      if (Object.keys(updates).length > 0) {
-        await supabase.from("profiles").update(updates).eq("user_id", user.id);
-      }
+      if (personalPhone) {
+        await supabase.from("profiles").update({ phone: personalPhone }).eq("user_id", user.id);
       // Also update phone on auth user if added
       if (personalPhone && !user.phone) {
         await supabase.auth.updateUser({ phone: personalPhone });
