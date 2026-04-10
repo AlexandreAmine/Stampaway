@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Lock, Shield, KeyRound, LogOut, Trash2, ChevronRight, Activity, Globe } from "lucide-react";
+import { ChevronLeft, Lock, Shield, KeyRound, LogOut, Trash2, ChevronRight, Activity, Globe, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,7 +18,14 @@ export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
   const [isPrivate, setIsPrivate] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [section, setSection] = useState<null | "privacy" | "blocked" | "activity" | "language" | "password" | "delete">(null);
+  const [section, setSection] = useState<null | "privacy" | "blocked" | "activity" | "language" | "password" | "delete" | "personal">(null);
+
+  // Personal details state
+  const [personalEmail, setPersonalEmail] = useState("");
+  const [personalPhone, setPersonalPhone] = useState("");
+  const [personalDob, setPersonalDob] = useState("");
+  const [personalUsername, setPersonalUsername] = useState("");
+  const [savingPersonal, setSavingPersonal] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -33,8 +40,14 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("is_private").eq("user_id", user.id).single().then(({ data }) => {
-      if (data) setIsPrivate((data as any).is_private || false);
+    supabase.from("profiles").select("is_private, email, phone, date_of_birth, username").eq("user_id", user.id).single().then(({ data }) => {
+      if (data) {
+        setIsPrivate((data as any).is_private || false);
+        setPersonalEmail((data as any).email || "");
+        setPersonalPhone((data as any).phone || "");
+        setPersonalDob((data as any).date_of_birth || "");
+        setPersonalUsername((data as any).username || "");
+      }
       setLoading(false);
     });
   }, [user]);
@@ -109,6 +122,95 @@ export default function SettingsPage() {
   };
 
   if (loading) return <div className="min-h-screen bg-background" />;
+
+  if (section === "personal") {
+    const handleSavePersonal = async () => {
+      if (!user) return;
+      setSavingPersonal(true);
+      if (personalPhone) {
+        await supabase.from("profiles").update({ phone: personalPhone }).eq("user_id", user.id);
+      }
+      if (personalPhone && !user.phone) {
+        await supabase.auth.updateUser({ phone: personalPhone });
+      }
+      toast.success(t("toast.profileUpdated"));
+      setSavingPersonal(false);
+    };
+
+    const signedUpWithEmail = !!user?.email;
+    const signedUpWithPhone = !!user?.phone;
+
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <div className="pt-12 px-5">
+          <div className="flex items-center gap-3 mb-8">
+            <button onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
+            <h1 className="text-xl font-bold text-foreground">{t("settings.personalDetails")}</h1>
+          </div>
+          <div className="space-y-5">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">{t("auth.username")}</label>
+              <p className="text-sm text-foreground bg-card rounded-xl py-3 px-4 border border-border">{personalUsername}</p>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">{t("auth.email")}</label>
+              <p className="text-sm text-foreground bg-card rounded-xl py-3 px-4 border border-border">
+                {personalEmail || user?.email || t("settings.notSet")}
+              </p>
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">{t("settings.phoneNumber")}</label>
+              {signedUpWithEmail && !user?.phone ? (
+                <>
+                  <Input
+                    type="tel"
+                    value={personalPhone}
+                    onChange={(e) => setPersonalPhone(e.target.value)}
+                    placeholder={t("auth.phonePlaceholder")}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">{t("settings.addForRecovery")}</p>
+                </>
+              ) : (
+                <p className="text-sm text-foreground bg-card rounded-xl py-3 px-4 border border-border">
+                  {personalPhone || user?.phone || t("settings.notSet")}
+                </p>
+              )}
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">{t("settings.dateOfBirth")}</label>
+              <p className="text-sm text-foreground bg-card rounded-xl py-3 px-4 border border-border">
+                {personalDob ? new Date(personalDob).toLocaleDateString() : t("settings.notSet")}
+              </p>
+            </div>
+            {signedUpWithEmail && !user?.phone && (
+              <Button onClick={handleSavePersonal} disabled={savingPersonal || !personalPhone} className="w-full">
+                {savingPersonal ? t("settings.updating") : t("save")}
+              </Button>
+            )}
+            {signedUpWithPhone && !user?.email && (
+              <>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">{t("auth.email")} ({t("settings.addForRecovery")})</label>
+                  <Input type="email" value={personalEmail} onChange={(e) => setPersonalEmail(e.target.value)} placeholder={t("auth.email")} />
+                </div>
+                <Button onClick={async () => {
+                  if (!personalEmail) return;
+                  setSavingPersonal(true);
+                  await supabase.auth.updateUser({ email: personalEmail });
+                  await supabase.from("profiles").update({ email: personalEmail }).eq("user_id", user!.id);
+                  toast.success(t("toast.profileUpdated"));
+                  setSavingPersonal(false);
+                }} disabled={savingPersonal || !personalEmail} className="w-full">
+                  {savingPersonal ? t("settings.updating") : t("save")}
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (section === "activity") {
     return <YourActivity onBack={() => setSection(null)} />;
@@ -275,6 +377,14 @@ export default function SettingsPage() {
         </div>
 
         <div className="space-y-0">
+          <button onClick={() => setSection("personal")} className="flex items-center justify-between py-4 border-b border-border w-full text-left">
+            <div className="flex items-center gap-3">
+              <User className="w-5 h-5 text-muted-foreground" />
+              <span className="text-sm font-semibold text-foreground">{t("settings.personalDetails")}</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </button>
+
           <button onClick={() => setSection("privacy")} className="flex items-center justify-between py-4 border-b border-border w-full text-left">
             <div className="flex items-center gap-3">
               <Lock className="w-5 h-5 text-muted-foreground" />
