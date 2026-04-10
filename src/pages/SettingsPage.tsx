@@ -129,7 +129,7 @@ export default function SettingsPage() {
       setSavingPersonal(true);
       if (personalPhone) {
         await supabase.from("profiles").update({ phone: personalPhone }).eq("user_id", user.id);
-      // Also update phone on auth user if added
+      }
       if (personalPhone && !user.phone) {
         await supabase.auth.updateUser({ phone: personalPhone });
       }
