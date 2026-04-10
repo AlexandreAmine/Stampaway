@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Lock, Shield, KeyRound, LogOut, Trash2, ChevronRight, Activity, Globe } from "lucide-react";
+import { ChevronLeft, Lock, Shield, KeyRound, LogOut, Trash2, ChevronRight, Activity, Globe, User } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,7 +18,14 @@ export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
   const [isPrivate, setIsPrivate] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [section, setSection] = useState<null | "privacy" | "blocked" | "activity" | "language" | "password" | "delete">(null);
+  const [section, setSection] = useState<null | "privacy" | "blocked" | "activity" | "language" | "password" | "delete" | "personal">(null);
+
+  // Personal details state
+  const [personalEmail, setPersonalEmail] = useState("");
+  const [personalPhone, setPersonalPhone] = useState("");
+  const [personalDob, setPersonalDob] = useState("");
+  const [personalUsername, setPersonalUsername] = useState("");
+  const [savingPersonal, setSavingPersonal] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
