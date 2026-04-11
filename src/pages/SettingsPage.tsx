@@ -98,18 +98,6 @@ export default function SettingsPage() {
     toast.success(t("toast.userUnblocked"));
   };
 
-  const handleChangePassword = async () => {
-    if (!user) return;
-    if (newPassword !== confirmPassword) { toast.error(t("toast.passwordMismatch")); return; }
-    if (newPassword.length < 6) { toast.error(t("toast.passwordTooShort")); return; }
-    setChangingPassword(true);
-    const { error: signInErr } = await supabase.auth.signInWithPassword({ email: user.email!, password: currentPassword });
-    if (signInErr) { toast.error(t("toast.wrongPassword")); setChangingPassword(false); return; }
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) { toast.error(t("toast.passwordFailed")); } else { toast.success(t("toast.passwordUpdated")); setSection(null); }
-    setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
-    setChangingPassword(false);
-  };
 
   const handleDeleteAccount = async () => {
     if (deleteConfirm !== "DELETE") { toast.error(t("toast.typeDelete")); return; }
