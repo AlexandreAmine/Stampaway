@@ -51,21 +51,34 @@ export default function AuthPage() {
     const metadata = { username, date_of_birth: dateOfBirth };
 
     if (method === "email") {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: { data: metadata, emailRedirectTo: window.location.origin },
       });
       if (error) { toast.error(error.message); setSubmitting(false); return; }
+      // Supabase returns a fake user with no identities if the email already exists
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        toast.error(t("auth.accountExists"));
+        setMode("login");
+        setSubmitting(false);
+        return;
+      }
       toast.success(t("auth.checkEmail"));
       setStep("otp");
     } else {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         phone,
         password,
         options: { data: metadata },
       });
       if (error) { toast.error(error.message); setSubmitting(false); return; }
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        toast.error(t("auth.accountExistsPhone"));
+        setMode("login");
+        setSubmitting(false);
+        return;
+      }
       toast.success(t("auth.checkPhone"));
       setStep("otp");
     }
