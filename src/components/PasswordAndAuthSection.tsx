@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, ShieldCheck, ShieldOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { PasswordInput } from "@/components/PasswordInput";
+import type { User } from "@supabase/supabase-js";
 import type { User } from "@supabase/supabase-js";
 
 interface Props {
