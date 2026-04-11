@@ -28,10 +28,6 @@ export default function SettingsPage() {
   const [personalUsername, setPersonalUsername] = useState("");
   const [savingPersonal, setSavingPersonal] = useState(false);
 
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [changingPassword, setChangingPassword] = useState(false);
 
   const [blockedUsers, setBlockedUsers] = useState<{ id: string; blocked_id: string; username: string; profile_picture: string | null }[]>([]);
   const [blockQuery, setBlockQuery] = useState("");
