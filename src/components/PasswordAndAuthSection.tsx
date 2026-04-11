@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { PasswordInput } from "@/components/PasswordInput";
 import type { User } from "@supabase/supabase-js";
-import type { User } from "@supabase/supabase-js";
+import { Input } from "@/components/ui/input";
 
 interface Props {
   user: User | null;
@@ -109,15 +109,15 @@ export function PasswordAndAuthSection({ user, t, onBack }: Props) {
         <div className="space-y-4 mb-8">
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">{t("settings.currentPassword")}</label>
-            <Input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} />
+            <PasswordInput value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pr-10 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" />
           </div>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">{t("settings.newPassword")}</label>
-            <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+            <PasswordInput value={newPassword} onChange={e => setNewPassword(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pr-10 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" />
           </div>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">{t("settings.confirmPassword")}</label>
-            <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
+            <PasswordInput value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 pr-10 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" />
           </div>
           <Button onClick={handleChangePassword} disabled={changingPassword || !currentPassword || !newPassword} className="w-full">
             {changingPassword ? t("settings.updating") : t("settings.updatePassword")}
