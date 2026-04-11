@@ -6,6 +6,7 @@ import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Mail, Phone, ChevronLeft } from "lucide-react";
+import { PasswordInput } from "@/components/PasswordInput";
 
 type AuthMode = "login" | "signup";
 type AuthMethod = "email" | "phone";
@@ -121,11 +122,10 @@ export default function AuthPage() {
 
     if (method === "email") {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth`,
+        redirectTo: `${window.location.origin}/reset-password`,
       });
       if (error) { toast.error(error.message); setSubmitting(false); return; }
-      toast.success(t("auth.resetEmailSent"));
-      setStep("forgotOtp");
+      toast.success(t("auth.resetLinkSent"));
     } else {
       const { error } = await supabase.auth.signInWithOtp({ phone });
       if (error) { toast.error(error.message); setSubmitting(false); return; }
@@ -288,7 +288,7 @@ export default function AuthPage() {
             <motion.div key="resetPw" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <p className="text-sm font-medium text-foreground mb-4">{t("auth.setNewPassword")}</p>
               <form onSubmit={handleSetNewPassword} className="space-y-4">
-                <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={t("settings.newPassword")} required minLength={6} className={inputClass} />
+                <PasswordInput value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={t("settings.newPassword")} required minLength={6} className={`${inputClass} pr-10`} />
                 <button type="submit" disabled={submitting} className={btnClass}>
                   {submitting ? "..." : t("settings.updatePassword")}
                 </button>
@@ -320,7 +320,7 @@ export default function AuthPage() {
                   <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t("auth.phonePlaceholder")} required className={inputClass} />
                 )}
 
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t("auth.password")} required minLength={6} className={inputClass} />
+                <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t("auth.password")} required minLength={6} className={`${inputClass} pr-10`} />
 
                 {mode === "signup" && (
                   <div>
