@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { ChevronLeft, Lock, Shield, KeyRound, LogOut, Trash2, ChevronRight, Activity, Globe, User } from "lucide-react";
+import { PasswordAndAuthSection } from "@/components/PasswordAndAuthSection";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -27,10 +28,6 @@ export default function SettingsPage() {
   const [personalUsername, setPersonalUsername] = useState("");
   const [savingPersonal, setSavingPersonal] = useState(false);
 
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [changingPassword, setChangingPassword] = useState(false);
 
   const [blockedUsers, setBlockedUsers] = useState<{ id: string; blocked_id: string; username: string; profile_picture: string | null }[]>([]);
   const [blockQuery, setBlockQuery] = useState("");
@@ -101,18 +98,6 @@ export default function SettingsPage() {
     toast.success(t("toast.userUnblocked"));
   };
 
-  const handleChangePassword = async () => {
-    if (!user) return;
-    if (newPassword !== confirmPassword) { toast.error(t("toast.passwordMismatch")); return; }
-    if (newPassword.length < 6) { toast.error(t("toast.passwordTooShort")); return; }
-    setChangingPassword(true);
-    const { error: signInErr } = await supabase.auth.signInWithPassword({ email: user.email!, password: currentPassword });
-    if (signInErr) { toast.error(t("toast.wrongPassword")); setChangingPassword(false); return; }
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) { toast.error(t("toast.passwordFailed")); } else { toast.success(t("toast.passwordUpdated")); setSection(null); }
-    setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
-    setChangingPassword(false);
-  };
 
   const handleDeleteAccount = async () => {
     if (deleteConfirm !== "DELETE") { toast.error(t("toast.typeDelete")); return; }
@@ -319,34 +304,7 @@ export default function SettingsPage() {
   }
 
   if (section === "password") {
-    return (
-      <div className="min-h-screen bg-background pb-24">
-        <div className="pt-12 px-5">
-          <div className="flex items-center gap-3 mb-8">
-            <button onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
-            <h1 className="text-xl font-bold text-foreground">{t("settings.changePassword")}</h1>
-          </div>
-          <p className="text-xs text-muted-foreground mb-4">{user?.email}</p>
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">{t("settings.currentPassword")}</label>
-              <Input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">{t("settings.newPassword")}</label>
-              <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">{t("settings.confirmPassword")}</label>
-              <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
-            </div>
-            <Button onClick={handleChangePassword} disabled={changingPassword || !currentPassword || !newPassword} className="w-full">
-              {changingPassword ? t("settings.updating") : t("settings.updatePassword")}
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
+    return <PasswordAndAuthSection user={user} t={t} onBack={() => setSection(null)} />;
   }
 
   if (section === "delete") {
