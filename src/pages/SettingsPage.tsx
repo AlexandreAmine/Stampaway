@@ -319,34 +319,7 @@ export default function SettingsPage() {
   }
 
   if (section === "password") {
-    return (
-      <div className="min-h-screen bg-background pb-24">
-        <div className="pt-12 px-5">
-          <div className="flex items-center gap-3 mb-8">
-            <button onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
-            <h1 className="text-xl font-bold text-foreground">{t("settings.changePassword")}</h1>
-          </div>
-          <p className="text-xs text-muted-foreground mb-4">{user?.email}</p>
-          <div className="space-y-4">
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">{t("settings.currentPassword")}</label>
-              <Input type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">{t("settings.newPassword")}</label>
-              <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">{t("settings.confirmPassword")}</label>
-              <Input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} />
-            </div>
-            <Button onClick={handleChangePassword} disabled={changingPassword || !currentPassword || !newPassword} className="w-full">
-              {changingPassword ? t("settings.updating") : t("settings.updatePassword")}
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
+    return <PasswordAndAuthSection user={user} t={t} onBack={() => setSection(null)} />;
   }
 
   if (section === "delete") {
