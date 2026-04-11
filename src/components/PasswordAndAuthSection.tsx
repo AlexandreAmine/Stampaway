@@ -140,9 +140,9 @@ export function PasswordAndAuthSection({ user, t, onBack }: Props) {
             </div>
           ) : has2FA ? (
             <div className="space-y-3">
-              <div className="flex items-center gap-2 bg-green-500/10 border border-green-500/20 rounded-xl p-3">
-                <ShieldCheck className="w-5 h-5 text-green-500" />
-                <span className="text-sm font-medium text-green-600">{t("settings.2faEnabled")}</span>
+              <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-xl p-3">
+                <ShieldCheck className="w-5 h-5 text-primary" />
+                <span className="text-sm font-medium text-primary">{t("settings.2faEnabled")}</span>
               </div>
               <Button variant="outline" onClick={handleDisable2FA} className="w-full text-destructive border-destructive/30">
                 <ShieldOff className="w-4 h-4 mr-2" />
