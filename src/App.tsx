@@ -20,7 +20,7 @@ import CountryCitiesPage from "./pages/CountryCitiesPage";
 import ExploreListPage from "./pages/ExploreListPage";
 import ListDetailPage from "./pages/ListDetailPage";
 import SettingsPage from "./pages/SettingsPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
+
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
