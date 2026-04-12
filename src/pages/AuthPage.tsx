@@ -105,7 +105,7 @@ export default function AuthPage() {
     setSubmitting(true);
 
     if (method === "email") {
-      const { error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: "email" });
+      const { error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: "signup" });
       if (error) { toast.error(error.message); setSubmitting(false); return; }
       toast.success(t("auth.verified"));
     } else {
@@ -121,11 +121,10 @@ export default function AuthPage() {
     setSubmitting(true);
 
     if (method === "email") {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
       if (error) { toast.error(error.message); setSubmitting(false); return; }
-      toast.success(t("auth.resetLinkSent"));
+      toast.success(t("auth.codeSentEmail"));
+      setStep("forgotOtp");
     } else {
       const { error } = await supabase.auth.signInWithOtp({ phone });
       if (error) { toast.error(error.message); setSubmitting(false); return; }
