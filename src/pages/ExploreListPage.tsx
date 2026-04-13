@@ -131,8 +131,10 @@ export default function ExploreListPage() {
           const s = sums.get(p.id);
           return { ...p, stat: s ? s.total / s.count : 0 };
         })
-        .filter((p) => p.stat > 0)
-        .sort((a, b) => b.stat - a.stat)
+        .sort((a, b) => {
+          if (b.stat !== a.stat) return b.stat - a.stat;
+          return a.name.localeCompare(b.name);
+        })
         .slice(0, limit);
 
       setPlaces(withAvg);
