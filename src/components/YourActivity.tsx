@@ -139,6 +139,38 @@ export function YourActivity({ onBack }: { onBack: () => void }) {
         all.push({ id: `lst-${l.id}`, type: "list_create", description: `Created the list "${l.name}"`, created_at: l.created_at });
       });
 
+      // Yearly goals set/edited
+      const { data: goals } = await supabase
+        .from("yearly_goals")
+        .select("id, created_at, updated_at, year, continent")
+        .eq("user_id", user.id);
+      
+      (goals || []).forEach(g => {
+        const label = g.continent === "total" ? `${g.year}` : `${g.year} (${g.continent})`;
+        all.push({ id: `goal-${g.id}`, type: "goal_set", description: `Set yearly goal for ${label}`, created_at: g.created_at });
+        if (g.updated_at && g.updated_at !== g.created_at) {
+          all.push({ id: `goal-edit-${g.id}`, type: "goal_edit", description: `Edited yearly goal for ${label}`, created_at: g.updated_at });
+        }
+      });
+
+      // Yearly goal places (must-visit additions)
+      const { data: goalPlaces } = await supabase
+        .from("yearly_goal_places")
+        .select("id, created_at, place_id, year")
+        .eq("user_id", user.id);
+      
+      if (goalPlaces && goalPlaces.length > 0) {
+        const gpPlaceIds = goalPlaces.map(g => g.place_id);
+        let gpPlaceMap: Record<string, string> = {};
+        if (gpPlaceIds.length > 0) {
+          const { data: gpPlaces } = await supabase.from("places").select("id, name").in("id", gpPlaceIds);
+          (gpPlaces || []).forEach(p => { gpPlaceMap[p.id] = p.name; });
+        }
+        goalPlaces.forEach(g => {
+          all.push({ id: `gp-${g.id}`, type: "goal_place", description: `Added ${gpPlaceMap[g.place_id] || "a destination"} to ${g.year} must-visit list`, created_at: g.created_at });
+        });
+      }
+
       // Favorites
       const { data: favorites } = await supabase
         .from("favorite_places")
@@ -175,6 +207,9 @@ export function YourActivity({ onBack }: { onBack: () => void }) {
       case "wishlist": return "🔖";
       case "list_create": return "📋";
       case "favorite": return "⭐";
+      case "goal_set": return "🎯";
+      case "goal_edit": return "🎯";
+      case "goal_place": return "📌";
       default: return "•";
     }
   };
