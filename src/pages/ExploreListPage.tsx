@@ -8,6 +8,7 @@ import {
   EUROPE_COUNTRIES,
   ASIA_COUNTRIES,
   NORTH_AMERICA_COUNTRIES,
+  SOUTH_AMERICA_COUNTRIES,
 } from "@/lib/continents";
 
 type PlaceWithStat = {
@@ -47,6 +48,7 @@ export default function ExploreListPage() {
       case "europe": return EUROPE_COUNTRIES;
       case "asia": return ASIA_COUNTRIES;
       case "north america": return NORTH_AMERICA_COUNTRIES;
+      case "south america": return SOUTH_AMERICA_COUNTRIES;
       default: return null;
     }
   };

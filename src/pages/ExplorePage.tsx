@@ -12,6 +12,7 @@ import {
   EUROPE_COUNTRIES,
   ASIA_COUNTRIES,
   NORTH_AMERICA_COUNTRIES,
+  SOUTH_AMERICA_COUNTRIES,
 } from "@/lib/continents";
 
 const tabs = ["Places", "Reviews", "Lists"];
@@ -123,8 +124,10 @@ export default function ExplorePage() {
       { key: "tc", title: "Trendy countries this month", places: buildTrending("country"), linkParams: "mode=trending&type=country" },
       { key: "tci", title: "Trendy cities this month", places: buildTrending("city"), linkParams: "mode=trending&type=city" },
       { key: "te", title: "Top 20 countries in Europe", places: buildTopRated("country", EUROPE_COUNTRIES, 8), linkParams: "mode=top-rated&type=country&continent=Europe&limit=20" },
+      { key: "tce", title: "Top 30 cities in Europe", places: buildTopRated("city", EUROPE_COUNTRIES, 8), linkParams: "mode=top-rated&type=city&continent=Europe&limit=30" },
       { key: "tna", title: "Top 15 cities in North America", places: buildTopRated("city", NORTH_AMERICA_COUNTRIES, 8), linkParams: "mode=top-rated&type=city&continent=North America&limit=15" },
       { key: "ta", title: "Top 25 countries in Asia", places: buildTopRated("country", ASIA_COUNTRIES, 8), linkParams: "mode=top-rated&type=country&continent=Asia&limit=25" },
+      { key: "tsa", title: "Top 10 countries in South America", places: buildTopRated("country", SOUTH_AMERICA_COUNTRIES, 8), linkParams: "mode=top-rated&type=country&continent=South America&limit=10" },
     ]);
 
     // Fetch friend comments for displayed places
