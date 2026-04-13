@@ -207,6 +207,9 @@ export function YourActivity({ onBack }: { onBack: () => void }) {
       case "wishlist": return "🔖";
       case "list_create": return "📋";
       case "favorite": return "⭐";
+      case "goal_set": return "🎯";
+      case "goal_edit": return "🎯";
+      case "goal_place": return "📌";
       default: return "•";
     }
   };
