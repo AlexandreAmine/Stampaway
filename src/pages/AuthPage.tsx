@@ -29,7 +29,9 @@ export default function AuthPage() {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   if (loading) return null;
   if (user) return <Navigate to="/" replace />;
