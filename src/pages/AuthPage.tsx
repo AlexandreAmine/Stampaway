@@ -34,7 +34,7 @@ export default function AuthPage() {
   const [resettingPassword, setResettingPassword] = useState(false);
 
   if (loading) return null;
-  if (user) return <Navigate to="/" replace />;
+  if (user && !resettingPassword) return <Navigate to="/" replace />;
 
   const resetForm = () => {
     setEmail("");
