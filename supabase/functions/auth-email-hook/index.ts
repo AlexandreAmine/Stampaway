@@ -17,12 +17,12 @@ const corsHeaders = {
 }
 
 const EMAIL_SUBJECTS: Record<string, string> = {
-  signup: 'Your TravelD verification code',
+  signup: 'Your StampAway verification code',
   invite: "You've been invited",
   magiclink: 'Your login link',
-  recovery: 'Your TravelD password reset code',
+  recovery: 'Your StampAway password reset code',
   email_change: 'Confirm your new email',
-  reauthentication: 'Your TravelD verification code',
+  reauthentication: 'Your StampAway verification code',
 }
 
 // Template mapping
@@ -36,10 +36,10 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "TravelD"
-const SENDER_DOMAIN = "notify.wanderate.com"
-const ROOT_DOMAIN = "wanderate.com"
-const FROM_DOMAIN = "wanderate.com" // Domain shown in From address (may be root or sender subdomain)
+const SITE_NAME = "StampAway"
+const SENDER_DOMAIN = "notify.stampaway-app.com"
+const ROOT_DOMAIN = "stampaway-app.com"
+const FROM_DOMAIN = "stampaway-app.com" // Domain shown in From address (may be root or sender subdomain)
 
 // Sample data for preview mode ONLY (not used in actual email sending).
 // URLs are baked in at scaffold time from the project's real data.
