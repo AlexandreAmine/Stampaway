@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Navigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import { Mail, Phone, ChevronLeft } from "lucide-react";
 import { PasswordInput } from "@/components/PasswordInput";
 
@@ -15,6 +16,7 @@ type Step = "form" | "otp" | "forgot" | "forgotOtp" | "resetPassword";
 export default function AuthPage() {
   const { user, loading } = useAuth();
   const { t } = useLanguage();
+  const navigate = useNavigate();
 
   const [mode, setMode] = useState<AuthMode>("login");
   const [method, setMethod] = useState<AuthMethod>("email");
@@ -155,7 +157,10 @@ export default function AuthPage() {
     if (newPassword.length < 6) { toast.error(t("toast.passwordTooShort")); return; }
     setSubmitting(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) { toast.error(error.message); } else { toast.success(t("toast.passwordUpdated")); }
+    if (error) { toast.error(error.message); } else {
+      toast.success(t("toast.passwordUpdated"));
+      navigate("/", { replace: true });
+    }
     setSubmitting(false);
   };
 
