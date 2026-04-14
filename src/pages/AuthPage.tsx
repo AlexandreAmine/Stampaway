@@ -299,6 +299,7 @@ export default function AuthPage() {
               <p className="text-sm font-medium text-foreground mb-4">{t("auth.setNewPassword")}</p>
               <form onSubmit={handleSetNewPassword} className="space-y-4">
                 <PasswordInput value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={t("settings.newPassword")} required minLength={6} className={`${inputClass} pr-10`} />
+                <PasswordInput value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} placeholder={t("settings.confirmPassword")} required minLength={6} className={`${inputClass} pr-10`} />
                 <button type="submit" disabled={submitting} className={btnClass}>
                   {submitting ? "..." : t("settings.updatePassword")}
                 </button>
