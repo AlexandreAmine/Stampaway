@@ -150,6 +150,7 @@ export default function AuthPage() {
     } else {
       const { error } = await supabase.auth.verifyOtp({ phone, token: otpCode, type: "sms" });
       if (error) { toast.error(error.message); setSubmitting(false); return; }
+      setResettingPassword(true);
       setStep("resetPassword");
     }
     setSubmitting(false);
