@@ -159,10 +159,12 @@ export default function AuthPage() {
   const handleSetNewPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword.length < 6) { toast.error(t("toast.passwordTooShort")); return; }
+    if (newPassword !== confirmNewPassword) { toast.error(t("toast.passwordMismatch")); return; }
     setSubmitting(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) { toast.error(error.message); } else {
       toast.success(t("toast.passwordUpdated"));
+      setResettingPassword(false);
       navigate("/", { replace: true });
     }
     setSubmitting(false);
