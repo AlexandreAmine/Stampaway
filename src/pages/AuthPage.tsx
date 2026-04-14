@@ -15,7 +15,7 @@ type Step = "form" | "otp" | "forgot" | "forgotOtp" | "resetPassword";
 
 export default function AuthPage() {
   const { user, loading } = useAuth();
-  const { t } = useLanguage();
+  const navigate = useNavigate();
 
   const [mode, setMode] = useState<AuthMode>("login");
   const [method, setMethod] = useState<AuthMethod>("email");
