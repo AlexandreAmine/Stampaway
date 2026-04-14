@@ -29,10 +29,12 @@ export default function AuthPage() {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   if (loading) return null;
-  if (user) return <Navigate to="/" replace />;
+  if (user && !resettingPassword) return <Navigate to="/" replace />;
 
   const resetForm = () => {
     setEmail("");
@@ -143,10 +145,12 @@ export default function AuthPage() {
     if (method === "email") {
       const { error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: "recovery" });
       if (error) { toast.error(error.message); setSubmitting(false); return; }
+      setResettingPassword(true);
       setStep("resetPassword");
     } else {
       const { error } = await supabase.auth.verifyOtp({ phone, token: otpCode, type: "sms" });
       if (error) { toast.error(error.message); setSubmitting(false); return; }
+      setResettingPassword(true);
       setStep("resetPassword");
     }
     setSubmitting(false);
@@ -155,10 +159,12 @@ export default function AuthPage() {
   const handleSetNewPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword.length < 6) { toast.error(t("toast.passwordTooShort")); return; }
+    if (newPassword !== confirmNewPassword) { toast.error(t("toast.passwordMismatch")); return; }
     setSubmitting(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) { toast.error(error.message); } else {
       toast.success(t("toast.passwordUpdated"));
+      setResettingPassword(false);
       navigate("/", { replace: true });
     }
     setSubmitting(false);
@@ -293,6 +299,7 @@ export default function AuthPage() {
               <p className="text-sm font-medium text-foreground mb-4">{t("auth.setNewPassword")}</p>
               <form onSubmit={handleSetNewPassword} className="space-y-4">
                 <PasswordInput value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={t("settings.newPassword")} required minLength={6} className={`${inputClass} pr-10`} />
+                <PasswordInput value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} placeholder={t("settings.confirmPassword")} required minLength={6} className={`${inputClass} pr-10`} />
                 <button type="submit" disabled={submitting} className={btnClass}>
                   {submitting ? "..." : t("settings.updatePassword")}
                 </button>
