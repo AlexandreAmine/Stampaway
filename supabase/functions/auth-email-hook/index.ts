@@ -17,12 +17,12 @@ const corsHeaders = {
 }
 
 const EMAIL_SUBJECTS: Record<string, string> = {
-  signup: 'Your TravelD verification code',
+  signup: 'Your StampAway verification code',
   invite: "You've been invited",
   magiclink: 'Your login link',
-  recovery: 'Your TravelD password reset code',
+  recovery: 'Your StampAway password reset code',
   email_change: 'Confirm your new email',
-  reauthentication: 'Your TravelD verification code',
+  reauthentication: 'Your StampAway verification code',
 }
 
 // Template mapping
