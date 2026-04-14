@@ -145,6 +145,7 @@ export default function AuthPage() {
     if (method === "email") {
       const { error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: "recovery" });
       if (error) { toast.error(error.message); setSubmitting(false); return; }
+      setResettingPassword(true);
       setStep("resetPassword");
     } else {
       const { error } = await supabase.auth.verifyOtp({ phone, token: otpCode, type: "sms" });
