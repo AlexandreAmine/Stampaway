@@ -157,7 +157,10 @@ export default function AuthPage() {
     if (newPassword.length < 6) { toast.error(t("toast.passwordTooShort")); return; }
     setSubmitting(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) { toast.error(error.message); } else { toast.success(t("toast.passwordUpdated")); }
+    if (error) { toast.error(error.message); } else {
+      toast.success(t("toast.passwordUpdated"));
+      navigate("/", { replace: true });
+    }
     setSubmitting(false);
   };
 
