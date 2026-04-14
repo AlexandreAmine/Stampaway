@@ -26,14 +26,15 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, mustCompletePasswordReset } = useAuth();
   if (loading) return null;
   if (!user) return <Navigate to="/auth" replace />;
+  if (mustCompletePasswordReset) return <Navigate to="/auth" replace />;
   return <>{children}</>;
 }
 
 function AppRoutes() {
-  const { user } = useAuth();
+  const { user, mustCompletePasswordReset } = useAuth();
 
   return (
     <div className="max-w-lg mx-auto relative min-h-screen">
@@ -56,7 +57,7 @@ function AppRoutes() {
         <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
         <Route path="*" element={<NotFound />} />
       </Routes>
-      {user && <BottomNav />}
+      {user && !mustCompletePasswordReset && <BottomNav />}
     </div>
   );
 }

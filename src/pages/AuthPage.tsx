@@ -1,11 +1,10 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
 import { Mail, Phone, ChevronLeft } from "lucide-react";
 import { PasswordInput } from "@/components/PasswordInput";
 
@@ -14,13 +13,19 @@ type AuthMethod = "email" | "phone";
 type Step = "form" | "otp" | "forgot" | "forgotOtp" | "resetPassword";
 
 export default function AuthPage() {
-  const { user, loading } = useAuth();
+  const {
+    user,
+    loading,
+    mustCompletePasswordReset,
+    beginPasswordReset,
+    completePasswordReset,
+  } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
 
   const [mode, setMode] = useState<AuthMode>("login");
   const [method, setMethod] = useState<AuthMethod>("email");
-  const [step, setStep] = useState<Step>("form");
+  const [step, setStep] = useState<Step>(() => (mustCompletePasswordReset ? "resetPassword" : "form"));
 
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -31,21 +36,17 @@ export default function AuthPage() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [resettingPassword, setResettingPassword] = useState(false);
+
+  useEffect(() => {
+    if (!mustCompletePasswordReset) return;
+
+    setMode("login");
+    setStep("resetPassword");
+    setOtpCode("");
+  }, [mustCompletePasswordReset]);
 
   if (loading) return null;
-  if (user && !resettingPassword) return <Navigate to="/" replace />;
-
-  const resetForm = () => {
-    setEmail("");
-    setPhone("");
-    setPassword("");
-    setUsername("");
-    setDateOfBirth("");
-    setOtpCode("");
-    setNewPassword("");
-    setStep("form");
-  };
+  if (user && !mustCompletePasswordReset) return <Navigate to="/" replace />;
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +63,6 @@ export default function AuthPage() {
         options: { data: metadata, emailRedirectTo: window.location.origin },
       });
       if (error) { toast.error(error.message); setSubmitting(false); return; }
-      // Supabase returns a fake user with no identities if the email already exists
       if (data.user && data.user.identities && data.user.identities.length === 0) {
         toast.error(t("auth.accountExists"));
         setMode("login");
@@ -145,14 +145,16 @@ export default function AuthPage() {
     if (method === "email") {
       const { error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: "recovery" });
       if (error) { toast.error(error.message); setSubmitting(false); return; }
-      setResettingPassword(true);
-      setStep("resetPassword");
     } else {
       const { error } = await supabase.auth.verifyOtp({ phone, token: otpCode, type: "sms" });
       if (error) { toast.error(error.message); setSubmitting(false); return; }
-      setResettingPassword(true);
-      setStep("resetPassword");
     }
+
+    beginPasswordReset();
+    setOtpCode("");
+    setNewPassword("");
+    setConfirmNewPassword("");
+    setStep("resetPassword");
     setSubmitting(false);
   };
 
@@ -160,14 +162,22 @@ export default function AuthPage() {
     e.preventDefault();
     if (newPassword.length < 6) { toast.error(t("toast.passwordTooShort")); return; }
     if (newPassword !== confirmNewPassword) { toast.error(t("toast.passwordMismatch")); return; }
+
     setSubmitting(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) { toast.error(error.message); } else {
-      toast.success(t("toast.passwordUpdated"));
-      setResettingPassword(false);
-      navigate("/", { replace: true });
+
+    if (error) {
+      toast.error(error.message);
+      setSubmitting(false);
+      return;
     }
+
+    completePasswordReset();
+    setNewPassword("");
+    setConfirmNewPassword("");
     setSubmitting(false);
+    toast.success(t("toast.passwordUpdated"));
+    navigate("/", { replace: true });
   };
 
   const inputClass = "w-full bg-card rounded-xl py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary";
@@ -182,7 +192,6 @@ export default function AuthPage() {
         </div>
 
         <AnimatePresence mode="wait">
-          {/* OTP verification after signup */}
           {step === "otp" && (
             <motion.div key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
               <button onClick={() => setStep("form")} className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
@@ -222,7 +231,6 @@ export default function AuthPage() {
             </motion.div>
           )}
 
-          {/* Forgot password form */}
           {step === "forgot" && (
             <motion.div key="forgot" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <button onClick={() => { setStep("form"); setMode("login"); }} className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
@@ -231,7 +239,6 @@ export default function AuthPage() {
               <p className="text-sm font-medium text-foreground mb-1">{t("auth.forgotPassword")}</p>
               <p className="text-xs text-muted-foreground mb-4">{t("auth.forgotDesc")}</p>
 
-              {/* Method toggle */}
               <div className="flex gap-2 mb-4">
                 <button onClick={() => setMethod("email")} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold transition-colors ${method === "email" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"}`}>
                   <Mail className="w-4 h-4" /> Email
@@ -254,7 +261,6 @@ export default function AuthPage() {
             </motion.div>
           )}
 
-          {/* Forgot password OTP */}
           {step === "forgotOtp" && (
             <motion.div key="forgotOtp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
               <button onClick={() => setStep("forgot")} className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
@@ -293,7 +299,6 @@ export default function AuthPage() {
             </motion.div>
           )}
 
-          {/* Reset password */}
           {step === "resetPassword" && (
             <motion.div key="resetPw" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <p className="text-sm font-medium text-foreground mb-4">{t("auth.setNewPassword")}</p>
@@ -307,10 +312,8 @@ export default function AuthPage() {
             </motion.div>
           )}
 
-          {/* Main login/signup form */}
           {step === "form" && (
             <motion.div key="form" initial={{ opacity: 0, x: 0 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              {/* Method toggle */}
               <div className="flex gap-2 mb-5">
                 <button onClick={() => setMethod("email")} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold transition-colors ${method === "email" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"}`}>
                   <Mail className="w-4 h-4" /> Email
