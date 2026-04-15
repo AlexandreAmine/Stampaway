@@ -86,19 +86,19 @@ export default function SearchPage() {
     const placeType = activeFilter === "Countries" ? "country" : activeFilter === "Cities" ? "city" : null;
 
     if (placeType) {
-      const { data: counts } = await supabase.rpc("get_place_review_counts");
-      const countMap = new Map((counts || []).map((c: any) => [c.place_id, Number(c.review_count)]));
+      const { data: counts } = await supabase.rpc("get_place_visitor_counts");
+      const countMap = new Map((counts || []).map((c: any) => [c.place_id, Number(c.visitor_count)]));
 
       let qb = supabase.from("places").select("id, name, country, type, image").eq("type", placeType);
       if (q) qb = qb.ilike("name", `%${q}%`);
-      qb = qb.limit(200);
+      qb = qb.limit(500);
       const { data } = await qb;
       const withCounts = (data || []).map((p: any) => ({ ...p, review_count: countMap.get(p.id) || 0 }));
       withCounts.sort((a: any, b: any) => {
         const diff = b.review_count - a.review_count;
         return diff !== 0 ? diff : a.name.localeCompare(b.name);
       });
-      setPlaces(withCounts.slice(0, 60));
+      setPlaces(withCounts);
     } else if (activeFilter === "Lists") {
       let qb = supabase.from("lists").select("id, name, description, user_id");
       if (q) qb = qb.ilike("name", `%${q}%`);

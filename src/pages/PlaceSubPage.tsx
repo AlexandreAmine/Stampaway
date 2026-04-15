@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type Section = "visitors" | "reviews" | "lists" | "wanttovisit" | "categories";
+type Section = "visitors" | "friendvisitors" | "reviews" | "lists" | "wanttovisit" | "categories";
 
 export default function PlaceSubPage() {
   const { id, section } = useParams<{ id: string; section: string }>();
@@ -39,7 +39,14 @@ export default function PlaceSubPage() {
     const { data: place } = await supabase.from("places").select("name").eq("id", id).maybeSingle();
     setPlaceName(place?.name || "");
 
-    if (section === "visitors") {
+    if (section === "visitors" || section === "friendvisitors") {
+      // For friendvisitors, we need the user's following list
+      let followingSet = new Set<string>();
+      if (section === "friendvisitors" && user) {
+        const { data: following } = await supabase.from("followers").select("following_id").eq("follower_id", user.id);
+        followingSet = new Set((following || []).map((f) => f.following_id));
+      }
+
       const { data: reviews } = await supabase
         .from("reviews")
         .select("id, rating, user_id, review_text, liked, created_at")
@@ -48,14 +55,19 @@ export default function PlaceSubPage() {
 
       // Most recent per user
       const seen = new Set<string>();
-      const unique = (reviews || []).filter((r) => {
+      let unique = (reviews || []).filter((r) => {
         if (seen.has(r.user_id)) return false;
         seen.add(r.user_id);
         return true;
       });
 
+      // For friendvisitors, filter to only people the user follows
+      if (section === "friendvisitors") {
+        unique = unique.filter((r) => followingSet.has(r.user_id));
+      }
+
       const userIds = unique.map((r) => r.user_id);
-      const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
+      const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds.length > 0 ? userIds : ["__none__"]);
 
       setData(
         unique.map((r) => {
@@ -141,7 +153,7 @@ export default function PlaceSubPage() {
     setLoading(false);
   };
 
-  const title = section === "visitors" ? "Visitors" : section === "reviews" ? "Reviews" : section === "wanttovisit" ? "Want to go" : section === "categories" ? "Category Ratings" : "Lists";
+  const title = section === "visitors" ? "Visitors" : section === "friendvisitors" ? "Visited by friends" : section === "reviews" ? "Reviews" : section === "wanttovisit" ? "Want to go" : section === "categories" ? "Category Ratings" : "Lists";
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -186,7 +198,7 @@ export default function PlaceSubPage() {
           <p className="text-sm text-muted-foreground text-center py-12">No {title.toLowerCase()} yet</p>
         ) : (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-            {section === "visitors" &&
+            {(section === "visitors" || section === "friendvisitors") &&
               data.map((v: any) => (
                 <div key={v.user_id} className="flex items-center gap-3 w-full">
                   <button onClick={() => navigate(v.user_id === user?.id ? "/profile" : `/profile/${v.user_id}`)} className="flex items-center gap-3 min-w-0 w-1/2 text-left">
