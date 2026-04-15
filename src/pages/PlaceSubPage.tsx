@@ -153,7 +153,7 @@ export default function PlaceSubPage() {
     setLoading(false);
   };
 
-  const title = section === "visitors" ? "Visitors" : section === "reviews" ? "Reviews" : section === "wanttovisit" ? "Want to go" : section === "categories" ? "Category Ratings" : "Lists";
+  const title = section === "visitors" ? "Visitors" : section === "friendvisitors" ? "Visited by friends" : section === "reviews" ? "Reviews" : section === "wanttovisit" ? "Want to go" : section === "categories" ? "Category Ratings" : "Lists";
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -198,7 +198,7 @@ export default function PlaceSubPage() {
           <p className="text-sm text-muted-foreground text-center py-12">No {title.toLowerCase()} yet</p>
         ) : (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
-            {section === "visitors" &&
+            {(section === "visitors" || section === "friendvisitors") &&
               data.map((v: any) => (
                 <div key={v.user_id} className="flex items-center gap-3 w-full">
                   <button onClick={() => navigate(v.user_id === user?.id ? "/profile" : `/profile/${v.user_id}`)} className="flex items-center gap-3 min-w-0 w-1/2 text-left">
