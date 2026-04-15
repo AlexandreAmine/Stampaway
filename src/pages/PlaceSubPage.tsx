@@ -39,7 +39,14 @@ export default function PlaceSubPage() {
     const { data: place } = await supabase.from("places").select("name").eq("id", id).maybeSingle();
     setPlaceName(place?.name || "");
 
-    if (section === "visitors") {
+    if (section === "visitors" || section === "friendvisitors") {
+      // For friendvisitors, we need the user's following list
+      let followingSet = new Set<string>();
+      if (section === "friendvisitors" && user) {
+        const { data: following } = await supabase.from("followers").select("following_id").eq("follower_id", user.id);
+        followingSet = new Set((following || []).map((f) => f.following_id));
+      }
+
       const { data: reviews } = await supabase
         .from("reviews")
         .select("id, rating, user_id, review_text, liked, created_at")
@@ -48,14 +55,19 @@ export default function PlaceSubPage() {
 
       // Most recent per user
       const seen = new Set<string>();
-      const unique = (reviews || []).filter((r) => {
+      let unique = (reviews || []).filter((r) => {
         if (seen.has(r.user_id)) return false;
         seen.add(r.user_id);
         return true;
       });
 
+      // For friendvisitors, filter to only people the user follows
+      if (section === "friendvisitors") {
+        unique = unique.filter((r) => followingSet.has(r.user_id));
+      }
+
       const userIds = unique.map((r) => r.user_id);
-      const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
+      const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds.length > 0 ? userIds : ["__none__"]);
 
       setData(
         unique.map((r) => {
