@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type Section = "visitors" | "reviews" | "lists" | "wanttovisit" | "categories";
+type Section = "visitors" | "friendvisitors" | "reviews" | "lists" | "wanttovisit" | "categories";
 
 export default function PlaceSubPage() {
   const { id, section } = useParams<{ id: string; section: string }>();

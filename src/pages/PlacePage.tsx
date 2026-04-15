@@ -394,7 +394,7 @@ export default function PlacePage() {
         {friendVisitors.length > 0 && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="mb-5">
             <button
-              onClick={() => navigate(`/place/${id}/visitors`)}
+              onClick={() => navigate(`/place/${id}/friendvisitors`)}
               className="flex items-center gap-1 mb-3"
             >
               <h3 className="text-sm font-semibold text-foreground">Visited by</h3>
