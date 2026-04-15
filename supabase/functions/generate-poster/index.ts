@@ -64,6 +64,18 @@ serve(async (req) => {
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
       console.error("AI gateway error:", aiResponse.status, errText);
+      if (aiResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "Not enough AI credits. Please add funds in Settings → Cloud & AI balance." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (aiResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Rate limited. Please try again in a moment." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       throw new Error(`AI generation failed: ${aiResponse.status}`);
     }
 
