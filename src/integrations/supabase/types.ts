@@ -750,6 +750,13 @@ export type Database = {
           review_count: number
         }[]
       }
+      get_place_visitor_counts: {
+        Args: never
+        Returns: {
+          place_id: string
+          visitor_count: number
+        }[]
+      }
       get_platform_stats: { Args: never; Returns: Json }
       has_role: {
         Args: {
