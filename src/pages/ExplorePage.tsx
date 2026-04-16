@@ -9,6 +9,11 @@ import { PosterWishlistButton } from "@/components/PosterWishlistButton";
 import { ReviewCard } from "@/components/ReviewCard";
 import { ListPreviewPosters } from "@/components/ListPreviewPosters";
 import {
+  fetchMonthlyVisitorCountMap,
+  fetchAverageRatingMap,
+  fetchAllPlaces,
+} from "@/lib/placeRankings";
+import {
   EUROPE_COUNTRIES,
   ASIA_COUNTRIES,
   NORTH_AMERICA_COUNTRIES,
