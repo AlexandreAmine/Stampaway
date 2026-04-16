@@ -8,6 +8,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import type { TranslationKey } from "@/i18n/translations";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { PosterWishlistButton } from "@/components/PosterWishlistButton";
+import { fetchAllTimeVisitorCountMap, fetchAverageRatingMap, fetchAllPlaces } from "@/lib/placeRankings";
 import { ListPreviewPosters } from "@/components/ListPreviewPosters";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
@@ -86,14 +87,16 @@ export default function SearchPage() {
     const placeType = activeFilter === "Countries" ? "country" : activeFilter === "Cities" ? "city" : null;
 
     if (placeType) {
-      const { data: counts } = await supabase.rpc("get_place_visitor_counts");
-      const countMap = new Map((counts || []).map((c: any) => [c.place_id, Number(c.visitor_count)]));
+      // Fetch ALL places and visitor counts using centralized helpers
+      const [countMap, allPlaces] = await Promise.all([
+        fetchAllTimeVisitorCountMap(),
+        fetchAllPlaces(),
+      ]);
 
-      let qb = supabase.from("places").select("id, name, country, type, image").eq("type", placeType);
-      if (q) qb = qb.ilike("name", `%${q}%`);
-      qb = qb.limit(500);
-      const { data } = await qb;
-      const withCounts = (data || []).map((p: any) => ({ ...p, review_count: countMap.get(p.id) || 0 }));
+      let filtered = allPlaces.filter((p: any) => p.type === placeType);
+      if (q) filtered = filtered.filter((p: any) => p.name.toLowerCase().includes(q.toLowerCase()));
+
+      const withCounts = filtered.map((p: any) => ({ ...p, review_count: countMap.get(p.id) || 0 }));
       withCounts.sort((a: any, b: any) => {
         const diff = b.review_count - a.review_count;
         return diff !== 0 ? diff : a.name.localeCompare(b.name);
@@ -156,21 +159,13 @@ export default function SearchPage() {
     if (destSort === "most-popular") return;
 
     (async () => {
-      const placeIds = places.map((p) => p.id);
       if (destSort === "avg-highest") {
-        const { data: reviews } = await supabase.from("reviews").select("place_id, rating").in("place_id", placeIds);
-        const avgMap: Record<string, { sum: number; count: number }> = {};
-        (reviews || []).forEach((r: any) => {
-          if (r.rating == null) return;
-          if (!avgMap[r.place_id]) avgMap[r.place_id] = { sum: 0, count: 0 };
-          avgMap[r.place_id].sum += Number(r.rating);
-          avgMap[r.place_id].count++;
-        });
-        setPlaces((prev) => prev.map((p) => {
-          const a = avgMap[p.id];
-          return { ...p, _avg: a ? a.sum / a.count : 0 };
-        }));
+        const avgMap = await fetchAverageRatingMap();
+        setPlaces((prev) => prev.map((p) => ({
+          ...p, _avg: avgMap.get(p.id) || 0,
+        })));
       } else if (destSort === "category-avg") {
+        const placeIds = places.map((p) => p.id);
         const { data: reviews } = await supabase.from("reviews").select("id, place_id").in("place_id", placeIds);
         if (!reviews || reviews.length === 0) return;
         const reviewIds = reviews.map((r) => r.id);
