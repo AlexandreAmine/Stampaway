@@ -2,8 +2,13 @@ import { useState, useEffect } from "react";
 import { ChevronLeft } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { supabase } from "@/integrations/supabase/client";
 import { DestinationPoster } from "@/components/DestinationPoster";
+import {
+  fetchMonthlyVisitorCountMap,
+  fetchAllTimeVisitorCountMap,
+  fetchAverageRatingMap,
+  fetchAllPlaces,
+} from "@/lib/placeRankings";
 import {
   EUROPE_COUNTRIES,
   ASIA_COUNTRIES,
@@ -23,8 +28,8 @@ type PlaceWithStat = {
 export default function ExploreListPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const mode = searchParams.get("mode") || "trending"; // trending | top-rated
-  const placeType = searchParams.get("type") || "country"; // country | city
+  const mode = searchParams.get("mode") || "trending";
+  const placeType = searchParams.get("type") || "country";
   const continent = searchParams.get("continent") || "";
   const limit = parseInt(searchParams.get("limit") || "50", 10);
 
@@ -55,89 +60,41 @@ export default function ExploreListPage() {
 
   const fetchData = async () => {
     setLoading(true);
+    const allPlaces = await fetchAllPlaces();
 
     if (mode === "trending") {
-      // Reviews from this month
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-
-      const { data: monthReviews } = await supabase
-        .from("reviews")
-        .select("place_id")
-        .gte("created_at", startOfMonth);
-
-      const counts = new Map<string, number>();
-      (monthReviews || []).forEach((r) => {
-        counts.set(r.place_id, (counts.get(r.place_id) || 0) + 1);
-      });
-
-      if (counts.size === 0) {
-        // Fallback: all-time
-        const { data: allReviews } = await supabase.from("reviews").select("place_id");
-        (allReviews || []).forEach((r) => {
-          counts.set(r.place_id, (counts.get(r.place_id) || 0) + 1);
-        });
+      let countMap = await fetchMonthlyVisitorCountMap();
+      if (countMap.size === 0) {
+        countMap = await fetchAllTimeVisitorCountMap();
       }
 
-      const topIds = [...counts.entries()]
-        .sort((a, b) => b[1] - a[1])
-        .map((e) => e[0]);
+      const filtered = allPlaces
+        .filter((p) => p.type === placeType && countMap.has(p.id))
+        .map((p) => ({ ...p, stat: countMap.get(p.id) || 0 }))
+        .sort((a, b) => b.stat - a.stat || a.name.localeCompare(b.name));
 
-      if (topIds.length === 0) { setPlaces([]); setLoading(false); return; }
-
-      const { data: placesData } = await supabase
-        .from("places")
-        .select("*")
-        .eq("type", placeType)
-        .in("id", topIds);
-
-      const sorted = (placesData || [])
-        .map((p) => ({ ...p, stat: counts.get(p.id) || 0 }))
-        .sort((a, b) => b.stat - a.stat);
-
-      setPlaces(sorted);
+      setPlaces(filtered);
     } else {
-      // Top rated in continent
+      // Top rated — use all-time average ratings
+      const avgMap = await fetchAverageRatingMap();
       const continentCountries = getContinentCountries(continent);
 
-      let query = supabase.from("places").select("*").eq("type", placeType);
-
-      if (placeType === "country" && continentCountries) {
-        query = query.in("name", continentCountries);
-      } else if (placeType === "city" && continentCountries) {
-        query = query.in("country", continentCountries);
-      }
-
-      const { data: placesData } = await query;
-      if (!placesData || placesData.length === 0) { setPlaces([]); setLoading(false); return; }
-
-      const ids = placesData.map((p) => p.id);
-      const { data: reviews } = await supabase
-        .from("reviews")
-        .select("place_id, rating")
-        .in("place_id", ids)
-        .not("rating", "is", null);
-
-      const sums = new Map<string, { total: number; count: number }>();
-      (reviews || []).forEach((r) => {
-        const cur = sums.get(r.place_id) || { total: 0, count: 0 };
-        cur.total += Number(r.rating);
-        cur.count += 1;
-        sums.set(r.place_id, cur);
-      });
-
-      const withAvg = placesData
-        .map((p) => {
-          const s = sums.get(p.id);
-          return { ...p, stat: s ? s.total / s.count : 0 };
+      const filtered = allPlaces
+        .filter((p) => {
+          if (p.type !== placeType) return false;
+          if (!continentCountries) return true;
+          return placeType === "country"
+            ? continentCountries.includes(p.name)
+            : continentCountries.includes(p.country);
         })
+        .map((p) => ({ ...p, stat: avgMap.get(p.id) || 0 }))
         .sort((a, b) => {
           if (b.stat !== a.stat) return b.stat - a.stat;
           return a.name.localeCompare(b.name);
         })
         .slice(0, limit);
 
-      setPlaces(withAvg);
+      setPlaces(filtered);
     }
     setLoading(false);
   };
