@@ -159,21 +159,13 @@ export default function SearchPage() {
     if (destSort === "most-popular") return;
 
     (async () => {
-      const placeIds = places.map((p) => p.id);
       if (destSort === "avg-highest") {
-        const { data: reviews } = await supabase.from("reviews").select("place_id, rating").in("place_id", placeIds);
-        const avgMap: Record<string, { sum: number; count: number }> = {};
-        (reviews || []).forEach((r: any) => {
-          if (r.rating == null) return;
-          if (!avgMap[r.place_id]) avgMap[r.place_id] = { sum: 0, count: 0 };
-          avgMap[r.place_id].sum += Number(r.rating);
-          avgMap[r.place_id].count++;
-        });
-        setPlaces((prev) => prev.map((p) => {
-          const a = avgMap[p.id];
-          return { ...p, _avg: a ? a.sum / a.count : 0 };
-        }));
+        const avgMap = await fetchAverageRatingMap();
+        setPlaces((prev) => prev.map((p) => ({
+          ...p, _avg: avgMap.get(p.id) || 0,
+        })));
       } else if (destSort === "category-avg") {
+        const placeIds = places.map((p) => p.id);
         const { data: reviews } = await supabase.from("reviews").select("id, place_id").in("place_id", placeIds);
         if (!reviews || reviews.length === 0) return;
         const reviewIds = reviews.map((r) => r.id);
