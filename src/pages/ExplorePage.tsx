@@ -67,60 +67,41 @@ export default function ExplorePage() {
   // ── PLACES ──
   const fetchPlacesSections = async () => {
     setPlacesLoading(true);
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    const { data: monthReviews } = await supabase
-      .from("reviews")
-      .select("place_id")
-      .gte("created_at", startOfMonth);
 
-    const monthCounts = new Map<string, number>();
-    (monthReviews || []).forEach((r) => {
-      monthCounts.set(r.place_id, (monthCounts.get(r.place_id) || 0) + 1);
-    });
+    // Fetch all data in parallel using centralized helpers
+    const [monthlyCountMap, avgRatingMap, allPlaces] = await Promise.all([
+      fetchMonthlyVisitorCountMap(),
+      fetchAverageRatingMap(),
+      fetchAllPlaces(),
+    ]);
 
-    let trendingCounts = monthCounts;
-    if (monthCounts.size === 0) {
-      const { data: allRevs } = await supabase.from("reviews").select("place_id");
-      (allRevs || []).forEach((r) => {
-        trendingCounts.set(r.place_id, (trendingCounts.get(r.place_id) || 0) + 1);
-      });
+    const placesMap = new Map(allPlaces.map((p) => [p.id, p]));
+
+    // If no monthly data, fall back to all-time visitor counts
+    let trendingCountMap = monthlyCountMap;
+    if (monthlyCountMap.size === 0) {
+      const { fetchAllTimeVisitorCountMap } = await import("@/lib/placeRankings");
+      trendingCountMap = await fetchAllTimeVisitorCountMap();
     }
 
-    const trendingIds = [...trendingCounts.entries()].sort((a, b) => b[1] - a[1]).map((e) => e[0]);
-    const { data: allPlaces } = await supabase.from("places").select("*");
-    const placesMap = new Map((allPlaces || []).map((p) => [p.id, p]));
-
-    const { data: allRatings } = await supabase
-      .from("reviews")
-      .select("place_id, rating")
-      .not("rating", "is", null);
-
-    const ratingAgg = new Map<string, { total: number; count: number }>();
-    (allRatings || []).forEach((r) => {
-      const cur = ratingAgg.get(r.place_id) || { total: 0, count: 0 };
-      cur.total += Number(r.rating);
-      cur.count += 1;
-      ratingAgg.set(r.place_id, cur);
-    });
-
-    const buildTrending = (type: string): PlaceWithStat[] =>
-      trendingIds
-        .map((id) => placesMap.get(id))
-        .filter((p): p is NonNullable<typeof p> => !!p && p.type === type)
-        .slice(0, 8)
-        .map((p) => ({ ...p, stat: trendingCounts.get(p.id) || 0 }));
+    const buildTrending = (type: string): PlaceWithStat[] => {
+      const entries = [...trendingCountMap.entries()]
+        .map(([id, count]) => ({ place: placesMap.get(id), count }))
+        .filter((e): e is { place: NonNullable<typeof e.place>; count: number } =>
+          !!e.place && e.place.type === type
+        )
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 8);
+      return entries.map((e) => ({ ...e.place, stat: e.count }));
+    };
 
     const buildTopRated = (type: string, countries: string[], limit: number): PlaceWithStat[] =>
-      (allPlaces || [])
+      allPlaces
         .filter((p) => {
           if (p.type !== type) return false;
           return type === "country" ? countries.includes(p.name) : countries.includes(p.country);
         })
-        .map((p) => {
-          const s = ratingAgg.get(p.id);
-          return { ...p, stat: s ? s.total / s.count : 0 };
-        })
+        .map((p) => ({ ...p, stat: avgRatingMap.get(p.id) || 0 }))
         .sort((a, b) => {
           if (b.stat !== a.stat) return b.stat - a.stat;
           return a.name.localeCompare(b.name);
