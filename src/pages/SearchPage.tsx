@@ -285,27 +285,34 @@ export default function SearchPage() {
         </div>
         {grouped ? (
           <div className="space-y-5">
-            {groups.map((group) => (
-              <div key={group.label}>
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.label}</h3>
-                {renderPlaceGrid(group.items)}
-              </div>
-            ))}
+            {(() => {
+              let remaining = visibleCount;
+              const visibleGroups: { label: string; items: any[] }[] = [];
+              for (const g of groups) {
+                if (remaining <= 0) break;
+                visibleGroups.push({ label: g.label, items: g.items.slice(0, remaining) });
+                remaining -= g.items.length;
+              }
+              return visibleGroups.map((group) => (
+                <div key={group.label}>
+                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.label}</h3>
+                  {renderPlaceGrid(group.items)}
+                </div>
+              ));
+            })()}
           </div>
         ) : (
-          <>
-            {renderPlaceGrid(sortedPlaces.slice(0, visibleCount))}
-            {sortedPlaces.length > visibleCount && (
-              <div className="flex justify-center mt-5">
-                <button
-                  onClick={() => setVisibleCount((c) => c + 500)}
-                  className="text-xs font-medium px-4 py-2 rounded-lg bg-card border border-border text-foreground hover:bg-accent transition-colors"
-                >
-                  {t("search.viewMore") || "View more"} ({Math.min(500, sortedPlaces.length - visibleCount)})
-                </button>
-              </div>
-            )}
-          </>
+          renderPlaceGrid(sortedPlaces.slice(0, visibleCount))
+        )}
+        {sortedPlaces.length > visibleCount && (
+          <div className="flex justify-center mt-5">
+            <button
+              onClick={() => setVisibleCount((c) => c + 500)}
+              className="text-xs font-medium px-4 py-2 rounded-lg bg-card border border-border text-foreground hover:bg-accent transition-colors"
+            >
+              View more
+            </button>
+          </div>
         )}
       </>
     );
