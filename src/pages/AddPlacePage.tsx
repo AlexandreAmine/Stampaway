@@ -258,6 +258,48 @@ export default function AddPlacePage() {
       toast.error("Failed to save review");
     } else {
       toast.success("Review saved!");
+
+      // If user logged a city and hasn't logged the corresponding country, prompt them
+      if (selectedPlace.type === "city" && selectedPlace.country) {
+        const { data: countryPlace } = await supabase
+          .from("places")
+          .select("id, name, country, image")
+          .eq("type", "country")
+          .eq("name", selectedPlace.country)
+          .maybeSingle();
+
+        if (countryPlace) {
+          const { data: countryReview } = await supabase
+            .from("reviews")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("place_id", countryPlace.id)
+            .limit(1);
+
+          if (!countryReview || countryReview.length === 0) {
+            toast(
+              `You've logged the city, press here to log ${countryPlace.name}!`,
+              {
+                duration: 3000,
+                className: "!text-base !p-5 !min-h-[72px]",
+                action: {
+                  label: "Log",
+                  onClick: () => {
+                    navigate(
+                      `/add?placeId=${countryPlace.id}&placeName=${encodeURIComponent(countryPlace.name)}&placeCountry=${encodeURIComponent(countryPlace.country || "")}&placeImage=${encodeURIComponent(countryPlace.image || "")}`
+                    );
+                  },
+                },
+                onAutoClose: () => navigate("/profile"),
+                onDismiss: () => navigate("/profile"),
+              }
+            );
+            setSaving(false);
+            return;
+          }
+        }
+      }
+
       navigate("/profile");
     }
   };
