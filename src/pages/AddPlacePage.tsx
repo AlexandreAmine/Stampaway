@@ -294,7 +294,6 @@ export default function AddPlacePage() {
                 onDismiss: () => navigate("/profile"),
               }
             );
-            setSaving(false);
             return;
           }
         }
