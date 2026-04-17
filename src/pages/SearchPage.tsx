@@ -66,6 +66,7 @@ export default function SearchPage() {
   const [destSort, setDestSort] = useState<DestSort>("most-popular");
   const [selectedCategory, setSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
   const [grouped, setGrouped] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(500);
 
   useEffect(() => {
     if (!user) return;
