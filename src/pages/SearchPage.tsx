@@ -66,6 +66,7 @@ export default function SearchPage() {
   const [destSort, setDestSort] = useState<DestSort>("most-popular");
   const [selectedCategory, setSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
   const [grouped, setGrouped] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(500);
 
   useEffect(() => {
     if (!user) return;
@@ -80,6 +81,8 @@ export default function SearchPage() {
   }, [query, activeFilter]);
 
   useEffect(() => { search(); }, [activeFilter]);
+
+  useEffect(() => { setVisibleCount(500); }, [query, activeFilter, destSort, selectedCategory, grouped]);
 
   const search = async () => {
     setLoading(true);
@@ -290,7 +293,19 @@ export default function SearchPage() {
             ))}
           </div>
         ) : (
-          renderPlaceGrid(sortedPlaces)
+          <>
+            {renderPlaceGrid(sortedPlaces.slice(0, visibleCount))}
+            {sortedPlaces.length > visibleCount && (
+              <div className="flex justify-center mt-5">
+                <button
+                  onClick={() => setVisibleCount((c) => c + 500)}
+                  className="text-xs font-medium px-4 py-2 rounded-lg bg-card border border-border text-foreground hover:bg-accent transition-colors"
+                >
+                  {t("search.viewMore") || "View more"} ({Math.min(500, sortedPlaces.length - visibleCount)})
+                </button>
+              </div>
+            )}
+          </>
         )}
       </>
     );
