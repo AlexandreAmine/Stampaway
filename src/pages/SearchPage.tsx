@@ -8,7 +8,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import type { TranslationKey } from "@/i18n/translations";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { PosterWishlistButton } from "@/components/PosterWishlistButton";
-import { fetchAllTimeVisitorCountMap, fetchAverageRatingMap, fetchAllPlaces } from "@/lib/placeRankings";
+import { fetchAllTimeVisitorCountMap, fetchAverageRatingMap, fetchAllPlaces, fetchCategoryAverageMap } from "@/lib/placeRankings";
 import { ListPreviewPosters } from "@/components/ListPreviewPosters";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
@@ -169,29 +169,10 @@ export default function SearchPage() {
         })));
       } else if (destSort === "category-avg") {
         const placeIds = places.map((p) => p.id);
-        const { data: reviews } = await supabase.from("reviews").select("id, place_id").in("place_id", placeIds);
-        if (!reviews || reviews.length === 0) return;
-        const reviewIds = reviews.map((r) => r.id);
-        const reviewPlaceMap = new Map(reviews.map((r) => [r.id, r.place_id]));
-
-        const { data: subRatings } = await supabase
-          .from("review_sub_ratings")
-          .select("review_id, category, rating")
-          .in("review_id", reviewIds)
-          .eq("category", selectedCategory);
-
-        const catMap: Record<string, { sum: number; count: number }> = {};
-        (subRatings || []).forEach((sr: any) => {
-          const pid = reviewPlaceMap.get(sr.review_id);
-          if (!pid) return;
-          if (!catMap[pid]) catMap[pid] = { sum: 0, count: 0 };
-          catMap[pid].sum += Number(sr.rating);
-          catMap[pid].count++;
-        });
-        setPlaces((prev) => prev.map((p) => {
-          const a = catMap[p.id];
-          return { ...p, _catAvg: a ? a.sum / a.count : 0 };
-        }));
+        const catAvgMap = await fetchCategoryAverageMap(selectedCategory, placeIds);
+        setPlaces((prev) => prev.map((p) => ({
+          ...p, _catAvg: catAvgMap.get(p.id) || 0,
+        })));
       }
     })();
   }, [destSort, selectedCategory, places.length, activeFilter]);
