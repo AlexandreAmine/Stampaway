@@ -75,6 +75,78 @@ export async function fetchAverageRatingMap(): Promise<Map<string, number>> {
   return result;
 }
 
+/**
+ * Map<place_id, category_average_rating> for a given sub-rating category.
+ * Optionally restricted to a list of place IDs. Paginated to avoid Supabase's
+ * 1000-row limit on `.in()` filters and result sets.
+ */
+export async function fetchCategoryAverageMap(
+  category: string,
+  placeIds?: string[]
+): Promise<Map<string, number>> {
+  // 1. Fetch reviews (id, place_id), optionally filtered to placeIds in chunks of 500
+  const allReviews: { id: string; place_id: string }[] = [];
+  if (placeIds && placeIds.length > 0) {
+    const CHUNK = 500;
+    for (let i = 0; i < placeIds.length; i += CHUNK) {
+      const slice = placeIds.slice(i, i + CHUNK);
+      // Paginate within each chunk
+      let offset = 0;
+      const PAGE = 1000;
+      while (true) {
+        const { data } = await supabase
+          .from("reviews")
+          .select("id, place_id")
+          .in("place_id", slice)
+          .range(offset, offset + PAGE - 1);
+        if (!data || data.length === 0) break;
+        allReviews.push(...(data as any));
+        if (data.length < PAGE) break;
+        offset += PAGE;
+      }
+    }
+  } else {
+    const reviews = await fetchAllReviews("id, place_id");
+    allReviews.push(...(reviews as any));
+  }
+
+  if (allReviews.length === 0) return new Map();
+
+  const reviewPlaceMap = new Map(allReviews.map((r) => [r.id, r.place_id]));
+  const reviewIds = allReviews.map((r) => r.id);
+
+  // 2. Fetch matching sub-ratings for the chosen category — chunk reviewIds
+  const catMap: Record<string, { sum: number; count: number }> = {};
+  const ID_CHUNK = 500;
+  for (let i = 0; i < reviewIds.length; i += ID_CHUNK) {
+    const slice = reviewIds.slice(i, i + ID_CHUNK);
+    let offset = 0;
+    const PAGE = 1000;
+    while (true) {
+      const { data } = await supabase
+        .from("review_sub_ratings")
+        .select("review_id, rating")
+        .eq("category", category)
+        .in("review_id", slice)
+        .range(offset, offset + PAGE - 1);
+      if (!data || data.length === 0) break;
+      data.forEach((sr: any) => {
+        const pid = reviewPlaceMap.get(sr.review_id);
+        if (!pid) return;
+        if (!catMap[pid]) catMap[pid] = { sum: 0, count: 0 };
+        catMap[pid].sum += Number(sr.rating);
+        catMap[pid].count += 1;
+      });
+      if (data.length < PAGE) break;
+      offset += PAGE;
+    }
+  }
+
+  const result = new Map<string, number>();
+  Object.entries(catMap).forEach(([pid, v]) => result.set(pid, v.sum / v.count));
+  return result;
+}
+
 /** Fetch ALL places (paginated) */
 export async function fetchAllPlaces(): Promise<any[]> {
   const PAGE = 1000;
