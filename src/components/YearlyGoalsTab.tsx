@@ -259,7 +259,7 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
                       <label className="text-xs text-muted-foreground">{l("countries")}</label>
                       <Input
                         type="number" min={0} max={200}
-                        value={editGoals[continent]?.countries ?? 0 ? String(editGoals[continent]?.countries) : (editGoals[continent]?.countries === 0 ? "" : "")}
+                        value={editGoals[continent]?.countries === 0 ? "" : (editGoals[continent]?.countries ?? "")}
                         placeholder="0"
                         onChange={e => {
                           const val = e.target.value;
@@ -272,7 +272,7 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
                       <label className="text-xs text-muted-foreground">{l("cities")}</label>
                       <Input
                         type="number" min={0} max={500}
-                        value={editGoals[continent]?.cities ?? 0 ? String(editGoals[continent]?.cities) : (editGoals[continent]?.cities === 0 ? "" : "")}
+                        value={editGoals[continent]?.cities === 0 ? "" : (editGoals[continent]?.cities ?? "")}
                         placeholder="0"
                         onChange={e => {
                           const val = e.target.value;
