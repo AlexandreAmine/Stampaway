@@ -66,7 +66,7 @@ export default function SearchPage() {
   const [destSort, setDestSort] = useState<DestSort>("most-popular");
   const [selectedCategory, setSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
   const [grouped, setGrouped] = useState(false);
-  const [visibleCount, setVisibleCount] = useState(500);
+  const [visibleCount, setVisibleCount] = useState(250);
 
   useEffect(() => {
     if (!user) return;
@@ -82,7 +82,7 @@ export default function SearchPage() {
 
   useEffect(() => { search(); }, [activeFilter]);
 
-  useEffect(() => { setVisibleCount(500); }, [query, activeFilter, destSort, selectedCategory, grouped]);
+  useEffect(() => { setVisibleCount(250); }, [query, activeFilter, destSort, selectedCategory, grouped]);
 
   const search = async () => {
     setLoading(true);
@@ -288,7 +288,7 @@ export default function SearchPage() {
         {sortedPlaces.length > visibleCount && (
           <div className="flex justify-center mt-5">
             <button
-              onClick={() => setVisibleCount((c) => c + 500)}
+              onClick={() => setVisibleCount((c) => c + 250)}
               className="text-xs font-medium px-4 py-2 rounded-lg bg-card border border-border text-foreground hover:bg-accent transition-colors"
             >
               View more

@@ -259,8 +259,12 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
                       <label className="text-xs text-muted-foreground">{l("countries")}</label>
                       <Input
                         type="number" min={0} max={200}
-                        value={editGoals[continent]?.countries || 0}
-                        onChange={e => setEditGoals(prev => ({ ...prev, [continent]: { ...prev[continent], countries: parseInt(e.target.value) || 0 } }))}
+                        value={editGoals[continent]?.countries === 0 ? "" : (editGoals[continent]?.countries ?? "")}
+                        placeholder="0"
+                        onChange={e => {
+                          const val = e.target.value;
+                          setEditGoals(prev => ({ ...prev, [continent]: { ...prev[continent], countries: val === "" ? 0 : (parseInt(val) || 0) } }));
+                        }}
                         className="h-8"
                       />
                     </div>
@@ -268,8 +272,12 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
                       <label className="text-xs text-muted-foreground">{l("cities")}</label>
                       <Input
                         type="number" min={0} max={500}
-                        value={editGoals[continent]?.cities || 0}
-                        onChange={e => setEditGoals(prev => ({ ...prev, [continent]: { ...prev[continent], cities: parseInt(e.target.value) || 0 } }))}
+                        value={editGoals[continent]?.cities === 0 ? "" : (editGoals[continent]?.cities ?? "")}
+                        placeholder="0"
+                        onChange={e => {
+                          const val = e.target.value;
+                          setEditGoals(prev => ({ ...prev, [continent]: { ...prev[continent], cities: val === "" ? 0 : (parseInt(val) || 0) } }));
+                        }}
                         className="h-8"
                       />
                     </div>
