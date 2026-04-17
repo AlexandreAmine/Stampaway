@@ -82,6 +82,8 @@ export default function SearchPage() {
 
   useEffect(() => { search(); }, [activeFilter]);
 
+  useEffect(() => { setVisibleCount(500); }, [query, activeFilter, destSort, selectedCategory, grouped]);
+
   const search = async () => {
     setLoading(true);
     const q = query.trim();
