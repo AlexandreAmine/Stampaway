@@ -323,7 +323,32 @@ export default function HomePage() {
     })();
   }, [navigate]);
 
-  const allLabels = [...countryLabels, ...cityLabels];
+  // Progressive labels: countries always visible, more cities as user zooms in
+  const allLabels = useMemo(() => {
+    const labels: Array<{ lat: number; lng: number; text: string; size: number; type: string }> = [];
+    countryLabels.forEach((l) => labels.push({ ...l }));
+    const curatedCityNames = new Set(cityLabels.map((c) => c.text));
+    cityLabels.forEach((l) => labels.push({ ...l }));
+
+    // Decide how many DB cities to reveal based on altitude.
+    let cityLimit = 0;
+    if (altitude < 0.35) cityLimit = dbLabels.length;
+    else if (altitude < 0.6) cityLimit = 3000;
+    else if (altitude < 0.9) cityLimit = 1200;
+    else if (altitude < 1.3) cityLimit = 500;
+    else if (altitude < 1.8) cityLimit = 150;
+
+    const citySize = altitude < 0.35 ? 0.22 : altitude < 0.6 ? 0.28 : altitude < 0.9 ? 0.32 : 0.38;
+
+    if (cityLimit > 0) {
+      const cityOnly = dbLabels.filter((d) => d.type === "city" && !curatedCityNames.has(d.text));
+      const slice = cityOnly.slice(0, cityLimit);
+      slice.forEach((c) =>
+        labels.push({ lat: c.lat, lng: c.lng, text: c.text, size: citySize, type: "city" })
+      );
+    }
+    return labels;
+  }, [dbLabels, altitude]);
 
   const dayTexture = "//unpkg.com/three-globe/example/img/earth-blue-marble.jpg";
   const bumpTexture = "//unpkg.com/three-globe/example/img/earth-topology.png";
