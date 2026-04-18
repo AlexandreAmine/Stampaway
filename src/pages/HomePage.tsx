@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Star, UserPlus, Bell } from "lucide-react";
 import { getFlagEmoji } from "@/lib/countryFlags";
 import { motion } from "framer-motion";
@@ -31,6 +31,14 @@ interface FriendActivity {
   review_text: string | null;
 }
 
+interface DbCityLabel {
+  id: string;
+  text: string;
+  lat: number;
+  lng: number;
+  type: "city" | "country";
+}
+
 export default function HomePage() {
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -44,11 +52,44 @@ export default function HomePage() {
   const [selectedActivity, setSelectedActivity] = useState<FriendActivity | null>(null);
   const [notifOpen, setNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [dbLabels, setDbLabels] = useState<DbCityLabel[]>([]);
+  const [altitude, setAltitude] = useState(2.2);
 
   useEffect(() => {
     if (containerRef.current) {
       setGlobeWidth(Math.min(containerRef.current.offsetWidth, 500));
     }
+  }, []);
+
+  // Fetch all places from DB once for progressive-zoom labels
+  useEffect(() => {
+    (async () => {
+      const all: DbCityLabel[] = [];
+      let from = 0;
+      const PAGE = 1000;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data, error } = await supabase
+          .from("places")
+          .select("id, name, country, type")
+          .range(from, from + PAGE - 1);
+        if (error || !data || data.length === 0) break;
+        for (const p of data) {
+          const coords = getPlaceCoordinates(p.name, p.country);
+          if (!coords) continue;
+          all.push({
+            id: p.id,
+            text: p.name,
+            lat: coords[0],
+            lng: coords[1],
+            type: p.type === "country" ? "country" : "city",
+          });
+        }
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+      setDbLabels(all);
+    })();
   }, []);
 
   // Fetch unread notification count
@@ -172,11 +213,30 @@ export default function HomePage() {
       controls.autoRotate = true;
       controls.autoRotateSpeed = 0.4;
       controls.enableZoom = true;
+      // Allow much closer zoom for street-level exploration
+      controls.minDistance = 101; // earth radius is 100 in three-globe
+      controls.maxDistance = 800;
+      controls.zoomSpeed = 1.2;
+      controls.rotateSpeed = 0.7;
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.15;
       globeRef.current.pointOfView({ altitude: 2.2 });
 
       controls.addEventListener("start", () => {
         controls.autoRotate = false;
       });
+
+      // Track altitude to drive progressive label reveal
+      let raf = 0;
+      const updateAlt = () => {
+        const pov = globeRef.current?.pointOfView?.();
+        if (pov && typeof pov.altitude === "number") {
+          setAltitude((prev) => (Math.abs(prev - pov.altitude) > 0.05 ? pov.altitude : prev));
+        }
+        raf = requestAnimationFrame(updateAlt);
+      };
+      raf = requestAnimationFrame(updateAlt);
+      return () => cancelAnimationFrame(raf);
     }
   }, [loading]);
 
@@ -263,7 +323,32 @@ export default function HomePage() {
     })();
   }, [navigate]);
 
-  const allLabels = [...countryLabels, ...cityLabels];
+  // Progressive labels: countries always visible, more cities as user zooms in
+  const allLabels = useMemo(() => {
+    const labels: Array<{ lat: number; lng: number; text: string; size: number; type: string }> = [];
+    countryLabels.forEach((l) => labels.push({ ...l }));
+    const curatedCityNames = new Set(cityLabels.map((c) => c.text));
+    cityLabels.forEach((l) => labels.push({ ...l }));
+
+    // Decide how many DB cities to reveal based on altitude.
+    let cityLimit = 0;
+    if (altitude < 0.35) cityLimit = dbLabels.length;
+    else if (altitude < 0.6) cityLimit = 3000;
+    else if (altitude < 0.9) cityLimit = 1200;
+    else if (altitude < 1.3) cityLimit = 500;
+    else if (altitude < 1.8) cityLimit = 150;
+
+    const citySize = altitude < 0.35 ? 0.22 : altitude < 0.6 ? 0.28 : altitude < 0.9 ? 0.32 : 0.38;
+
+    if (cityLimit > 0) {
+      const cityOnly = dbLabels.filter((d) => d.type === "city" && !curatedCityNames.has(d.text));
+      const slice = cityOnly.slice(0, cityLimit);
+      slice.forEach((c) =>
+        labels.push({ lat: c.lat, lng: c.lng, text: c.text, size: citySize, type: "city" })
+      );
+    }
+    return labels;
+  }, [dbLabels, altitude]);
 
   const dayTexture = "//unpkg.com/three-globe/example/img/earth-blue-marble.jpg";
   const bumpTexture = "//unpkg.com/three-globe/example/img/earth-topology.png";
