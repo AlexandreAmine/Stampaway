@@ -211,39 +211,39 @@ export default function HomePage() {
     if (!globeRef.current) return;
     const controls = globeRef.current.controls();
     controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.35;
+    controls.autoRotateSpeed = 0.3;
     controls.enableZoom = true;
     controls.minDistance = 101;
     controls.maxDistance = 800;
-    controls.zoomSpeed = 1.2;
-    controls.rotateSpeed = 0.7;
+    // Smoother, more gradual zoom — lower speed prevents jumpy steps
+    controls.zoomSpeed = 0.6;
+    controls.rotateSpeed = 0.6;
     controls.enableDamping = true;
-    controls.dampingFactor = 0.2;
+    controls.dampingFactor = 0.12; // softer easing for fluid motion
+    // Smooth pinch zoom on touch
+    if ("zoomToCursor" in controls) (controls as any).zoomToCursor = true;
     globeRef.current.pointOfView({ altitude: 2.2 });
 
     const onStart = () => { controls.autoRotate = false; };
     controls.addEventListener("start", onStart);
 
-    // Throttled altitude tracking — only sample on user interaction (change/end), not every frame
-    let pending = false;
-    const sampleAltitude = () => {
-      if (pending) return;
-      pending = true;
-      setTimeout(() => {
-        pending = false;
+    // Only update altitude AFTER the user stops interacting — avoids label thrash mid-zoom
+    let endTimer: number | undefined;
+    const onEnd = () => {
+      if (endTimer) window.clearTimeout(endTimer);
+      endTimer = window.setTimeout(() => {
         const pov = globeRef.current?.pointOfView?.();
         if (pov && typeof pov.altitude === "number") {
           setAltitude((prev) => (Math.abs(prev - pov.altitude) > 0.1 ? pov.altitude : prev));
         }
-      }, 150);
+      }, 200);
     };
-    controls.addEventListener("change", sampleAltitude);
-    controls.addEventListener("end", sampleAltitude);
+    controls.addEventListener("end", onEnd);
 
     return () => {
       controls.removeEventListener("start", onStart);
-      controls.removeEventListener("change", sampleAltitude);
-      controls.removeEventListener("end", sampleAltitude);
+      controls.removeEventListener("end", onEnd);
+      if (endTimer) window.clearTimeout(endTimer);
     };
   }, [loading]);
 
