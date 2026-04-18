@@ -362,6 +362,28 @@ export default function HomePage() {
 
   const globeHeight = Math.round(globeWidth * 1.1);
 
+  // Memoize stars so they don't get re-randomized on every render (huge perf win)
+  const stars = useMemo(() => {
+    return Array.from({ length: 40 }).map((_, i) => {
+      const size = Math.random() * 2 + 1;
+      return (
+        <div
+          key={i}
+          className="absolute rounded-full bg-white"
+          style={{
+            width: `${size}px`,
+            height: `${size}px`,
+            top: `${Math.random() * 100}%`,
+            left: `${Math.random() * 100}%`,
+            opacity: Math.random() * 0.7 + 0.2,
+            animation: `pulse ${2 + Math.random() * 3}s ease-in-out infinite`,
+            animationDelay: `${Math.random() * 3}s`,
+          }}
+        />
+      );
+    });
+  }, []);
+
   return (
     <div className="min-h-screen bg-background pb-24 relative">
       {/* Globe section - fixed behind content */}
