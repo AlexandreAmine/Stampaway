@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Star, UserPlus, Bell } from "lucide-react";
 import { getFlagEmoji } from "@/lib/countryFlags";
 import { motion } from "framer-motion";
