@@ -384,23 +384,9 @@ export default function HomePage() {
         </div>
 
         <div ref={containerRef} className="relative mx-auto flex items-center justify-center overflow-hidden" style={{ height: globeHeight }}>
-          {/* Stars */}
-          <div className="absolute inset-0 overflow-hidden">
-            {Array.from({ length: 80 }).map((_, i) => (
-              <div
-                key={i}
-                className="absolute rounded-full bg-white"
-                style={{
-                  width: `${Math.random() * 2 + 1}px`,
-                  height: `${Math.random() * 2 + 1}px`,
-                  top: `${Math.random() * 100}%`,
-                  left: `${Math.random() * 100}%`,
-                  opacity: Math.random() * 0.7 + 0.2,
-                  animation: `pulse ${2 + Math.random() * 3}s ease-in-out infinite`,
-                  animationDelay: `${Math.random() * 3}s`,
-                }}
-              />
-            ))}
+          {/* Stars (memoized so they don't regenerate on each render) */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {stars}
           </div>
           {loading ? (
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -422,10 +408,11 @@ export default function HomePage() {
               labelText="text"
               labelSize={(d: any) => d.size || 0.5}
               labelColor={() => "rgba(255, 255, 255, 0.75)"}
-              labelResolution={2}
+              labelResolution={1}
               labelAltitude={0.01}
               labelDotRadius={0}
               onLabelClick={handleLabelClick}
+              rendererConfig={{ antialias: false, powerPreference: "high-performance" }}
             />
           )}
 
