@@ -208,36 +208,43 @@ export default function HomePage() {
   }, [user]);
 
   useEffect(() => {
-    if (globeRef.current) {
-      const controls = globeRef.current.controls();
-      controls.autoRotate = true;
-      controls.autoRotateSpeed = 0.4;
-      controls.enableZoom = true;
-      // Allow much closer zoom for street-level exploration
-      controls.minDistance = 101; // earth radius is 100 in three-globe
-      controls.maxDistance = 800;
-      controls.zoomSpeed = 1.2;
-      controls.rotateSpeed = 0.7;
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.15;
-      globeRef.current.pointOfView({ altitude: 2.2 });
+    if (!globeRef.current) return;
+    const controls = globeRef.current.controls();
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.35;
+    controls.enableZoom = true;
+    controls.minDistance = 101;
+    controls.maxDistance = 800;
+    controls.zoomSpeed = 1.2;
+    controls.rotateSpeed = 0.7;
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.2;
+    globeRef.current.pointOfView({ altitude: 2.2 });
 
-      controls.addEventListener("start", () => {
-        controls.autoRotate = false;
-      });
+    const onStart = () => { controls.autoRotate = false; };
+    controls.addEventListener("start", onStart);
 
-      // Track altitude to drive progressive label reveal
-      let raf = 0;
-      const updateAlt = () => {
+    // Throttled altitude tracking — only sample on user interaction (change/end), not every frame
+    let pending = false;
+    const sampleAltitude = () => {
+      if (pending) return;
+      pending = true;
+      setTimeout(() => {
+        pending = false;
         const pov = globeRef.current?.pointOfView?.();
         if (pov && typeof pov.altitude === "number") {
-          setAltitude((prev) => (Math.abs(prev - pov.altitude) > 0.05 ? pov.altitude : prev));
+          setAltitude((prev) => (Math.abs(prev - pov.altitude) > 0.1 ? pov.altitude : prev));
         }
-        raf = requestAnimationFrame(updateAlt);
-      };
-      raf = requestAnimationFrame(updateAlt);
-      return () => cancelAnimationFrame(raf);
-    }
+      }, 150);
+    };
+    controls.addEventListener("change", sampleAltitude);
+    controls.addEventListener("end", sampleAltitude);
+
+    return () => {
+      controls.removeEventListener("start", onStart);
+      controls.removeEventListener("change", sampleAltitude);
+      controls.removeEventListener("end", sampleAltitude);
+    };
   }, [loading]);
 
   const getAvatarUrl = (a: FriendActivity) =>
@@ -330,13 +337,13 @@ export default function HomePage() {
     const curatedCityNames = new Set(cityLabels.map((c) => c.text));
     cityLabels.forEach((l) => labels.push({ ...l }));
 
-    // Decide how many DB cities to reveal based on altitude.
+    // Tighter caps for smooth rendering — labels are expensive (one canvas each)
     let cityLimit = 0;
-    if (altitude < 0.35) cityLimit = dbLabels.length;
-    else if (altitude < 0.6) cityLimit = 3000;
-    else if (altitude < 0.9) cityLimit = 1200;
-    else if (altitude < 1.3) cityLimit = 500;
-    else if (altitude < 1.8) cityLimit = 150;
+    if (altitude < 0.35) cityLimit = 800;
+    else if (altitude < 0.6) cityLimit = 500;
+    else if (altitude < 0.9) cityLimit = 300;
+    else if (altitude < 1.3) cityLimit = 150;
+    else if (altitude < 1.8) cityLimit = 80;
 
     const citySize = altitude < 0.35 ? 0.22 : altitude < 0.6 ? 0.28 : altitude < 0.9 ? 0.32 : 0.38;
 
@@ -354,6 +361,28 @@ export default function HomePage() {
   const bumpTexture = "//unpkg.com/three-globe/example/img/earth-topology.png";
 
   const globeHeight = Math.round(globeWidth * 1.1);
+
+  // Memoize stars so they don't get re-randomized on every render (huge perf win)
+  const stars = useMemo(() => {
+    return Array.from({ length: 40 }).map((_, i) => {
+      const size = Math.random() * 2 + 1;
+      return (
+        <div
+          key={i}
+          className="absolute rounded-full bg-white"
+          style={{
+            width: `${size}px`,
+            height: `${size}px`,
+            top: `${Math.random() * 100}%`,
+            left: `${Math.random() * 100}%`,
+            opacity: Math.random() * 0.7 + 0.2,
+            animation: `pulse ${2 + Math.random() * 3}s ease-in-out infinite`,
+            animationDelay: `${Math.random() * 3}s`,
+          }}
+        />
+      );
+    });
+  }, []);
 
   return (
     <div className="min-h-screen bg-background pb-24 relative">
@@ -377,23 +406,9 @@ export default function HomePage() {
         </div>
 
         <div ref={containerRef} className="relative mx-auto flex items-center justify-center overflow-hidden" style={{ height: globeHeight }}>
-          {/* Stars */}
-          <div className="absolute inset-0 overflow-hidden">
-            {Array.from({ length: 80 }).map((_, i) => (
-              <div
-                key={i}
-                className="absolute rounded-full bg-white"
-                style={{
-                  width: `${Math.random() * 2 + 1}px`,
-                  height: `${Math.random() * 2 + 1}px`,
-                  top: `${Math.random() * 100}%`,
-                  left: `${Math.random() * 100}%`,
-                  opacity: Math.random() * 0.7 + 0.2,
-                  animation: `pulse ${2 + Math.random() * 3}s ease-in-out infinite`,
-                  animationDelay: `${Math.random() * 3}s`,
-                }}
-              />
-            ))}
+          {/* Stars (memoized so they don't regenerate on each render) */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {stars}
           </div>
           {loading ? (
             <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -415,10 +430,11 @@ export default function HomePage() {
               labelText="text"
               labelSize={(d: any) => d.size || 0.5}
               labelColor={() => "rgba(255, 255, 255, 0.75)"}
-              labelResolution={2}
+              labelResolution={1}
               labelAltitude={0.01}
               labelDotRadius={0}
               onLabelClick={handleLabelClick}
+              rendererConfig={{ antialias: false, powerPreference: "high-performance" }}
             />
           )}
 
