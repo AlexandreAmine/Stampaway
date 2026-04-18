@@ -208,36 +208,43 @@ export default function HomePage() {
   }, [user]);
 
   useEffect(() => {
-    if (globeRef.current) {
-      const controls = globeRef.current.controls();
-      controls.autoRotate = true;
-      controls.autoRotateSpeed = 0.4;
-      controls.enableZoom = true;
-      // Allow much closer zoom for street-level exploration
-      controls.minDistance = 101; // earth radius is 100 in three-globe
-      controls.maxDistance = 800;
-      controls.zoomSpeed = 1.2;
-      controls.rotateSpeed = 0.7;
-      controls.enableDamping = true;
-      controls.dampingFactor = 0.15;
-      globeRef.current.pointOfView({ altitude: 2.2 });
+    if (!globeRef.current) return;
+    const controls = globeRef.current.controls();
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.35;
+    controls.enableZoom = true;
+    controls.minDistance = 101;
+    controls.maxDistance = 800;
+    controls.zoomSpeed = 1.2;
+    controls.rotateSpeed = 0.7;
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.2;
+    globeRef.current.pointOfView({ altitude: 2.2 });
 
-      controls.addEventListener("start", () => {
-        controls.autoRotate = false;
-      });
+    const onStart = () => { controls.autoRotate = false; };
+    controls.addEventListener("start", onStart);
 
-      // Track altitude to drive progressive label reveal
-      let raf = 0;
-      const updateAlt = () => {
+    // Throttled altitude tracking — only sample on user interaction (change/end), not every frame
+    let pending = false;
+    const sampleAltitude = () => {
+      if (pending) return;
+      pending = true;
+      setTimeout(() => {
+        pending = false;
         const pov = globeRef.current?.pointOfView?.();
         if (pov && typeof pov.altitude === "number") {
-          setAltitude((prev) => (Math.abs(prev - pov.altitude) > 0.05 ? pov.altitude : prev));
+          setAltitude((prev) => (Math.abs(prev - pov.altitude) > 0.1 ? pov.altitude : prev));
         }
-        raf = requestAnimationFrame(updateAlt);
-      };
-      raf = requestAnimationFrame(updateAlt);
-      return () => cancelAnimationFrame(raf);
-    }
+      }, 150);
+    };
+    controls.addEventListener("change", sampleAltitude);
+    controls.addEventListener("end", sampleAltitude);
+
+    return () => {
+      controls.removeEventListener("start", onStart);
+      controls.removeEventListener("change", sampleAltitude);
+      controls.removeEventListener("end", sampleAltitude);
+    };
   }, [loading]);
 
   const getAvatarUrl = (a: FriendActivity) =>
