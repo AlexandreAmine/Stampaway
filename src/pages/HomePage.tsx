@@ -337,13 +337,13 @@ export default function HomePage() {
     const curatedCityNames = new Set(cityLabels.map((c) => c.text));
     cityLabels.forEach((l) => labels.push({ ...l }));
 
-    // Decide how many DB cities to reveal based on altitude.
+    // Tighter caps for smooth rendering — labels are expensive (one canvas each)
     let cityLimit = 0;
-    if (altitude < 0.35) cityLimit = dbLabels.length;
-    else if (altitude < 0.6) cityLimit = 3000;
-    else if (altitude < 0.9) cityLimit = 1200;
-    else if (altitude < 1.3) cityLimit = 500;
-    else if (altitude < 1.8) cityLimit = 150;
+    if (altitude < 0.35) cityLimit = 800;
+    else if (altitude < 0.6) cityLimit = 500;
+    else if (altitude < 0.9) cityLimit = 300;
+    else if (altitude < 1.3) cityLimit = 150;
+    else if (altitude < 1.8) cityLimit = 80;
 
     const citySize = altitude < 0.35 ? 0.22 : altitude < 0.6 ? 0.28 : altitude < 0.9 ? 0.32 : 0.38;
 
