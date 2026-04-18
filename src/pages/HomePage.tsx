@@ -213,11 +213,30 @@ export default function HomePage() {
       controls.autoRotate = true;
       controls.autoRotateSpeed = 0.4;
       controls.enableZoom = true;
+      // Allow much closer zoom for street-level exploration
+      controls.minDistance = 101; // earth radius is 100 in three-globe
+      controls.maxDistance = 800;
+      controls.zoomSpeed = 1.2;
+      controls.rotateSpeed = 0.7;
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.15;
       globeRef.current.pointOfView({ altitude: 2.2 });
 
       controls.addEventListener("start", () => {
         controls.autoRotate = false;
       });
+
+      // Track altitude to drive progressive label reveal
+      let raf = 0;
+      const updateAlt = () => {
+        const pov = globeRef.current?.pointOfView?.();
+        if (pov && typeof pov.altitude === "number") {
+          setAltitude((prev) => (Math.abs(prev - pov.altitude) > 0.05 ? pov.altitude : prev));
+        }
+        raf = requestAnimationFrame(updateAlt);
+      };
+      raf = requestAnimationFrame(updateAlt);
+      return () => cancelAnimationFrame(raf);
     }
   }, [loading]);
 
