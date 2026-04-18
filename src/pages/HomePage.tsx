@@ -330,12 +330,18 @@ export default function HomePage() {
     })();
   }, [navigate]);
 
-  // Progressive labels: countries always visible, more cities as user zooms in
+  // Progressive labels: countries always visible, more cities as user zooms in.
+  // Sizes scale with altitude (zoomed in = smaller text, like Google Maps).
   const allLabels = useMemo(() => {
     const labels: Array<{ lat: number; lng: number; text: string; size: number; type: string }> = [];
-    countryLabels.forEach((l) => labels.push({ ...l }));
+
+    // Scale factor: smaller when close, larger when far. Clamped for sanity.
+    // altitude ranges roughly 0.01 (close) → 2.5 (far)
+    const scale = Math.max(0.35, Math.min(1, altitude / 1.8));
+
+    countryLabels.forEach((l) => labels.push({ ...l, size: l.size * scale }));
     const curatedCityNames = new Set(cityLabels.map((c) => c.text));
-    cityLabels.forEach((l) => labels.push({ ...l }));
+    cityLabels.forEach((l) => labels.push({ ...l, size: l.size * scale }));
 
     // Tighter caps for smooth rendering — labels are expensive (one canvas each)
     let cityLimit = 0;
@@ -345,7 +351,8 @@ export default function HomePage() {
     else if (altitude < 1.3) cityLimit = 150;
     else if (altitude < 1.8) cityLimit = 80;
 
-    const citySize = altitude < 0.35 ? 0.22 : altitude < 0.6 ? 0.28 : altitude < 0.9 ? 0.32 : 0.38;
+    // Base city size also scales with altitude for a Google-Maps-like feel
+    const citySize = 0.4 * scale;
 
     if (cityLimit > 0) {
       const cityOnly = dbLabels.filter((d) => d.type === "city" && !curatedCityNames.has(d.text));
