@@ -110,7 +110,7 @@ async function fetchUserMapData(userId: string): Promise<UserMapData> {
       }
       const coords = getCityCoordinates(r.places.name);
       if (coords) {
-        ratedCities.push({ name: r.places.name, coords, placeId: r.go_id || r.place_id, rating });
+        ratedCities.push({ name: r.places.name, coords, placeId: r.place_id, rating });
       }
     }
   });
