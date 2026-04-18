@@ -52,11 +52,44 @@ export default function HomePage() {
   const [selectedActivity, setSelectedActivity] = useState<FriendActivity | null>(null);
   const [notifOpen, setNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [dbLabels, setDbLabels] = useState<DbCityLabel[]>([]);
+  const [altitude, setAltitude] = useState(2.2);
 
   useEffect(() => {
     if (containerRef.current) {
       setGlobeWidth(Math.min(containerRef.current.offsetWidth, 500));
     }
+  }, []);
+
+  // Fetch all places from DB once for progressive-zoom labels
+  useEffect(() => {
+    (async () => {
+      const all: DbCityLabel[] = [];
+      let from = 0;
+      const PAGE = 1000;
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const { data, error } = await supabase
+          .from("places")
+          .select("id, name, country, type")
+          .range(from, from + PAGE - 1);
+        if (error || !data || data.length === 0) break;
+        for (const p of data) {
+          const coords = getPlaceCoordinates(p.name, p.country);
+          if (!coords) continue;
+          all.push({
+            id: p.id,
+            text: p.name,
+            lat: coords[0],
+            lng: coords[1],
+            type: p.type === "country" ? "country" : "city",
+          });
+        }
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+      setDbLabels(all);
+    })();
   }, []);
 
   // Fetch unread notification count
