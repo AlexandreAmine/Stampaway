@@ -259,16 +259,19 @@ export default function AddPlacePage() {
     } else {
       toast.success("Review saved!");
 
-      // If user logged a city and hasn't logged the corresponding country, prompt them
+      // If user logged a city and hasn't logged the corresponding country, show a prompt
+      // (fire-and-forget — navigation continues normally as for any other log)
       if (selectedPlace.type === "city" && selectedPlace.country) {
-        const { data: countryPlace } = await supabase
-          .from("places")
-          .select("id, name, country, image")
-          .eq("type", "country")
-          .eq("name", selectedPlace.country)
-          .maybeSingle();
+        (async () => {
+          const { data: countryPlace } = await supabase
+            .from("places")
+            .select("id, name, country, image")
+            .eq("type", "country")
+            .eq("name", selectedPlace.country)
+            .maybeSingle();
 
-        if (countryPlace) {
+          if (!countryPlace) return;
+
           const { data: countryReview } = await supabase
             .from("reviews")
             .select("id")
@@ -290,13 +293,10 @@ export default function AddPlacePage() {
                     );
                   },
                 },
-                onAutoClose: () => navigate("/profile"),
-                onDismiss: () => navigate("/profile"),
               }
             );
-            return;
           }
-        }
+        })();
       }
 
       navigate("/profile");
