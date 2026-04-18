@@ -81,13 +81,11 @@ async function fetchUserMapData(userId: string): Promise<UserMapData> {
 
   (res.data || []).forEach((r: any) => {
     const code = getCountryCode(r.places.country);
-    if (code) {
-      codes.add(code);
-      if (r.places.type === "country") {
+    if (r.places.type === "country") {
+      if (code) {
+        codes.add(code);
         placeMap[code] = r.place_id;
-        visitedCountryNames.add(r.places.country);
         if (r.rating === 5) fiveStarCountryCodes.add(code);
-        // Store country rating (keep highest if multiple)
         const existing = countryRatings[code];
         const rating = r.rating != null ? Number(r.rating) : null;
         if (rating != null && (existing == null || rating > existing)) {
@@ -95,12 +93,13 @@ async function fetchUserMapData(userId: string): Promise<UserMapData> {
         } else if (!(code in countryRatings)) {
           countryRatings[code] = null;
         }
-      } else if (!placeMap[code]) {
-        placeMap[code] = r.place_id;
       }
+      visitedCountryNames.add(r.places.country);
     }
-    if (r.places.type === "country") visitedCountryNames.add(r.places.country);
     if (r.places.type === "city") {
+      // City logs must NOT mark the country as visited on the map.
+      // Only register a place mapping fallback so clicking a (country-logged) country still opens correctly.
+      if (code && !placeMap[code]) placeMap[code] = r.place_id;
       cityCount++;
       const c = r.places.country;
       cityCountByCountry[c] = (cityCountByCountry[c] || 0) + 1;
@@ -111,7 +110,7 @@ async function fetchUserMapData(userId: string): Promise<UserMapData> {
       }
       const coords = getCityCoordinates(r.places.name);
       if (coords) {
-        ratedCities.push({ name: r.places.name, coords, placeId: r.place_id, rating });
+        ratedCities.push({ name: r.places.name, coords, placeId: r.go_id || r.place_id, rating });
       }
     }
   });
