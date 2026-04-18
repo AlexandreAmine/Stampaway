@@ -31,6 +31,14 @@ interface FriendActivity {
   review_text: string | null;
 }
 
+interface DbCityLabel {
+  id: string;
+  text: string;
+  lat: number;
+  lng: number;
+  type: "city" | "country";
+}
+
 export default function HomePage() {
   const { user } = useAuth();
   const { t } = useLanguage();
