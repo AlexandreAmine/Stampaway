@@ -810,6 +810,8 @@ const es: Record<TranslationKey, string> = {
   "facts.officialWebsite": "Sitio oficial",
   "facts.famousCelebrities": "Celebridades",
 };
+
+const it: Record<TranslationKey, string> = {
   "settings": "Impostazioni",
   "back": "Indietro",
   "save": "Salva",
