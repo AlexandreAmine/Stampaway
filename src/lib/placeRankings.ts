@@ -218,6 +218,8 @@ async function computeCategoryAverageMap(
 
 /** Fetch ALL places (paginated) */
 export async function fetchAllPlaces(): Promise<any[]> {
+  if (isFresh(placesCache.current)) return placesCache.current!.data;
+  return dedup("allPlaces", async () => {
   const PAGE = 1000;
   let all: any[] = [];
   let offset = 0;
@@ -231,5 +233,7 @@ export async function fetchAllPlaces(): Promise<any[]> {
     if (data.length < PAGE) break;
     offset += PAGE;
   }
+    placesCache.current = { data: all, ts: Date.now() };
   return all;
+  });
 }
