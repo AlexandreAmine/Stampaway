@@ -288,6 +288,25 @@ const en = {
   "misc.visitors": "visitors",
   "misc.logged": "logged",
   "misc.visited": "visited",
+
+  // Facts (Key Facts on Place page)
+  "facts.population": "Population",
+  "facts.area": "Area",
+  "facts.famousDish": "Famous Dish",
+  "facts.nationalDish": "National Dish",
+  "facts.funFacts": "Fun Facts",
+  "facts.cityRecords": "City Records",
+  "facts.countryRecords": "Country Records",
+  "facts.avgTemperature": "Average Temperature",
+  "facts.peakSeason": "Peak Season",
+  "facts.offSeason": "Off Season",
+  "facts.appRankings": "App Rankings",
+  "facts.mostVisited": "Most visited",
+  "facts.highestRated": "Highest rated",
+  "facts.currency": "Currency",
+  "facts.airline": "Airline",
+  "facts.officialWebsite": "Official Website",
+  "facts.famousCelebrities": "Famous Celebrities",
 };
 
 export type TranslationKey = keyof typeof en;
