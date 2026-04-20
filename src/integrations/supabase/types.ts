@@ -42,6 +42,7 @@ export type Database = {
           created_at: string
           facts: Json
           id: string
+          language: string
         }
         Insert: {
           city_name: string
@@ -49,6 +50,7 @@ export type Database = {
           created_at?: string
           facts: Json
           id?: string
+          language?: string
         }
         Update: {
           city_name?: string
@@ -56,6 +58,7 @@ export type Database = {
           created_at?: string
           facts?: Json
           id?: string
+          language?: string
         }
         Relationships: []
       }
@@ -65,18 +68,21 @@ export type Database = {
           created_at: string
           facts: Json
           id: string
+          language: string
         }
         Insert: {
           country_name: string
           created_at?: string
           facts: Json
           id?: string
+          language?: string
         }
         Update: {
           country_name?: string
           created_at?: string
           facts?: Json
           id?: string
+          language?: string
         }
         Relationships: []
       }
