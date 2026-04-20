@@ -1,5 +1,44 @@
 import { supabase } from "@/integrations/supabase/client";
 
+// ============= Module-level caches =============
+// These caches persist for the lifetime of the page session, so navigating
+// between Search / Explore / Profile tabs reuses results instead of refetching.
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+interface CacheEntry<T> {
+  data: T;
+  ts: number;
+}
+
+const visitorCountCache: { current: CacheEntry<Map<string, number>> | null } = { current: null };
+const monthlyVisitorCountCache: { current: CacheEntry<Map<string, number>> | null } = { current: null };
+const avgRatingCache: { current: CacheEntry<Map<string, number>> | null } = { current: null };
+const placesCache: { current: CacheEntry<any[]> | null } = { current: null };
+const categoryCache = new Map<string, CacheEntry<Map<string, number>>>();
+
+// In-flight promise dedup so concurrent callers share one network request.
+const inflight = new Map<string, Promise<any>>();
+
+function isFresh<T>(entry: CacheEntry<T> | null): boolean {
+  return entry !== null && Date.now() - entry.ts < CACHE_TTL_MS;
+}
+
+function dedup<T>(key: string, fn: () => Promise<T>): Promise<T> {
+  if (inflight.has(key)) return inflight.get(key)!;
+  const p = fn().finally(() => inflight.delete(key));
+  inflight.set(key, p);
+  return p;
+}
+
+/** Clear all rankings caches (call after logging a new review etc.) */
+export function clearRankingsCache() {
+  visitorCountCache.current = null;
+  monthlyVisitorCountCache.current = null;
+  avgRatingCache.current = null;
+  placesCache.current = null;
+  categoryCache.clear();
+}
+
 /**
  * Fetch ALL reviews in paginated batches to bypass Supabase's 1000-row default limit.
  */
