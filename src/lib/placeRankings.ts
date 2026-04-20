@@ -61,12 +61,19 @@ async function fetchAllReviews(columns: string): Promise<any[]> {
 
 /** Map<place_id, distinct_visitor_count> — all time */
 export async function fetchAllTimeVisitorCountMap(): Promise<Map<string, number>> {
-  const { data } = await supabase.rpc("get_place_visitor_counts");
-  return new Map((data || []).map((c: any) => [c.place_id, Number(c.visitor_count)]));
+  if (isFresh(visitorCountCache.current)) return visitorCountCache.current!.data;
+  return dedup("visitorCount", async () => {
+    const { data } = await supabase.rpc("get_place_visitor_counts");
+    const map = new Map<string, number>((data || []).map((c: any) => [c.place_id, Number(c.visitor_count)]));
+    visitorCountCache.current = { data: map, ts: Date.now() };
+    return map;
+  });
 }
 
 /** Map<place_id, distinct_visitor_count> — current month only */
 export async function fetchMonthlyVisitorCountMap(): Promise<Map<string, number>> {
+  if (isFresh(monthlyVisitorCountCache.current)) return monthlyVisitorCountCache.current!.data;
+  return dedup("monthlyVisitor", async () => {
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
@@ -95,11 +102,15 @@ export async function fetchMonthlyVisitorCountMap(): Promise<Map<string, number>
 
   const result = new Map<string, number>();
   placeUsers.forEach((users, placeId) => result.set(placeId, users.size));
+    monthlyVisitorCountCache.current = { data: result, ts: Date.now() };
   return result;
+  });
 }
 
 /** Map<place_id, average_rating> — all time, using paginated fetch */
 export async function fetchAverageRatingMap(): Promise<Map<string, number>> {
+  if (isFresh(avgRatingCache.current)) return avgRatingCache.current!.data;
+  return dedup("avgRating", async () => {
   const allRatings = await fetchAllReviews("place_id, rating");
   const agg = new Map<string, { total: number; count: number }>();
   allRatings.forEach((r: any) => {
@@ -111,7 +122,9 @@ export async function fetchAverageRatingMap(): Promise<Map<string, number>> {
   });
   const result = new Map<string, number>();
   agg.forEach((v, k) => result.set(k, v.total / v.count));
+    avgRatingCache.current = { data: result, ts: Date.now() };
   return result;
+  });
 }
 
 /**
