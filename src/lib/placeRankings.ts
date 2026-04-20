@@ -136,6 +136,23 @@ export async function fetchCategoryAverageMap(
   category: string,
   placeIds?: string[]
 ): Promise<Map<string, number>> {
+  // Cache only the unscoped (full) category map; scoped variants are cheap and rare.
+  if (!placeIds) {
+    const cached = categoryCache.get(category);
+    if (isFresh(cached || null)) return cached!.data;
+    return dedup(`cat:${category}`, async () => {
+      const result = await computeCategoryAverageMap(category, undefined);
+      categoryCache.set(category, { data: result, ts: Date.now() });
+      return result;
+    });
+  }
+  return computeCategoryAverageMap(category, placeIds);
+}
+
+async function computeCategoryAverageMap(
+  category: string,
+  placeIds?: string[]
+): Promise<Map<string, number>> {
   // 1. Fetch reviews (id, place_id), optionally filtered to placeIds in chunks of 500
   const allReviews: { id: string; place_id: string }[] = [];
   if (placeIds && placeIds.length > 0) {
