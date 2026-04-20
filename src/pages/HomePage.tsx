@@ -211,32 +211,42 @@ export default function HomePage() {
     if (!globeRef.current) return;
     const controls = globeRef.current.controls();
     controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.3;
+    controls.autoRotateSpeed = 0.25;
     controls.enableZoom = true;
     controls.minDistance = 101;
     controls.maxDistance = 800;
-    // Smoother, more gradual zoom — lower speed prevents jumpy steps
-    controls.zoomSpeed = 0.6;
-    controls.rotateSpeed = 0.6;
+    // Google-Maps-like fluid feel
+    controls.zoomSpeed = 1.0;
+    controls.rotateSpeed = 0.8;
+    controls.panSpeed = 0.8;
     controls.enableDamping = true;
-    controls.dampingFactor = 0.12; // softer easing for fluid motion
-    // Smooth pinch zoom on touch
+    controls.dampingFactor = 0.18;
+    controls.screenSpacePanning = true;
     if ("zoomToCursor" in controls) (controls as any).zoomToCursor = true;
     globeRef.current.pointOfView({ altitude: 2.2 });
 
     const onStart = () => { controls.autoRotate = false; };
     controls.addEventListener("start", onStart);
 
-    // Only update altitude AFTER the user stops interacting — avoids label thrash mid-zoom
+    // Sample altitude into discrete tiers — only re-render labels when crossing a tier boundary.
+    // This avoids any label rebuild during smooth zoom motion.
     let endTimer: number | undefined;
+    const tierFor = (alt: number) => {
+      if (alt < 0.35) return 0;
+      if (alt < 0.6) return 1;
+      if (alt < 0.9) return 2;
+      if (alt < 1.3) return 3;
+      if (alt < 1.8) return 4;
+      return 5;
+    };
     const onEnd = () => {
       if (endTimer) window.clearTimeout(endTimer);
       endTimer = window.setTimeout(() => {
         const pov = globeRef.current?.pointOfView?.();
         if (pov && typeof pov.altitude === "number") {
-          setAltitude((prev) => (Math.abs(prev - pov.altitude) > 0.1 ? pov.altitude : prev));
+          setAltitude((prev) => (tierFor(prev) !== tierFor(pov.altitude) ? pov.altitude : prev));
         }
-      }, 200);
+      }, 250);
     };
     controls.addEventListener("end", onEnd);
 

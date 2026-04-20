@@ -157,22 +157,30 @@ export default function SearchPage() {
     return places;
   };
 
+  // Cache sort metric maps so switching tabs (Countries ↔ Cities) reuses them instantly
+  const avgMapCacheRef = useRef<Map<string, number> | null>(null);
+  const catMapCacheRef = useRef<Record<string, Map<string, number>>>({});
+
   useEffect(() => {
     if ((activeFilter !== "Countries" && activeFilter !== "Cities") || places.length === 0) return;
     if (destSort === "most-popular") return;
 
     (async () => {
       if (destSort === "avg-highest") {
-        const avgMap = await fetchAverageRatingMap();
-        setPlaces((prev) => prev.map((p) => ({
-          ...p, _avg: avgMap.get(p.id) || 0,
-        })));
+        let avgMap = avgMapCacheRef.current;
+        if (!avgMap) {
+          avgMap = await fetchAverageRatingMap();
+          avgMapCacheRef.current = avgMap;
+        }
+        // Apply immediately — no need to await if cached
+        setPlaces((prev) => prev.map((p) => ({ ...p, _avg: avgMap!.get(p.id) || 0 })));
       } else if (destSort === "category-avg") {
-        const placeIds = places.map((p) => p.id);
-        const catAvgMap = await fetchCategoryAverageMap(selectedCategory, placeIds);
-        setPlaces((prev) => prev.map((p) => ({
-          ...p, _catAvg: catAvgMap.get(p.id) || 0,
-        })));
+        let catMap = catMapCacheRef.current[selectedCategory];
+        if (!catMap) {
+          catMap = await fetchCategoryAverageMap(selectedCategory);
+          catMapCacheRef.current[selectedCategory] = catMap;
+        }
+        setPlaces((prev) => prev.map((p) => ({ ...p, _catAvg: catMap!.get(p.id) || 0 })));
       }
     })();
   }, [destSort, selectedCategory, places.length, activeFilter]);
