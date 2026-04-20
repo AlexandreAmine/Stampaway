@@ -411,7 +411,14 @@ export default function SearchPage() {
           {filterTabs.map((tab) => (
             <button
               key={tab}
-              onClick={() => { setActiveFilter(tab); setGrouped(false); }}
+              onClick={() => {
+                setActiveFilter(tab);
+                setGrouped(false);
+                // Reset sort to "Most popular" when switching between Countries <-> Cities
+                if ((tab === "Countries" || tab === "Cities") && destSort !== "most-popular") {
+                  setDestSort("most-popular");
+                }
+              }}
               className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
                 activeFilter === tab
                   ? "bg-foreground text-background"
