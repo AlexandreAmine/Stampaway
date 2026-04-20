@@ -5,13 +5,23 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: "English",
+  fr: "French",
+  es: "Spanish",
+  it: "Italian",
+  pt: "Portuguese",
+  nl: "Dutch",
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { country_name } = await req.json();
+    const { country_name, language: rawLang } = await req.json();
+    const language = (rawLang && LANGUAGE_NAMES[rawLang]) ? rawLang : "en";
     if (!country_name) {
       return new Response(JSON.stringify({ error: "country_name required" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -20,19 +30,24 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Check cache first
+    // Check cache per language
     const { data: cached } = await supabase
       .from("country_facts")
       .select("facts")
       .eq("country_name", country_name)
+      .eq("language", language)
       .maybeSingle();
 
     if (cached) {
       return new Response(JSON.stringify(cached.facts), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // Generate with AI
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    const langName = LANGUAGE_NAMES[language];
+    const langInstruction = language === "en"
+      ? ""
+      : `\nIMPORTANT: All textual values (fun_facts, national_dish, country_records, currency_name, profession of celebrities, month names in avg_weather_by_month, most_touristic_months, least_touristic_months, national_airline) MUST be written in ${langName}. Keep currency_code, JSON keys, and proper names of celebrities in their original form. Numeric values stay numeric.`;
+
     const prompt = `Give me factual information about the country "${country_name}". Return ONLY valid JSON with this exact structure, no markdown:
 {
   "population": "number as string e.g. 67,390,000",
@@ -66,7 +81,7 @@ Deno.serve(async (req) => {
   ],
   "most_touristic_months": ["month1", "month2", "month3"],
   "least_touristic_months": ["month1", "month2", "month3"]
-}`;
+}${langInstruction}`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -87,14 +102,13 @@ Deno.serve(async (req) => {
 
     const aiData = await aiResponse.json();
     let factsText = aiData.choices?.[0]?.message?.content || "";
-    
-    // Strip markdown code fences if present
     factsText = factsText.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-    
     const facts = JSON.parse(factsText);
 
-    // Cache in DB
-    await supabase.from("country_facts").upsert({ country_name, facts }, { onConflict: "country_name" });
+    await supabase.from("country_facts").upsert(
+      { country_name, language, facts },
+      { onConflict: "country_name,language" }
+    );
 
     return new Response(JSON.stringify(facts), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (error) {
