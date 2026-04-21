@@ -9,6 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { ReviewComments } from "@/components/ReviewComments";
 import { SubRatingsDisplay } from "@/components/SubRatingsDisplay";
+import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
 
 export default function ReviewDetailPage() {
   const { reviewId } = useParams<{ reviewId: string }>();
@@ -70,6 +71,8 @@ export default function ReviewDetailPage() {
     return `${r.visit_year}`;
   };
 
+  const localizedPlaceName = useLocalizedPlaceName(place?.name, place?.type === "country");
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -125,7 +128,7 @@ export default function ReviewDetailPage() {
                 {profile?.username || "User"}
               </button>
               <p className="text-xs text-muted-foreground">
-                logged <button onClick={() => navigate(`/place/${place.id}`)} className="text-primary hover:underline">{place.name}</button>
+                logged <button onClick={() => navigate(`/place/${place.id}`)} className="text-primary hover:underline">{localizedPlaceName}</button>
               </p>
             </div>
           </div>

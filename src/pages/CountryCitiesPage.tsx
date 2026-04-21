@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { PosterWishlistButton } from "@/components/PosterWishlistButton";
+import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -120,7 +121,8 @@ export default function CountryCitiesPage() {
   }, [cities, destSort, selectedCategory]);
 
   const decoded = countryName ? decodeURIComponent(countryName) : "";
-  const title = mode === "wishlist" ? `Wishlist · ${decoded}` : `Cities in ${decoded}`;
+  const localizedDecoded = useLocalizedPlaceName(decoded, true);
+  const title = mode === "wishlist" ? `${t("wishlist.title")} · ${localizedDecoded}` : t("place.citiesIn", { country: localizedDecoded });
 
   const currentLabel =
     destSort === "category-avg"
