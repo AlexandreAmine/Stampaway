@@ -383,14 +383,14 @@ export default function PlacePage() {
             <span className="text-3xl font-bold text-foreground">{avgRating || "—"}</span>
             <div>
               <StarRating rating={avgRating} size={14} />
-              <p className="text-xs text-muted-foreground mt-0.5">{ratingsCount} ratings</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{ratingsCount} {t("place.ratings")}</p>
             </div>
             <button
               onClick={() => navigate(`/place/${id}/categories`)}
               className="flex items-center gap-1 ml-auto"
             >
               <BarChart3 className="w-4 h-4 text-primary" />
-              <span className="text-xs text-primary font-medium">Category ratings</span>
+              <span className="text-xs text-primary font-medium">{t("place.categoryRatings")}</span>
             </button>
           </div>
           <RatingHistogram distribution={distribution} />
@@ -425,7 +425,7 @@ export default function PlacePage() {
               onClick={() => navigate(`/place/${id}/friendvisitors`)}
               className="flex items-center gap-1 mb-3"
             >
-              <h3 className="text-sm font-semibold text-foreground">Visited by</h3>
+              <h3 className="text-sm font-semibold text-foreground">{t("place.friendsVisited")}</h3>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
             <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
@@ -458,7 +458,7 @@ export default function PlacePage() {
               onClick={() => navigate(`/place/${id}/wanttovisit`)}
               className="flex items-center gap-1 mb-3"
             >
-              <h3 className="text-sm font-semibold text-foreground">Want to go</h3>
+              <h3 className="text-sm font-semibold text-foreground">{t("place.friendsWishlist")}</h3>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
             <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
@@ -487,17 +487,17 @@ export default function PlacePage() {
           <button onClick={() => navigate(`/place/${id}/visitors`)} className="flex flex-col items-center gap-1">
             <Users className="w-5 h-5 text-primary" />
             <span className="text-lg font-bold text-foreground">{formatCount(visitorsCount)}</span>
-            <span className="text-[10px] text-muted-foreground">Visitors</span>
+            <span className="text-[10px] text-muted-foreground">{t("place.visitors")}</span>
           </button>
           <button onClick={() => navigate(`/place/${id}/reviews`)} className="flex flex-col items-center gap-1">
             <MessageSquare className="w-5 h-5 text-primary" />
             <span className="text-lg font-bold text-foreground">{formatCount(writtenReviewsCount)}</span>
-            <span className="text-[10px] text-muted-foreground">Reviews</span>
+            <span className="text-[10px] text-muted-foreground">{t("place.reviews")}</span>
           </button>
           <button onClick={() => navigate(`/place/${id}/lists`)} className="flex flex-col items-center gap-1">
             <List className="w-5 h-5 text-primary" />
             <span className="text-lg font-bold text-foreground">{formatCount(listsCount)}</span>
-            <span className="text-[10px] text-muted-foreground">Lists</span>
+            <span className="text-[10px] text-muted-foreground">{t("place.lists")}</span>
           </button>
         </motion.div>
 
@@ -514,7 +514,7 @@ export default function PlacePage() {
               onClick={() => navigate(`/country/${encodeURIComponent(place.name)}/cities`)}
               className="flex items-center justify-between w-full mb-4"
             >
-              <h3 className="text-lg font-bold text-foreground">Cities in {place.name}</h3>
+              <h3 className="text-lg font-bold text-foreground">{t("place.citiesIn", { country: localizedName })}</h3>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </button>
 
@@ -547,7 +547,7 @@ export default function PlacePage() {
                 onClick={() => navigate(`/country/${encodeURIComponent(place.name)}/cities?mode=wishlist`)}
                 className="flex items-center justify-between w-full py-3 border-t border-border"
               >
-                <h3 className="text-sm font-semibold text-foreground">Cities in your wishlist</h3>
+                <h3 className="text-sm font-semibold text-foreground">{t("place.wishlistCities", { country: localizedName })}</h3>
                 <div className="flex items-center gap-1">
                   <span className="text-sm text-muted-foreground">{wishlistCities.length}</span>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />
