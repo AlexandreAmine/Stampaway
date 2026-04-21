@@ -71,6 +71,8 @@ export default function ReviewDetailPage() {
     return `${r.visit_year}`;
   };
 
+  const localizedPlaceName = useLocalizedPlaceName(place?.name, place?.type === "country");
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
