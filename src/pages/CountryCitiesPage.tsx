@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { PosterWishlistButton } from "@/components/PosterWishlistButton";
+import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
 import {
   DropdownMenu,
   DropdownMenuContent,
