@@ -1310,6 +1310,8 @@ const pt: Record<TranslationKey, string> = {
   "facts.officialWebsite": "Site oficial",
   "facts.famousCelebrities": "Celebridades",
 };
+
+const nl: Record<TranslationKey, string> = {
   "settings": "Instellingen",
   "back": "Terug",
   "save": "Opslaan",
