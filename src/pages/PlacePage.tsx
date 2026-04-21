@@ -14,6 +14,8 @@ import { CityFacts } from "@/components/CityFacts";
 import { toast } from "sonner";
 import { DiaryEditSheet } from "@/components/DiaryEditSheet";
 import { dedupeByNewest } from "@/lib/reviewDedup";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
 
 interface PlaceData {
   id: string;
