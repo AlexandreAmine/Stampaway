@@ -29,6 +29,7 @@ export default function PlacePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, language } = useLanguage();
 
   const [place, setPlace] = useState<PlaceData | null>(null);
   const [description, setDescription] = useState("");
