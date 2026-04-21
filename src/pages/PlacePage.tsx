@@ -54,7 +54,8 @@ export default function PlacePage() {
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   useEffect(() => {
     if (id) fetchAll();
-  }, [id, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, user, language]);
 
   const fetchAll = async () => {
     if (!id) return;
@@ -234,23 +235,44 @@ export default function PlacePage() {
 
   const fetchDescription = async (name: string, type: string, country: string, dbDescription?: string | null) => {
     setLoadingDesc(true);
-    if (dbDescription) {
-      setDescription(dbDescription);
+    let baseEn = dbDescription || "";
+    if (!baseEn) {
+      try {
+        const searchTerm = type === "city" ? `${name} ${country}` : name;
+        const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchTerm)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.extract) {
+            const sentences = data.extract.split(". ");
+            baseEn = sentences.slice(0, 3).join(". ") + (sentences.length > 3 ? "." : "");
+          }
+        }
+      } catch {
+        // silently fail
+      }
+    }
+
+    if (!baseEn) {
+      setDescription("");
       setLoadingDesc(false);
       return;
     }
+
+    if (language === "en") {
+      setDescription(baseEn);
+      setLoadingDesc(false);
+      return;
+    }
+
+    // Translate to current language
     try {
-      const searchTerm = type === "city" ? `${name} ${country}` : name;
-      const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchTerm)}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.extract) {
-          const sentences = data.extract.split(". ");
-          setDescription(sentences.slice(0, 3).join(". ") + (sentences.length > 3 ? "." : ""));
-        }
-      }
+      const { data } = await supabase.functions.invoke("translate-text", {
+        body: { texts: [baseEn], language, kind: "description" },
+      });
+      const translated = data?.translations?.[0] || baseEn;
+      setDescription(translated);
     } catch {
-      // silently fail
+      setDescription(baseEn);
     }
     setLoadingDesc(false);
   };
