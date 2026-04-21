@@ -128,7 +128,7 @@ export default function ReviewDetailPage() {
                 {profile?.username || "User"}
               </button>
               <p className="text-xs text-muted-foreground">
-                logged <button onClick={() => navigate(`/place/${place.id}`)} className="text-primary hover:underline">{place.name}</button>
+                logged <button onClick={() => navigate(`/place/${place.id}`)} className="text-primary hover:underline">{localizedPlaceName}</button>
               </p>
             </div>
           </div>
