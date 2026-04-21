@@ -297,6 +297,9 @@ export default function PlacePage() {
     setTogglingWishlist(false);
   };
 
+  const localizedName = useLocalizedPlaceName(place?.name, place?.type === "country");
+  const localizedCountry = useLocalizedPlaceName(place?.country, true);
+
   if (loading || !place) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
