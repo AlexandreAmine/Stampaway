@@ -350,7 +350,7 @@ export default function PlacePage() {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <div className="flex items-center gap-2 mb-1">
             {flagUrl && <img src={flagUrl} alt="" className="w-6 h-4 rounded-sm object-cover" />}
-            <h1 className="text-2xl font-bold text-foreground">{place.name}</h1>
+            <h1 className="text-2xl font-bold text-foreground">{localizedName}</h1>
           </div>
           {place.type === "city" && (
             <p
@@ -360,7 +360,7 @@ export default function PlacePage() {
                 if (data) navigate(`/place/${data.id}`);
               }}
             >
-              {place.country}
+              {localizedCountry}
             </p>
           )}
         </motion.div>
