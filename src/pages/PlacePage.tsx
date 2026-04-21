@@ -14,6 +14,8 @@ import { CityFacts } from "@/components/CityFacts";
 import { toast } from "sonner";
 import { DiaryEditSheet } from "@/components/DiaryEditSheet";
 import { dedupeByNewest } from "@/lib/reviewDedup";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
 
 interface PlaceData {
   id: string;
@@ -27,6 +29,7 @@ export default function PlacePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, language } = useLanguage();
 
   const [place, setPlace] = useState<PlaceData | null>(null);
   const [description, setDescription] = useState("");
@@ -51,7 +54,8 @@ export default function PlacePage() {
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   useEffect(() => {
     if (id) fetchAll();
-  }, [id, user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, user, language]);
 
   const fetchAll = async () => {
     if (!id) return;
@@ -231,23 +235,44 @@ export default function PlacePage() {
 
   const fetchDescription = async (name: string, type: string, country: string, dbDescription?: string | null) => {
     setLoadingDesc(true);
-    if (dbDescription) {
-      setDescription(dbDescription);
+    let baseEn = dbDescription || "";
+    if (!baseEn) {
+      try {
+        const searchTerm = type === "city" ? `${name} ${country}` : name;
+        const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchTerm)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.extract) {
+            const sentences = data.extract.split(". ");
+            baseEn = sentences.slice(0, 3).join(". ") + (sentences.length > 3 ? "." : "");
+          }
+        }
+      } catch {
+        // silently fail
+      }
+    }
+
+    if (!baseEn) {
+      setDescription("");
       setLoadingDesc(false);
       return;
     }
+
+    if (language === "en") {
+      setDescription(baseEn);
+      setLoadingDesc(false);
+      return;
+    }
+
+    // Translate to current language
     try {
-      const searchTerm = type === "city" ? `${name} ${country}` : name;
-      const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(searchTerm)}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.extract) {
-          const sentences = data.extract.split(". ");
-          setDescription(sentences.slice(0, 3).join(". ") + (sentences.length > 3 ? "." : ""));
-        }
-      }
+      const { data } = await supabase.functions.invoke("translate-text", {
+        body: { texts: [baseEn], language, kind: "description" },
+      });
+      const translated = data?.translations?.[0] || baseEn;
+      setDescription(translated);
     } catch {
-      // silently fail
+      setDescription(baseEn);
     }
     setLoadingDesc(false);
   };
@@ -271,6 +296,9 @@ export default function PlacePage() {
     }
     setTogglingWishlist(false);
   };
+
+  const localizedName = useLocalizedPlaceName(place?.name, place?.type === "country");
+  const localizedCountry = useLocalizedPlaceName(place?.country, true);
 
   if (loading || !place) {
     return (
@@ -325,7 +353,7 @@ export default function PlacePage() {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <div className="flex items-center gap-2 mb-1">
             {flagUrl && <img src={flagUrl} alt="" className="w-6 h-4 rounded-sm object-cover" />}
-            <h1 className="text-2xl font-bold text-foreground">{place.name}</h1>
+            <h1 className="text-2xl font-bold text-foreground">{localizedName}</h1>
           </div>
           {place.type === "city" && (
             <p
@@ -335,7 +363,7 @@ export default function PlacePage() {
                 if (data) navigate(`/place/${data.id}`);
               }}
             >
-              {place.country}
+              {localizedCountry}
             </p>
           )}
         </motion.div>
@@ -355,14 +383,14 @@ export default function PlacePage() {
             <span className="text-3xl font-bold text-foreground">{avgRating || "—"}</span>
             <div>
               <StarRating rating={avgRating} size={14} />
-              <p className="text-xs text-muted-foreground mt-0.5">{ratingsCount} ratings</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{ratingsCount} {t("place.ratings")}</p>
             </div>
             <button
               onClick={() => navigate(`/place/${id}/categories`)}
               className="flex items-center gap-1 ml-auto"
             >
               <BarChart3 className="w-4 h-4 text-primary" />
-              <span className="text-xs text-primary font-medium">Category ratings</span>
+              <span className="text-xs text-primary font-medium">{t("place.categoryRatings")}</span>
             </button>
           </div>
           <RatingHistogram distribution={distribution} />
@@ -397,7 +425,7 @@ export default function PlacePage() {
               onClick={() => navigate(`/place/${id}/friendvisitors`)}
               className="flex items-center gap-1 mb-3"
             >
-              <h3 className="text-sm font-semibold text-foreground">Visited by</h3>
+              <h3 className="text-sm font-semibold text-foreground">{t("place.friendsVisited")}</h3>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
             <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
@@ -430,7 +458,7 @@ export default function PlacePage() {
               onClick={() => navigate(`/place/${id}/wanttovisit`)}
               className="flex items-center gap-1 mb-3"
             >
-              <h3 className="text-sm font-semibold text-foreground">Want to go</h3>
+              <h3 className="text-sm font-semibold text-foreground">{t("place.friendsWishlist")}</h3>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
             <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
@@ -459,17 +487,17 @@ export default function PlacePage() {
           <button onClick={() => navigate(`/place/${id}/visitors`)} className="flex flex-col items-center gap-1">
             <Users className="w-5 h-5 text-primary" />
             <span className="text-lg font-bold text-foreground">{formatCount(visitorsCount)}</span>
-            <span className="text-[10px] text-muted-foreground">Visitors</span>
+            <span className="text-[10px] text-muted-foreground">{t("place.visitors")}</span>
           </button>
           <button onClick={() => navigate(`/place/${id}/reviews`)} className="flex flex-col items-center gap-1">
             <MessageSquare className="w-5 h-5 text-primary" />
             <span className="text-lg font-bold text-foreground">{formatCount(writtenReviewsCount)}</span>
-            <span className="text-[10px] text-muted-foreground">Reviews</span>
+            <span className="text-[10px] text-muted-foreground">{t("place.reviews")}</span>
           </button>
           <button onClick={() => navigate(`/place/${id}/lists`)} className="flex flex-col items-center gap-1">
             <List className="w-5 h-5 text-primary" />
             <span className="text-lg font-bold text-foreground">{formatCount(listsCount)}</span>
-            <span className="text-[10px] text-muted-foreground">Lists</span>
+            <span className="text-[10px] text-muted-foreground">{t("place.lists")}</span>
           </button>
         </motion.div>
 
@@ -486,7 +514,7 @@ export default function PlacePage() {
               onClick={() => navigate(`/country/${encodeURIComponent(place.name)}/cities`)}
               className="flex items-center justify-between w-full mb-4"
             >
-              <h3 className="text-lg font-bold text-foreground">Cities in {place.name}</h3>
+              <h3 className="text-lg font-bold text-foreground">{t("place.citiesIn", { country: localizedName })}</h3>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </button>
 
@@ -519,7 +547,7 @@ export default function PlacePage() {
                 onClick={() => navigate(`/country/${encodeURIComponent(place.name)}/cities?mode=wishlist`)}
                 className="flex items-center justify-between w-full py-3 border-t border-border"
               >
-                <h3 className="text-sm font-semibold text-foreground">Cities in your wishlist</h3>
+                <h3 className="text-sm font-semibold text-foreground">{t("place.wishlistCities", { country: localizedName })}</h3>
                 <div className="flex items-center gap-1">
                   <span className="text-sm text-muted-foreground">{wishlistCities.length}</span>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />

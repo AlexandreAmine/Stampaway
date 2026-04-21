@@ -290,6 +290,7 @@ const en = {
   "misc.visited": "visited",
 
   // Facts (Key Facts on Place page)
+  "facts.keyFacts": "Key Facts",
   "facts.population": "Population",
   "facts.area": "Area",
   "facts.famousDish": "Famous Dish",
@@ -542,6 +543,7 @@ const fr: Record<TranslationKey, string> = {
   "misc.visitors": "visiteurs",
   "misc.logged": "enregistré",
   "misc.visited": "visité",
+  "facts.keyFacts": "Faits clés",
   "facts.population": "Population",
   "facts.area": "Superficie",
   "facts.famousDish": "Plat célèbre",
@@ -792,6 +794,7 @@ const es: Record<TranslationKey, string> = {
   "misc.visitors": "visitantes",
   "misc.logged": "registrado",
   "misc.visited": "visitado",
+  "facts.keyFacts": "Datos clave",
   "facts.population": "Población",
   "facts.area": "Área",
   "facts.famousDish": "Plato famoso",
@@ -1042,6 +1045,7 @@ const it: Record<TranslationKey, string> = {
   "misc.visitors": "visitatori",
   "misc.logged": "registrato",
   "misc.visited": "visitato",
+  "facts.keyFacts": "Dati principali",
   "facts.population": "Popolazione",
   "facts.area": "Superficie",
   "facts.famousDish": "Piatto famoso",
@@ -1292,6 +1296,7 @@ const pt: Record<TranslationKey, string> = {
   "misc.visitors": "visitantes",
   "misc.logged": "registrado",
   "misc.visited": "visitado",
+  "facts.keyFacts": "Factos principais",
   "facts.population": "População",
   "facts.area": "Área",
   "facts.famousDish": "Prato famoso",
@@ -1310,6 +1315,8 @@ const pt: Record<TranslationKey, string> = {
   "facts.officialWebsite": "Site oficial",
   "facts.famousCelebrities": "Celebridades",
 };
+
+const nl: Record<TranslationKey, string> = {
   "settings": "Instellingen",
   "back": "Terug",
   "save": "Opslaan",
@@ -1540,6 +1547,7 @@ const pt: Record<TranslationKey, string> = {
   "misc.visitors": "bezoekers",
   "misc.logged": "gelogd",
   "misc.visited": "bezocht",
+  "facts.keyFacts": "Belangrijke feiten",
   "facts.population": "Bevolking",
   "facts.area": "Oppervlakte",
   "facts.famousDish": "Beroemd gerecht",

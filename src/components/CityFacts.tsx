@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Globe, Utensils, Trophy, Star, Sun, TrendingUp, TrendingDown, Users } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface CityFactsProps {
   cityName: string;
@@ -21,6 +22,7 @@ interface CityFactsData {
 }
 
 export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
+  const { t, language } = useLanguage();
   const [facts, setFacts] = useState<CityFactsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [visitorRank, setVisitorRank] = useState<number | null>(null);
@@ -29,7 +31,8 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
   useEffect(() => {
     fetchFacts();
     fetchRankings();
-  }, [cityName, countryName]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cityName, countryName, language]);
 
   const fetchFacts = async () => {
     setLoading(true);
@@ -39,6 +42,7 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
         .select("facts")
         .eq("city_name", cityName)
         .eq("country_name", countryName)
+        .eq("language", language)
         .maybeSingle() as any;
 
       if (cached?.facts) {
@@ -48,7 +52,7 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
       }
 
       const { data, error } = await supabase.functions.invoke("get-city-facts", {
-        body: { city_name: cityName, country_name: countryName },
+        body: { city_name: cityName, country_name: countryName, language },
       });
 
       if (data && !error) {
@@ -70,7 +74,6 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
 
     const cityIds = cities.map((c) => c.id);
 
-    // Batch fetch reviews in chunks to avoid the 1000-row limit
     let allReviews: any[] = [];
     for (let i = 0; i < cityIds.length; i += 500) {
       const chunk = cityIds.slice(i, i + 500);
@@ -114,7 +117,7 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
   if (loading) {
     return (
       <div className="mt-8 space-y-3">
-        <h3 className="text-lg font-bold text-foreground">Key Facts</h3>
+        <h3 className="text-lg font-bold text-foreground">{t("facts.keyFacts")}</h3>
         <div className="space-y-2">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="h-12 bg-card rounded-lg animate-pulse" />
@@ -130,7 +133,7 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-8 border-t border-border pt-6">
-      <h3 className="text-lg font-bold text-foreground mb-5">Key Facts</h3>
+      <h3 className="text-lg font-bold text-foreground mb-5">{t("facts.keyFacts")}</h3>
 
       <div className="space-y-4">
         {/* Population & Area */}
@@ -138,14 +141,14 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
           <div className="bg-card rounded-xl p-3 border border-border">
             <div className="flex items-center gap-2 mb-1">
               <Users className="w-4 h-4 text-primary" />
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Population</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("facts.population")}</span>
             </div>
             <p className="text-sm font-semibold text-foreground">{facts.population}</p>
           </div>
           <div className="bg-card rounded-xl p-3 border border-border">
             <div className="flex items-center gap-2 mb-1">
               <Globe className="w-4 h-4 text-primary" />
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Area</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("facts.area")}</span>
             </div>
             <p className="text-sm font-semibold text-foreground">{facts.area_km2} km²</p>
           </div>
@@ -156,7 +159,7 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
           <div className="bg-card rounded-xl p-3 border border-border">
             <div className="flex items-center gap-2 mb-1">
               <Utensils className="w-4 h-4 text-primary" />
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Famous Dish</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("facts.famousDish")}</span>
             </div>
             <p className="text-sm font-semibold text-foreground">{facts.famous_dish}</p>
           </div>
@@ -167,7 +170,7 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
           <div className="bg-card rounded-xl p-3 border border-border">
             <div className="flex items-center gap-2 mb-2">
               <Star className="w-4 h-4 text-primary" />
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Fun Facts</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("facts.funFacts")}</span>
             </div>
             <ul className="space-y-1.5">
               {facts.fun_facts.map((f, i) => (
@@ -182,7 +185,7 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
           <div className="bg-card rounded-xl p-3 border border-border">
             <div className="flex items-center gap-2 mb-2">
               <Trophy className="w-4 h-4 text-primary" />
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">City Records</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("facts.cityRecords")}</span>
             </div>
             <ul className="space-y-1.5">
               {facts.city_records.map((r, i) => (
@@ -197,7 +200,7 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
           <div className="bg-card rounded-xl p-3 border border-border">
             <div className="flex items-center gap-2 mb-3">
               <Sun className="w-4 h-4 text-primary" />
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Average Temperature</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("facts.avgTemperature")}</span>
             </div>
             <div className="flex items-end gap-1 h-20">
               {facts.avg_weather_by_month.map((m, i) => (
@@ -220,7 +223,7 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
             <div className="bg-card rounded-xl p-3 border border-border">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp className="w-4 h-4 text-primary" />
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Peak Season</span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("facts.peakSeason")}</span>
               </div>
               <div className="flex flex-wrap gap-1">
                 {facts.most_touristic_months.map((m, i) => (
@@ -233,7 +236,7 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
             <div className="bg-card rounded-xl p-3 border border-border">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingDown className="w-4 h-4 text-muted-foreground" />
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">Off Season</span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("facts.offSeason")}</span>
               </div>
               <div className="flex flex-wrap gap-1">
                 {facts.least_touristic_months.map((m, i) => (
@@ -249,18 +252,18 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
           <div className="bg-card rounded-xl p-3 border border-border">
             <div className="flex items-center gap-2 mb-2">
               <Trophy className="w-4 h-4 text-primary" />
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">App Rankings</span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("facts.appRankings")}</span>
             </div>
             <div className="space-y-1.5">
               {visitorRank && (
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-foreground">Most visited</span>
+                  <span className="text-xs text-foreground">{t("facts.mostVisited")}</span>
                   <span className="text-xs font-bold text-primary">#{visitorRank}</span>
                 </div>
               )}
               {ratingRank && (
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-foreground">Highest rated</span>
+                  <span className="text-xs text-foreground">{t("facts.highestRated")}</span>
                   <span className="text-xs font-bold text-primary">#{ratingRank}</span>
                 </div>
               )}
