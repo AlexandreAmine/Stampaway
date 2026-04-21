@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getFlagUrl } from "@/lib/countryFlags";
+import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
 
 interface DestinationPosterProps {
   placeId: string;
@@ -60,6 +61,9 @@ export function DestinationPoster({
   const flagCountry = type === "country" ? name : country;
   const flagUrl = getFlagUrl(flagCountry, 40);
 
+  const localizedName = useLocalizedPlaceName(name, type === "country");
+  const localizedCountry = useLocalizedPlaceName(country, true);
+
   return (
     <div
       className={`relative rounded-2xl overflow-hidden bg-card ${className}`}
@@ -67,7 +71,7 @@ export function DestinationPoster({
       {imageUrl ? (
         <img
           src={imageUrl}
-          alt={name}
+          alt={localizedName}
           className="w-full h-full object-cover"
         />
       ) : (
@@ -95,10 +99,10 @@ export function DestinationPoster({
       {/* Destination name - bottom */}
       <div className="absolute bottom-0 left-0 right-0 p-2.5">
         <p className="text-sm font-bold text-white leading-tight truncate">
-          {name}
+          {localizedName}
         </p>
         {type === "city" && (
-          <p className="text-[10px] text-white/70 truncate">{country}</p>
+          <p className="text-[10px] text-white/70 truncate">{localizedCountry}</p>
         )}
       </div>
     </div>
