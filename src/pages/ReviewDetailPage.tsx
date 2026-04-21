@@ -9,6 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { ReviewComments } from "@/components/ReviewComments";
 import { SubRatingsDisplay } from "@/components/SubRatingsDisplay";
+import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
 
 export default function ReviewDetailPage() {
   const { reviewId } = useParams<{ reviewId: string }>();
