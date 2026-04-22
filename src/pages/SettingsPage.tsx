@@ -337,7 +337,7 @@ export default function SettingsPage() {
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
 
-          <button onClick={async () => { await signOut(); navigate("/auth"); }} className="flex items-center gap-3 py-4 border-b border-border w-full text-left">
+          <button onClick={() => setSignOutOpen(true)} className="flex items-center gap-3 py-4 border-b border-border w-full text-left">
             <LogOut className="w-5 h-5 text-muted-foreground" />
             <span className="text-sm font-semibold text-foreground">{t("settings.signOut")}</span>
           </button>
@@ -348,6 +348,49 @@ export default function SettingsPage() {
           </button>
         </div>
       </div>
+
+      {/* Sign-out confirmation */}
+      <AlertDialog open={signOutOpen} onOpenChange={setSignOutOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("settings.signOut")}</AlertDialogTitle>
+            <AlertDialogDescription>Are you sure you want to sign out?</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => { await signOut(); navigate("/auth"); }}
+            >
+              Sign out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Block confirmation */}
+      <AlertDialog open={!!pendingBlock} onOpenChange={(v) => !v && setPendingBlock(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Block {pendingBlock?.username}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              They won't be able to find your profile, posts or activity. They won't be notified.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (pendingBlock) await handleBlock(pendingBlock.user_id);
+                setPendingBlock(null);
+              }}
+            >
+              Block
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
