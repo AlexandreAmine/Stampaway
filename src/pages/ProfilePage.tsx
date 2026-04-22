@@ -517,11 +517,15 @@ export default function ProfilePage() {
               )}
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
-                {countryFlag && <span className="text-lg">{countryFlag}</span>}
+                {countryList.map((c: string) => (
+                  <span key={c} className="text-lg" title={c}>{getFlagEmoji(c)}</span>
+                ))}
               </div>
-              {isOwnProfile && profileCountry && <span className="text-xs text-muted-foreground">{profileCountry}</span>}
+              {isOwnProfile && countryList.length > 0 && (
+                <span className="text-xs text-muted-foreground">{countryList.join(" · ")}</span>
+              )}
               {/* Instagram-style follower / following counts */}
               <div className="flex items-center gap-5 mt-2">
                 <button
