@@ -47,11 +47,10 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("is_private, email, phone, date_of_birth, username").eq("user_id", user.id).single().then(({ data }) => {
+    supabase.from("profiles").select("is_private, email, date_of_birth, username").eq("user_id", user.id).single().then(({ data }) => {
       if (data) {
         setIsPrivate((data as any).is_private || false);
         setPersonalEmail((data as any).email || "");
-        setPersonalPhone((data as any).phone || "");
         setPersonalDob((data as any).date_of_birth || "");
         setPersonalUsername((data as any).username || "");
       }
