@@ -8,6 +8,7 @@ import {
   fetchAllTimeVisitorCountMap,
   fetchAverageRatingMap,
   fetchAllPlaces,
+  fetchCategoryAverageMap,
 } from "@/lib/placeRankings";
 import {
   EUROPE_COUNTRIES,
@@ -25,12 +26,20 @@ type PlaceWithStat = {
   stat: number;
 };
 
+const CATEGORY_TITLE: Record<string, { country: string; city: string }> = {
+  "Affordability": { country: "most affordable countries", city: "most affordable cities" },
+  "Entertainment & Nightlife": { country: "most vibrant countries", city: "most vibrant cities" },
+  "Natural Beauty": { country: "most scenic countries", city: "most scenic cities" },
+  "Safety & Security": { country: "safest countries", city: "safest cities" },
+};
+
 export default function ExploreListPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const mode = searchParams.get("mode") || "trending";
   const placeType = searchParams.get("type") || "country";
   const continent = searchParams.get("continent") || "";
+  const category = searchParams.get("category") || "";
   const limit = parseInt(searchParams.get("limit") || "50", 10);
 
   const [places, setPlaces] = useState<PlaceWithStat[]>([]);
@@ -40,13 +49,18 @@ export default function ExploreListPage() {
     if (mode === "trending") {
       return `Trendy ${placeType === "country" ? "countries" : "cities"} this month`;
     }
+    if (mode === "by-category" && category && CATEGORY_TITLE[category]) {
+      const label = placeType === "country" ? CATEGORY_TITLE[category].country : CATEGORY_TITLE[category].city;
+      return `${limit} ${label}`;
+    }
     const regionLabel = continent || "World";
     return `Top ${limit} ${placeType === "country" ? "countries" : "cities"} in ${regionLabel}`;
   };
 
   useEffect(() => {
     fetchData();
-  }, [mode, placeType, continent, limit]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, placeType, continent, limit, category]);
 
   const getContinentCountries = (c: string): string[] | null => {
     switch (c.toLowerCase()) {
@@ -73,6 +87,17 @@ export default function ExploreListPage() {
         .map((p) => ({ ...p, stat: countMap.get(p.id) || 0 }))
         .sort((a, b) => b.stat - a.stat || a.name.localeCompare(b.name));
 
+      setPlaces(filtered);
+    } else if (mode === "by-category" && category) {
+      const catMap = await fetchCategoryAverageMap(category);
+      const filtered = allPlaces
+        .filter((p) => p.type === placeType && catMap.has(p.id))
+        .map((p) => ({ ...p, stat: catMap.get(p.id) || 0 }))
+        .sort((a, b) => {
+          if (b.stat !== a.stat) return b.stat - a.stat;
+          return a.name.localeCompare(b.name);
+        })
+        .slice(0, limit);
       setPlaces(filtered);
     } else {
       // Top rated — use all-time average ratings

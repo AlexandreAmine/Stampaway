@@ -70,10 +70,14 @@ export default function ExplorePage() {
     setPlacesLoading(true);
 
     // Fetch all data in parallel using centralized helpers
-    const [monthlyCountMap, avgRatingMap, allPlaces] = await Promise.all([
+    const [monthlyCountMap, avgRatingMap, allPlaces, affordMap, nightlifeMap, natureMap, safetyMap] = await Promise.all([
       fetchMonthlyVisitorCountMap(),
       fetchAverageRatingMap(),
       fetchAllPlaces(),
+      fetchCategoryAverageMap("Affordability"),
+      fetchCategoryAverageMap("Entertainment & Nightlife"),
+      fetchCategoryAverageMap("Natural Beauty"),
+      fetchCategoryAverageMap("Safety & Security"),
     ]);
 
     const placesMap = new Map(allPlaces.map((p) => [p.id, p]));
@@ -109,6 +113,17 @@ export default function ExplorePage() {
         })
         .slice(0, limit);
 
+    // Build category-based section: top N by sub-rating average for a given place type.
+    const buildByCategory = (type: string, catMap: Map<string, number>, previewLimit = 8): PlaceWithStat[] =>
+      allPlaces
+        .filter((p) => p.type === type && catMap.has(p.id))
+        .map((p) => ({ ...p, stat: catMap.get(p.id) || 0 }))
+        .sort((a, b) => {
+          if (b.stat !== a.stat) return b.stat - a.stat;
+          return a.name.localeCompare(b.name);
+        })
+        .slice(0, previewLimit);
+
     setSections([
       { key: "tc", title: "Trendy countries this month", places: buildTrending("country"), linkParams: "mode=trending&type=country" },
       { key: "tci", title: "Trendy cities this month", places: buildTrending("city"), linkParams: "mode=trending&type=city" },
@@ -117,6 +132,10 @@ export default function ExplorePage() {
       { key: "tna", title: "Top 15 cities in North America", places: buildTopRated("city", NORTH_AMERICA_COUNTRIES, 8), linkParams: "mode=top-rated&type=city&continent=North America&limit=15" },
       { key: "ta", title: "Top 25 countries in Asia", places: buildTopRated("country", ASIA_COUNTRIES, 8), linkParams: "mode=top-rated&type=country&continent=Asia&limit=25" },
       { key: "tsa", title: "Top 10 countries in South America", places: buildTopRated("country", SOUTH_AMERICA_COUNTRIES, 8), linkParams: "mode=top-rated&type=country&continent=South America&limit=10" },
+      { key: "afford", title: "30 most affordable countries", places: buildByCategory("country", affordMap), linkParams: "mode=by-category&type=country&category=Affordability&limit=30" },
+      { key: "vibrant", title: "30 most vibrant cities", places: buildByCategory("city", nightlifeMap), linkParams: "mode=by-category&type=city&category=Entertainment+%26+Nightlife&limit=30" },
+      { key: "scenic", title: "30 most scenic countries", places: buildByCategory("country", natureMap), linkParams: "mode=by-category&type=country&category=Natural+Beauty&limit=30" },
+      { key: "safe", title: "30 safest cities", places: buildByCategory("city", safetyMap), linkParams: "mode=by-category&type=city&category=Safety+%26+Security&limit=30" },
     ]);
 
     // Fetch friend comments for displayed places
