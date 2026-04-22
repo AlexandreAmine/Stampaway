@@ -33,15 +33,15 @@ export default function SettingsPage() {
 
   // Personal details state
   const [personalEmail, setPersonalEmail] = useState("");
-  const [personalPhone, setPersonalPhone] = useState("");
   const [personalDob, setPersonalDob] = useState("");
   const [personalUsername, setPersonalUsername] = useState("");
-  const [savingPersonal, setSavingPersonal] = useState(false);
 
 
   const [blockedUsers, setBlockedUsers] = useState<{ id: string; blocked_id: string; username: string; profile_picture: string | null }[]>([]);
   const [blockQuery, setBlockQuery] = useState("");
   const [blockSearchResults, setBlockSearchResults] = useState<{ user_id: string; username: string; profile_picture: string | null }[]>([]);
+  const [pendingBlock, setPendingBlock] = useState<{ user_id: string; username: string } | null>(null);
+  const [signOutOpen, setSignOutOpen] = useState(false);
 
   const [deleteConfirm, setDeleteConfirm] = useState("");
 
