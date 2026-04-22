@@ -118,22 +118,6 @@ export default function SettingsPage() {
   if (loading) return <div className="min-h-screen bg-background" />;
 
   if (section === "personal") {
-    const handleSavePersonal = async () => {
-      if (!user) return;
-      setSavingPersonal(true);
-      if (personalPhone) {
-        await supabase.from("profiles").update({ phone: personalPhone }).eq("user_id", user.id);
-      }
-      if (personalPhone && !user.phone) {
-        await supabase.auth.updateUser({ phone: personalPhone });
-      }
-      toast.success(t("toast.profileUpdated"));
-      setSavingPersonal(false);
-    };
-
-    const signedUpWithEmail = !!user?.email;
-    const signedUpWithPhone = !!user?.phone;
-
     return (
       <div className="min-h-screen bg-background pb-24">
         <div className="pt-12 px-5">
@@ -153,53 +137,11 @@ export default function SettingsPage() {
               </p>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">{t("settings.phoneNumber")}</label>
-              {signedUpWithEmail && !user?.phone ? (
-                <>
-                  <Input
-                    type="tel"
-                    value={personalPhone}
-                    onChange={(e) => setPersonalPhone(e.target.value)}
-                    placeholder={t("auth.phonePlaceholder")}
-                    className="w-full"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">{t("settings.addForRecovery")}</p>
-                </>
-              ) : (
-                <p className="text-sm text-foreground bg-card rounded-xl py-3 px-4 border border-border">
-                  {personalPhone || user?.phone || t("settings.notSet")}
-                </p>
-              )}
-            </div>
-            <div>
               <label className="text-xs text-muted-foreground mb-1 block">{t("settings.dateOfBirth")}</label>
               <p className="text-sm text-foreground bg-card rounded-xl py-3 px-4 border border-border">
                 {personalDob ? new Date(personalDob).toLocaleDateString() : t("settings.notSet")}
               </p>
             </div>
-            {signedUpWithEmail && !user?.phone && (
-              <Button onClick={handleSavePersonal} disabled={savingPersonal || !personalPhone} className="w-full">
-                {savingPersonal ? t("settings.updating") : t("save")}
-              </Button>
-            )}
-            {signedUpWithPhone && !user?.email && (
-              <>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">{t("auth.email")} ({t("settings.addForRecovery")})</label>
-                  <Input type="email" value={personalEmail} onChange={(e) => setPersonalEmail(e.target.value)} placeholder={t("auth.email")} />
-                </div>
-                <Button onClick={async () => {
-                  if (!personalEmail) return;
-                  setSavingPersonal(true);
-                  await supabase.auth.updateUser({ email: personalEmail });
-                  await supabase.from("profiles").update({ email: personalEmail }).eq("user_id", user!.id);
-                  toast.success(t("toast.profileUpdated"));
-                  setSavingPersonal(false);
-                }} disabled={savingPersonal || !personalEmail} className="w-full">
-                  {savingPersonal ? t("settings.updating") : t("save")}
-                </Button>
-              </>
-            )}
           </div>
         </div>
       </div>
