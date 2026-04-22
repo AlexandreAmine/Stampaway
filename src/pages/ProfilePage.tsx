@@ -322,9 +322,18 @@ export default function ProfilePage() {
     { label: t("profile.tags"), value: "", subPage: "Tags" },
     { label: t("profile.reviews"), value: `${writtenReviewsCount}`, subPage: "Reviews" },
     { label: t("profile.yearlyGoals"), value: "", subPage: "YearlyGoals" },
-    { label: t("profile.following"), value: `${followingCount}`, subPage: "Following" },
-    { label: t("profile.followers"), value: `${followersCount}`, subPage: "Followers" },
   ];
+
+  // Whether the viewer can open the followers/following lists.
+  // Always true on own profile; on others' profiles, blocked by privacy unless following.
+  const canOpenFollowLists = isOwnProfile || (!isBlocked && (!viewedProfile?.is_private || isFollowing));
+  const handleOpenFollowList = (target: "Following" | "Followers") => {
+    if (!canOpenFollowLists) {
+      toast("Follow this account to see their list");
+      return;
+    }
+    setSubPage(target);
+  };
 
   const handleRemoveFavorite = async (type: "city" | "country", slotIndex: number) => {
     if (!user) return;
