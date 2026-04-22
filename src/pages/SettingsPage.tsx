@@ -89,16 +89,26 @@ export default function SettingsPage() {
     return () => clearTimeout(timer);
   }, [blockQuery, user]);
 
-  const handleBlock = async (targetId: string) => {
+  const handleBlock = async (targetId: string, username: string) => {
     if (!user) return;
-    await supabase.from("blocked_users").insert({ blocker_id: user.id, blocked_id: targetId });
+    const { error } = await supabase.from("blocked_users").insert({ blocker_id: user.id, blocked_id: targetId });
+    if (error) {
+      toast.error("Failed to block user");
+      return;
+    }
     await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", targetId);
     await supabase.from("followers").delete().eq("follower_id", targetId).eq("following_id", user.id);
     setBlockQuery("");
     setBlockSearchResults([]);
+    const { data: profile } = await supabase.from("profiles").select("user_id, username, profile_picture").eq("user_id", targetId).maybeSingle();
+    const { data: row } = await supabase.from("blocked_users").select("id").eq("blocker_id", user.id).eq("blocked_id", targetId).maybeSingle();
+    if (row) {
+      setBlockedUsers(prev => [
+        ...prev.filter(b => b.blocked_id !== targetId),
+        { id: row.id, blocked_id: targetId, username: profile?.username || username, profile_picture: profile?.profile_picture || null },
+      ]);
+    }
     toast.success(t("toast.userBlocked"));
-    setSection(null);
-    setTimeout(() => setSection("blocked"), 50);
   };
 
   const handleUnblock = async (id: string) => {
@@ -250,6 +260,30 @@ export default function SettingsPage() {
             </div>
           )}
         </div>
+
+        {/* Block confirmation */}
+        <AlertDialog open={!!pendingBlock} onOpenChange={(v) => !v && setPendingBlock(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Block {pendingBlock?.username}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                They won't be able to find your profile, posts or activity. They won't be notified.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={async () => {
+                  if (pendingBlock) await handleBlock(pendingBlock.user_id, pendingBlock.username);
+                  setPendingBlock(null);
+                }}
+              >
+                Block
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }
@@ -368,29 +402,6 @@ export default function SettingsPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Block confirmation */}
-      <AlertDialog open={!!pendingBlock} onOpenChange={(v) => !v && setPendingBlock(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Block {pendingBlock?.username}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              They won't be able to find your profile, posts or activity. They won't be notified.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={async () => {
-                if (pendingBlock) await handleBlock(pendingBlock.user_id);
-                setPendingBlock(null);
-              }}
-            >
-              Block
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
