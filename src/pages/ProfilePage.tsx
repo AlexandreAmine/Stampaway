@@ -322,9 +322,18 @@ export default function ProfilePage() {
     { label: t("profile.tags"), value: "", subPage: "Tags" },
     { label: t("profile.reviews"), value: `${writtenReviewsCount}`, subPage: "Reviews" },
     { label: t("profile.yearlyGoals"), value: "", subPage: "YearlyGoals" },
-    { label: t("profile.following"), value: `${followingCount}`, subPage: "Following" },
-    { label: t("profile.followers"), value: `${followersCount}`, subPage: "Followers" },
   ];
+
+  // Whether the viewer can open the followers/following lists.
+  // Always true on own profile; on others' profiles, blocked by privacy unless following.
+  const canOpenFollowLists = isOwnProfile || (!isBlocked && (!viewedProfile?.is_private || isFollowing));
+  const handleOpenFollowList = (target: "Following" | "Followers") => {
+    if (!canOpenFollowLists) {
+      toast("Follow this account to see their list");
+      return;
+    }
+    setSubPage(target);
+  };
 
   const handleRemoveFavorite = async (type: "city" | "country", slotIndex: number) => {
     if (!user) return;
@@ -513,6 +522,25 @@ export default function ProfilePage() {
                 {countryFlag && <span className="text-lg">{countryFlag}</span>}
               </div>
               {isOwnProfile && profileCountry && <span className="text-xs text-muted-foreground">{profileCountry}</span>}
+              {/* Instagram-style follower / following counts */}
+              <div className="flex items-center gap-5 mt-2">
+                <button
+                  onClick={() => handleOpenFollowList("Followers")}
+                  className="text-left active:opacity-70"
+                  aria-label={`${followersCount} ${t("profile.followers")}`}
+                >
+                  <div className="text-sm font-bold text-foreground leading-tight">{followersCount}</div>
+                  <div className="text-[11px] text-muted-foreground leading-tight">{t("profile.followers")}</div>
+                </button>
+                <button
+                  onClick={() => handleOpenFollowList("Following")}
+                  className="text-left active:opacity-70"
+                  aria-label={`${followingCount} ${t("profile.following")}`}
+                >
+                  <div className="text-sm font-bold text-foreground leading-tight">{followingCount}</div>
+                  <div className="text-[11px] text-muted-foreground leading-tight">{t("profile.following")}</div>
+                </button>
+              </div>
             </div>
           </div>
           {isOwnProfile ? (
