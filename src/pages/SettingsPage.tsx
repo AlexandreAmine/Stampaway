@@ -260,6 +260,30 @@ export default function SettingsPage() {
             </div>
           )}
         </div>
+
+        {/* Block confirmation */}
+        <AlertDialog open={!!pendingBlock} onOpenChange={(v) => !v && setPendingBlock(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Block {pendingBlock?.username}?</AlertDialogTitle>
+              <AlertDialogDescription>
+                They won't be able to find your profile, posts or activity. They won't be notified.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                onClick={async () => {
+                  if (pendingBlock) await handleBlock(pendingBlock.user_id, pendingBlock.username);
+                  setPendingBlock(null);
+                }}
+              >
+                Block
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     );
   }
