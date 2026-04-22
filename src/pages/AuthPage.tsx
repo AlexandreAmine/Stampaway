@@ -5,11 +5,10 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Navigate, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Mail, Phone, ChevronLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { PasswordInput } from "@/components/PasswordInput";
 
 type AuthMode = "login" | "signup";
-type AuthMethod = "email" | "phone";
 type Step = "form" | "otp" | "forgot" | "forgotOtp" | "resetPassword";
 
 export default function AuthPage() {
@@ -24,11 +23,9 @@ export default function AuthPage() {
   const navigate = useNavigate();
 
   const [mode, setMode] = useState<AuthMode>("login");
-  const [method, setMethod] = useState<AuthMethod>("email");
   const [step, setStep] = useState<Step>(() => (mustCompletePasswordReset ? "resetPassword" : "form"));
 
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
@@ -56,99 +53,55 @@ export default function AuthPage() {
 
     const metadata = { username, date_of_birth: dateOfBirth };
 
-    if (method === "email") {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { data: metadata, emailRedirectTo: window.location.origin },
-      });
-      if (error) { toast.error(error.message); setSubmitting(false); return; }
-      if (data.user && data.user.identities && data.user.identities.length === 0) {
-        toast.error(t("auth.accountExists"));
-        setMode("login");
-        setSubmitting(false);
-        return;
-      }
-      toast.success(t("auth.checkEmail"));
-      setStep("otp");
-    } else {
-      const { data, error } = await supabase.auth.signUp({
-        phone,
-        password,
-        options: { data: metadata },
-      });
-      if (error) { toast.error(error.message); setSubmitting(false); return; }
-      if (data.user && data.user.identities && data.user.identities.length === 0) {
-        toast.error(t("auth.accountExistsPhone"));
-        setMode("login");
-        setSubmitting(false);
-        return;
-      }
-      toast.success(t("auth.checkPhone"));
-      setStep("otp");
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: metadata, emailRedirectTo: window.location.origin },
+    });
+    if (error) { toast.error(error.message); setSubmitting(false); return; }
+    if (data.user && data.user.identities && data.user.identities.length === 0) {
+      toast.error(t("auth.accountExists"));
+      setMode("login");
+      setSubmitting(false);
+      return;
     }
+    toast.success(t("auth.checkEmail"));
+    setStep("otp");
     setSubmitting(false);
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-
-    if (method === "email") {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) toast.error(error.message);
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({ phone, password });
-      if (error) toast.error(error.message);
-    }
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) toast.error(error.message);
     setSubmitting(false);
   };
 
   const handleVerifyOtp = async () => {
     if (otpCode.length !== 6) return;
     setSubmitting(true);
-
-    if (method === "email") {
-      const { error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: "signup" });
-      if (error) { toast.error(error.message); setSubmitting(false); return; }
-      toast.success(t("auth.verified"));
-    } else {
-      const { error } = await supabase.auth.verifyOtp({ phone, token: otpCode, type: "sms" });
-      if (error) { toast.error(error.message); setSubmitting(false); return; }
-      toast.success(t("auth.verified"));
-    }
+    const { error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: "signup" });
+    if (error) { toast.error(error.message); setSubmitting(false); return; }
+    toast.success(t("auth.verified"));
     setSubmitting(false);
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-
-    if (method === "email") {
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
-      if (error) { toast.error(error.message); setSubmitting(false); return; }
-      toast.success(t("auth.codeSentEmail"));
-      setStep("forgotOtp");
-    } else {
-      const { error } = await supabase.auth.signInWithOtp({ phone });
-      if (error) { toast.error(error.message); setSubmitting(false); return; }
-      toast.success(t("auth.resetPhoneSent"));
-      setStep("forgotOtp");
-    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) { toast.error(error.message); setSubmitting(false); return; }
+    toast.success(t("auth.codeSentEmail"));
+    setStep("forgotOtp");
     setSubmitting(false);
   };
 
   const handleResetVerifyOtp = async () => {
     if (otpCode.length !== 6) return;
     setSubmitting(true);
-
-    if (method === "email") {
-      const { error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: "recovery" });
-      if (error) { toast.error(error.message); setSubmitting(false); return; }
-    } else {
-      const { error } = await supabase.auth.verifyOtp({ phone, token: otpCode, type: "sms" });
-      if (error) { toast.error(error.message); setSubmitting(false); return; }
-    }
+    const { error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: "recovery" });
+    if (error) { toast.error(error.message); setSubmitting(false); return; }
 
     beginPasswordReset();
     setOtpCode("");
@@ -198,7 +151,7 @@ export default function AuthPage() {
                 <ChevronLeft className="w-4 h-4" /> {t("back")}
               </button>
               <p className="text-sm text-foreground font-medium">{t("auth.enterCode")}</p>
-              <p className="text-xs text-muted-foreground">{method === "email" ? t("auth.codeSentEmail") : t("auth.codeSentPhone")}</p>
+              <p className="text-xs text-muted-foreground">{t("auth.codeSentEmail")}</p>
               <div className="flex justify-center gap-2">
                 {[0, 1, 2, 3, 4, 5].map((i) => (
                   <input
@@ -239,21 +192,8 @@ export default function AuthPage() {
               <p className="text-sm font-medium text-foreground mb-1">{t("auth.forgotPassword")}</p>
               <p className="text-xs text-muted-foreground mb-4">{t("auth.forgotDesc")}</p>
 
-              <div className="flex gap-2 mb-4">
-                <button onClick={() => setMethod("email")} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold transition-colors ${method === "email" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"}`}>
-                  <Mail className="w-4 h-4" /> Email
-                </button>
-                <button onClick={() => setMethod("phone")} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold transition-colors ${method === "phone" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"}`}>
-                  <Phone className="w-4 h-4" /> {t("auth.phone")}
-                </button>
-              </div>
-
               <form onSubmit={handleForgotPassword} className="space-y-4">
-                {method === "email" ? (
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth.email")} required className={inputClass} />
-                ) : (
-                  <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t("auth.phonePlaceholder")} required className={inputClass} />
-                )}
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth.email")} required className={inputClass} />
                 <button type="submit" disabled={submitting} className={btnClass}>
                   {submitting ? "..." : t("auth.sendCode")}
                 </button>
@@ -314,25 +254,12 @@ export default function AuthPage() {
 
           {step === "form" && (
             <motion.div key="form" initial={{ opacity: 0, x: 0 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <div className="flex gap-2 mb-5">
-                <button onClick={() => setMethod("email")} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold transition-colors ${method === "email" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"}`}>
-                  <Mail className="w-4 h-4" /> Email
-                </button>
-                <button onClick={() => setMethod("phone")} className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-semibold transition-colors ${method === "phone" ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground"}`}>
-                  <Phone className="w-4 h-4" /> {t("auth.phone")}
-                </button>
-              </div>
-
               <form onSubmit={mode === "login" ? handleSignIn : handleSignUp} className="space-y-4">
                 {mode === "signup" && (
                   <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t("auth.username")} className={inputClass} />
                 )}
 
-                {method === "email" ? (
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth.email")} required className={inputClass} />
-                ) : (
-                  <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t("auth.phonePlaceholder")} required className={inputClass} />
-                )}
+                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth.email")} required className={inputClass} />
 
                 <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t("auth.password")} required minLength={6} className={`${inputClass} pr-10`} />
 
