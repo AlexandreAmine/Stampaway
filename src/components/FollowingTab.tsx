@@ -5,6 +5,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface FollowUser {
   id: string;
@@ -22,6 +32,8 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
   const [showSearch, setShowSearch] = useState(false);
   const [query, setQuery] = useState("");
   const [searchResults, setSearchResults] = useState<{ user_id: string; username: string; profile_picture: string | null }[]>([]);
+  const [filterQuery, setFilterQuery] = useState("");
+  const [pendingUnfollow, setPendingUnfollow] = useState<FollowUser | null>(null);
 
   useEffect(() => {
     if (targetUserId) fetchFollowing();
@@ -82,9 +94,9 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
     fetchFollowing();
   };
 
-  const handleUnfollow = async (followId: string) => {
+  const handleUnfollow = async (followId: string, username: string) => {
     await supabase.from("followers").delete().eq("id", followId);
-    toast.success("Unfollowed");
+    toast.success(`Unfollowed ${username}`);
     fetchFollowing();
   };
 
@@ -92,12 +104,29 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
     return <div className="flex items-center justify-center h-40"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   }
 
+  const filtered = filterQuery.trim()
+    ? following.filter((f) => f.username.toLowerCase().includes(filterQuery.toLowerCase()))
+    : following;
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{following.length} following</p>
+      {/* Search bar (filter own list) + add button */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            value={filterQuery}
+            onChange={(e) => setFilterQuery(e.target.value)}
+            placeholder="Search"
+            className="w-full bg-card rounded-xl py-2.5 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
         {!readOnly && (
-          <button onClick={() => setShowSearch(!showSearch)} className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+          <button
+            onClick={() => setShowSearch(!showSearch)}
+            className="w-9 h-9 shrink-0 rounded-full bg-primary/10 flex items-center justify-center"
+            aria-label="Find users to follow"
+          >
             <Plus className="w-4 h-4 text-primary" />
           </button>
         )}
@@ -112,7 +141,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
                 autoFocus
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search users..."
+                placeholder="Find users to follow..."
                 className="w-full bg-card rounded-xl py-2.5 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
@@ -146,7 +175,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
         </div>
       ) : (
         <div className="space-y-1">
-          {following.map((f) => (
+          {filtered.map((f) => (
             <div key={f.id} className="flex items-center justify-between py-2.5">
               <button onClick={() => navigate(`/profile/${f.id}`)} className="flex items-center gap-3">
                 <img
@@ -157,14 +186,41 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
                 <span className="text-sm font-medium text-foreground">{f.username}</span>
               </button>
               {!readOnly && (
-                <button onClick={() => handleUnfollow(f.followId)} className="p-1.5">
+                <button onClick={() => setPendingUnfollow(f)} className="p-1.5">
                   <X className="w-4 h-4 text-muted-foreground" />
                 </button>
               )}
             </div>
           ))}
+          {filtered.length === 0 && filterQuery.trim() && (
+            <p className="text-xs text-muted-foreground text-center py-4">No matches</p>
+          )}
         </div>
       )}
+
+      {/* Unfollow confirmation */}
+      <AlertDialog open={!!pendingUnfollow} onOpenChange={(v) => !v && setPendingUnfollow(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unfollow</AlertDialogTitle>
+            <AlertDialogDescription>
+              Stop following {pendingUnfollow?.username}?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (pendingUnfollow) await handleUnfollow(pendingUnfollow.followId, pendingUnfollow.username);
+                setPendingUnfollow(null);
+              }}
+            >
+              Unfollow
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }

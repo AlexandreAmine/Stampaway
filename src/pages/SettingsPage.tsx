@@ -12,6 +12,16 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { YourActivity } from "@/components/YourActivity";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -23,25 +33,24 @@ export default function SettingsPage() {
 
   // Personal details state
   const [personalEmail, setPersonalEmail] = useState("");
-  const [personalPhone, setPersonalPhone] = useState("");
   const [personalDob, setPersonalDob] = useState("");
   const [personalUsername, setPersonalUsername] = useState("");
-  const [savingPersonal, setSavingPersonal] = useState(false);
 
 
   const [blockedUsers, setBlockedUsers] = useState<{ id: string; blocked_id: string; username: string; profile_picture: string | null }[]>([]);
   const [blockQuery, setBlockQuery] = useState("");
   const [blockSearchResults, setBlockSearchResults] = useState<{ user_id: string; username: string; profile_picture: string | null }[]>([]);
+  const [pendingBlock, setPendingBlock] = useState<{ user_id: string; username: string } | null>(null);
+  const [signOutOpen, setSignOutOpen] = useState(false);
 
   const [deleteConfirm, setDeleteConfirm] = useState("");
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("is_private, email, phone, date_of_birth, username").eq("user_id", user.id).single().then(({ data }) => {
+    supabase.from("profiles").select("is_private, email, date_of_birth, username").eq("user_id", user.id).single().then(({ data }) => {
       if (data) {
         setIsPrivate((data as any).is_private || false);
         setPersonalEmail((data as any).email || "");
-        setPersonalPhone((data as any).phone || "");
         setPersonalDob((data as any).date_of_birth || "");
         setPersonalUsername((data as any).username || "");
       }
@@ -109,22 +118,6 @@ export default function SettingsPage() {
   if (loading) return <div className="min-h-screen bg-background" />;
 
   if (section === "personal") {
-    const handleSavePersonal = async () => {
-      if (!user) return;
-      setSavingPersonal(true);
-      if (personalPhone) {
-        await supabase.from("profiles").update({ phone: personalPhone }).eq("user_id", user.id);
-      }
-      if (personalPhone && !user.phone) {
-        await supabase.auth.updateUser({ phone: personalPhone });
-      }
-      toast.success(t("toast.profileUpdated"));
-      setSavingPersonal(false);
-    };
-
-    const signedUpWithEmail = !!user?.email;
-    const signedUpWithPhone = !!user?.phone;
-
     return (
       <div className="min-h-screen bg-background pb-24">
         <div className="pt-12 px-5">
@@ -144,53 +137,11 @@ export default function SettingsPage() {
               </p>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">{t("settings.phoneNumber")}</label>
-              {signedUpWithEmail && !user?.phone ? (
-                <>
-                  <Input
-                    type="tel"
-                    value={personalPhone}
-                    onChange={(e) => setPersonalPhone(e.target.value)}
-                    placeholder={t("auth.phonePlaceholder")}
-                    className="w-full"
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">{t("settings.addForRecovery")}</p>
-                </>
-              ) : (
-                <p className="text-sm text-foreground bg-card rounded-xl py-3 px-4 border border-border">
-                  {personalPhone || user?.phone || t("settings.notSet")}
-                </p>
-              )}
-            </div>
-            <div>
               <label className="text-xs text-muted-foreground mb-1 block">{t("settings.dateOfBirth")}</label>
               <p className="text-sm text-foreground bg-card rounded-xl py-3 px-4 border border-border">
                 {personalDob ? new Date(personalDob).toLocaleDateString() : t("settings.notSet")}
               </p>
             </div>
-            {signedUpWithEmail && !user?.phone && (
-              <Button onClick={handleSavePersonal} disabled={savingPersonal || !personalPhone} className="w-full">
-                {savingPersonal ? t("settings.updating") : t("save")}
-              </Button>
-            )}
-            {signedUpWithPhone && !user?.email && (
-              <>
-                <div>
-                  <label className="text-xs text-muted-foreground mb-1 block">{t("auth.email")} ({t("settings.addForRecovery")})</label>
-                  <Input type="email" value={personalEmail} onChange={(e) => setPersonalEmail(e.target.value)} placeholder={t("auth.email")} />
-                </div>
-                <Button onClick={async () => {
-                  if (!personalEmail) return;
-                  setSavingPersonal(true);
-                  await supabase.auth.updateUser({ email: personalEmail });
-                  await supabase.from("profiles").update({ email: personalEmail }).eq("user_id", user!.id);
-                  toast.success(t("toast.profileUpdated"));
-                  setSavingPersonal(false);
-                }} disabled={savingPersonal || !personalEmail} className="w-full">
-                  {savingPersonal ? t("settings.updating") : t("save")}
-                </Button>
-              </>
-            )}
           </div>
         </div>
       </div>
@@ -271,7 +222,7 @@ export default function SettingsPage() {
             {blockSearchResults.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl overflow-hidden z-20 max-h-40 overflow-y-auto">
                 {blockSearchResults.map(p => (
-                  <button key={p.user_id} onClick={() => handleBlock(p.user_id)} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/50 text-left">
+                  <button key={p.user_id} onClick={() => setPendingBlock({ user_id: p.user_id, username: p.username })} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/50 text-left">
                     <Avatar className="w-6 h-6">
                       {p.profile_picture ? <AvatarImage src={p.profile_picture} /> : <AvatarFallback className="text-[10px]">{p.username[0]?.toUpperCase()}</AvatarFallback>}
                     </Avatar>
@@ -386,7 +337,7 @@ export default function SettingsPage() {
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
 
-          <button onClick={async () => { await signOut(); navigate("/auth"); }} className="flex items-center gap-3 py-4 border-b border-border w-full text-left">
+          <button onClick={() => setSignOutOpen(true)} className="flex items-center gap-3 py-4 border-b border-border w-full text-left">
             <LogOut className="w-5 h-5 text-muted-foreground" />
             <span className="text-sm font-semibold text-foreground">{t("settings.signOut")}</span>
           </button>
@@ -397,6 +348,49 @@ export default function SettingsPage() {
           </button>
         </div>
       </div>
+
+      {/* Sign-out confirmation */}
+      <AlertDialog open={signOutOpen} onOpenChange={setSignOutOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("settings.signOut")}</AlertDialogTitle>
+            <AlertDialogDescription>Are you sure you want to sign out?</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => { await signOut(); navigate("/auth"); }}
+            >
+              Sign out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Block confirmation */}
+      <AlertDialog open={!!pendingBlock} onOpenChange={(v) => !v && setPendingBlock(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Block {pendingBlock?.username}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              They won't be able to find your profile, posts or activity. They won't be notified.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (pendingBlock) await handleBlock(pendingBlock.user_id);
+                setPendingBlock(null);
+              }}
+            >
+              Block
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

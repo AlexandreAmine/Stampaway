@@ -1,10 +1,20 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { X } from "lucide-react";
+import { X, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface FollowerUser {
   id: string;
@@ -19,6 +29,8 @@ export function FollowersTab({ userId }: { userId?: string }) {
   const isOwnProfile = !userId || userId === user?.id;
   const [followers, setFollowers] = useState<FollowerUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filterQuery, setFilterQuery] = useState("");
+  const [pendingRemove, setPendingRemove] = useState<FollowerUser | null>(null);
 
   useEffect(() => {
     if (!targetUserId) return;
@@ -48,7 +60,7 @@ export function FollowersTab({ userId }: { userId?: string }) {
   const removeFollower = async (followerId: string, username: string) => {
     if (!user) return;
     await supabase.from("followers").delete().eq("follower_id", followerId).eq("following_id", user.id);
-    setFollowers(prev => prev.filter(f => f.id !== followerId));
+    setFollowers((prev) => prev.filter((f) => f.id !== followerId));
     toast.success(`${username} removed from followers`);
   };
 
@@ -56,29 +68,75 @@ export function FollowersTab({ userId }: { userId?: string }) {
     return <div className="flex items-center justify-center h-40"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   }
 
-  if (followers.length === 0) {
-    return <div className="flex items-center justify-center h-40"><p className="text-sm text-muted-foreground">No followers yet</p></div>;
-  }
+  const filtered = filterQuery.trim()
+    ? followers.filter((f) => f.username.toLowerCase().includes(filterQuery.toLowerCase()))
+    : followers;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-1">
-      {followers.map((f) => (
-        <div key={f.id} className="flex items-center gap-3 py-2.5 w-full">
-          <button onClick={() => navigate(`/profile/${f.id}`)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
-            <img
-              src={f.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.username)}&background=3B82F6&color=fff&size=32`}
-              alt={f.username}
-              className="w-8 h-8 rounded-full object-cover"
-            />
-            <span className="text-sm font-medium text-foreground">{f.username}</span>
-          </button>
-          {isOwnProfile && (
-            <button onClick={() => removeFollower(f.id, f.username)} className="p-1.5 rounded-full hover:bg-muted/50 shrink-0">
-              <X className="w-4 h-4 text-muted-foreground" />
-            </button>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+      {/* Search bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          value={filterQuery}
+          onChange={(e) => setFilterQuery(e.target.value)}
+          placeholder="Search"
+          className="w-full bg-card rounded-xl py-2.5 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+      </div>
+
+      {followers.length === 0 ? (
+        <div className="flex items-center justify-center h-40">
+          <p className="text-sm text-muted-foreground">No followers yet</p>
+        </div>
+      ) : (
+        <div className="space-y-1">
+          {filtered.map((f) => (
+            <div key={f.id} className="flex items-center gap-3 py-2.5 w-full">
+              <button onClick={() => navigate(`/profile/${f.id}`)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                <img
+                  src={f.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.username)}&background=3B82F6&color=fff&size=32`}
+                  alt={f.username}
+                  className="w-8 h-8 rounded-full object-cover"
+                />
+                <span className="text-sm font-medium text-foreground">{f.username}</span>
+              </button>
+              {isOwnProfile && (
+                <button onClick={() => setPendingRemove(f)} className="p-1.5 rounded-full hover:bg-muted/50 shrink-0">
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </button>
+              )}
+            </div>
+          ))}
+          {filtered.length === 0 && filterQuery.trim() && (
+            <p className="text-xs text-muted-foreground text-center py-4">No matches</p>
           )}
         </div>
-      ))}
+      )}
+
+      {/* Remove follower confirmation */}
+      <AlertDialog open={!!pendingRemove} onOpenChange={(v) => !v && setPendingRemove(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove follower</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingRemove?.username} will no longer follow you. They won't be notified.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (pendingRemove) await removeFollower(pendingRemove.id, pendingRemove.username);
+                setPendingRemove(null);
+              }}
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }
