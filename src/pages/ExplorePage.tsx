@@ -12,6 +12,7 @@ import {
   fetchMonthlyVisitorCountMap,
   fetchAverageRatingMap,
   fetchAllPlaces,
+  fetchCategoryAverageMap,
 } from "@/lib/placeRankings";
 import {
   EUROPE_COUNTRIES,

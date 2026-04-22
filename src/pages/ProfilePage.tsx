@@ -522,6 +522,25 @@ export default function ProfilePage() {
                 {countryFlag && <span className="text-lg">{countryFlag}</span>}
               </div>
               {isOwnProfile && profileCountry && <span className="text-xs text-muted-foreground">{profileCountry}</span>}
+              {/* Instagram-style follower / following counts */}
+              <div className="flex items-center gap-5 mt-2">
+                <button
+                  onClick={() => handleOpenFollowList("Followers")}
+                  className="text-left active:opacity-70"
+                  aria-label={`${followersCount} ${t("profile.followers")}`}
+                >
+                  <div className="text-sm font-bold text-foreground leading-tight">{followersCount}</div>
+                  <div className="text-[11px] text-muted-foreground leading-tight">{t("profile.followers")}</div>
+                </button>
+                <button
+                  onClick={() => handleOpenFollowList("Following")}
+                  className="text-left active:opacity-70"
+                  aria-label={`${followingCount} ${t("profile.following")}`}
+                >
+                  <div className="text-sm font-bold text-foreground leading-tight">{followingCount}</div>
+                  <div className="text-[11px] text-muted-foreground leading-tight">{t("profile.following")}</div>
+                </button>
+              </div>
             </div>
           </div>
           {isOwnProfile ? (
