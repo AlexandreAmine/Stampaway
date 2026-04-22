@@ -523,9 +523,6 @@ export default function ProfilePage() {
                   <span key={c} className="text-lg" title={c}>{getFlagEmoji(c)}</span>
                 ))}
               </div>
-              {isOwnProfile && countryList.length > 0 && (
-                <span className="text-xs text-muted-foreground">{countryList.join(" · ")}</span>
-              )}
               {/* Instagram-style follower / following counts */}
               <div className="flex items-center gap-5 mt-2">
                 <button
