@@ -31,6 +31,9 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
   const [username, setUsername] = useState(currentData.username);
   const [bio, setBio] = useState(currentData.bio || "");
   const [countries, setCountries] = useState<string[]>(parseCountries(currentData.country));
+  const [socialLinks, setSocialLinks] = useState<SocialLinksMap>(
+    sanitizeSocialLinks(currentData.social_links ?? {}),
+  );
   const [adding, setAdding] = useState(false);
   const [countryQuery, setCountryQuery] = useState("");
   const [showCountrySuggestions, setShowCountrySuggestions] = useState(false);
@@ -42,6 +45,7 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
       setUsername(currentData.username);
       setBio(currentData.bio || "");
       setCountries(parseCountries(currentData.country));
+      setSocialLinks(sanitizeSocialLinks(currentData.social_links ?? {}));
       setAdding(false);
       setCountryQuery("");
     }
