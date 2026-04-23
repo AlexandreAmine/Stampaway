@@ -1,7 +1,8 @@
 import { Fragment } from "react";
 
-// Match http(s) URLs and bare www. URLs
-const URL_REGEX = /(\b(?:https?:\/\/|www\.)[^\s<]+[^\s<.,!?:;'")\]])/gi;
+// Match http(s) URLs and bare www. URLs. Trailing punctuation is trimmed in render.
+const URL_REGEX = /\b(?:https?:\/\/|www\.)[^\s<>"]+/gi;
+const TRAILING_PUNCT = /[.,!?:;'")\]]+$/;
 
 interface LinkifyProps {
   text: string;
@@ -13,33 +14,53 @@ interface LinkifyProps {
  * Supports http://, https://, and www. prefixed URLs.
  */
 export function Linkify({ text, className }: LinkifyProps) {
-  if (!text) return null;
+  if (!text) return <span className={className}>{text}</span>;
 
-  const parts = text.split(URL_REGEX);
+  const nodes: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let key = 0;
 
-  return (
-    <span className={className}>
-      {parts.map((part, i) => {
-        if (URL_REGEX.test(part)) {
-          // reset lastIndex since regex is global
-          URL_REGEX.lastIndex = 0;
-          const href = part.startsWith("http") ? part : `https://${part}`;
-          return (
-            <a
-              key={i}
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="text-primary hover:underline break-all"
-            >
-              {part}
-            </a>
-          );
-        }
-        URL_REGEX.lastIndex = 0;
-        return <Fragment key={i}>{part}</Fragment>;
-      })}
-    </span>
-  );
+  // Use matchAll for reliable iteration (no stateful lastIndex pitfalls)
+  const matches = Array.from(text.matchAll(URL_REGEX));
+
+  for (const match of matches) {
+    const matched = match[0];
+    const start = match.index ?? 0;
+
+    // Trim trailing punctuation from the URL itself
+    const trimmed = matched.replace(TRAILING_PUNCT, "");
+    const trailing = matched.slice(trimmed.length);
+
+    // Push text before this URL
+    if (start > lastIndex) {
+      nodes.push(<Fragment key={key++}>{text.slice(lastIndex, start)}</Fragment>);
+    }
+
+    const href = trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
+    nodes.push(
+      <a
+        key={key++}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className="text-primary hover:underline break-all"
+      >
+        {trimmed}
+      </a>,
+    );
+
+    if (trailing) {
+      nodes.push(<Fragment key={key++}>{trailing}</Fragment>);
+    }
+
+    lastIndex = start + matched.length;
+  }
+
+  // Push remaining text
+  if (lastIndex < text.length) {
+    nodes.push(<Fragment key={key++}>{text.slice(lastIndex)}</Fragment>);
+  }
+
+  return <span className={className}>{nodes}</span>;
 }
