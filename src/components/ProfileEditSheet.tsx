@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { ALL_COUNTRIES, getFlagEmoji } from "@/lib/countryFlags";
 import { X, Plus } from "lucide-react";
+import { SOCIAL_PLATFORMS, sanitizeSocialLinks, type SocialLinksMap, type SocialPlatform } from "@/lib/socialLinks";
 
 interface ProfileEditSheetProps {
   open: boolean;
@@ -18,6 +19,7 @@ interface ProfileEditSheetProps {
     username: string;
     bio: string | null;
     country: string | null;
+    social_links?: SocialLinksMap | null;
   };
 }
 
