@@ -199,6 +199,32 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
               </button>
             )}
           </div>
+
+          {/* Other social media */}
+          <div>
+            <Label className="text-muted-foreground text-xs">Other social media</Label>
+            <div className="space-y-2 mt-2">
+              {SOCIAL_PLATFORMS.map((p) => {
+                const Icon = p.icon;
+                return (
+                  <div key={p.key} className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 w-24 shrink-0 text-xs text-muted-foreground">
+                      <Icon className="w-4 h-4" />
+                      <span>{p.label}</span>
+                    </div>
+                    <Input
+                      value={socialLinks[p.key] ?? ""}
+                      onChange={(e) => handleSocialChange(p.key, e.target.value)}
+                      placeholder={p.placeholder}
+                      maxLength={60}
+                      className="flex-1 h-9 text-sm"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           <Button onClick={handleSave} disabled={saving || !username.trim()} className="w-full">
             {saving ? "Saving..." : "Save"}
           </Button>
