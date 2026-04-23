@@ -296,7 +296,16 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
   ];
 
   if (loading) {
-    return <div className="flex items-center justify-center h-40"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+    return (
+      <div className="space-y-3 pt-2">
+        <div className="h-9 bg-muted/40 rounded-xl animate-pulse" />
+        <div className="grid grid-cols-3 gap-3">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="aspect-[3/4] bg-muted/40 rounded-xl animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   const sortLabels = getSortLabels(isOtherUser ? profileUsername : undefined);

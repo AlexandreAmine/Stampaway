@@ -432,8 +432,17 @@ export default function ExplorePage() {
         {activeTab === "Places" && (
           <>
             {placesLoading ? (
-              <div className="flex justify-center py-12">
-                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <div className="space-y-6">
+                {[...Array(3)].map((_, s) => (
+                  <div key={s}>
+                    <div className="h-6 w-48 bg-muted/40 rounded animate-pulse mb-3" />
+                    <div className="flex gap-2.5 overflow-hidden -mx-5 px-5">
+                      {[...Array(4)].map((_, i) => (
+                        <div key={i} className="flex-shrink-0 w-[130px] aspect-[3/4] bg-muted/40 rounded-xl animate-pulse" />
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="space-y-6">
@@ -499,8 +508,10 @@ export default function ExplorePage() {
         {activeTab === "Reviews" && (
           <>
             {reviewsLoading ? (
-              <div className="flex justify-center py-12">
-                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-32 bg-muted/40 rounded-xl animate-pulse" />
+                ))}
               </div>
             ) : (
               <div className="space-y-6">
@@ -539,8 +550,10 @@ export default function ExplorePage() {
         {activeTab === "Lists" && (
           <>
             {listsLoading ? (
-              <div className="flex justify-center py-12">
-                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-24 bg-muted/40 rounded-xl animate-pulse" />
+                ))}
               </div>
             ) : (
               <div className="space-y-6">
