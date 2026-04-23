@@ -80,15 +80,21 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
     setCountries(countries.filter((x) => x !== c));
   };
 
+  const handleSocialChange = (key: SocialPlatform, value: string) => {
+    setSocialLinks((prev) => ({ ...prev, [key]: value }));
+  };
+
   const handleSave = async () => {
     if (!user || !username.trim()) return;
-    setSaving(true);
+    setSaving it = true;
+    const cleanSocials = sanitizeSocialLinks(socialLinks);
     const { error } = await supabase
       .from("profiles")
       .update({
         username: username.trim(),
         bio: bio.trim() || null,
         country: countries.length > 0 ? countries.join(", ") : null,
+        social_links: cleanSocials,
       })
       .eq("user_id", user.id);
 
