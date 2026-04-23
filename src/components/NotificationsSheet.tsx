@@ -164,7 +164,11 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
         </div>
 <div className="p-4 pb-16">
           {loading ? (
-            <div className="flex justify-center py-12"><div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-12 bg-muted/40 rounded-xl animate-pulse" />
+              ))}
+            </div>
           ) : items.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-12">No activity yet</p>
           ) : (

@@ -75,8 +75,12 @@ export default function ReviewDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-background pt-12 px-5 max-w-lg mx-auto">
+        <div className="space-y-4">
+          <div className="h-6 w-2/3 bg-muted/40 rounded animate-pulse" />
+          <div className="h-4 w-1/3 bg-muted/40 rounded animate-pulse" />
+          <div className="h-32 bg-muted/40 rounded-xl animate-pulse" />
+        </div>
       </div>
     );
   }

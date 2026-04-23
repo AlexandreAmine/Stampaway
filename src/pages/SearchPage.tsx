@@ -446,8 +446,16 @@ function EmptyState({ text }: { text: string }) {
 
 function LoadingSpinner() {
   return (
-    <div className="flex items-center justify-center h-40">
-      <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    <div className="space-y-3 pt-2">
+      {[...Array(5)].map((_, i) => (
+        <div key={i} className="flex items-center gap-3 py-2">
+          <div className="w-12 h-12 rounded-lg bg-muted/40 animate-pulse" />
+          <div className="flex-1 space-y-2">
+            <div className="h-3 w-32 bg-muted/40 rounded animate-pulse" />
+            <div className="h-2 w-20 bg-muted/40 rounded animate-pulse" />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

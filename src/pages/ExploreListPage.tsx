@@ -135,8 +135,10 @@ export default function ExploreListPage() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <div className="grid grid-cols-3 gap-3">
+            {[...Array(9)].map((_, i) => (
+              <div key={i} className="aspect-[3/4] bg-muted/40 rounded-xl animate-pulse" />
+            ))}
           </div>
         ) : places.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-12">No destinations found</p>
