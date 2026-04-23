@@ -86,7 +86,7 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
 
   const handleSave = async () => {
     if (!user || !username.trim()) return;
-    setSaving it = true;
+    setSaving(true);
     const cleanSocials = sanitizeSocialLinks(socialLinks);
     const { error } = await supabase
       .from("profiles")
