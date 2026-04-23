@@ -101,7 +101,17 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-40"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+    return (
+      <div className="space-y-3 pt-2">
+        <div className="h-10 bg-muted/40 rounded-xl animate-pulse" />
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="flex items-center gap-3 py-2">
+            <div className="w-8 h-8 rounded-full bg-muted/40 animate-pulse" />
+            <div className="h-3 w-32 bg-muted/40 rounded animate-pulse" />
+          </div>
+        ))}
+      </div>
+    );
   }
 
   const filtered = filterQuery.trim()
@@ -153,6 +163,10 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
                     <img
                       src={u.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=3B82F6&color=fff&size=32`}
                       alt={u.username}
+                      loading="lazy"
+                      decoding="async"
+                      width={32}
+                      height={32}
                       className="w-8 h-8 rounded-full object-cover"
                     />
                     <span className="text-sm font-medium text-foreground">{u.username}</span>
@@ -181,6 +195,10 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
                 <img
                   src={f.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.username)}&background=3B82F6&color=fff&size=32`}
                   alt={f.username}
+                  loading="lazy"
+                  decoding="async"
+                  width={32}
+                  height={32}
                   className="w-8 h-8 rounded-full object-cover"
                 />
                 <span className="text-sm font-medium text-foreground">{f.username}</span>

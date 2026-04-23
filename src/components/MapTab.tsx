@@ -307,7 +307,15 @@ export function MapTab({ userId }: { userId?: string }) {
   };
 
   if (loading || !myData) {
-    return <div className="flex items-center justify-center h-40"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+    return (
+      <div className="space-y-3 pt-2">
+        <div className="h-64 bg-muted/40 rounded-xl animate-pulse" />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="h-16 bg-muted/40 rounded-xl animate-pulse" />
+          <div className="h-16 bg-muted/40 rounded-xl animate-pulse" />
+        </div>
+      </div>
+    );
   }
 
   // ─── Compare mode ───

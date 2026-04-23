@@ -223,8 +223,10 @@ export function YourActivity({ onBack }: { onBack: () => void }) {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-12">
-            <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          <div className="space-y-3">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-12 bg-muted/40 rounded-xl animate-pulse" />
+            ))}
           </div>
         ) : activities.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center mt-8">No activity yet</p>

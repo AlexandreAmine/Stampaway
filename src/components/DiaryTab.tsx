@@ -89,8 +89,10 @@ export function DiaryTab({ userId }: { userId?: string }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-40">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="space-y-3 pt-2">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="h-24 bg-muted/40 rounded-xl animate-pulse" />
+        ))}
       </div>
     );
   }

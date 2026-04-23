@@ -146,7 +146,13 @@ export function PlaceCategoryRatings({ placeId, userId }: PlaceCategoryRatingsPr
     })();
   }, [placeId, userId]);
 
-  if (loading) return <div className="flex justify-center py-8"><div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+  if (loading) return (
+    <div className="space-y-2 py-2">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="h-8 bg-muted/40 rounded-lg animate-pulse" />
+      ))}
+    </div>
+  );
   if (averages.length === 0) return <p className="text-sm text-muted-foreground text-center py-8">No category ratings yet</p>;
 
   return (

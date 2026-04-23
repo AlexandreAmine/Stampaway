@@ -76,6 +76,10 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -91,4 +95,29 @@
     -webkit-backdrop-filter: blur(20px);
     border: 1px solid hsla(0, 0%, 100%, 0.08);
   }
+
+  /* Tap-target helper: ensures min 44x44 hit area without changing visual size */
+  .tap-target {
+    position: relative;
+  }
+  .tap-target::after {
+    content: "";
+    position: absolute;
+    inset: 50% 50%;
+    width: 44px;
+    height: 44px;
+    transform: translate(-50%, -50%);
+  }
 }
+
+/* Prevent horizontal scroll on small screens */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Improve touch responsiveness */
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+

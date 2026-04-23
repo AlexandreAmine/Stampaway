@@ -193,7 +193,13 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center h-40"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+    return (
+      <div className="grid grid-cols-3 gap-3 pt-2">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="aspect-[3/4] bg-muted/40 rounded-xl animate-pulse" />
+        ))}
+      </div>
+    );
   }
 
   const renderGrid = (gridItems: WishlistItem[]) => (

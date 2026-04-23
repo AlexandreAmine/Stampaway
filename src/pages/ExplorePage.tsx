@@ -432,8 +432,17 @@ export default function ExplorePage() {
         {activeTab === "Places" && (
           <>
             {placesLoading ? (
-              <div className="flex justify-center py-12">
-                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <div className="space-y-6">
+                {[...Array(3)].map((_, s) => (
+                  <div key={s}>
+                    <div className="h-6 w-48 bg-muted/40 rounded animate-pulse mb-3" />
+                    <div className="flex gap-2.5 overflow-hidden -mx-5 px-5">
+                      {[...Array(4)].map((_, i) => (
+                        <div key={i} className="flex-shrink-0 w-[130px] aspect-[3/4] bg-muted/40 rounded-xl animate-pulse" />
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="space-y-6">
@@ -478,6 +487,10 @@ export default function ExplorePage() {
                                   <img
                                     src={comment.profile_picture || `https://ui-avatars.com/api/?name=U&background=3B82F6&color=fff&size=20`}
                                     className="w-4 h-4 rounded-full shrink-0 mt-0.5"
+                                    loading="lazy"
+                                    decoding="async"
+                                    width={16}
+                                    height={16}
                                     alt=""
                                   />
                                   <span className="text-[10px] text-muted-foreground line-clamp-2">{comment.text}</span>
@@ -499,8 +512,10 @@ export default function ExplorePage() {
         {activeTab === "Reviews" && (
           <>
             {reviewsLoading ? (
-              <div className="flex justify-center py-12">
-                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-32 bg-muted/40 rounded-xl animate-pulse" />
+                ))}
               </div>
             ) : (
               <div className="space-y-6">
@@ -539,8 +554,10 @@ export default function ExplorePage() {
         {activeTab === "Lists" && (
           <>
             {listsLoading ? (
-              <div className="flex justify-center py-12">
-                <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-24 bg-muted/40 rounded-xl animate-pulse" />
+                ))}
               </div>
             ) : (
               <div className="space-y-6">
@@ -632,7 +649,7 @@ function ListCard({ list, showLikes = false }: { list: any; showLikes?: boolean 
         >
           <div className="flex items-center gap-2 mb-1">
             {list.profile_picture && (
-              <img src={list.profile_picture} alt="" className="w-6 h-6 rounded-full object-cover" />
+              <img src={list.profile_picture} alt="" loading="lazy" decoding="async" width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
             )}
             <span className="text-xs text-muted-foreground">{list.username || "User"}</span>
           </div>

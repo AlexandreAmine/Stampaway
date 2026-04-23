@@ -302,8 +302,17 @@ export default function PlacePage() {
 
   if (loading || !place) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-background pt-12 px-5 max-w-lg mx-auto">
+        <div className="space-y-4">
+          <div className="aspect-[3/4] w-full max-w-[240px] mx-auto bg-muted/40 rounded-xl animate-pulse" />
+          <div className="h-7 w-2/3 mx-auto bg-muted/40 rounded animate-pulse" />
+          <div className="h-4 w-1/3 mx-auto bg-muted/40 rounded animate-pulse" />
+          <div className="grid grid-cols-3 gap-3 mt-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-16 bg-muted/40 rounded-xl animate-pulse" />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
