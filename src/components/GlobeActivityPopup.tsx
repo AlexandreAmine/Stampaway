@@ -121,7 +121,7 @@ export function GlobeActivityPopup({ activity, onClose, onNavigate, onProfileNav
                 }}
                 className="shrink-0"
               >
-                <img src={avatarUrl} alt={activity.username} className="w-8 h-8 rounded-full object-cover" />
+                <img src={avatarUrl} alt={activity.username} loading="lazy" decoding="async" width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
               </button>
               <button
                 onClick={(e) => {

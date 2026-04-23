@@ -487,6 +487,10 @@ export default function ExplorePage() {
                                   <img
                                     src={comment.profile_picture || `https://ui-avatars.com/api/?name=U&background=3B82F6&color=fff&size=20`}
                                     className="w-4 h-4 rounded-full shrink-0 mt-0.5"
+                                    loading="lazy"
+                                    decoding="async"
+                                    width={16}
+                                    height={16}
                                     alt=""
                                   />
                                   <span className="text-[10px] text-muted-foreground line-clamp-2">{comment.text}</span>
@@ -645,7 +649,7 @@ function ListCard({ list, showLikes = false }: { list: any; showLikes?: boolean 
         >
           <div className="flex items-center gap-2 mb-1">
             {list.profile_picture && (
-              <img src={list.profile_picture} alt="" className="w-6 h-6 rounded-full object-cover" />
+              <img src={list.profile_picture} alt="" loading="lazy" decoding="async" width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
             )}
             <span className="text-xs text-muted-foreground">{list.username || "User"}</span>
           </div>

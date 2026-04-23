@@ -461,7 +461,7 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
                 <button onClick={() => navigate(`/profile/${l.user_id}`)} className="w-full text-left">
                   <div className="flex items-center gap-2 mb-1">
                     {l.profile_picture && (
-                      <img src={l.profile_picture} alt="" className="w-6 h-6 rounded-full object-cover" />
+                      <img src={l.profile_picture} alt="" loading="lazy" decoding="async" width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
                     )}
                     <span className="text-xs text-muted-foreground">{l.username || "User"}</span>
                   </div>
