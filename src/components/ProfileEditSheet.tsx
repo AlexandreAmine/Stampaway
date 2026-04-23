@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { ALL_COUNTRIES, getFlagEmoji } from "@/lib/countryFlags";
 import { X, Plus } from "lucide-react";
+import { SOCIAL_PLATFORMS, sanitizeSocialLinks, type SocialLinksMap, type SocialPlatform } from "@/lib/socialLinks";
 
 interface ProfileEditSheetProps {
   open: boolean;
@@ -18,6 +19,7 @@ interface ProfileEditSheetProps {
     username: string;
     bio: string | null;
     country: string | null;
+    social_links?: SocialLinksMap | null;
   };
 }
 
@@ -29,6 +31,9 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
   const [username, setUsername] = useState(currentData.username);
   const [bio, setBio] = useState(currentData.bio || "");
   const [countries, setCountries] = useState<string[]>(parseCountries(currentData.country));
+  const [socialLinks, setSocialLinks] = useState<SocialLinksMap>(
+    sanitizeSocialLinks(currentData.social_links ?? {}),
+  );
   const [adding, setAdding] = useState(false);
   const [countryQuery, setCountryQuery] = useState("");
   const [showCountrySuggestions, setShowCountrySuggestions] = useState(false);
@@ -40,6 +45,7 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
       setUsername(currentData.username);
       setBio(currentData.bio || "");
       setCountries(parseCountries(currentData.country));
+      setSocialLinks(sanitizeSocialLinks(currentData.social_links ?? {}));
       setAdding(false);
       setCountryQuery("");
     }
@@ -74,15 +80,21 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
     setCountries(countries.filter((x) => x !== c));
   };
 
+  const handleSocialChange = (key: SocialPlatform, value: string) => {
+    setSocialLinks((prev) => ({ ...prev, [key]: value }));
+  };
+
   const handleSave = async () => {
     if (!user || !username.trim()) return;
     setSaving(true);
+    const cleanSocials = sanitizeSocialLinks(socialLinks);
     const { error } = await supabase
       .from("profiles")
       .update({
         username: username.trim(),
         bio: bio.trim() || null,
         country: countries.length > 0 ? countries.join(", ") : null,
+        social_links: cleanSocials,
       })
       .eq("user_id", user.id);
 
@@ -187,6 +199,32 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
               </button>
             )}
           </div>
+
+          {/* Other social media */}
+          <div>
+            <Label className="text-muted-foreground text-xs">Other social media</Label>
+            <div className="space-y-2 mt-2">
+              {SOCIAL_PLATFORMS.map((p) => {
+                const Icon = p.icon;
+                return (
+                  <div key={p.key} className="flex items-center gap-2">
+                    <div className="flex items-center gap-1.5 w-24 shrink-0 text-xs text-muted-foreground">
+                      <Icon className="w-4 h-4" />
+                      <span>{p.label}</span>
+                    </div>
+                    <Input
+                      value={socialLinks[p.key] ?? ""}
+                      onChange={(e) => handleSocialChange(p.key, e.target.value)}
+                      placeholder={p.placeholder}
+                      maxLength={60}
+                      className="flex-1 h-9 text-sm"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           <Button onClick={handleSave} disabled={saving || !username.trim()} className="w-full">
             {saving ? "Saving..." : "Save"}
           </Button>

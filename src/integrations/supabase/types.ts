@@ -386,6 +386,7 @@ export type Database = {
           is_private: boolean
           phone: string | null
           profile_picture: string | null
+          social_links: Json
           updated_at: string
           user_id: string
           username: string
@@ -400,6 +401,7 @@ export type Database = {
           is_private?: boolean
           phone?: string | null
           profile_picture?: string | null
+          social_links?: Json
           updated_at?: string
           user_id: string
           username: string
@@ -414,6 +416,7 @@ export type Database = {
           is_private?: boolean
           phone?: string | null
           profile_picture?: string | null
+          social_links?: Json
           updated_at?: string
           user_id?: string
           username?: string
