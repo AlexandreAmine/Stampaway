@@ -26,6 +26,8 @@ import { AdminStats } from "@/components/AdminStats";
 import { ProfileEditSheet } from "@/components/ProfileEditSheet";
 import { getFlagEmoji } from "@/lib/countryFlags";
 import { RichBio } from "@/components/RichBio";
+import { SocialLinks } from "@/components/SocialLinks";
+import { sanitizeSocialLinks } from "@/lib/socialLinks";
 import { Camera } from "lucide-react";
 import { toast } from "sonner";
 
@@ -56,8 +58,8 @@ export default function ProfilePage() {
   const viewingUserId = paramUserId || user?.id;
   const isOwnProfile = !paramUserId || paramUserId === user?.id;
 
-  const [viewedProfile, setViewedProfile] = useState<{ username: string; profile_picture: string | null; bio: string | null; country: string | null; is_private?: boolean } | null>(null);
-  const [ownProfileFull, setOwnProfileFull] = useState<{ username: string; profile_picture: string | null; bio: string | null; country: string | null } | null>(null);
+  const [viewedProfile, setViewedProfile] = useState<{ username: string; profile_picture: string | null; bio: string | null; country: string | null; is_private?: boolean; social_links?: any } | null>(null);
+  const [ownProfileFull, setOwnProfileFull] = useState<{ username: string; profile_picture: string | null; bio: string | null; country: string | null; social_links?: any } | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
@@ -95,12 +97,12 @@ export default function ProfilePage() {
     setIsBlocked(false);
     setHasPendingRequest(false);
     if (isOwnProfile && viewingUserId) {
-      supabase.from("profiles").select("username, profile_picture, bio, country").eq("user_id", viewingUserId).single().then(({ data }) => {
-        if (data) setOwnProfileFull(data);
+      supabase.from("profiles").select("username, profile_picture, bio, country, social_links").eq("user_id", viewingUserId).single().then(({ data }) => {
+        if (data) setOwnProfileFull(data as any);
       });
       setViewedProfile(null);
     } else if (viewingUserId) {
-      supabase.from("profiles").select("username, profile_picture, bio, country, is_private").eq("user_id", viewingUserId).single().then(({ data }) => {
+      supabase.from("profiles").select("username, profile_picture, bio, country, is_private, social_links").eq("user_id", viewingUserId).single().then(({ data }) => {
         if (data) setViewedProfile(data as any);
       });
       // Check if blocked
@@ -161,8 +163,8 @@ export default function ProfilePage() {
 
   const handleProfileSaved = () => {
     if (viewingUserId) {
-      supabase.from("profiles").select("username, profile_picture, bio, country").eq("user_id", viewingUserId).single().then(({ data }) => {
-        if (data) setOwnProfileFull(data);
+      supabase.from("profiles").select("username, profile_picture, bio, country, social_links").eq("user_id", viewingUserId).single().then(({ data }) => {
+        if (data) setOwnProfileFull(data as any);
       });
     }
   };
