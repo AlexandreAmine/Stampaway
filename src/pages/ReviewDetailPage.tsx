@@ -9,6 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { ReviewComments } from "@/components/ReviewComments";
 import { SubRatingsDisplay } from "@/components/SubRatingsDisplay";
+import { Linkify } from "@/components/Linkify";
 import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
 
 export default function ReviewDetailPage() {
@@ -184,8 +185,8 @@ export default function ReviewDetailPage() {
               <MessageSquare className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-semibold text-foreground">Review</h3>
             </div>
-            <p className="text-sm text-muted-foreground leading-relaxed bg-card rounded-xl p-4 border border-border">
-              {review.review_text}
+            <p className="text-sm text-muted-foreground leading-relaxed bg-card rounded-xl p-4 border border-border whitespace-pre-wrap break-words">
+              <Linkify text={review.review_text} />
             </p>
           </motion.div>
         )}
