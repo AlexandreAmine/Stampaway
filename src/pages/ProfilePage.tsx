@@ -584,10 +584,11 @@ export default function ProfilePage() {
           )}
         </div>
 
-        {/* Bio */}
-        {!isBlocked && profileBio && (
+        {/* Bio + Social links */}
+        {!isBlocked && (profileBio || Object.keys(sanitizeSocialLinks((currentProfile as any)?.social_links)).length > 0) && (
           <div className="mb-4">
-            <RichBio text={profileBio} />
+            {profileBio && <RichBio text={profileBio} />}
+            <SocialLinks links={sanitizeSocialLinks((currentProfile as any)?.social_links)} />
           </div>
         )}
 
@@ -707,6 +708,7 @@ export default function ProfilePage() {
             username: currentProfile.username,
             bio: profileBio,
             country: profileCountry,
+            social_links: sanitizeSocialLinks((currentProfile as any)?.social_links),
           }}
         />
       )}
