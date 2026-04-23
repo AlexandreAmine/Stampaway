@@ -163,6 +163,10 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
                     <img
                       src={u.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=3B82F6&color=fff&size=32`}
                       alt={u.username}
+                      loading="lazy"
+                      decoding="async"
+                      width={32}
+                      height={32}
                       className="w-8 h-8 rounded-full object-cover"
                     />
                     <span className="text-sm font-medium text-foreground">{u.username}</span>
@@ -191,6 +195,10 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
                 <img
                   src={f.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.username)}&background=3B82F6&color=fff&size=32`}
                   alt={f.username}
+                  loading="lazy"
+                  decoding="async"
+                  width={32}
+                  height={32}
                   className="w-8 h-8 rounded-full object-cover"
                 />
                 <span className="text-sm font-medium text-foreground">{f.username}</span>

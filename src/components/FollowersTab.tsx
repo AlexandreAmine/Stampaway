@@ -107,6 +107,10 @@ export function FollowersTab({ userId }: { userId?: string }) {
                 <img
                   src={f.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.username)}&background=3B82F6&color=fff&size=32`}
                   alt={f.username}
+                  loading="lazy"
+                  decoding="async"
+                  width={32}
+                  height={32}
                   className="w-8 h-8 rounded-full object-cover"
                 />
                 <span className="text-sm font-medium text-foreground">{f.username}</span>
