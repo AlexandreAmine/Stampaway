@@ -33,6 +33,7 @@ const CATEGORY_TITLE: Record<string, { country: string; city: string }> = {
   "Entertainment & Nightlife": { country: "most vibrant countries", city: "most vibrant cities" },
   "Natural Beauty": { country: "most scenic countries", city: "most scenic cities" },
   "Safety & Security": { country: "safest countries", city: "safest cities" },
+  "Hospitality & People": { country: "most welcoming countries", city: "most welcoming cities" },
 };
 
 export default function ExploreListPage() {
