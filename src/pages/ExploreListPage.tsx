@@ -15,6 +15,8 @@ import {
   ASIA_COUNTRIES,
   NORTH_AMERICA_COUNTRIES,
   SOUTH_AMERICA_COUNTRIES,
+  NAMED_REGIONS,
+  EASTERN_EUROPE_COUNTRIES,
 } from "@/lib/continents";
 
 type PlaceWithStat = {
