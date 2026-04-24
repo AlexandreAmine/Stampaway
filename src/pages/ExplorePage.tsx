@@ -19,6 +19,10 @@ import {
   ASIA_COUNTRIES,
   NORTH_AMERICA_COUNTRIES,
   SOUTH_AMERICA_COUNTRIES,
+  SOUTHEAST_ASIA_COUNTRIES,
+  CARIBBEAN_COUNTRIES,
+  EASTERN_EUROPE_COUNTRIES,
+  MIDDLE_EAST_COUNTRIES,
 } from "@/lib/continents";
 
 const tabs = ["Places", "Reviews", "Lists"];
@@ -70,7 +74,7 @@ export default function ExplorePage() {
     setPlacesLoading(true);
 
     // Fetch all data in parallel using centralized helpers
-    const [monthlyCountMap, avgRatingMap, allPlaces, affordMap, nightlifeMap, natureMap, safetyMap] = await Promise.all([
+    const [monthlyCountMap, avgRatingMap, allPlaces, affordMap, nightlifeMap, natureMap, safetyMap, hospitalityMap] = await Promise.all([
       fetchMonthlyVisitorCountMap(),
       fetchAverageRatingMap(),
       fetchAllPlaces(),
@@ -78,6 +82,7 @@ export default function ExplorePage() {
       fetchCategoryAverageMap("Entertainment & Nightlife"),
       fetchCategoryAverageMap("Natural Beauty"),
       fetchCategoryAverageMap("Safety & Security"),
+      fetchCategoryAverageMap("Hospitality & People"),
     ]);
 
     const placesMap = new Map(allPlaces.map((p) => [p.id, p]));
@@ -124,6 +129,25 @@ export default function ExplorePage() {
         })
         .slice(0, previewLimit);
 
+    // Same as buildByCategory but restricted to a region's country list.
+    const buildByCategoryInRegion = (
+      type: string,
+      catMap: Map<string, number>,
+      countries: string[],
+      previewLimit = 8
+    ): PlaceWithStat[] =>
+      allPlaces
+        .filter((p) => {
+          if (p.type !== type || !catMap.has(p.id)) return false;
+          return type === "country" ? countries.includes(p.name) : countries.includes(p.country);
+        })
+        .map((p) => ({ ...p, stat: catMap.get(p.id) || 0 }))
+        .sort((a, b) => {
+          if (b.stat !== a.stat) return b.stat - a.stat;
+          return a.name.localeCompare(b.name);
+        })
+        .slice(0, previewLimit);
+
     setSections([
       { key: "tc", title: "Trendy countries this month", places: buildTrending("country"), linkParams: "mode=trending&type=country" },
       { key: "tci", title: "Trendy cities this month", places: buildTrending("city"), linkParams: "mode=trending&type=city" },
@@ -136,6 +160,30 @@ export default function ExplorePage() {
       { key: "vibrant", title: "30 most vibrant cities", places: buildByCategory("city", nightlifeMap), linkParams: "mode=by-category&type=city&category=Entertainment+%26+Nightlife&limit=30" },
       { key: "scenic", title: "30 most scenic countries", places: buildByCategory("country", natureMap), linkParams: "mode=by-category&type=country&category=Natural+Beauty&limit=30" },
       { key: "safe", title: "30 safest cities", places: buildByCategory("city", safetyMap), linkParams: "mode=by-category&type=city&category=Safety+%26+Security&limit=30" },
+      {
+        key: "afford-sea",
+        title: "Most affordable countries in Southeast Asia",
+        places: buildByCategoryInRegion("country", affordMap, SOUTHEAST_ASIA_COUNTRIES),
+        linkParams: "mode=by-category&type=country&category=Affordability&region=Southeast+Asia&limit=30",
+      },
+      {
+        key: "scenic-carib",
+        title: "Most scenic countries in the Caribbean",
+        places: buildByCategoryInRegion("country", natureMap, CARIBBEAN_COUNTRIES),
+        linkParams: "mode=by-category&type=country&category=Natural+Beauty&region=Caribbean&limit=30",
+      },
+      {
+        key: "top-ee",
+        title: "Top Eastern European countries",
+        places: buildTopRated("country", EASTERN_EUROPE_COUNTRIES, 8),
+        linkParams: "mode=top-rated&type=country&continent=Eastern Europe&limit=30",
+      },
+      {
+        key: "welcoming-me",
+        title: "Most welcoming countries in the Middle East",
+        places: buildByCategoryInRegion("country", hospitalityMap, MIDDLE_EAST_COUNTRIES),
+        linkParams: "mode=by-category&type=country&category=Hospitality+%26+People&region=Middle+East&limit=30",
+      },
     ]);
 
     // Fetch friend comments for displayed places
