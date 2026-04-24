@@ -321,7 +321,7 @@ export default function AddPlacePage() {
                   )}
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">I TravelD to...</p>
+                  <p className="text-xs text-muted-foreground">I stamped...</p>
                   <h1 className="text-xl font-bold text-foreground">{selectedPlace.name}</h1>
                   <p className="text-xs text-muted-foreground">
                     {selectedPlace.type === "city" ? selectedPlace.country : "Country"}
