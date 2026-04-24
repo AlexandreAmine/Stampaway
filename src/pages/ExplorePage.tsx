@@ -74,7 +74,7 @@ export default function ExplorePage() {
     setPlacesLoading(true);
 
     // Fetch all data in parallel using centralized helpers
-    const [monthlyCountMap, avgRatingMap, allPlaces, affordMap, nightlifeMap, natureMap, safetyMap] = await Promise.all([
+    const [monthlyCountMap, avgRatingMap, allPlaces, affordMap, nightlifeMap, natureMap, safetyMap, hospitalityMap] = await Promise.all([
       fetchMonthlyVisitorCountMap(),
       fetchAverageRatingMap(),
       fetchAllPlaces(),
@@ -82,6 +82,7 @@ export default function ExplorePage() {
       fetchCategoryAverageMap("Entertainment & Nightlife"),
       fetchCategoryAverageMap("Natural Beauty"),
       fetchCategoryAverageMap("Safety & Security"),
+      fetchCategoryAverageMap("Hospitality & People"),
     ]);
 
     const placesMap = new Map(allPlaces.map((p) => [p.id, p]));
