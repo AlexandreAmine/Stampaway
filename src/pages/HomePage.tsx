@@ -146,9 +146,8 @@ export default function HomePage() {
       }
 
       const now = new Date();
-      const twoMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-      const minYear = twoMonthsAgo.getFullYear();
-      const minMonth = twoMonthsAgo.getMonth() + 1;
+      // Start of previous month (include current month + previous month)
+      const startPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
       const { data: reviews } = await supabase
         .from("reviews")
@@ -156,13 +155,10 @@ export default function HomePage() {
         .in("user_id", followingIds)
         .not("visit_year", "is", null)
         .not("visit_month", "is", null)
+        .gte("created_at", startPrevMonth.toISOString())
         .order("created_at", { ascending: false });
 
-      const filtered = (reviews || []).filter((r: any) => {
-        const vy = r.visit_year;
-        const vm = r.visit_month;
-        return (vy > minYear) || (vy === minYear && vm >= minMonth);
-      });
+      const filtered = reviews || [];
 
       if (filtered.length === 0) {
         setActivities([]);

@@ -159,7 +159,7 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div className="relative bg-card w-full max-w-lg rounded-t-2xl border border-border max-h-[80vh] overflow-y-auto animate-in slide-in-from-bottom">
         <div className="sticky top-0 bg-card z-10 flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-lg font-bold text-foreground">Activity</h2>
+          <h2 className="text-lg font-bold text-foreground">Notifications</h2>
           <button onClick={onClose}><X className="w-5 h-5 text-muted-foreground" /></button>
         </div>
 <div className="p-4 pb-16">
