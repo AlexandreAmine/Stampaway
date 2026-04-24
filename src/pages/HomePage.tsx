@@ -54,6 +54,7 @@ export default function HomePage() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [dbLabels, setDbLabels] = useState<DbCityLabel[]>([]);
   const [altitude, setAltitude] = useState(2.2);
+  const [showAllActivities, setShowAllActivities] = useState(false);
 
   useEffect(() => {
     if (containerRef.current) {
