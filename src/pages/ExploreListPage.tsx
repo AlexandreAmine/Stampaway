@@ -42,6 +42,7 @@ export default function ExploreListPage() {
   const mode = searchParams.get("mode") || "trending";
   const placeType = searchParams.get("type") || "country";
   const continent = searchParams.get("continent") || "";
+  const region = searchParams.get("region") || "";
   const category = searchParams.get("category") || "";
   const limit = parseInt(searchParams.get("limit") || "50", 10);
 
@@ -54,6 +55,7 @@ export default function ExploreListPage() {
     }
     if (mode === "by-category" && category && CATEGORY_TITLE[category]) {
       const label = placeType === "country" ? CATEGORY_TITLE[category].country : CATEGORY_TITLE[category].city;
+      if (region) return `${label.charAt(0).toUpperCase() + label.slice(1)} in ${region}`;
       return `${limit} ${label}`;
     }
     const regionLabel = continent || "World";
@@ -63,7 +65,7 @@ export default function ExploreListPage() {
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, placeType, continent, limit, category]);
+  }, [mode, placeType, continent, region, limit, category]);
 
   const getContinentCountries = (c: string): string[] | null => {
     switch (c.toLowerCase()) {
@@ -71,6 +73,7 @@ export default function ExploreListPage() {
       case "asia": return ASIA_COUNTRIES;
       case "north america": return NORTH_AMERICA_COUNTRIES;
       case "south america": return SOUTH_AMERICA_COUNTRIES;
+      case "eastern europe": return EASTERN_EUROPE_COUNTRIES;
       default: return null;
     }
   };
@@ -93,8 +96,15 @@ export default function ExploreListPage() {
       setPlaces(filtered);
     } else if (mode === "by-category" && category) {
       const catMap = await fetchCategoryAverageMap(category);
+      const regionCountries = region ? NAMED_REGIONS[region] : null;
       const filtered = allPlaces
-        .filter((p) => p.type === placeType && catMap.has(p.id))
+        .filter((p) => {
+          if (p.type !== placeType || !catMap.has(p.id)) return false;
+          if (!regionCountries) return true;
+          return placeType === "country"
+            ? regionCountries.includes(p.name)
+            : regionCountries.includes(p.country);
+        })
         .map((p) => ({ ...p, stat: catMap.get(p.id) || 0 }))
         .sort((a, b) => {
           if (b.stat !== a.stat) return b.stat - a.stat;
