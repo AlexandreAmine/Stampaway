@@ -494,7 +494,7 @@ export default function HomePage() {
           ) : null}
 
           <div className="space-y-1 pb-36">
-            {activities.map((a, i) => (
+            {(showAllActivities ? activities : activities.slice(0, 10)).map((a, i) => (
               <motion.button
                 key={a.id}
                 initial={{ opacity: 0, y: 12 }}
@@ -533,6 +533,22 @@ export default function HomePage() {
                 </div>
               </motion.button>
             ))}
+            {!showAllActivities && activities.length > 10 && (
+              <button
+                onClick={() => setShowAllActivities(true)}
+                className="w-full mt-3 py-2.5 text-sm font-medium text-primary hover:bg-muted/40 rounded-lg transition-colors"
+              >
+                View more ({activities.length - 10})
+              </button>
+            )}
+            {showAllActivities && activities.length > 10 && (
+              <button
+                onClick={() => setShowAllActivities(false)}
+                className="w-full mt-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted/40 rounded-lg transition-colors"
+              >
+                Show less
+              </button>
+            )}
           </div>
         </div>
       </div>
