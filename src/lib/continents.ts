@@ -21,3 +21,28 @@ export const AFRICA_COUNTRIES = [
 export const OCEANIA_COUNTRIES = [
   "Australia","Fiji","Kiribati","Marshall Islands","Micronesia","Nauru","New Zealand","Palau","Papua New Guinea","Samoa","Solomon Islands","Tonga","Tuvalu","Vanuatu"
 ];
+
+// Sub-regions used in Explore page category sections
+export const SOUTHEAST_ASIA_COUNTRIES = [
+  "Brunei","Cambodia","Indonesia","Laos","Malaysia","Myanmar","Philippines","Singapore","Thailand","Timor-Leste","East Timor","Vietnam"
+];
+
+export const CARIBBEAN_COUNTRIES = [
+  "Antigua and Barbuda","Bahamas","Barbados","Cuba","Dominica","Dominican Republic","Grenada","Haiti","Jamaica","Saint Kitts and Nevis","Saint Lucia","Saint Vincent and the Grenadines","Trinidad and Tobago"
+];
+
+export const EASTERN_EUROPE_COUNTRIES = [
+  "Albania","Armenia","Azerbaijan","Belarus","Bosnia and Herzegovina","Bulgaria","Croatia","Czech Republic","Czechia","Estonia","Hungary","Kosovo","Latvia","Lithuania","Moldova","Montenegro","North Macedonia","Poland","Romania","Russia","Serbia","Slovakia","Slovenia","Ukraine"
+];
+
+export const MIDDLE_EAST_COUNTRIES = [
+  "Cyprus","Lebanon","Syria","Iraq","Iran","Israel","Jordan","Saudi Arabia","Kuwait","Qatar","Bahrain","United Arab Emirates","Oman","Yemen","Turkey","Palestine"
+];
+
+// Map of named regions -> country list, used by ExploreListPage when ?region= is set.
+export const NAMED_REGIONS: Record<string, string[]> = {
+  "Southeast Asia": SOUTHEAST_ASIA_COUNTRIES,
+  "Caribbean": CARIBBEAN_COUNTRIES,
+  "Eastern Europe": EASTERN_EUROPE_COUNTRIES,
+  "Middle East": MIDDLE_EAST_COUNTRIES,
+};
