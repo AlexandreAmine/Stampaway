@@ -1,28 +1,89 @@
+# Capacitor Native Setup for Stampaway
+
+Goal: Install every native plugin we might ever need **before** the first store submission, so future Lovable changes flow live to installed apps without resubmitting (except for major native upgrades).
+
+---
+
+## 1. Install Capacitor core + platforms
+
+Add to `package.json`:
+
+- `@capacitor/core`
+- `@capacitor/cli` (dev)
+- `@capacitor/ios`
+- `@capacitor/android`
+
+## 2. Install all native plugins (one-time, baked into the binary)
 
 
-# Plan: Import City Descriptions from DOCX
+| Plugin                          | Purpose for Stampaway                       |
+| ------------------------------- | ------------------------------------------- |
+| `@capacitor/push-notifications` | Friend activity, follow requests, comments  |
+| `@capacitor/geolocation`        | Auto-detect place when logging, friend map  |
+| `@capacitor-community/contacts` | Suggest friends from phone contacts         |
+| `@capacitor/share`              | Share profile, lists, destinations, posters |
+| `@capacitor/camera`             | Profile picture, future place photos        |
+| `@capacitor/haptics`            | Tactile feedback on key actions             |
+| `@capacitor/status-bar`         | Dark themed status bar                      |
+| `@capacitor/splash-screen`      | Branded launch screen                       |
+| `@capacitor/app`                | Deep linking, back button, app state        |
+| `@capacitor/preferences`        | Fast on-device key/value storage            |
+| `@capacitor/network`            | Detect offline state, queue actions         |
+| `@capacitor/device`             | Device info for analytics + bug reports     |
+| `@capacitor/keyboard`           | Smooth keyboard handling on inputs          |
+| `@capacitor/browser`            | In-app browser for OAuth + external links   |
+| `@capacitor/filesystem`         | Save posters, export user data              |
 
-## Summary
-Parse the uploaded DOCX file containing descriptions for ~950 cities (top 5 per country, ~190 countries) and update each city's `description` column in the `places` table. The frontend already displays DB descriptions when present (same logic used for countries).
 
-## Steps
+## 3. Create `capacitor.config.ts`
 
-1. **Parse the DOCX and extract city-country-description mappings**
-   - Read the full parsed document content (2833 lines)
-   - Extract each city name, its parent country heading, and the description text (everything after the "CityName — " or standalone paragraph)
-   - Handle edge cases: truncated descriptions at page boundaries, cities with special characters, multi-word city names
+```text
+appId:   app.lovable.29bacedb019c46d6a9a8dea7867a9954
+appName: Stampaway
+webDir:  dist
+server:
+  url: https://29bacedb-019c-46d6-a9a8-dea7867a9954.lovableproject.com?forceHideBadge=true
+  cleartext: true
+plugins:
+  SplashScreen: dark theme, branded
+  StatusBar:    dark style
+  PushNotifications: alert + badge + sound
+```
 
-2. **Batch-update the `places` table**
-   - For each extracted city, run UPDATE queries matching on `name`, `country`, and `type = 'city'`
-   - Handle country name variants (e.g., "Bosnia and Herzegovina", "Cote d'Ivoire", etc.)
-   - Process in batches of ~50 cities per SQL statement to stay within limits
-   - Use the Supabase insert tool (for data updates, not migrations)
+## 4. Light integration code (no forced UI yet)
 
-3. **Verify the updates**
-   - Query a sample of updated cities to confirm descriptions are stored
-   - No frontend changes needed -- `PlacePage.tsx` already reads the `description` field and displays it for both countries and cities
+- `src/lib/native/index.ts` — central exports for all Capacitor plugins
+- `src/hooks/useNativeFeatures.ts` — helpers: `requestNotifications()`, `getCurrentLocation()`, `pickContacts()`, `share()`, `takePhoto()`, etc.
+- `src/lib/native/platform.ts` — `isNative()`, `isIOS()`, `isAndroid()` checks so the same code runs in browser + app
 
-## Technical Details
-- The document was truncated at page 50 (out of likely ~60 pages), so some countries from O-Z may be missing. The last visible entries are Pakistan and Palestine. Cities from countries after Palestine won't have descriptions unless the full document is processed.
-- The `fetchDescription` function in `PlacePage.tsx` (line 237) already checks `dbDescription` first and falls back to Wikipedia, so no code changes are needed.
+These are NOT auto-wired into UI yet — they're available for when we build features (notifications toggle in Settings, geolocation in AddPlacePage, contact-based friend suggestions, etc.).
 
+## 5. README instructions for your one-time local setup
+
+A new section explaining the export-to-GitHub → `npx cap add ios/android` → Xcode/Android Studio → store submit flow, with copy-paste commands.
+
+---
+
+## What this enables going forward
+
+After your first store submission:
+
+- **Live via Lovable (no resubmit)**: UI, copy, translations, new pages, AI planner, Mapbox globe, destination data, posters, edge functions, database, RLS, recommendations, notification *content*, how location/contacts/share are *used*.
+- **Requires resubmit (rare)**: Adding a brand-new native plugin not in the list above, Capacitor major version upgrades, iOS/Android SDK target bumps (~once a year for store compliance).
+
+---
+
+## What I will NOT do in this step
+
+- Will not auto-add iOS/Android folders (must be generated on your Mac/PC via `npx cap add`)
+- Will not request notification/location/contacts permissions yet — that happens when each feature is built
+- Will not configure push notification certificates (APNs/FCM) — done later when push UI is built
+- Will not modify privacy policy / terms text — separate task
+
+---
+
+## Technical notes
+
+- All plugin permission strings (NSLocationWhenInUseUsageDescription, NSContactsUsageDescription, NSCameraUsageDescription, NSPhotoLibraryUsageDescription, NSUserTrackingUsageDescription, push notification entitlements, Android `ACCESS_FINE_LOCATION`, `READ_CONTACTS`, `CAMERA`, `POST_NOTIFICATIONS`) will be documented in the README so you paste them into `Info.plist` and `AndroidManifest.xml` once during local setup.
+- Hot-reload `server.url` in `capacitor.config.ts` should be **removed before production build** — README will explain. For dev/testing it stays.
+- `useNativeFeatures` will gracefully no-op in the web preview so nothing breaks in Lovable's browser preview.
