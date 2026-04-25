@@ -1,89 +1,86 @@
-# Capacitor Native Setup for Stampaway
+# Privacy Policy & Terms of Service
 
-Goal: Install every native plugin we might ever need **before** the first store submission, so future Lovable changes flow live to installed apps without resubmitting (except for major native upgrades).
+Add proper legal pages modeled after major social apps (Instagram, TikTok, Letterboxd) and link them from Settings.
 
----
+## What you'll get
 
-## 1. Install Capacitor core + platforms
+**Two new pages** — clean, readable, dark-themed, with back chevron matching the rest of Settings:
 
-Add to `package.json`:
+### Privacy Policy (`/privacy`)
+1. Information We Collect (account, profile, content, usage, device, location, cookies, third-party sign-in, contacts)
+2. How We Use Your Information
+3. How Information Is Shared (other users, service providers, legal/safety, business transfers — explicit "we do not sell your data")
+4. Cookies and Tracking
+5. Data Retention (30-day deletion window)
+6. Security
+7. Children (13+, 16+ in EEA)
+8. International Transfers
+9. Your Rights (GDPR/CCPA-aligned: access, correct, delete, export, withdraw consent)
+10. Changes to This Policy
+11. Contact — `privacy@stampaway.app`
 
-- `@capacitor/core`
-- `@capacitor/cli` (dev)
-- `@capacitor/ios`
-- `@capacitor/android`
+### Terms of Service (`/terms`)
+1. Who Can Use Stampaway (age, account responsibility)
+2. Your Account
+3. Your Content (you own it; you grant Stampaway a license to host/display it)
+4. Acceptable Use (no harassment, spam, scraping, ML training, impersonation, etc.)
+5. Reporting and Moderation
+6. Intellectual Property
+7. Third-Party Content
+8. Changes to the Service
+9. Termination
+10. Disclaimers ("as is")
+11. Limitation of Liability
+12. Indemnification
+13. Governing Law
+14. Changes to These Terms
+15. Contact — `legal@stampaway.app`
 
-## 2. Install all native plugins (one-time, baked into the binary)
+Both pages reference real Stampaway features (logged places, reviews, lists, follows, AI-generated facts/posters, friend-from-contacts, Mapbox map) so they're not generic boilerplate.
 
+## Where to find them in the app
 
-| Plugin                          | Purpose for Stampaway                       |
-| ------------------------------- | ------------------------------------------- |
-| `@capacitor/push-notifications` | Friend activity, follow requests, comments  |
-| `@capacitor/geolocation`        | Auto-detect place when logging, friend map  |
-| `@capacitor-community/contacts` | Suggest friends from phone contacts         |
-| `@capacitor/share`              | Share profile, lists, destinations, posters |
-| `@capacitor/camera`             | Profile picture, future place photos        |
-| `@capacitor/haptics`            | Tactile feedback on key actions             |
-| `@capacitor/status-bar`         | Dark themed status bar                      |
-| `@capacitor/splash-screen`      | Branded launch screen                       |
-| `@capacitor/app`                | Deep linking, back button, app state        |
-| `@capacitor/preferences`        | Fast on-device key/value storage            |
-| `@capacitor/network`            | Detect offline state, queue actions         |
-| `@capacitor/device`             | Device info for analytics + bug reports     |
-| `@capacitor/keyboard`           | Smooth keyboard handling on inputs          |
-| `@capacitor/browser`            | In-app browser for OAuth + external links   |
-| `@capacitor/filesystem`         | Save posters, export user data              |
-
-
-## 3. Create `capacitor.config.ts`
+Add a new **"About & Legal"** group to the bottom of Settings (above Sign Out), with two new rows:
 
 ```text
-appId:   app.lovable.29bacedb019c46d6a9a8dea7867a9954
-appName: Stampaway
-webDir:  dist
-server:
-  url: https://29bacedb-019c-46d6-a9a8-dea7867a9954.lovableproject.com?forceHideBadge=true
-  cleartext: true
-plugins:
-  SplashScreen: dark theme, branded
-  StatusBar:    dark style
-  PushNotifications: alert + badge + sound
+🛡️  Privacy Policy            >
+📄  Terms of Service          >
 ```
 
-## 4. Light integration code (no forced UI yet)
+Both use the same row pattern as the rest of Settings (icon + label + chevron).
 
-- `src/lib/native/index.ts` — central exports for all Capacitor plugins
-- `src/hooks/useNativeFeatures.ts` — helpers: `requestNotifications()`, `getCurrentLocation()`, `pickContacts()`, `share()`, `takePhoto()`, etc.
-- `src/lib/native/platform.ts` — `isNative()`, `isIOS()`, `isAndroid()` checks so the same code runs in browser + app
+## Auth page link
 
-These are NOT auto-wired into UI yet — they're available for when we build features (notifications toggle in Settings, geolocation in AddPlacePage, contact-based friend suggestions, etc.).
+Below the sign-up button on `/auth`, add a tiny line of text:
 
-## 5. README instructions for your one-time local setup
+> By signing up, you agree to our Terms of Service and Privacy Policy.
 
-A new section explaining the export-to-GitHub → `npx cap add ios/android` → Xcode/Android Studio → store submit flow, with copy-paste commands.
+with both phrases linking to the new pages. This is what every social app does and is required by Apple App Store + Google Play review.
 
----
+## Files
 
-## What this enables going forward
+**New**
+- `src/components/LegalDocument.tsx` — shared layout (back chevron, max-width, prose typography for long-form text)
+- `src/pages/PrivacyPolicyPage.tsx`
+- `src/pages/TermsOfServicePage.tsx`
 
-After your first store submission:
+**Edited**
+- `src/App.tsx` — add `/privacy` and `/terms` routes (public, no auth required so they're reachable from the auth page)
+- `src/pages/SettingsPage.tsx` — add Privacy Policy and Terms of Service rows
+- `src/pages/AuthPage.tsx` — add the legal-consent footnote under the sign-up button
+- `src/i18n/translations.ts` — add new keys `settings.privacyPolicy`, `settings.termsOfService`, `auth.legalConsent` for all 6 supported languages
 
-- **Live via Lovable (no resubmit)**: UI, copy, translations, new pages, AI planner, Mapbox globe, destination data, posters, edge functions, database, RLS, recommendations, notification *content*, how location/contacts/share are *used*.
-- **Requires resubmit (rare)**: Adding a brand-new native plugin not in the list above, Capacitor major version upgrades, iOS/Android SDK target bumps (~once a year for store compliance).
+## Design notes
 
----
+- Dark theme, semantic tokens only (no hardcoded colors)
+- Uses `@tailwindcss/typography` (already installed) for clean reading
+- Mobile-first; comfortable line-height and spacing for long text
+- Headings sticky-friendly, scrollable, max-width 2xl
+- Clear "Last updated" date at the top
+- Email links use `mailto:` so users can contact you in one tap
 
-## What I will NOT do in this step
+## Not included (let me know if you want them)
 
-- Will not auto-add iOS/Android folders (must be generated on your Mac/PC via `npx cap add`)
-- Will not request notification/location/contacts permissions yet — that happens when each feature is built
-- Will not configure push notification certificates (APNs/FCM) — done later when push UI is built
-- Will not modify privacy policy / terms text — separate task
-
----
-
-## Technical notes
-
-- All plugin permission strings (NSLocationWhenInUseUsageDescription, NSContactsUsageDescription, NSCameraUsageDescription, NSPhotoLibraryUsageDescription, NSUserTrackingUsageDescription, push notification entitlements, Android `ACCESS_FINE_LOCATION`, `READ_CONTACTS`, `CAMERA`, `POST_NOTIFICATIONS`) will be documented in the README so you paste them into `Info.plist` and `AndroidManifest.xml` once during local setup.
-- Hot-reload `server.url` in `capacitor.config.ts` should be **removed before production build** — README will explain. For dev/testing it stays.
-- `useNativeFeatures` will gracefully no-op in the web preview so nothing breaks in Lovable's browser preview.
+- Cookie banner / consent modal (only legally required if you target EEA users heavily — can add later)
+- Multi-language translation of the full legal text (the page chrome is translated; the legal body stays in English for now since legally binding translations need a lawyer's review)
+- Public website versions at `stampaway.app/privacy` (the in-app pages are sufficient for App Store / Play Store compliance)
