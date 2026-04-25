@@ -279,6 +279,20 @@ export default function AuthPage() {
                 <button type="submit" disabled={submitting} className={btnClass}>
                   {submitting ? "..." : mode === "login" ? t("auth.signIn") : t("auth.createAccount")}
                 </button>
+
+                {mode === "signup" && (
+                  <p className="text-[11px] text-muted-foreground text-center leading-relaxed px-2">
+                    {t("auth.legalConsentPrefix")}{" "}
+                    <button type="button" onClick={() => navigate("/terms")} className="text-primary underline-offset-2 hover:underline">
+                      {t("auth.termsOfService")}
+                    </button>
+                    {" "}{t("auth.legalConsentAnd")}{" "}
+                    <button type="button" onClick={() => navigate("/privacy")} className="text-primary underline-offset-2 hover:underline">
+                      {t("auth.privacyPolicy")}
+                    </button>
+                    .
+                  </p>
+                )}
               </form>
 
               <p className="text-center text-sm text-muted-foreground mt-6">
