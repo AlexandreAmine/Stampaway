@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft, Lock, Shield, KeyRound, LogOut, Trash2, ChevronRight, Activity, Globe, User } from "lucide-react";
+import { ChevronLeft, Lock, Shield, KeyRound, LogOut, Trash2, ChevronRight, Activity, Globe, User, FileText, ShieldCheck } from "lucide-react";
 import { PasswordAndAuthSection } from "@/components/PasswordAndAuthSection";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -367,6 +367,22 @@ export default function SettingsPage() {
             <div className="flex items-center gap-3">
               <KeyRound className="w-5 h-5 text-muted-foreground" />
               <span className="text-sm font-semibold text-foreground">{t("settings.changePassword")}</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </button>
+
+          <button onClick={() => navigate("/privacy")} className="flex items-center justify-between py-4 border-b border-border w-full text-left">
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="w-5 h-5 text-muted-foreground" />
+              <span className="text-sm font-semibold text-foreground">{t("settings.privacyPolicy")}</span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </button>
+
+          <button onClick={() => navigate("/terms")} className="flex items-center justify-between py-4 border-b border-border w-full text-left">
+            <div className="flex items-center gap-3">
+              <FileText className="w-5 h-5 text-muted-foreground" />
+              <span className="text-sm font-semibold text-foreground">{t("settings.termsOfService")}</span>
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
