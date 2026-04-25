@@ -106,8 +106,9 @@ export function useNativeFeatures() {
         }
       }
       // Last resort: copy URL.
-      if (opts.url && typeof navigator !== "undefined" && navigator.clipboard) {
-        await navigator.clipboard.writeText(opts.url);
+      const nav = typeof navigator !== "undefined" ? (navigator as Navigator) : null;
+      if (opts.url && nav?.clipboard) {
+        await nav.clipboard.writeText(opts.url);
         return { ok: true, copied: true };
       }
       return { ok: false };
