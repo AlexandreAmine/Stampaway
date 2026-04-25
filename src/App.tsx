@@ -20,6 +20,8 @@ import CountryCitiesPage from "./pages/CountryCitiesPage";
 import ExploreListPage from "./pages/ExploreListPage";
 import ListDetailPage from "./pages/ListDetailPage";
 import SettingsPage from "./pages/SettingsPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsOfServicePage from "./pages/TermsOfServicePage";
 
 import NotFound from "./pages/NotFound";
 
@@ -40,7 +42,9 @@ function AppRoutes() {
     <div className="max-w-lg mx-auto relative min-h-screen">
       <Routes>
         <Route path="/auth" element={<AuthPage />} />
-        
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/terms" element={<TermsOfServicePage />} />
+
         <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
         <Route path="/explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
         <Route path="/explore/list" element={<ProtectedRoute><ExploreListPage /></ProtectedRoute>} />
