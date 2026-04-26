@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { ChevronRight, ChevronLeft, Settings, Plus, X, UserPlus, UserMinus, Pencil } from "lucide-react";
+import { ChevronRight, ChevronLeft, Settings, Plus, X, UserPlus, UserMinus, Pencil, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,6 +24,7 @@ import { LoggedPlacesInline } from "@/components/LoggedPlacesInline";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminStats } from "@/components/AdminStats";
 import { ProfileEditSheet } from "@/components/ProfileEditSheet";
+import { ShareProfileSheet } from "@/components/ShareProfileSheet";
 import { getFlagEmoji } from "@/lib/countryFlags";
 import { RichBio } from "@/components/RichBio";
 import { SocialLinks } from "@/components/SocialLinks";
@@ -61,6 +62,7 @@ export default function ProfilePage() {
   const [viewedProfile, setViewedProfile] = useState<{ username: string; profile_picture: string | null; bio: string | null; country: string | null; is_private?: boolean; social_links?: any } | null>(null);
   const [ownProfileFull, setOwnProfileFull] = useState<{ username: string; profile_picture: string | null; bio: string | null; country: string | null; social_links?: any } | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
 
@@ -548,10 +550,13 @@ export default function ProfilePage() {
           </div>
           {isOwnProfile ? (
             <div className="flex items-center gap-1">
-              <button onClick={() => setEditOpen(true)} className="p-2">
+              <button onClick={() => setEditOpen(true)} className="p-2" aria-label={t("profile.editProfile")}>
                 <Pencil className="w-5 h-5 text-muted-foreground" />
               </button>
-              <button onClick={() => navigate("/settings")} className="p-2">
+              <button onClick={() => setShareOpen(true)} className="p-2" aria-label={t("share.shareProfile")}>
+                <Share2 className="w-5 h-5 text-muted-foreground" />
+              </button>
+              <button onClick={() => navigate("/settings")} className="p-2" aria-label={t("settings")}>
                 <Settings className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
