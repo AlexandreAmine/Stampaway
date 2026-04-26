@@ -717,6 +717,24 @@ export default function ProfilePage() {
           }}
         />
       )}
+      {currentProfile && viewingUserId && (
+        <ShareProfileSheet
+          open={shareOpen}
+          onClose={() => setShareOpen(false)}
+          profile={{
+            userId: viewingUserId,
+            username: currentProfile.username,
+            profile_picture: currentProfile.profile_picture,
+            bio: profileBio,
+            country: profileCountry,
+          }}
+          stats={{
+            countries: countriesCount,
+            cities: citiesCount,
+            followers: followersCount,
+          }}
+        />
+      )}
     </div>
   );
 }
