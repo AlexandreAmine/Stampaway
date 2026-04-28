@@ -133,11 +133,7 @@ export function MapboxFriendsMap({
       map.on("wheel", stopSpin);
       map.on("moveend", () => { spinGlobe(); });
 
-      // Mark ready as early as possible so pins render immediately
-      map.on("load", () => {
-        setMapReady(true);
-        spinGlobe();
-      });
+      // Pins are added immediately (see below). Spin starts after style loads.
 
       map.on("style.load", () => {
         // Starry deep-space background around the globe
