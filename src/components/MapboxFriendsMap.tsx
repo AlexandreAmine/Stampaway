@@ -84,7 +84,7 @@ export function MapboxFriendsMap({
         style: "mapbox://styles/mapbox/satellite-streets-v12",
         projection: "globe" as any,
         center: [10, 25],
-        zoom: 1.6,
+        zoom: 1.3,
         attributionControl: false,
         logoPosition: "bottom-left",
         renderWorldCopies: false,
