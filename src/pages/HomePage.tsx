@@ -49,7 +49,7 @@ export default function HomePage() {
   useEffect(() => {
     const update = () => {
       if (containerRef.current) {
-        setMapWidth(Math.min(containerRef.current.offsetWidth, 500));
+        setMapWidth(containerRef.current.offsetWidth);
       }
     };
     update();
@@ -230,7 +230,7 @@ export default function HomePage() {
           </button>
         </div>
 
-        <div ref={containerRef} className="relative mx-auto flex items-center justify-center overflow-hidden px-3" style={{ height: mapHeight }}>
+        <div ref={containerRef} className="relative w-full overflow-hidden" style={{ height: mapHeight }}>
           <MapboxFriendsMap
             pins={activities as MapPin[]}
             loading={loading}
@@ -253,14 +253,9 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Bottom sheet style activity list */}
-      <div className="relative z-10 -mt-6">
-        <div className="bg-background rounded-t-3xl pt-3 px-5 min-h-[50vh]">
-          {/* Drag handle */}
-          <div className="flex justify-center mb-4">
-            <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
-          </div>
-
+      {/* Activity list — seamlessly continues from the map */}
+      <div className="relative z-10">
+        <div className="bg-background pt-4 px-5 min-h-[50vh]">
           <h2 className="text-xl font-bold text-foreground mb-4">{t("home.recentActivity")}</h2>
 
           {!hasFollowing && !loading ? (

@@ -87,23 +87,58 @@ export function MapboxFriendsMap({
         zoom: 1.4,
         attributionControl: false,
         logoPosition: "bottom-left",
+        renderWorldCopies: false,
       });
 
       map.addControl(
         new mapboxgl.AttributionControl({ compact: true }),
         "bottom-right"
       );
-      map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
+
+      // Auto-rotate the globe (paused on interaction & when zoomed in), like the old globe
+      const SECONDS_PER_REV = 180;
+      const MAX_SPIN_ZOOM = 3;
+      const SLOW_SPIN_ZOOM = 2;
+      let userInteracting = false;
+
+      const spinGlobe = () => {
+        if (!mapRef.current) return;
+        const zoom = map.getZoom();
+        if (userInteracting || zoom >= MAX_SPIN_ZOOM) return;
+        let distancePerSecond = 360 / SECONDS_PER_REV;
+        if (zoom > SLOW_SPIN_ZOOM) {
+          const zoomDif = (MAX_SPIN_ZOOM - zoom) / (MAX_SPIN_ZOOM - SLOW_SPIN_ZOOM);
+          distancePerSecond *= zoomDif;
+        }
+        const center = map.getCenter();
+        center.lng -= distancePerSecond;
+        map.easeTo({ center, duration: 1000, easing: (n) => n });
+      };
+
+      map.on("mousedown", () => { userInteracting = true; });
+      map.on("touchstart", () => { userInteracting = true; });
+      map.on("dragstart", () => { userInteracting = true; });
+      map.on("moveend", () => { spinGlobe(); });
 
       map.on("style.load", () => {
         map.setFog({
-          color: "rgb(10, 10, 15)",
-          "high-color": "rgb(30, 50, 90)",
-          "horizon-blend": 0.1,
+          color: "rgb(8, 12, 24)",
+          "high-color": "rgb(20, 40, 80)",
+          "horizon-blend": 0.08,
           "space-color": "rgb(0, 0, 0)",
-          "star-intensity": 0.6,
+          "star-intensity": 0.5,
         } as any);
+
+        // Match old globe colors: deep blue ocean, darker land
+        try {
+          map.setPaintProperty("background", "background-color", "#0a1428");
+          map.setPaintProperty("water", "fill-color", "#0a1428");
+          map.setPaintProperty("land", "background-color", "#1a2438");
+          // land layer in dark-v11 is "land" of type background; landcover for vegetation
+        } catch (e) { /* style layer names may vary */ }
+
         setMapReady(true);
+        spinGlobe();
       });
 
       // Click on city/country labels rendered by Mapbox
@@ -217,10 +252,26 @@ export function MapboxFriendsMap({
   }
 
   return (
-    <div className="relative" style={{ width, height }}>
-      <div ref={containerRef} className="absolute inset-0 rounded-2xl overflow-hidden" />
+    <div className="relative mapbox-friends" style={{ width, height }}>
+      <div ref={containerRef} className="absolute inset-0" />
+      <style>{`
+        .mapbox-friends .mapboxgl-ctrl-attrib {
+          background: rgba(0,0,0,0.35) !important;
+          color: rgba(255,255,255,0.55) !important;
+          font-size: 9px !important;
+          padding: 1px 5px !important;
+          border-radius: 6px !important;
+          margin: 0 4px 4px 0 !important;
+        }
+        .mapbox-friends .mapboxgl-ctrl-attrib a { color: rgba(255,255,255,0.7) !important; }
+        .mapbox-friends .mapboxgl-ctrl-logo {
+          transform: scale(0.7);
+          transform-origin: bottom left;
+          opacity: 0.6;
+        }
+      `}</style>
       {(loading || !mapReady) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/40 backdrop-blur-sm rounded-2xl">
+        <div className="absolute inset-0 flex items-center justify-center bg-background/40 backdrop-blur-sm">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       )}
