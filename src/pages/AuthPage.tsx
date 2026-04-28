@@ -47,18 +47,30 @@ export default function AuthPage() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim()) { toast.error(t("auth.usernameRequired")); return; }
+    const trimmedUsername = username.trim();
+    if (!trimmedUsername) { toast.error(t("auth.usernameRequired")); return; }
+    if (!/^[a-zA-Z0-9_.]{3,20}$/.test(trimmedUsername)) { toast.error(t("auth.usernameInvalid")); return; }
     if (!dateOfBirth) { toast.error(t("auth.dobRequired")); return; }
     setSubmitting(true);
 
-    const metadata = { username, date_of_birth: dateOfBirth };
+    // Check username availability before creating the account
+    const { data: available, error: checkError } = await supabase.rpc("is_username_available", { _username: trimmedUsername });
+    if (checkError) { toast.error(checkError.message); setSubmitting(false); return; }
+    if (!available) { toast.error(t("auth.usernameTaken")); setSubmitting(false); return; }
+
+    const metadata = { username: trimmedUsername, date_of_birth: dateOfBirth };
 
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: metadata, emailRedirectTo: window.location.origin },
     });
-    if (error) { toast.error(error.message); setSubmitting(false); return; }
+    if (error) {
+      const msg = /username_taken/i.test(error.message) ? t("auth.usernameTaken") : error.message;
+      toast.error(msg);
+      setSubmitting(false);
+      return;
+    }
     if (data.user && data.user.identities && data.user.identities.length === 0) {
       toast.error(t("auth.accountExists"));
       setMode("login");
