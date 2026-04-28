@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Star, UserPlus, Bell } from "lucide-react";
 import { getFlagEmoji } from "@/lib/countryFlags";
 import { motion } from "framer-motion";
@@ -7,10 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getPlaceCoordinates } from "@/lib/cityCoordinates";
-import { countryLabels, cityLabels } from "@/lib/globeLabels";
 import { GlobeActivityPopup } from "@/components/GlobeActivityPopup";
 import { NotificationsSheet } from "@/components/NotificationsSheet";
-import Globe from "react-globe.gl";
+import { MapboxFriendsMap, type MapPin } from "@/components/MapboxFriendsMap";
 
 interface FriendActivity {
   id: string;
@@ -31,67 +30,33 @@ interface FriendActivity {
   review_text: string | null;
 }
 
-interface DbCityLabel {
-  id: string;
-  text: string;
-  lat: number;
-  lng: number;
-  type: "city" | "country";
-}
+
 
 export default function HomePage() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const globeRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [activities, setActivities] = useState<FriendActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasFollowing, setHasFollowing] = useState(true);
-  const [globeWidth, setGlobeWidth] = useState(380);
+  const [mapWidth, setMapWidth] = useState(380);
   const [selectedActivity, setSelectedActivity] = useState<FriendActivity | null>(null);
   const [notifOpen, setNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [dbLabels, setDbLabels] = useState<DbCityLabel[]>([]);
-  const [altitude, setAltitude] = useState(2.2);
   const [showAllActivities, setShowAllActivities] = useState(false);
 
   useEffect(() => {
-    if (containerRef.current) {
-      setGlobeWidth(Math.min(containerRef.current.offsetWidth, 500));
-    }
+    const update = () => {
+      if (containerRef.current) {
+        setMapWidth(Math.min(containerRef.current.offsetWidth, 500));
+      }
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
   }, []);
 
-  // Fetch all places from DB once for progressive-zoom labels
-  useEffect(() => {
-    (async () => {
-      const all: DbCityLabel[] = [];
-      let from = 0;
-      const PAGE = 1000;
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const { data, error } = await supabase
-          .from("places")
-          .select("id, name, country, type")
-          .range(from, from + PAGE - 1);
-        if (error || !data || data.length === 0) break;
-        for (const p of data) {
-          const coords = getPlaceCoordinates(p.name, p.country);
-          if (!coords) continue;
-          all.push({
-            id: p.id,
-            text: p.name,
-            lat: coords[0],
-            lng: coords[1],
-            type: p.type === "country" ? "country" : "city",
-          });
-        }
-        if (data.length < PAGE) break;
-        from += PAGE;
-      }
-      setDbLabels(all);
-    })();
-  }, []);
 
   // Fetch unread notification count
   useEffect(() => {
@@ -204,56 +169,6 @@ export default function HomePage() {
     })();
   }, [user]);
 
-  useEffect(() => {
-    if (!globeRef.current) return;
-    const controls = globeRef.current.controls();
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.25;
-    controls.enableZoom = true;
-    controls.minDistance = 101;
-    controls.maxDistance = 800;
-    // Google-Maps-like fluid feel
-    controls.zoomSpeed = 1.0;
-    controls.rotateSpeed = 0.8;
-    controls.panSpeed = 0.8;
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.18;
-    controls.screenSpacePanning = true;
-    if ("zoomToCursor" in controls) (controls as any).zoomToCursor = true;
-    globeRef.current.pointOfView({ altitude: 2.2 });
-
-    const onStart = () => { controls.autoRotate = false; };
-    controls.addEventListener("start", onStart);
-
-    // Sample altitude into discrete tiers — only re-render labels when crossing a tier boundary.
-    // This avoids any label rebuild during smooth zoom motion.
-    let endTimer: number | undefined;
-    const tierFor = (alt: number) => {
-      if (alt < 0.35) return 0;
-      if (alt < 0.6) return 1;
-      if (alt < 0.9) return 2;
-      if (alt < 1.3) return 3;
-      if (alt < 1.8) return 4;
-      return 5;
-    };
-    const onEnd = () => {
-      if (endTimer) window.clearTimeout(endTimer);
-      endTimer = window.setTimeout(() => {
-        const pov = globeRef.current?.pointOfView?.();
-        if (pov && typeof pov.altitude === "number") {
-          setAltitude((prev) => (tierFor(prev) !== tierFor(pov.altitude) ? pov.altitude : prev));
-        }
-      }, 250);
-    };
-    controls.addEventListener("end", onEnd);
-
-    return () => {
-      controls.removeEventListener("start", onStart);
-      controls.removeEventListener("end", onEnd);
-      if (endTimer) window.clearTimeout(endTimer);
-    };
-  }, [loading]);
-
   const getAvatarUrl = (a: FriendActivity) =>
     a.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(a.username)}&background=3B82F6&color=fff&size=40`;
 
@@ -271,136 +186,32 @@ export default function HomePage() {
 
   const handlePinClick = useCallback((a: FriendActivity) => {
     if (selectedActivity?.id === a.id) {
-      // Second click → navigate
       navigate(`/place/${a.place_id}`);
       return;
     }
-    // First click → zoom + show popup
     setSelectedActivity(a);
-    if (globeRef.current) {
-      globeRef.current.pointOfView({ lat: a.lat, lng: a.lng, altitude: 1.2 }, 800);
-      const controls = globeRef.current.controls();
-      controls.autoRotate = false;
-    }
   }, [selectedActivity, navigate]);
 
-  const markerHtml = useCallback((d: object) => {
-    const a = d as FriendActivity;
-    const avatar = getAvatarUrl(a);
-    const el = document.createElement("div");
-    el.style.cursor = "pointer";
-    el.style.pointerEvents = "auto";
-    el.innerHTML = `
-      <div style="display:flex;align-items:center;gap:3px;background:white;border-radius:20px;padding:3px 8px 3px 3px;box-shadow:0 2px 8px rgba(0,0,0,0.3);white-space:nowrap;pointer-events:auto;">
-        <img src="${avatar}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;" />
-        ${a.rating != null ? `
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="hsl(217,91%,60%)" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-          <span style="font-size:12px;font-weight:700;color:#111;">${a.rating}</span>
-        ` : ``}
-      </div>
-    `;
-    let isDrag = false;
-    el.addEventListener("mousedown", () => { isDrag = false; });
-    el.addEventListener("mousemove", () => { isDrag = true; });
-    el.addEventListener("mouseup", (e) => {
-      if (!isDrag) {
-        e.stopPropagation();
-        handlePinClick(a);
-      }
-    });
-    el.addEventListener("touchstart", () => { isDrag = false; }, { passive: true });
-    el.addEventListener("touchmove", () => { isDrag = true; }, { passive: true });
-    el.addEventListener("touchend", (e) => {
-      if (!isDrag) {
-        e.stopPropagation();
-        handlePinClick(a);
-      }
-    });
-    return el;
-  }, [handlePinClick]);
-
-  // Globe label click handler
-  const handleLabelClick = useCallback((label: object) => {
-    const l = label as { text: string; type: string };
-    // Search for a place matching this label
+  // Mapbox label click: city/country names rendered by the basemap.
+  // Look up matching place in our DB and navigate to it.
+  const handleLabelClick = useCallback((text: string, type: "city" | "country") => {
     (async () => {
       const { data } = await supabase
         .from("places")
         .select("id")
-        .eq("name", l.text)
-        .eq("type", l.type === "country" ? "country" : "city")
+        .ilike("name", text)
+        .eq("type", type)
         .limit(1)
         .maybeSingle();
-      if (data) {
-        navigate(`/place/${data.id}`);
-      }
+      if (data) navigate(`/place/${data.id}`);
     })();
   }, [navigate]);
 
-  // Progressive labels: countries always visible, more cities as user zooms in.
-  // Sizes scale with altitude (zoomed in = smaller text, like Google Maps).
-  const allLabels = useMemo(() => {
-    const labels: Array<{ lat: number; lng: number; text: string; size: number; type: string }> = [];
-
-    // Scale factor: smaller when close, larger when far. Clamped for sanity.
-    // altitude ranges roughly 0.01 (close) → 2.5 (far)
-    const scale = Math.max(0.35, Math.min(1, altitude / 1.8));
-
-    countryLabels.forEach((l) => labels.push({ ...l, size: l.size * scale }));
-    const curatedCityNames = new Set(cityLabels.map((c) => c.text));
-    cityLabels.forEach((l) => labels.push({ ...l, size: l.size * scale }));
-
-    // Tighter caps for smooth rendering — labels are expensive (one canvas each)
-    let cityLimit = 0;
-    if (altitude < 0.35) cityLimit = 800;
-    else if (altitude < 0.6) cityLimit = 500;
-    else if (altitude < 0.9) cityLimit = 300;
-    else if (altitude < 1.3) cityLimit = 150;
-    else if (altitude < 1.8) cityLimit = 80;
-
-    // Base city size also scales with altitude for a Google-Maps-like feel
-    const citySize = 0.4 * scale;
-
-    if (cityLimit > 0) {
-      const cityOnly = dbLabels.filter((d) => d.type === "city" && !curatedCityNames.has(d.text));
-      const slice = cityOnly.slice(0, cityLimit);
-      slice.forEach((c) =>
-        labels.push({ lat: c.lat, lng: c.lng, text: c.text, size: citySize, type: "city" })
-      );
-    }
-    return labels;
-  }, [dbLabels, altitude]);
-
-  const dayTexture = "//unpkg.com/three-globe/example/img/earth-blue-marble.jpg";
-  const bumpTexture = "//unpkg.com/three-globe/example/img/earth-topology.png";
-
-  const globeHeight = Math.round(globeWidth * 1.1);
-
-  // Memoize stars so they don't get re-randomized on every render (huge perf win)
-  const stars = useMemo(() => {
-    return Array.from({ length: 40 }).map((_, i) => {
-      const size = Math.random() * 2 + 1;
-      return (
-        <div
-          key={i}
-          className="absolute rounded-full bg-white"
-          style={{
-            width: `${size}px`,
-            height: `${size}px`,
-            top: `${Math.random() * 100}%`,
-            left: `${Math.random() * 100}%`,
-            opacity: Math.random() * 0.7 + 0.2,
-            animation: `pulse ${2 + Math.random() * 3}s ease-in-out infinite`,
-            animationDelay: `${Math.random() * 3}s`,
-          }}
-        />
-      );
-    });
-  }, []);
+  const mapHeight = Math.round(mapWidth * 1.1);
 
   return (
     <div className="min-h-screen bg-background pb-24 relative">
-      {/* Globe section - fixed behind content */}
+      {/* Map section */}
       <div className="sticky top-0 z-0">
         {/* Header */}
         <div className="pt-12 pb-2 px-5 flex items-center justify-between relative z-10">
@@ -419,38 +230,16 @@ export default function HomePage() {
           </button>
         </div>
 
-        <div ref={containerRef} className="relative mx-auto flex items-center justify-center overflow-hidden" style={{ height: globeHeight }}>
-          {/* Stars (memoized so they don't regenerate on each render) */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {stars}
-          </div>
-          {loading ? (
-            <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <Globe
-              ref={globeRef}
-              width={globeWidth}
-              height={globeHeight}
-              globeImageUrl={dayTexture}
-              bumpImageUrl={bumpTexture}
-              backgroundImageUrl=""
-              backgroundColor="rgba(0,0,0,0)"
-              htmlElementsData={activities}
-              htmlElement={markerHtml}
-              htmlAltitude={0.05}
-              atmosphereColor="hsl(217, 91%, 60%)"
-              atmosphereAltitude={0.15}
-              labelsData={allLabels}
-              labelText="text"
-              labelSize={(d: any) => d.size || 0.5}
-              labelColor={() => "rgba(255, 255, 255, 0.75)"}
-              labelResolution={1}
-              labelAltitude={0.01}
-              labelDotRadius={0}
-              onLabelClick={handleLabelClick}
-              rendererConfig={{ antialias: false, powerPreference: "high-performance" }}
-            />
-          )}
+        <div ref={containerRef} className="relative mx-auto flex items-center justify-center overflow-hidden px-3" style={{ height: mapHeight }}>
+          <MapboxFriendsMap
+            pins={activities as MapPin[]}
+            loading={loading}
+            width={mapWidth}
+            height={mapHeight}
+            onPinClick={(p) => handlePinClick(p as FriendActivity)}
+            onLabelClick={handleLabelClick}
+            selectedPinId={selectedActivity?.id ?? null}
+          />
 
           {/* Activity popup overlay */}
           <GlobeActivityPopup
