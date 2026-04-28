@@ -108,10 +108,6 @@ export function MapboxFriendsMap({
         renderWorldCopies: false,
       });
 
-      map.addControl(
-        new mapboxgl.AttributionControl({ compact: true }),
-        "bottom-right"
-      );
 
       // Auto-rotate the globe until the user interacts (any zoom/drag stops it permanently)
       const SECONDS_PER_REV = 180;
