@@ -230,7 +230,7 @@ export default function HomePage() {
           </button>
         </div>
 
-        <div ref={containerRef} className="relative mx-auto flex items-center justify-center overflow-hidden px-3" style={{ height: mapHeight }}>
+        <div ref={containerRef} className="relative w-full overflow-hidden" style={{ height: mapHeight }}>
           <MapboxFriendsMap
             pins={activities as MapPin[]}
             loading={loading}
