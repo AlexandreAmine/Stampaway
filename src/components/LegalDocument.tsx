@@ -9,7 +9,7 @@ interface LegalDocumentProps {
 }
 
 /**
- * Shared layout for the Privacy Policy and Terms of Service pages.
+ * Shared layout for the Privacy Policy and Terms of Use pages.
  * Matches the look of the rest of the Settings sub-pages (back chevron,
  * top padding, dark theme) and gives long-form legal text a comfortable
  * reading width and typography.
