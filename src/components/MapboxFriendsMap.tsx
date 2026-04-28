@@ -32,22 +32,40 @@ interface Props {
   selectedPinId: string | null;
 }
 
-let cachedToken: string | null = null;
+const TOKEN_STORAGE_KEY = "mapbox_public_token_v1";
+let cachedToken: string | null =
+  typeof window !== "undefined" ? window.localStorage.getItem(TOKEN_STORAGE_KEY) : null;
+let tokenPromise: Promise<string | null> | null = null;
+
+function fetchTokenFromServer(): Promise<string | null> {
+  if (tokenPromise) return tokenPromise;
+  tokenPromise = (async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("get-mapbox-token");
+      if (error || !data?.token) {
+        console.error("Failed to load mapbox token", error);
+        return null;
+      }
+      cachedToken = data.token;
+      try { window.localStorage.setItem(TOKEN_STORAGE_KEY, data.token); } catch {}
+      return cachedToken;
+    } catch (e) {
+      console.error("Mapbox token fetch error", e);
+      return null;
+    }
+  })();
+  return tokenPromise;
+}
+
+// Kick off token fetch as soon as this module is imported, so by the time
+// the component mounts the token is usually already in memory.
+if (typeof window !== "undefined" && !cachedToken) {
+  fetchTokenFromServer();
+}
 
 async function getMapboxToken(): Promise<string | null> {
   if (cachedToken) return cachedToken;
-  try {
-    const { data, error } = await supabase.functions.invoke("get-mapbox-token");
-    if (error || !data?.token) {
-      console.error("Failed to load mapbox token", error);
-      return null;
-    }
-    cachedToken = data.token;
-    return cachedToken;
-  } catch (e) {
-    console.error("Mapbox token fetch error", e);
-    return null;
-  }
+  return fetchTokenFromServer();
 }
 
 export function MapboxFriendsMap({
