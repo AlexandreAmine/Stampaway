@@ -81,10 +81,10 @@ export function MapboxFriendsMap({
 
       const map = new mapboxgl.Map({
         container: containerRef.current!,
-        style: "mapbox://styles/mapbox/dark-v11",
+        style: "mapbox://styles/mapbox/light-v11",
         projection: "globe" as any,
         center: [10, 25],
-        zoom: 1.4,
+        zoom: 0.6,
         attributionControl: false,
         logoPosition: "bottom-left",
         renderWorldCopies: false,
@@ -95,47 +95,34 @@ export function MapboxFriendsMap({
         "bottom-right"
       );
 
-      // Auto-rotate the globe (paused on interaction & when zoomed in), like the old globe
+      // Auto-rotate the globe until the user interacts (any zoom/drag stops it permanently)
       const SECONDS_PER_REV = 180;
-      const MAX_SPIN_ZOOM = 3;
-      const SLOW_SPIN_ZOOM = 2;
-      let userInteracting = false;
+      let userInteracted = false;
 
       const spinGlobe = () => {
-        if (!mapRef.current) return;
-        const zoom = map.getZoom();
-        if (userInteracting || zoom >= MAX_SPIN_ZOOM) return;
-        let distancePerSecond = 360 / SECONDS_PER_REV;
-        if (zoom > SLOW_SPIN_ZOOM) {
-          const zoomDif = (MAX_SPIN_ZOOM - zoom) / (MAX_SPIN_ZOOM - SLOW_SPIN_ZOOM);
-          distancePerSecond *= zoomDif;
-        }
+        if (!mapRef.current || userInteracted) return;
+        const distancePerSecond = 360 / SECONDS_PER_REV;
         const center = map.getCenter();
         center.lng -= distancePerSecond;
         map.easeTo({ center, duration: 1000, easing: (n) => n });
       };
 
-      map.on("mousedown", () => { userInteracting = true; });
-      map.on("touchstart", () => { userInteracting = true; });
-      map.on("dragstart", () => { userInteracting = true; });
+      const stopSpin = () => { userInteracted = true; };
+      map.on("mousedown", stopSpin);
+      map.on("touchstart", stopSpin);
+      map.on("dragstart", stopSpin);
+      map.on("zoomstart", stopSpin);
+      map.on("wheel", stopSpin);
       map.on("moveend", () => { spinGlobe(); });
 
       map.on("style.load", () => {
         map.setFog({
-          color: "rgb(8, 12, 24)",
-          "high-color": "rgb(20, 40, 80)",
-          "horizon-blend": 0.08,
-          "space-color": "rgb(0, 0, 0)",
-          "star-intensity": 0.5,
+          color: "rgb(220, 230, 245)",
+          "high-color": "rgb(180, 210, 240)",
+          "horizon-blend": 0.1,
+          "space-color": "rgb(8, 10, 16)",
+          "star-intensity": 0.15,
         } as any);
-
-        // Match old globe colors: deep blue ocean, darker land
-        try {
-          map.setPaintProperty("background", "background-color", "#0a1428");
-          map.setPaintProperty("water", "fill-color", "#0a1428");
-          map.setPaintProperty("land", "background-color", "#1a2438");
-          // land layer in dark-v11 is "land" of type background; landcover for vegetation
-        } catch (e) { /* style layer names may vary */ }
 
         setMapReady(true);
         spinGlobe();
