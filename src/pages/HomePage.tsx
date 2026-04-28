@@ -42,55 +42,27 @@ export default function HomePage() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const globeRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [activities, setActivities] = useState<FriendActivity[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasFollowing, setHasFollowing] = useState(true);
-  const [globeWidth, setGlobeWidth] = useState(380);
+  const [mapWidth, setMapWidth] = useState(380);
   const [selectedActivity, setSelectedActivity] = useState<FriendActivity | null>(null);
   const [notifOpen, setNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [dbLabels, setDbLabels] = useState<DbCityLabel[]>([]);
-  const [altitude, setAltitude] = useState(2.2);
   const [showAllActivities, setShowAllActivities] = useState(false);
 
   useEffect(() => {
-    if (containerRef.current) {
-      setGlobeWidth(Math.min(containerRef.current.offsetWidth, 500));
-    }
+    const update = () => {
+      if (containerRef.current) {
+        setMapWidth(Math.min(containerRef.current.offsetWidth, 500));
+      }
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
   }, []);
 
-  // Fetch all places from DB once for progressive-zoom labels
-  useEffect(() => {
-    (async () => {
-      const all: DbCityLabel[] = [];
-      let from = 0;
-      const PAGE = 1000;
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const { data, error } = await supabase
-          .from("places")
-          .select("id, name, country, type")
-          .range(from, from + PAGE - 1);
-        if (error || !data || data.length === 0) break;
-        for (const p of data) {
-          const coords = getPlaceCoordinates(p.name, p.country);
-          if (!coords) continue;
-          all.push({
-            id: p.id,
-            text: p.name,
-            lat: coords[0],
-            lng: coords[1],
-            type: p.type === "country" ? "country" : "city",
-          });
-        }
-        if (data.length < PAGE) break;
-        from += PAGE;
-      }
-      setDbLabels(all);
-    })();
-  }, []);
 
   // Fetch unread notification count
   useEffect(() => {
