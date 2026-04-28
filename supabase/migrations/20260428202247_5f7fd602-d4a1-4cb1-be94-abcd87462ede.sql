@@ -1,0 +1,1 @@
+UPDATE places SET image = NULL WHERE country = 'Australia' AND type = 'city';
