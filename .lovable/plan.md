@@ -1,86 +1,80 @@
-# Privacy Policy & Terms of Service
+# Add a Mapbox Map to StampAway
 
-Add proper legal pages modeled after major social apps (Instagram, TikTok, Letterboxd) and link them from Settings.
+Today the app uses `react-simple-maps` (the visited-countries map in `MapTab.tsx`) and `react-globe.gl` (the 3D globe on Home). Mapbox would give us a real interactive street/satellite map with smooth zoom, custom pins, and clustering — great for things like a "places I've visited" map or a city detail map.
 
-## What you'll get
+Below are the steps. We can apply this to a brand new screen, or replace one of the existing maps — that is the first decision to make.
 
-**Two new pages** — clean, readable, dark-themed, with back chevron matching the rest of Settings:
+## 1. Decide where the Mapbox map goes
 
-### Privacy Policy (`/privacy`)
-1. Information We Collect (account, profile, content, usage, device, location, cookies, third-party sign-in, contacts)
-2. How We Use Your Information
-3. How Information Is Shared (other users, service providers, legal/safety, business transfers — explicit "we do not sell your data")
-4. Cookies and Tracking
-5. Data Retention (30-day deletion window)
-6. Security
-7. Children (13+, 16+ in EEA)
-8. International Transfers
-9. Your Rights (GDPR/CCPA-aligned: access, correct, delete, export, withdraw consent)
-10. Changes to This Policy
-11. Contact — `privacy@stampaway.app`
+Pick one (we can confirm before building):
+- **A. New "Map" view** alongside the current visited-countries map (e.g. a toggle: Countries / World map).
+- **B. On a Place page** — show the city/country location with a styled Mapbox map.
+- **C. Replace the 3D globe on Home** with a Mapbox globe projection showing friend activity pins.
 
-### Terms of Service (`/terms`)
-1. Who Can Use Stampaway (age, account responsibility)
-2. Your Account
-3. Your Content (you own it; you grant Stampaway a license to host/display it)
-4. Acceptable Use (no harassment, spam, scraping, ML training, impersonation, etc.)
-5. Reporting and Moderation
-6. Intellectual Property
-7. Third-Party Content
-8. Changes to the Service
-9. Termination
-10. Disclaimers ("as is")
-11. Limitation of Liability
-12. Indemnification
-13. Governing Law
-14. Changes to These Terms
-15. Contact — `legal@stampaway.app`
+Each uses the same setup; only the data source and pins differ.
 
-Both pages reference real Stampaway features (logged places, reviews, lists, follows, AI-generated facts/posters, friend-from-contacts, Mapbox map) so they're not generic boilerplate.
+## 2. Get a Mapbox access token
 
-## Where to find them in the app
+Mapbox requires an account + a public access token (`pk.…`).
 
-Add a new **"About & Legal"** group to the bottom of Settings (above Sign Out), with two new rows:
+1. User creates a free account at mapbox.com.
+2. In Account → Tokens, copy the **Default public token** (or create a new one scoped to URL = our preview + published + custom domain).
+3. Mapbox public tokens are safe to ship in the frontend (they are URL-restricted), so we store it as a regular value — but to keep it editable without redeploys we will store it as a Lovable Cloud secret and expose it through a tiny edge function, OR put it directly in code if the user prefers simplicity.
 
-```text
-🛡️  Privacy Policy            >
-📄  Terms of Service          >
-```
+Recommendation: **store it as a secret** (`MAPBOX_PUBLIC_TOKEN`) and fetch it once on app load via an edge function. This way the token can be rotated without a code change.
 
-Both use the same row pattern as the rest of Settings (icon + label + chevron).
+## 3. Install the Mapbox SDK
 
-## Auth page link
+Add two packages:
+- `mapbox-gl` — the core map library.
+- `@types/mapbox-gl` — TypeScript types.
 
-Below the sign-up button on `/auth`, add a tiny line of text:
+We import the Mapbox CSS once in `src/index.css` (or in the map component) so controls and popups render correctly.
 
-> By signing up, you agree to our Terms of Service and Privacy Policy.
+## 4. Create a reusable `<MapboxMap />` component
 
-with both phrases linking to the new pages. This is what every social app does and is required by Apple App Store + Google Play review.
+A new file `src/components/MapboxMap.tsx` that:
+- Accepts props: `center`, `zoom`, `pins` (array of `{ lat, lng, label, onClick }`), `style` (streets / satellite / dark), and an optional `projection` (`mercator` or `globe`).
+- Initializes a `mapboxgl.Map` in a `useRef` div on mount, cleans it up on unmount.
+- Uses our dark theme by default (`mapbox://styles/mapbox/dark-v11`) to match StampAway's pure-black UI.
+- Renders custom HTML markers (avatar + flag pill, matching the style used on the Home globe).
+- Optional: enables clustering when there are many pins.
 
-## Files
+## 5. Wire it into the chosen screen
 
-**New**
-- `src/components/LegalDocument.tsx` — shared layout (back chevron, max-width, prose typography for long-form text)
-- `src/pages/PrivacyPolicyPage.tsx`
-- `src/pages/TermsOfServicePage.tsx`
+Depending on the choice in step 1:
+- **A**: add a tab toggle in `MapTab.tsx` and mount `<MapboxMap pins={visitedCities} />`.
+- **B**: drop `<MapboxMap center={[lng, lat]} zoom={10} />` into `PlacePage.tsx`.
+- **C**: replace the `<Globe />` in `HomePage.tsx` with `<MapboxMap projection="globe" pins={activities} />` and reuse the existing `handlePinClick` / `GlobeActivityPopup` logic.
 
-**Edited**
-- `src/App.tsx` — add `/privacy` and `/terms` routes (public, no auth required so they're reachable from the auth page)
-- `src/pages/SettingsPage.tsx` — add Privacy Policy and Terms of Service rows
-- `src/pages/AuthPage.tsx` — add the legal-consent footnote under the sign-up button
-- `src/i18n/translations.ts` — add new keys `settings.privacyPolicy`, `settings.termsOfService`, `auth.legalConsent` for all 6 supported languages
+## 6. Handle theme, sizing, and mobile
 
-## Design notes
+- Force the map into our dark palette (style + custom marker colors using primary `#3B82F6`).
+- Make the container full width with `max-w-lg` to match the rest of the app.
+- Disable Mapbox's default attribution position on small screens (move to bottom-left, compact mode) so it doesn't overlap our bottom nav.
+- Ensure pinch-zoom works alongside iOS gestures (Capacitor already handles this; just verify in preview).
 
-- Dark theme, semantic tokens only (no hardcoded colors)
-- Uses `@tailwindcss/typography` (already installed) for clean reading
-- Mobile-first; comfortable line-height and spacing for long text
-- Headings sticky-friendly, scrollable, max-width 2xl
-- Clear "Last updated" date at the top
-- Email links use `mailto:` so users can contact you in one tap
+## 7. Add i18n strings
 
-## Not included (let me know if you want them)
+Any new UI text (tab labels like "Street map", empty states, "Powered by Mapbox" if shown) goes into `src/i18n/translations.ts` for all 6 languages.
 
-- Cookie banner / consent modal (only legally required if you target EEA users heavily — can add later)
-- Multi-language translation of the full legal text (the page chrome is translated; the legal body stays in English for now since legally binding translations need a lawyer's review)
-- Public website versions at `stampaway.app/privacy` (the in-app pages are sufficient for App Store / Play Store compliance)
+## 8. QA checklist
+
+- Token loads, map renders on first visit (no flash of empty container).
+- Pins are clickable and navigate to the right place.
+- Works in light + dark, web + Capacitor iOS preview.
+- No layout overflow with our `max-w-lg` mobile shell.
+- Bundle impact: `mapbox-gl` is ~800 KB gzipped — we lazy-load the component with `React.lazy` so it only loads on the map screen.
+
+## Technical notes
+
+- Token delivery: small edge function `get-mapbox-token` returns `{ token: Deno.env.get("MAPBOX_PUBLIC_TOKEN") }`. Frontend caches it in a React context.
+- Dependencies: `bun add mapbox-gl` + `bun add -d @types/mapbox-gl`.
+- CSS import: `import "mapbox-gl/dist/mapbox-gl.css";` once at app entry.
+- For the globe-replacement option, Mapbox supports `map.setProjection('globe')` and `map.setFog({...})` for an atmosphere effect similar to react-globe.gl.
+
+---
+
+**Before I implement, please confirm:**
+1. Which screen should get the Mapbox map (A, B, or C above)?
+2. Are you OK creating a Mapbox account and providing a public token (I'll request it as a secret when we start)?
