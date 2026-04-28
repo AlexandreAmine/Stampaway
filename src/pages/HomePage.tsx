@@ -211,51 +211,58 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-background pb-24 relative">
-      {/* Map section */}
-      <div className="sticky top-0 z-0">
-        {/* Header */}
-        <div className="pt-12 pb-2 px-5 flex items-center justify-between relative z-10">
-          <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("home.title")}</h1>
-          <button onClick={() => {
-            setNotifOpen(true);
-            if (user) localStorage.setItem(`notif_last_read_${user.id}`, new Date().toISOString());
-            setUnreadCount(0);
-          }} className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center relative">
-            <Bell className="w-5 h-5 text-foreground" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1">
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
-            )}
-          </button>
-        </div>
+      {/* Fixed map background — stays visible while the activity list scrolls over it */}
+      <div className="fixed top-0 left-0 right-0 z-0 pointer-events-none">
+        <div className="mx-auto max-w-lg pointer-events-auto">
+          {/* Header */}
+          <div className="pt-12 pb-2 px-5 flex items-center justify-between relative z-10">
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("home.title")}</h1>
+            <button onClick={() => {
+              setNotifOpen(true);
+              if (user) localStorage.setItem(`notif_last_read_${user.id}`, new Date().toISOString());
+              setUnreadCount(0);
+            }} className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center relative">
+              <Bell className="w-5 h-5 text-foreground" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </button>
+          </div>
 
-        <div ref={containerRef} className="relative w-full overflow-hidden" style={{ height: mapHeight }}>
-          <MapboxFriendsMap
-            pins={activities as MapPin[]}
-            loading={loading}
-            width={mapWidth}
-            height={mapHeight}
-            onPinClick={(p) => handlePinClick(p as FriendActivity)}
-            onLabelClick={handleLabelClick}
-            selectedPinId={selectedActivity?.id ?? null}
-          />
+          <div ref={containerRef} className="relative w-full overflow-hidden" style={{ height: mapHeight }}>
+            <MapboxFriendsMap
+              pins={activities as MapPin[]}
+              loading={loading}
+              width={mapWidth}
+              height={mapHeight}
+              onPinClick={(p) => handlePinClick(p as FriendActivity)}
+              onLabelClick={handleLabelClick}
+              selectedPinId={selectedActivity?.id ?? null}
+            />
 
-          {/* Activity popup overlay */}
-          <GlobeActivityPopup
-            activity={selectedActivity}
-            onClose={() => setSelectedActivity(null)}
-            onNavigate={() => {
-              if (selectedActivity) navigate(`/place/${selectedActivity.place_id}`);
-            }}
-            onProfileNavigate={(userId) => navigate(userId === user?.id ? "/profile" : `/profile/${userId}`)}
-          />
+            {/* Activity popup overlay */}
+            <GlobeActivityPopup
+              activity={selectedActivity}
+              onClose={() => setSelectedActivity(null)}
+              onNavigate={() => {
+                if (selectedActivity) navigate(`/place/${selectedActivity.place_id}`);
+              }}
+              onProfileNavigate={(userId) => navigate(userId === user?.id ? "/profile" : `/profile/${userId}`)}
+            />
+          </div>
         </div>
       </div>
 
-      {/* Activity list — seamlessly continues from the map */}
+      {/* Spacer that reserves room for the fixed map above */}
+      <div style={{ height: mapHeight + 56 }} className="pointer-events-none" />
+
+      {/* Activity list — scrolls over the fixed globe with a smooth fade into background */}
       <div className="relative z-10">
-        <div className="bg-background pt-4 px-5 min-h-[50vh]">
+        {/* Soft fade from transparent to background so the globe blends into the list */}
+        <div className="h-16 bg-gradient-to-b from-transparent to-background pointer-events-none" />
+        <div className="bg-background px-5 min-h-[60vh]">
           <h2 className="text-xl font-bold text-foreground mb-4">{t("home.recentActivity")}</h2>
 
           {!hasFollowing && !loading ? (
