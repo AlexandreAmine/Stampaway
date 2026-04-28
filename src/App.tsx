@@ -4,6 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BottomNav } from "@/components/BottomNav";
+import ScrollRestoration from "@/components/ScrollRestoration";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import HomePage from "./pages/HomePage";
@@ -40,6 +41,7 @@ function AppRoutes() {
 
   return (
     <div className="max-w-lg mx-auto relative min-h-screen">
+      <ScrollRestoration />
       <Routes>
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
