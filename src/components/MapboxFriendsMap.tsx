@@ -102,7 +102,7 @@ export function MapboxFriendsMap({
         style: "mapbox://styles/mapbox/satellite-streets-v12",
         projection: "globe" as any,
         center: [10, 25],
-        zoom: 1.3,
+        zoom: 1.2,
         attributionControl: false,
         logoPosition: "bottom-left",
         renderWorldCopies: false,
@@ -133,11 +133,21 @@ export function MapboxFriendsMap({
       map.on("wheel", stopSpin);
       map.on("moveend", () => { spinGlobe(); });
 
-      map.on("style.load", () => {
-        // Remove the bright atmospheric halo around Earth
-        map.setFog(null as any);
+      // Mark ready as early as possible so pins render immediately
+      map.on("load", () => {
         setMapReady(true);
         spinGlobe();
+      });
+
+      map.on("style.load", () => {
+        // Starry deep-space background around the globe
+        map.setFog({
+          color: "rgb(10, 12, 22)",
+          "high-color": "rgb(20, 30, 60)",
+          "horizon-blend": 0.04,
+          "space-color": "rgb(0, 0, 0)",
+          "star-intensity": 0.85,
+        } as any);
       });
 
       // Layers in the satellite-streets style that carry place labels we can click
