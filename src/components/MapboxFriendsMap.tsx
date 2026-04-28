@@ -188,6 +188,7 @@ export function MapboxFriendsMap({
       });
 
       mapRef.current = map;
+      setMapReady(true);
     })();
 
     return () => {
