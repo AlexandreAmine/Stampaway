@@ -44,7 +44,7 @@ export function DestinationPoster({
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke(
-        "generate-poster",
+        "fetch-unsplash-poster",
         { body: { place_id: placeId } }
       );
       if (data?.image_url) {
