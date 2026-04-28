@@ -15,7 +15,7 @@ serve(async (req) => {
     const { place_id } = await req.json();
     if (!place_id) throw new Error("place_id is required");
 
-    const UNSPLASH_KEY = Deno.env.get("UNSPLASH_ACCESS_KEY");
+    const UNSPLASH_KEY = Deno.env.get("UNSPLASH_ACCESS_KEY")?.trim();
     if (!UNSPLASH_KEY) throw new Error("UNSPLASH_ACCESS_KEY not configured");
 
     const supabase = createClient(
