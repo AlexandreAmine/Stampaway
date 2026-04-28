@@ -117,11 +117,11 @@ export function MapboxFriendsMap({
 
       map.on("style.load", () => {
         map.setFog({
-          color: "rgb(220, 230, 245)",
-          "high-color": "rgb(180, 210, 240)",
-          "horizon-blend": 0.1,
-          "space-color": "rgb(8, 10, 16)",
-          "star-intensity": 0.15,
+          color: "rgb(30, 50, 90)",
+          "high-color": "rgb(40, 80, 140)",
+          "horizon-blend": 0.06,
+          "space-color": "rgb(2, 4, 10)",
+          "star-intensity": 0.5,
         } as any);
 
         setMapReady(true);
