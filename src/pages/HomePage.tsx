@@ -49,7 +49,7 @@ export default function HomePage() {
   useEffect(() => {
     const update = () => {
       if (containerRef.current) {
-        setMapWidth(Math.min(containerRef.current.offsetWidth, 500));
+        setMapWidth(containerRef.current.offsetWidth);
       }
     };
     update();
