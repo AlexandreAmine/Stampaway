@@ -253,14 +253,9 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Bottom sheet style activity list */}
-      <div className="relative z-10 -mt-6">
-        <div className="bg-background rounded-t-3xl pt-3 px-5 min-h-[50vh]">
-          {/* Drag handle */}
-          <div className="flex justify-center mb-4">
-            <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
-          </div>
-
+      {/* Activity list — seamlessly continues from the map */}
+      <div className="relative z-10">
+        <div className="bg-background pt-4 px-5 min-h-[50vh]">
           <h2 className="text-xl font-bold text-foreground mb-4">{t("home.recentActivity")}</h2>
 
           {!hasFollowing && !loading ? (
