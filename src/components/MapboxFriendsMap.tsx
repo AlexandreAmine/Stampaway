@@ -252,10 +252,26 @@ export function MapboxFriendsMap({
   }
 
   return (
-    <div className="relative" style={{ width, height }}>
-      <div ref={containerRef} className="absolute inset-0 rounded-2xl overflow-hidden" />
+    <div className="relative mapbox-friends" style={{ width, height }}>
+      <div ref={containerRef} className="absolute inset-0" />
+      <style>{`
+        .mapbox-friends .mapboxgl-ctrl-attrib {
+          background: rgba(0,0,0,0.35) !important;
+          color: rgba(255,255,255,0.55) !important;
+          font-size: 9px !important;
+          padding: 1px 5px !important;
+          border-radius: 6px !important;
+          margin: 0 4px 4px 0 !important;
+        }
+        .mapbox-friends .mapboxgl-ctrl-attrib a { color: rgba(255,255,255,0.7) !important; }
+        .mapbox-friends .mapboxgl-ctrl-logo {
+          transform: scale(0.7);
+          transform-origin: bottom left;
+          opacity: 0.6;
+        }
+      `}</style>
       {(loading || !mapReady) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/40 backdrop-blur-sm rounded-2xl">
+        <div className="absolute inset-0 flex items-center justify-center bg-background/40 backdrop-blur-sm">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       )}
