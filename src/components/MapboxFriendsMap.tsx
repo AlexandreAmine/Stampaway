@@ -81,10 +81,10 @@ export function MapboxFriendsMap({
 
       const map = new mapboxgl.Map({
         container: containerRef.current!,
-        style: "mapbox://styles/mapbox/satellite-v9",
+        style: "mapbox://styles/mapbox/satellite-streets-v12",
         projection: "globe" as any,
         center: [10, 25],
-        zoom: 0.6,
+        zoom: 1.6,
         attributionControl: false,
         logoPosition: "bottom-left",
         renderWorldCopies: false,
@@ -116,28 +116,35 @@ export function MapboxFriendsMap({
       map.on("moveend", () => { spinGlobe(); });
 
       map.on("style.load", () => {
-        map.setFog({
-          color: "rgb(30, 50, 90)",
-          "high-color": "rgb(40, 80, 140)",
-          "horizon-blend": 0.06,
-          "space-color": "rgb(2, 4, 10)",
-          "star-intensity": 0.5,
-        } as any);
-
+        // Remove the bright atmospheric halo around Earth
+        map.setFog(null as any);
         setMapReady(true);
         spinGlobe();
       });
 
+      // Layers in the satellite-streets style that carry place labels we can click
+      const LABEL_LAYERS = [
+        "settlement-major-label",
+        "settlement-minor-label",
+        "settlement-subdivision-label",
+        "country-label",
+        "state-label",
+        "place-city-lg-n",
+        "place-city-md-n",
+        "place-city-sm",
+        "place-town",
+        "place-village",
+      ];
+
       // Click on city/country labels rendered by Mapbox
       map.on("click", (e) => {
-        const features = map.queryRenderedFeatures(e.point, {
-          layers: ["settlement-major-label", "settlement-minor-label", "country-label"],
-        });
+        const available = LABEL_LAYERS.filter((id) => map.getLayer(id));
+        const features = map.queryRenderedFeatures(e.point, { layers: available });
         if (features && features.length > 0) {
           const f = features[0];
           const name = (f.properties?.name_en as string) || (f.properties?.name as string);
           if (!name) return;
-          const isCountry = f.layer.id === "country-label";
+          const isCountry = f.layer.id.includes("country");
           onLabelClick(name, isCountry ? "country" : "city");
         }
       });
@@ -145,9 +152,14 @@ export function MapboxFriendsMap({
       // Cursor feedback on labels
       const setHoverCursor = () => (map.getCanvas().style.cursor = "pointer");
       const resetCursor = () => (map.getCanvas().style.cursor = "");
-      ["settlement-major-label", "settlement-minor-label", "country-label"].forEach((id) => {
-        map.on("mouseenter", id, setHoverCursor);
-        map.on("mouseleave", id, resetCursor);
+      map.on("idle", () => {
+        LABEL_LAYERS.forEach((id) => {
+          if (!map.getLayer(id)) return;
+          map.off("mouseenter", id, setHoverCursor);
+          map.off("mouseleave", id, resetCursor);
+          map.on("mouseenter", id, setHoverCursor);
+          map.on("mouseleave", id, resetCursor);
+        });
       });
 
       mapRef.current = map;
