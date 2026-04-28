@@ -82,7 +82,6 @@ serve(async (req) => {
     for (const query of queries) {
       const url = new URL("https://api.unsplash.com/search/photos");
       url.searchParams.set("query", query);
-      url.searchParams.set("orientation", "portrait");
       url.searchParams.set("per_page", "30");
       url.searchParams.set("order_by", "relevant");
       url.searchParams.set("content_filter", "high");
@@ -102,18 +101,12 @@ serve(async (req) => {
       const results: any[] = data.results || [];
       if (results.length === 0) continue;
 
-      // Filter: no humans + not already used
+      // Filter only: not already used + no obvious portrait/people focus in description
       const filtered = results.filter((p) => {
         if (usedPhotoIds.has(p.id)) return false;
-        const tags = [
-          ...(p.tags || []),
-          ...(p.tags_preview || []),
-        ].map((t: any) => (t?.title || "").toLowerCase());
         const desc = `${p.description || ""} ${p.alt_description || ""}`.toLowerCase();
-        if (tags.some((t) => HUMAN_TAGS.has(t))) return false;
-        for (const word of HUMAN_TAGS) {
-          if (desc.includes(word)) return false;
-        }
+        // skip only if the photo is clearly a portrait/selfie of a person
+        if (/\b(selfie|portrait of|wedding|bride|groom)\b/.test(desc)) return false;
         return true;
       });
 
