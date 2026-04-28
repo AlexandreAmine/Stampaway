@@ -7,10 +7,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getPlaceCoordinates } from "@/lib/cityCoordinates";
-import { countryLabels, cityLabels } from "@/lib/globeLabels";
 import { GlobeActivityPopup } from "@/components/GlobeActivityPopup";
 import { NotificationsSheet } from "@/components/NotificationsSheet";
-import Globe from "react-globe.gl";
+import { MapboxFriendsMap, type MapPin } from "@/components/MapboxFriendsMap";
 
 interface FriendActivity {
   id: string;
