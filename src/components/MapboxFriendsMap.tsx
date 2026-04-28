@@ -81,7 +81,7 @@ export function MapboxFriendsMap({
 
       const map = new mapboxgl.Map({
         container: containerRef.current!,
-        style: "mapbox://styles/mapbox/light-v11",
+        style: "mapbox://styles/mapbox/satellite-v9",
         projection: "globe" as any,
         center: [10, 25],
         zoom: 0.6,
