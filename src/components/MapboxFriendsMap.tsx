@@ -144,6 +144,7 @@ export function MapboxFriendsMap({
           "space-color": "rgb(0, 0, 0)",
           "star-intensity": 0.85,
         } as any);
+        spinGlobe();
       });
 
       // Layers in the satellite-streets style that carry place labels we can click
