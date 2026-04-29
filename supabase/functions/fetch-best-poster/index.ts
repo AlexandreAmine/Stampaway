@@ -133,8 +133,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
 
   try {
-    const { place_id, force } = await req.json();
+    const { place_id, force, beach_boost } = await req.json();
     if (!place_id) throw new Error("place_id is required");
+    const BEACH_HINTS = ["beach","beaches","ocean","sea","caribbean","turquoise","sand","palm","coast","bay","lagoon","reef","tropical","shore"];
+    const beachBoost = !!beach_boost;
 
     const PEXELS_KEY = Deno.env.get("PEXELS_API_KEY")?.trim();
     const UNSPLASH_KEY = Deno.env.get("UNSPLASH_ACCESS_KEY")?.trim();
