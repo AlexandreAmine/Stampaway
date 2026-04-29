@@ -308,6 +308,9 @@ serve(async (req) => {
             for (const w of SUNNY_HINTS) if (text.includes(w)) score += 50;
             for (const w of GLOOM_PENALTIES) if (text.includes(w)) score -= 40;
           }
+          if (noHumansBoost) {
+            for (const w of HUMAN_PENALTIES) if (text.includes(w)) score -= 70;
+          }
           const baseUrl = p.urls?.raw || p.urls?.full;
           if (!baseUrl) continue;
           const imgUrl = `${baseUrl}&w=900&h=1200&fit=crop&crop=entropy&q=80&fm=jpg`;
