@@ -330,6 +330,7 @@ export default function PlacePage() {
           type={place.type as "city" | "country"}
           image={place.image}
           autoGenerate
+          bare
           className="w-full h-full rounded-none"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />

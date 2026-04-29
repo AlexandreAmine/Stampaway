@@ -14,6 +14,7 @@ interface DestinationPosterProps {
   autoGenerate?: boolean;
   onImageGenerated?: (url: string) => void;
   provider?: "unsplash" | "pexels";
+  bare?: boolean;
 }
 
 export function DestinationPoster({
@@ -26,6 +27,7 @@ export function DestinationPoster({
   autoGenerate = false,
   onImageGenerated,
   provider = "unsplash",
+  bare = false,
 }: DestinationPosterProps) {
   const [imageUrl, setImageUrl] = useState(image || null);
   const [loading, setLoading] = useState(false);
@@ -75,7 +77,7 @@ export function DestinationPoster({
         <img
           src={imageUrl}
           alt={localizedName}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover animate-in fade-in duration-500"
         />
       ) : (
         <div className="w-full h-full bg-gradient-to-br from-primary/20 via-primary/10 to-muted flex items-center justify-center">
@@ -87,27 +89,31 @@ export function DestinationPoster({
         </div>
       )}
 
-      {/* Gradient overlay for text readability */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+      {!bare && (
+        <>
+          {/* Gradient overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-      {/* Country flag - top right */}
-      {flagUrl && (
-        <img
-          src={flagUrl}
-          alt={flagCountry}
-          className="absolute top-2 right-2 w-7 h-5 rounded-sm shadow-lg object-cover border border-white/20"
-        />
+          {/* Country flag - top right */}
+          {flagUrl && (
+            <img
+              src={flagUrl}
+              alt={flagCountry}
+              className="absolute top-2 right-2 w-7 h-5 rounded-sm shadow-lg object-cover border border-white/20"
+            />
+          )}
+
+          {/* Destination name - bottom */}
+          <div className="absolute bottom-0 left-0 right-0 p-2.5">
+            <p className="text-sm font-bold text-white leading-tight truncate">
+              {localizedName}
+            </p>
+            {type === "city" && (
+              <p className="text-[10px] text-white/70 truncate">{localizedCountry}</p>
+            )}
+          </div>
+        </>
       )}
-
-      {/* Destination name - bottom */}
-      <div className="absolute bottom-0 left-0 right-0 p-2.5">
-        <p className="text-sm font-bold text-white leading-tight truncate">
-          {localizedName}
-        </p>
-        {type === "city" && (
-          <p className="text-[10px] text-white/70 truncate">{localizedCountry}</p>
-        )}
-      </div>
     </div>
   );
 }
