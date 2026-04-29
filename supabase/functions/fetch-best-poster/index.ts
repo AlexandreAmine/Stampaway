@@ -133,15 +133,17 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
 
   try {
-    const { place_id, force, beach_boost, nature_boost, sunny_boost, extra_queries } = await req.json();
+    const { place_id, force, beach_boost, nature_boost, sunny_boost, no_humans_boost, extra_queries } = await req.json();
     if (!place_id) throw new Error("place_id is required");
     const BEACH_HINTS = ["beach","beaches","ocean","sea","caribbean","turquoise","sand","palm","coast","bay","lagoon","reef","tropical","shore"];
     const NATURE_HINTS = ["waterfall","glacier","iceberg","fjord","aurora","northern lights","volcano","crater","geyser","hot spring","lagoon","mountain","valley","canyon","lava","moss","cliff","landscape","nature","scenic","wilderness","national park","black sand","jungle","rainforest","wildlife"];
     const SUNNY_HINTS = ["sunset","sunrise","golden hour","sunny","sunlit","blue sky","clear sky","dusk","twilight","warm light"];
     const GLOOM_PENALTIES = ["rain","rainy","storm","stormy","overcast","gloomy","fog","foggy","cloudy","grey sky","gray sky","night"];
+    const HUMAN_PENALTIES = ["person","people","man","woman","tourist","crowd","walking","standing","sitting","posing","group of"];
     const beachBoost = !!beach_boost;
     const natureBoost = !!nature_boost;
     const sunnyBoost = !!sunny_boost;
+    const noHumansBoost = !!no_humans_boost;
     const extraQueries: string[] = Array.isArray(extra_queries) ? extra_queries : [];
 
     const PEXELS_KEY = Deno.env.get("PEXELS_API_KEY")?.trim();
@@ -257,6 +259,9 @@ serve(async (req) => {
             for (const w of SUNNY_HINTS) if (alt.includes(w)) score += 50;
             for (const w of GLOOM_PENALTIES) if (alt.includes(w)) score -= 40;
           }
+          if (noHumansBoost) {
+            for (const w of HUMAN_PENALTIES) if (alt.includes(w)) score -= 70;
+          }
           if (p.height && p.width && p.height / p.width > 1.2) score += 10;
           const imgUrl = p.src?.portrait || p.src?.large;
           if (!imgUrl) continue;
@@ -303,6 +308,9 @@ serve(async (req) => {
             for (const w of SUNNY_HINTS) if (text.includes(w)) score += 50;
             for (const w of GLOOM_PENALTIES) if (text.includes(w)) score -= 40;
           }
+          if (noHumansBoost) {
+            for (const w of HUMAN_PENALTIES) if (text.includes(w)) score -= 70;
+          }
           const baseUrl = p.urls?.raw || p.urls?.full;
           if (!baseUrl) continue;
           const imgUrl = `${baseUrl}&w=900&h=1200&fit=crop&crop=entropy&q=80&fm=jpg`;
@@ -332,8 +340,13 @@ serve(async (req) => {
 
     if (allCandidates.length === 0) throw new Error("No suitable photos found");
 
-    allCandidates.sort((a, b) => b.score - a.score);
-    const chosen = allCandidates[0];
+    // Wikipedia is last-resort: only consider it if no Pexels/Unsplash candidate exists.
+    const hasStock = allCandidates.some((c) => c.provider === "pexels" || c.provider === "unsplash");
+    const pool = hasStock
+      ? allCandidates.filter((c) => c.provider !== "wikipedia")
+      : allCandidates;
+    pool.sort((a, b) => b.score - a.score);
+    const chosen = pool[0];
 
     if (chosen.provider === "unsplash" && chosen.downloadLocation && UNSPLASH_KEY) {
       fetch(chosen.downloadLocation, {
