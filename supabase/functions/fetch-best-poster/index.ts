@@ -133,12 +133,15 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
 
   try {
-    const { place_id, force, beach_boost, nature_boost, extra_queries } = await req.json();
+    const { place_id, force, beach_boost, nature_boost, sunny_boost, extra_queries } = await req.json();
     if (!place_id) throw new Error("place_id is required");
     const BEACH_HINTS = ["beach","beaches","ocean","sea","caribbean","turquoise","sand","palm","coast","bay","lagoon","reef","tropical","shore"];
-    const NATURE_HINTS = ["waterfall","glacier","iceberg","fjord","aurora","northern lights","volcano","crater","geyser","hot spring","lagoon","mountain","valley","canyon","lava","moss","cliff","landscape","nature","scenic","wilderness","national park","black sand"];
+    const NATURE_HINTS = ["waterfall","glacier","iceberg","fjord","aurora","northern lights","volcano","crater","geyser","hot spring","lagoon","mountain","valley","canyon","lava","moss","cliff","landscape","nature","scenic","wilderness","national park","black sand","jungle","rainforest","wildlife"];
+    const SUNNY_HINTS = ["sunset","sunrise","golden hour","sunny","sunlit","blue sky","clear sky","dusk","twilight","warm light"];
+    const GLOOM_PENALTIES = ["rain","rainy","storm","stormy","overcast","gloomy","fog","foggy","cloudy","grey sky","gray sky","night"];
     const beachBoost = !!beach_boost;
     const natureBoost = !!nature_boost;
+    const sunnyBoost = !!sunny_boost;
     const extraQueries: string[] = Array.isArray(extra_queries) ? extra_queries : [];
 
     const PEXELS_KEY = Deno.env.get("PEXELS_API_KEY")?.trim();
