@@ -340,8 +340,13 @@ serve(async (req) => {
 
     if (allCandidates.length === 0) throw new Error("No suitable photos found");
 
-    allCandidates.sort((a, b) => b.score - a.score);
-    const chosen = allCandidates[0];
+    // Wikipedia is last-resort: only consider it if no Pexels/Unsplash candidate exists.
+    const hasStock = allCandidates.some((c) => c.provider === "pexels" || c.provider === "unsplash");
+    const pool = hasStock
+      ? allCandidates.filter((c) => c.provider !== "wikipedia")
+      : allCandidates;
+    pool.sort((a, b) => b.score - a.score);
+    const chosen = pool[0];
 
     if (chosen.provider === "unsplash" && chosen.downloadLocation && UNSPLASH_KEY) {
       fetch(chosen.downloadLocation, {
