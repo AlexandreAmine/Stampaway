@@ -253,6 +253,10 @@ serve(async (req) => {
           for (const w of NARROW_PENALTIES) if (alt.includes(w)) score -= 80;
           if (beachBoost) for (const w of BEACH_HINTS) if (alt.includes(w)) score += 60;
           if (natureBoost) for (const w of NATURE_HINTS) if (alt.includes(w)) score += 60;
+          if (sunnyBoost) {
+            for (const w of SUNNY_HINTS) if (alt.includes(w)) score += 50;
+            for (const w of GLOOM_PENALTIES) if (alt.includes(w)) score -= 40;
+          }
           if (p.height && p.width && p.height / p.width > 1.2) score += 10;
           const imgUrl = p.src?.portrait || p.src?.large;
           if (!imgUrl) continue;
