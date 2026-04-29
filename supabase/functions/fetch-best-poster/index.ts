@@ -15,27 +15,118 @@ function extractUnsplashId(url: string): string | null {
   const m = url.match(/photo-([a-zA-Z0-9_-]+)/);
   return m ? m[1] : null;
 }
+function extractWikiId(url: string): string | null {
+  // wikimedia upload URLs include the filename
+  const m = url.match(/\/commons\/(?:thumb\/)?[0-9a-f]\/[0-9a-f]{2}\/([^/?#]+)/i);
+  return m ? decodeURIComponent(m[1]) : null;
+}
 
 const HUMAN_RE = /\b(selfie|portrait of|wedding|bride|groom|model posing|couple posing)\b/i;
 const WIDE_HINTS = [
   "skyline","cityscape","aerial","panorama","panoramic","city","downtown",
   "drone","overview","view","harbour","harbor","bay","coast","old town",
-  "rooftops","square","plaza","canal","bridge","river",
+  "rooftops","square","plaza","canal","bridge","river","medina","kasbah",
+  "souk","minaret","ribat",
 ];
 const NARROW_PENALTIES = [
   "close-up","closeup","macro","interior","inside","facade","detail",
   "door","window","sign","statue","sculpture","food","plate","menu",
-  "person","selfie","portrait",
+  "person","selfie","portrait","map","diagram","logo","coat of arms","flag",
 ];
 
 type Candidate = {
-  provider: "pexels" | "unsplash";
+  provider: "pexels" | "unsplash" | "wikipedia";
   id: string;
   url: string;
   score: number;
   photographer?: string;
   downloadLocation?: string;
 };
+
+async function fetchWikipediaImages(name: string, country: string): Promise<Candidate[]> {
+  const out: Candidate[] = [];
+  const titles = [`${name}`, `${name}, ${country}`, `${name} (city)`];
+  for (const title of titles) {
+    try {
+      // Use MediaWiki API to get page images (main + on-page)
+      const u = new URL("https://en.wikipedia.org/w/api.php");
+      u.searchParams.set("action", "query");
+      u.searchParams.set("format", "json");
+      u.searchParams.set("origin", "*");
+      u.searchParams.set("titles", title);
+      u.searchParams.set("prop", "pageimages|images");
+      u.searchParams.set("piprop", "original");
+      u.searchParams.set("imlimit", "30");
+      u.searchParams.set("redirects", "1");
+      const r = await fetch(u.toString(), { headers: { "User-Agent": "StampAway/1.0 (poster fetcher)" } });
+      if (!r.ok) continue;
+      const j = await r.json();
+      const pages = j?.query?.pages || {};
+      for (const pid of Object.keys(pages)) {
+        const page = pages[pid];
+        if (!page) continue;
+        const collected: { file: string; isMain: boolean }[] = [];
+        if (page.original?.source) {
+          const fname = decodeURIComponent(page.original.source.split("/").pop() || "");
+          collected.push({ file: `File:${fname}`, isMain: true });
+        }
+        for (const im of page.images || []) {
+          const t = im.title as string;
+          if (!t) continue;
+          if (!/\.(jpe?g|png)$/i.test(t)) continue;
+          if (/(coat[_ ]of[_ ]arms|flag|map|locator|seal|emblem|logo|svg)/i.test(t)) continue;
+          collected.push({ file: t, isMain: false });
+        }
+        if (collected.length === 0) continue;
+        // Get imageinfo (URL + metadata) in batch
+        const fileTitles = collected.slice(0, 30).map((c) => c.file).join("|");
+        const u2 = new URL("https://en.wikipedia.org/w/api.php");
+        u2.searchParams.set("action", "query");
+        u2.searchParams.set("format", "json");
+        u2.searchParams.set("origin", "*");
+        u2.searchParams.set("titles", fileTitles);
+        u2.searchParams.set("prop", "imageinfo");
+        u2.searchParams.set("iiprop", "url|size|extmetadata");
+        u2.searchParams.set("iiurlwidth", "1200");
+        const r2 = await fetch(u2.toString(), { headers: { "User-Agent": "StampAway/1.0 (poster fetcher)" } });
+        if (!r2.ok) continue;
+        const j2 = await r2.json();
+        const filePages = j2?.query?.pages || {};
+        for (const fpid of Object.keys(filePages)) {
+          const fp = filePages[fpid];
+          const info = fp?.imageinfo?.[0];
+          if (!info) continue;
+          const url = info.thumburl || info.url;
+          if (!url) continue;
+          const w = info.thumbwidth || info.width || 0;
+          const h = info.thumbheight || info.height || 0;
+          if (w < 600 || h < 400) continue;
+          const meta = info.extmetadata || {};
+          const desc = `${meta.ImageDescription?.value || ""} ${meta.ObjectName?.value || ""} ${fp.title || ""}`
+            .replace(/<[^>]+>/g, " ").toLowerCase();
+          if (HUMAN_RE.test(desc)) continue;
+          if (/(coat of arms|flag of|map of|locator|seal of|logo)/i.test(desc)) continue;
+          const isMain = collected.find((c) => c.file === fp.title)?.isMain;
+          let score = isMain ? 120 : 40;
+          for (const w2 of WIDE_HINTS) if (desc.includes(w2)) score += 50;
+          for (const w2 of NARROW_PENALTIES) if (desc.includes(w2)) score -= 80;
+          // Prefer landscape that we crop to portrait, and large originals
+          if (w >= 1000) score += 20;
+          out.push({
+            provider: "wikipedia",
+            id: fp.title || url,
+            url,
+            score,
+            photographer: meta.Artist?.value?.replace(/<[^>]+>/g, "").trim(),
+          });
+        }
+        if (out.length > 0) break;
+      }
+      if (out.length > 0) break;
+    } catch (_) { /* ignore */ }
+  }
+  return out;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS")
@@ -47,7 +138,6 @@ serve(async (req) => {
 
     const PEXELS_KEY = Deno.env.get("PEXELS_API_KEY")?.trim();
     const UNSPLASH_KEY = Deno.env.get("UNSPLASH_ACCESS_KEY")?.trim();
-    if (!PEXELS_KEY && !UNSPLASH_KEY) throw new Error("No image provider keys configured");
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -70,6 +160,7 @@ serve(async (req) => {
     // Build dedup sets across all places (paginated to bypass 1000-row limit)
     const usedPexels = new Set<string>();
     const usedUnsplash = new Set<string>();
+    const usedWiki = new Set<string>();
     const PAGE = 1000;
     let from = 0;
     while (true) {
@@ -86,6 +177,8 @@ serve(async (req) => {
         if (px) usedPexels.add(px);
         const us = extractUnsplashId(url);
         if (us) usedUnsplash.add(us);
+        const wk = extractWikiId(url);
+        if (wk) usedWiki.add(wk);
       }
       if (list.length < PAGE) break;
       from += PAGE;
@@ -127,7 +220,7 @@ serve(async (req) => {
           if (usedPexels.has(pid)) continue;
           const alt = (p.alt || "").toLowerCase();
           if (HUMAN_RE.test(alt)) continue;
-          let score = 30; // small base bonus for Pexels portrait match
+          let score = 30;
           for (const w of WIDE_HINTS) if (alt.includes(w)) score += 50;
           for (const w of NARROW_PENALTIES) if (alt.includes(w)) score -= 80;
           if (p.height && p.width && p.height / p.width > 1.2) score += 10;
@@ -141,7 +234,7 @@ serve(async (req) => {
             photographer: p.photographer,
           });
         }
-        if (allCandidates.length > 30) break; // enough Pexels candidates
+        if (allCandidates.length > 30) break;
       }
     }
 
@@ -186,12 +279,22 @@ serve(async (req) => {
       }
     }
 
+    // ---- Wikipedia ----
+    try {
+      const wikiCands = await fetchWikipediaImages(place.name, place.country);
+      for (const c of wikiCands) {
+        if (usedWiki.has(c.id)) continue;
+        allCandidates.push(c);
+      }
+    } catch (e) {
+      console.error("wiki fetch failed", e);
+    }
+
     if (allCandidates.length === 0) throw new Error("No suitable photos found");
 
     allCandidates.sort((a, b) => b.score - a.score);
     const chosen = allCandidates[0];
 
-    // Trigger Unsplash download tracking if applicable
     if (chosen.provider === "unsplash" && chosen.downloadLocation && UNSPLASH_KEY) {
       fetch(chosen.downloadLocation, {
         headers: { Authorization: `Client-ID ${UNSPLASH_KEY}` },
