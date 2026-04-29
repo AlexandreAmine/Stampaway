@@ -45,8 +45,9 @@ export function DestinationPoster({
   const generatePoster = async () => {
     setLoading(true);
     try {
+      const fnName = provider === "pexels" ? "fetch-pexels-poster" : "fetch-unsplash-poster";
       const { data, error } = await supabase.functions.invoke(
-        "fetch-unsplash-poster",
+        fnName,
         { body: { place_id: placeId } }
       );
       if (data?.image_url) {
