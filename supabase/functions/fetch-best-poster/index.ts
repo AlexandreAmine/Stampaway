@@ -186,17 +186,24 @@ serve(async (req) => {
       from += PAGE;
     }
 
+    const baseCityQueries = [
+      `${place.name} ${place.country} aerial cityscape skyline`,
+      `${place.name} ${place.country} city skyline panorama`,
+      `${place.name} ${place.country} cityscape`,
+      `${place.name} ${place.country} city`,
+      `${place.name} ${place.country}`,
+      `${place.name} skyline`,
+      `${place.name}`,
+    ];
+    const beachQueries = [
+      `${place.name} ${place.country} beach`,
+      `${place.name} beach`,
+      `${place.name} ${place.country} coast aerial`,
+      `${place.name} ${place.country} caribbean`,
+    ];
     const queries =
       place.type === "city"
-        ? [
-            `${place.name} ${place.country} aerial cityscape skyline`,
-            `${place.name} ${place.country} city skyline panorama`,
-            `${place.name} ${place.country} cityscape`,
-            `${place.name} ${place.country} city`,
-            `${place.name} ${place.country}`,
-            `${place.name} skyline`,
-            `${place.name}`,
-          ]
+        ? (beachBoost ? [...beachQueries, ...baseCityQueries] : baseCityQueries)
         : [
             `${place.name} landscape aerial`,
             `${place.name} landscape`,
