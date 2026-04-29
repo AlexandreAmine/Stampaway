@@ -268,12 +268,10 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
             {isOtherUser && <PosterWishlistButton placeId={r.place_id} placeName={r.name} />}
             <DestinationPoster placeId={r.place_id} name={r.name} country={r.country} type={type} image={r.image} className="w-full h-full" />
           </div>
-          {r.rating != null ? (
+          {r.rating != null && (
             <div className="mt-1.5 flex justify-center">
               <StarRating rating={r.rating} size={12} liked={r.liked} />
             </div>
-          ) : (
-            <p className="mt-1.5 text-[10px] text-muted-foreground text-center">No rating</p>
           )}
         </button>
       ))}
