@@ -259,6 +259,9 @@ serve(async (req) => {
             for (const w of SUNNY_HINTS) if (alt.includes(w)) score += 50;
             for (const w of GLOOM_PENALTIES) if (alt.includes(w)) score -= 40;
           }
+          if (noHumansBoost) {
+            for (const w of HUMAN_PENALTIES) if (alt.includes(w)) score -= 70;
+          }
           if (p.height && p.width && p.height / p.width > 1.2) score += 10;
           const imgUrl = p.src?.portrait || p.src?.large;
           if (!imgUrl) continue;
