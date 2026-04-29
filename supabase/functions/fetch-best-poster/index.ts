@@ -273,6 +273,7 @@ serve(async (req) => {
           let score = (p.likes || 0);
           for (const w of WIDE_HINTS) if (text.includes(w)) score += 50;
           for (const w of NARROW_PENALTIES) if (text.includes(w)) score -= 80;
+          if (beachBoost) for (const w of BEACH_HINTS) if (text.includes(w)) score += 60;
           const baseUrl = p.urls?.raw || p.urls?.full;
           if (!baseUrl) continue;
           const imgUrl = `${baseUrl}&w=900&h=1200&fit=crop&crop=entropy&q=80&fm=jpg`;
