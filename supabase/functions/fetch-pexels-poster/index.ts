@@ -42,17 +42,30 @@ serve(async (req) => {
       });
     }
 
-    // Track all already-used Pexels photo ids to enforce uniqueness
-    const { data: usedRows } = await supabase
-      .from("places")
-      .select("id, image")
-      .not("image", "is", null);
+    // Track all already-used Pexels photo ids to enforce uniqueness (paginated to bypass 1000-row default limit)
     const usedPexelsIds = new Set<string>();
-    for (const r of usedRows || []) {
-      if (r.id === place.id) continue;
-      const pid = extractPexelsId((r.image as string) || "");
-      if (pid) usedPexelsIds.add(pid);
+    const PAGE = 1000;
+    let from = 0;
+    while (true) {
+      const { data: usedRows, error: usedErr } = await supabase
+        .from("places")
+        .select("id, image")
+        .not("image", "is", null)
+        .range(from, from + PAGE - 1);
+      if (usedErr) {
+        console.error("dedup fetch error", usedErr);
+        break;
+      }
+      const rows = usedRows || [];
+      for (const r of rows) {
+        if (r.id === place.id) continue;
+        const pid = extractPexelsId((r.image as string) || "");
+        if (pid) usedPexelsIds.add(pid);
+      }
+      if (rows.length < PAGE) break;
+      from += PAGE;
     }
+    console.log(`Dedup set size: ${usedPexelsIds.size}`);
 
     const queries =
       place.type === "city"
