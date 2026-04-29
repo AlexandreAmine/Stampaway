@@ -14,6 +14,7 @@ interface DestinationPosterProps {
   autoGenerate?: boolean;
   onImageGenerated?: (url: string) => void;
   provider?: "unsplash" | "pexels";
+  bare?: boolean;
 }
 
 export function DestinationPoster({
@@ -26,6 +27,7 @@ export function DestinationPoster({
   autoGenerate = false,
   onImageGenerated,
   provider = "unsplash",
+  bare = false,
 }: DestinationPosterProps) {
   const [imageUrl, setImageUrl] = useState(image || null);
   const [loading, setLoading] = useState(false);
