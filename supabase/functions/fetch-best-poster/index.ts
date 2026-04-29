@@ -133,8 +133,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
 
   try {
-    const { place_id, force } = await req.json();
+    const { place_id, force, beach_boost } = await req.json();
     if (!place_id) throw new Error("place_id is required");
+    const BEACH_HINTS = ["beach","beaches","ocean","sea","caribbean","turquoise","sand","palm","coast","bay","lagoon","reef","tropical","shore"];
+    const beachBoost = !!beach_boost;
 
     const PEXELS_KEY = Deno.env.get("PEXELS_API_KEY")?.trim();
     const UNSPLASH_KEY = Deno.env.get("UNSPLASH_ACCESS_KEY")?.trim();
@@ -184,17 +186,24 @@ serve(async (req) => {
       from += PAGE;
     }
 
+    const baseCityQueries = [
+      `${place.name} ${place.country} aerial cityscape skyline`,
+      `${place.name} ${place.country} city skyline panorama`,
+      `${place.name} ${place.country} cityscape`,
+      `${place.name} ${place.country} city`,
+      `${place.name} ${place.country}`,
+      `${place.name} skyline`,
+      `${place.name}`,
+    ];
+    const beachQueries = [
+      `${place.name} ${place.country} beach`,
+      `${place.name} beach`,
+      `${place.name} ${place.country} coast aerial`,
+      `${place.name} ${place.country} caribbean`,
+    ];
     const queries =
       place.type === "city"
-        ? [
-            `${place.name} ${place.country} aerial cityscape skyline`,
-            `${place.name} ${place.country} city skyline panorama`,
-            `${place.name} ${place.country} cityscape`,
-            `${place.name} ${place.country} city`,
-            `${place.name} ${place.country}`,
-            `${place.name} skyline`,
-            `${place.name}`,
-          ]
+        ? (beachBoost ? [...beachQueries, ...baseCityQueries] : baseCityQueries)
         : [
             `${place.name} landscape aerial`,
             `${place.name} landscape`,
@@ -223,6 +232,7 @@ serve(async (req) => {
           let score = 30;
           for (const w of WIDE_HINTS) if (alt.includes(w)) score += 50;
           for (const w of NARROW_PENALTIES) if (alt.includes(w)) score -= 80;
+          if (beachBoost) for (const w of BEACH_HINTS) if (alt.includes(w)) score += 60;
           if (p.height && p.width && p.height / p.width > 1.2) score += 10;
           const imgUrl = p.src?.portrait || p.src?.large;
           if (!imgUrl) continue;
@@ -263,6 +273,7 @@ serve(async (req) => {
           let score = (p.likes || 0);
           for (const w of WIDE_HINTS) if (text.includes(w)) score += 50;
           for (const w of NARROW_PENALTIES) if (text.includes(w)) score -= 80;
+          if (beachBoost) for (const w of BEACH_HINTS) if (text.includes(w)) score += 60;
           const baseUrl = p.urls?.raw || p.urls?.full;
           if (!baseUrl) continue;
           const imgUrl = `${baseUrl}&w=900&h=1200&fit=crop&crop=entropy&q=80&fm=jpg`;
