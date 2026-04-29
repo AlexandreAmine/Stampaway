@@ -13,6 +13,7 @@ interface DestinationPosterProps {
   className?: string;
   autoGenerate?: boolean;
   onImageGenerated?: (url: string) => void;
+  provider?: "unsplash" | "pexels";
 }
 
 export function DestinationPoster({
@@ -24,6 +25,7 @@ export function DestinationPoster({
   className = "",
   autoGenerate = false,
   onImageGenerated,
+  provider = "unsplash",
 }: DestinationPosterProps) {
   const [imageUrl, setImageUrl] = useState(image || null);
   const [loading, setLoading] = useState(false);
@@ -43,8 +45,9 @@ export function DestinationPoster({
   const generatePoster = async () => {
     setLoading(true);
     try {
+      const fnName = provider === "pexels" ? "fetch-pexels-poster" : "fetch-unsplash-poster";
       const { data, error } = await supabase.functions.invoke(
-        "fetch-unsplash-poster",
+        fnName,
         { body: { place_id: placeId } }
       );
       if (data?.image_url) {
