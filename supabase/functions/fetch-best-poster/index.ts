@@ -204,14 +204,27 @@ serve(async (req) => {
       `${place.name} ${place.country} coast aerial`,
       `${place.name} ${place.country} caribbean`,
     ];
-    const queries =
-      place.type === "city"
-        ? (beachBoost ? [...beachQueries, ...baseCityQueries] : baseCityQueries)
-        : [
-            `${place.name} landscape aerial`,
-            `${place.name} landscape`,
-            `${place.name}`,
-          ];
+    const natureQueries = [
+      `${place.name} ${place.country} landscape aerial`,
+      `${place.name} ${place.country} nature scenic`,
+      `${place.name} ${place.country} landscape`,
+      `${place.name} landscape`,
+      `${place.name} nature`,
+      `${place.name} aerial`,
+    ];
+    let queries: string[];
+    if (place.type === "city") {
+      queries = natureBoost
+        ? [...natureQueries, ...baseCityQueries]
+        : (beachBoost ? [...beachQueries, ...baseCityQueries] : baseCityQueries);
+    } else {
+      queries = [
+        `${place.name} landscape aerial`,
+        `${place.name} landscape`,
+        `${place.name}`,
+      ];
+    }
+    if (extraQueries.length) queries = [...extraQueries, ...queries];
 
     const allCandidates: Candidate[] = [];
 
