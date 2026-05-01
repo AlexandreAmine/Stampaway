@@ -134,12 +134,19 @@ export function MapboxFriendsMap({
       map.on("style.load", () => {
         // Starry deep-space background around the globe
         map.setFog({
-          color: "rgb(10, 12, 22)",
-          "high-color": "rgb(20, 30, 60)",
-          "horizon-blend": 0.04,
+          color: "rgb(80, 140, 210)",
+          "high-color": "rgb(50, 110, 190)",
+          "horizon-blend": 0.05,
           "space-color": "rgb(0, 0, 0)",
           "star-intensity": 0.85,
         } as any);
+
+        // Brighten the ocean (water layer) to a more vivid blue
+        try {
+          if (map.getLayer("water")) {
+            map.setPaintProperty("water", "fill-color", "#1f6fc4");
+          }
+        } catch {}
         spinGlobe();
       });
 
