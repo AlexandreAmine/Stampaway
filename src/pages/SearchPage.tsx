@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, Search, ChevronDown } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,6 +48,7 @@ function getContinent(country: string): string {
 
 export default function SearchPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { t } = useLanguage();
   const filterTabLabels: Record<FilterTab, string> = {
@@ -56,7 +57,11 @@ export default function SearchPage() {
     Lists: t("search.lists"),
     Users: t("search.users"),
   };
-  const [activeFilter, setActiveFilter] = useState<FilterTab>("Countries");
+  const initialTab = (() => {
+    const t = searchParams.get("tab");
+    return (filterTabs as readonly string[]).includes(t || "") ? (t as FilterTab) : "Countries";
+  })();
+  const [activeFilter, setActiveFilter] = useState<FilterTab>(initialTab);
   const [query, setQuery] = useState("");
   const [places, setPlaces] = useState<any[]>([]);
   const [lists, setLists] = useState<any[]>([]);
