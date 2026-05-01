@@ -144,7 +144,7 @@ export function MapboxFriendsMap({
         // Brighten the ocean (water layer) to a more vivid blue
         try {
           if (map.getLayer("water")) {
-            map.setPaintProperty("water", "fill-color", "#3a92e0");
+            map.setPaintProperty("water", "fill-color", "#7ec5ee");
           }
         } catch {}
         spinGlobe();
