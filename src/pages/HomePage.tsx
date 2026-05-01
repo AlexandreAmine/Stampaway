@@ -274,7 +274,7 @@ export default function HomePage() {
             <div className="flex flex-col items-center justify-center py-16 gap-4">
               <p className="text-sm text-muted-foreground text-center">{t("home.followFriends")}</p>
               <button
-                onClick={() => navigate("/search")}
+                onClick={() => navigate("/search?tab=Users")}
                 className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full text-sm font-medium"
               >
                 <UserPlus className="w-4 h-4" />
