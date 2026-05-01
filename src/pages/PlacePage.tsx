@@ -61,6 +61,26 @@ export default function PlacePage() {
     if (!id) return;
     setLoading(true);
 
+    // Reset all per-place state so data from a previously viewed place
+    // (e.g. country) doesn't leak into the new page (e.g. one of its cities)
+    setPlace(null);
+    setDescription("");
+    setAvgRating(0);
+    setDistribution(Array(10).fill(0));
+    setMyReview(null);
+    setVisitorsCount(0);
+    setWrittenReviewsCount(0);
+    setListsCount(0);
+    setRatingsCount(0);
+    setAllVisitors([]);
+    setAllLists([]);
+    setFriendVisitors([]);
+    setFriendWishlist([]);
+    setWrittenReviews([]);
+    setCountryCities([]);
+    setWishlistCities([]);
+    setInWishlist(false);
+
     // Fetch place
     const { data: placeData } = await supabase.from("places").select("*").eq("id", id).maybeSingle();
     if (!placeData) { setLoading(false); return; }
