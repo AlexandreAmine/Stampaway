@@ -111,8 +111,13 @@ export default function HomePage() {
       }
 
       const now = new Date();
-      // Start of previous month (include current month + previous month)
-      const startPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      // Allow current month + previous month based on the *visit* date.
+      // Compute the (year, month) pair for both months.
+      const currentYear = now.getFullYear();
+      const currentMonth = now.getMonth() + 1; // 1-12
+      const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const prevYear = prev.getFullYear();
+      const prevMonth = prev.getMonth() + 1;
 
       const { data: reviews } = await supabase
         .from("reviews")
@@ -120,7 +125,7 @@ export default function HomePage() {
         .in("user_id", followingIds)
         .not("visit_year", "is", null)
         .not("visit_month", "is", null)
-        .gte("created_at", startPrevMonth.toISOString())
+        .or(`and(visit_year.eq.${currentYear},visit_month.eq.${currentMonth}),and(visit_year.eq.${prevYear},visit_month.eq.${prevMonth})`)
         .order("created_at", { ascending: false });
 
       const filtered = reviews || [];
