@@ -276,7 +276,7 @@ export function YourActivity({ onBack }: { onBack: () => void }) {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-foreground">{a.description}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {formatDistanceToNow(new Date(a.created_at), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(a.created_at), { addSuffix: true }).replace(/^about /, "")}
                   </p>
                 </div>
               </div>
