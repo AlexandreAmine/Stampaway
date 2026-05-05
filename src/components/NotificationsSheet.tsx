@@ -52,14 +52,22 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
       .eq("target_id", user.id)
       .order("created_at", { ascending: false });
 
-    // Review likes
+    // Review likes & comments (on my reviews)
     const { data: myReviews } = await supabase
       .from("reviews")
-      .select("id")
+      .select("id, place_id")
       .eq("user_id", user.id);
     const myReviewIds = (myReviews || []).map(r => r.id);
+    const reviewPlaceMap = new Map((myReviews || []).map(r => [r.id, r.place_id]));
+    const placeIds = [...new Set((myReviews || []).map(r => r.place_id))];
+    let placeNameMap = new Map<string, string>();
+    if (placeIds.length > 0) {
+      const { data: pls } = await supabase.from("places").select("id, name").in("id", placeIds);
+      (pls || []).forEach(p => placeNameMap.set(p.id, p.name));
+    }
 
     let reviewLikes: any[] = [];
+    let reviewComments: any[] = [];
     if (myReviewIds.length > 0) {
       const { data } = await supabase
         .from("review_likes")
@@ -69,6 +77,15 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
         .order("created_at", { ascending: false })
         .limit(20);
       reviewLikes = data || [];
+
+      const { data: cmts } = await supabase
+        .from("review_comments")
+        .select("id, user_id, review_id, created_at")
+        .in("review_id", myReviewIds)
+        .neq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      reviewComments = cmts || [];
     }
 
     // List likes
