@@ -427,9 +427,18 @@ export default function ExplorePage() {
     const userIds = [...new Set(popularData.map((l) => l.user_id))];
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("user_id, username, profile_picture")
+      .select("user_id, username, profile_picture, is_private")
       .in("user_id", userIds);
     const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
+
+    // Privacy filter: hide lists from private users you don't follow
+    const privateOwnerIds = (profiles || []).filter((p: any) => p.is_private).map((p: any) => p.user_id);
+    let allowedFollowing = new Set<string>(followingIds);
+    popularData = popularData.filter((l: any) => {
+      const p: any = profileMap.get(l.user_id);
+      if (!p?.is_private) return true;
+      return allowedFollowing.has(l.user_id);
+    });
 
     const enrichedPopular = await Promise.all(
       popularData.map(async (l) => {
