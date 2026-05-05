@@ -190,12 +190,14 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
           listIds.map(async (lid) => {
             const l = lists.find((ls: any) => ls.id === lid);
             if (!l) return null;
-            const { count } = await supabase
+            const { data: items } = await supabase
               .from("list_items")
-              .select("*", { count: "exact", head: true })
-              .eq("list_id", l.id);
+              .select("id, position, places!inner(id, name, country, type, image)")
+              .eq("list_id", l.id)
+              .order("position", { ascending: true })
+              .limit(8);
             const prof = profileMap.get(l.user_id);
-            return { ...l, item_count: count || 0, username: prof?.username, profile_picture: prof?.profile_picture };
+            return { ...l, items: items || [], item_count: items?.length || 0, username: prof?.username, profile_picture: prof?.profile_picture };
           })
         );
         setLikedLists(enriched.filter(Boolean));
@@ -457,18 +459,39 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
         ) : (
           <div className="space-y-3">
             {likedLists.map((l: any) => (
-              <motion.div key={l.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="bg-card rounded-xl p-4 border border-border">
-                <button onClick={() => navigate(`/profile/${l.user_id}`)} className="w-full text-left">
-                  <div className="flex items-center gap-2 mb-1">
-                    {l.profile_picture && (
-                      <img src={l.profile_picture} alt="" loading="lazy" decoding="async" width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
-                    )}
-                    <span className="text-xs text-muted-foreground">{l.username || "User"}</span>
+              <motion.button
+                key={l.id}
+                onClick={() => navigate(`/list/${l.id}`)}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full bg-card rounded-xl p-4 border border-border text-left"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  {l.profile_picture && (
+                    <img src={l.profile_picture} alt="" loading="lazy" decoding="async" width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
+                  )}
+                  <span className="text-xs text-muted-foreground">{l.username || "User"}</span>
+                </div>
+                <p className="text-sm font-bold text-foreground">{l.name}</p>
+                <p className="text-xs text-muted-foreground">{l.item_count} destination{l.item_count !== 1 ? "s" : ""}</p>
+                {l.items && l.items.length > 0 && (
+                  <div className="flex gap-2 mt-2 overflow-x-auto scrollbar-hide">
+                    {l.items.map((item: any) => (
+                      <div key={item.id} className="w-16 h-[88px] shrink-0 rounded-lg overflow-hidden">
+                        <DestinationPoster
+                          placeId={item.places.id}
+                          name={item.places.name}
+                          country={item.places.country}
+                          type={item.places.type as "city" | "country"}
+                          image={item.places.image}
+                          autoGenerate
+                          className="w-full h-full"
+                        />
+                      </div>
+                    ))}
                   </div>
-                  <p className="text-sm font-bold text-foreground">{l.name}</p>
-                  <p className="text-xs text-muted-foreground">{l.item_count} destination{l.item_count !== 1 ? "s" : ""}</p>
-                </button>
-              </motion.div>
+                )}
+              </motion.button>
             ))}
           </div>
         )

@@ -175,7 +175,7 @@ export default function ProfilePage() {
     if (!viewingUserId) return;
     const uid = viewingUserId;
 
-    const [favRes, reviewRes, listRes, wishRes, followingRes, followersRes, totalCountriesRes, likesRes, writtenReviewsRes] = await Promise.all([
+    const [favRes, reviewRes, listRes, wishRes, followingRes, followersRes, totalCountriesRes, likedDestRes, reviewLikesRes, listLikesRes, writtenReviewsRes] = await Promise.all([
       supabase.from("favorite_places").select("slot_index, place_id, type, places!inner(name, image, country, type)").eq("user_id", uid),
       supabase.from("reviews").select("rating, place_id, places!inner(type)").eq("user_id", uid),
       supabase.from("lists").select("id", { count: "exact", head: true }).eq("user_id", uid),
@@ -183,7 +183,9 @@ export default function ProfilePage() {
       supabase.from("followers").select("id", { count: "exact", head: true }).eq("follower_id", uid),
       supabase.from("followers").select("id", { count: "exact", head: true }).eq("following_id", uid),
       supabase.from("places").select("id", { count: "exact", head: true }).eq("type", "country"),
-      supabase.from("reviews").select("id", { count: "exact", head: true }).eq("user_id", uid).eq("liked", true),
+      supabase.from("reviews").select("place_id, places!inner(type)").eq("user_id", uid).eq("liked", true),
+      supabase.from("review_likes").select("id", { count: "exact", head: true }).eq("user_id", uid),
+      supabase.from("list_likes").select("id", { count: "exact", head: true }).eq("user_id", uid),
       supabase.from("reviews").select("id", { count: "exact", head: true }).eq("user_id", uid).not("review_text", "is", null).neq("review_text", ""),
     ]);
 
@@ -240,7 +242,9 @@ export default function ProfilePage() {
     setFollowingCount(followingRes.count || 0);
     setFollowersCount(followersRes.count || 0);
     setTotalCountries(totalCountriesRes.count || 0);
-    setLikesCount(likesRes.count || 0);
+    // Total likes = liked destinations (countries+cities, deduped) + liked reviews + liked lists
+    const dedupedLikedDestPlaceIds = new Set((likedDestRes.data || []).map((r: any) => r.place_id));
+    setLikesCount(dedupedLikedDestPlaceIds.size + (reviewLikesRes.count || 0) + (listLikesRes.count || 0));
     setWrittenReviewsCount(writtenReviewsRes.count || 0);
 
     // Fetch map data
@@ -384,13 +388,13 @@ export default function ProfilePage() {
   };
 
   const renderFavoriteSlots = (type: "city" | "country", favorites: (FavoriteSlot | null)[]) => (
-    <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-5 px-5">
+    <div className="grid grid-cols-4 gap-2">
       {[0, 1, 2, 3].map((i) => {
         const fav = favorites[i];
         return fav ? (
           <div
             key={i}
-            className="relative w-28 h-36 shrink-0"
+            className="relative w-full aspect-[3/4]"
             draggable={isOwnProfile}
             onDragStart={() => handleDragStart(type, i)}
             onDragOver={(e) => e.preventDefault()}
@@ -414,7 +418,7 @@ export default function ProfilePage() {
             onClick={() => handleOpenPicker(type, i)}
             onDragOver={(e) => e.preventDefault()}
             onDrop={() => handleDrop(type, i)}
-            className="w-28 h-36 rounded-2xl border-2 border-dashed border-border flex items-center justify-center shrink-0 hover:border-primary transition-colors"
+            className="w-full aspect-[3/4] rounded-2xl border-2 border-dashed border-border flex items-center justify-center hover:border-primary transition-colors"
           >
             <Plus className="w-8 h-8 text-muted-foreground" />
           </button>
@@ -467,7 +471,7 @@ export default function ProfilePage() {
               <ChevronLeft className="w-6 h-6 text-foreground" />
             </button>
             <h1 className="text-xl font-bold text-foreground">
-              {subPage === "CountriesByRating" ? `Countries · ${ratingFilter}★` : subPage === "CitiesByRating" ? `Cities · ${ratingFilter}★` : (subPageLabels[subPage] || subPage)}
+              {subPage === "CountriesByRating" ? <>Countries · {ratingFilter}★ <span className="text-sm font-normal text-muted-foreground">({countryDistribution[Math.round((ratingFilter || 0) * 2) - 1] || 0})</span></> : subPage === "CitiesByRating" ? <>Cities · {ratingFilter}★ <span className="text-sm font-normal text-muted-foreground">({cityDistribution[Math.round((ratingFilter || 0) * 2) - 1] || 0})</span></> : (subPageLabels[subPage] || subPage)}
             </h1>
           </div>
           {renderSubPage()}

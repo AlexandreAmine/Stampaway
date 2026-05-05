@@ -63,6 +63,29 @@ export function YourActivity({ onBack }: { onBack: () => void }) {
         });
       }
 
+      // Review comments / replies (by me)
+      const { data: myComments } = await supabase
+        .from("review_comments")
+        .select("id, created_at, comment_text, review_id, parent_id")
+        .eq("user_id", user.id);
+
+      if (myComments && myComments.length > 0) {
+        const cReviewIds = [...new Set(myComments.map(c => c.review_id))];
+        const { data: cReviews } = await supabase.from("reviews").select("id, user_id").in("id", cReviewIds);
+        const cUserIds = [...new Set((cReviews || []).map(r => r.user_id))];
+        let cUserMap: Record<string, string> = {};
+        if (cUserIds.length > 0) {
+          const { data: cProfiles } = await supabase.from("profiles").select("user_id, username").in("user_id", cUserIds);
+          (cProfiles || []).forEach(p => { cUserMap[p.user_id] = p.username; });
+        }
+        myComments.forEach(c => {
+          const rev = (cReviews || []).find(r => r.id === c.review_id);
+          const uname = rev ? cUserMap[rev.user_id] || "someone" : "someone";
+          const verb = c.parent_id ? "Replied to" : "Commented on";
+          all.push({ id: `cm-${c.id}`, type: "comment", description: `${verb} ${uname}'s review`, created_at: c.created_at });
+        });
+      }
+
       // List likes (by me)
       const { data: listLikes } = await supabase
         .from("list_likes")
@@ -201,6 +224,7 @@ export function YourActivity({ onBack }: { onBack: () => void }) {
       case "log": return "📍";
       case "edit": return "✏️";
       case "review_like": return "❤️";
+      case "comment": return "💬";
       case "list_like": return "❤️";
       case "follow": return "👤";
       case "block": return "🚫";
