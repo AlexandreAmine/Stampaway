@@ -117,16 +117,33 @@ export default function SearchPage() {
       const { data } = await qb;
       if (data && data.length > 0) {
         const userIds = [...new Set(data.map((l: any) => l.user_id))];
-        const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
+        const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture, is_private").in("user_id", userIds);
         const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
-        const listIds = data.map((l: any) => l.id);
-        const { data: allLikes } = await supabase.from("list_likes").select("list_id").in("list_id", listIds);
+
+        // Privacy filter: hide lists from private users unless current user follows them or is the owner
+        const privateOwnerIds = (profiles || []).filter((p: any) => p.is_private && p.user_id !== user?.id).map((p: any) => p.user_id);
+        let allowedFollowing = new Set<string>();
+        if (user && privateOwnerIds.length > 0) {
+          const { data: follows } = await supabase.from("followers").select("following_id").eq("follower_id", user.id).in("following_id", privateOwnerIds);
+          (follows || []).forEach((f: any) => allowedFollowing.add(f.following_id));
+        }
+        const visibleLists = data.filter((l: any) => {
+          const p: any = profileMap.get(l.user_id);
+          if (!p?.is_private) return true;
+          if (l.user_id === user?.id) return true;
+          return allowedFollowing.has(l.user_id);
+        });
+
+        const listIds = visibleLists.map((l: any) => l.id);
+        const { data: allLikes } = listIds.length > 0
+          ? await supabase.from("list_likes").select("list_id").in("list_id", listIds)
+          : { data: [] as any[] };
         const likeCountMap = new Map<string, number>();
         (allLikes || []).forEach((lk: any) => {
           likeCountMap.set(lk.list_id, (likeCountMap.get(lk.list_id) || 0) + 1);
         });
         const enriched = await Promise.all(
-          data.map(async (l: any) => {
+          visibleLists.map(async (l: any) => {
             const { count } = await supabase.from("list_items").select("*", { count: "exact", head: true }).eq("list_id", l.id);
             return { ...l, item_count: count || 0, like_count: likeCountMap.get(l.id) || 0, profiles: profileMap.get(l.user_id) || null };
           })
