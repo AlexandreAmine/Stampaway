@@ -224,6 +224,7 @@ export function YourActivity({ onBack }: { onBack: () => void }) {
       case "log": return "📍";
       case "edit": return "✏️";
       case "review_like": return "❤️";
+      case "comment": return "💬";
       case "list_like": return "❤️";
       case "follow": return "👤";
       case "block": return "🚫";
