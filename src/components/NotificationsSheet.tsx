@@ -12,7 +12,7 @@ interface NotificationsSheetProps {
 }
 
 interface NotifItem {
-  type: "new_follower" | "follow_request" | "review_like" | "list_like";
+  type: "new_follower" | "follow_request" | "review_like" | "list_like" | "review_comment";
   id: string;
   userId: string;
   username: string;
@@ -52,14 +52,22 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
       .eq("target_id", user.id)
       .order("created_at", { ascending: false });
 
-    // Review likes
+    // Review likes & comments (on my reviews)
     const { data: myReviews } = await supabase
       .from("reviews")
-      .select("id")
+      .select("id, place_id")
       .eq("user_id", user.id);
     const myReviewIds = (myReviews || []).map(r => r.id);
+    const reviewPlaceMap = new Map((myReviews || []).map(r => [r.id, r.place_id]));
+    const placeIds = [...new Set((myReviews || []).map(r => r.place_id))];
+    let placeNameMap = new Map<string, string>();
+    if (placeIds.length > 0) {
+      const { data: pls } = await supabase.from("places").select("id, name").in("id", placeIds);
+      (pls || []).forEach(p => placeNameMap.set(p.id, p.name));
+    }
 
     let reviewLikes: any[] = [];
+    let reviewComments: any[] = [];
     if (myReviewIds.length > 0) {
       const { data } = await supabase
         .from("review_likes")
@@ -69,6 +77,15 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
         .order("created_at", { ascending: false })
         .limit(20);
       reviewLikes = data || [];
+
+      const { data: cmts } = await supabase
+        .from("review_comments")
+        .select("id, user_id, review_id, created_at")
+        .in("review_id", myReviewIds)
+        .neq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      reviewComments = cmts || [];
     }
 
     // List likes
@@ -96,6 +113,7 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
     (followers || []).forEach(f => allUserIds.add(f.follower_id));
     (requests || []).forEach(r => allUserIds.add(r.requester_id));
     reviewLikes.forEach(l => allUserIds.add(l.user_id));
+    reviewComments.forEach(c => allUserIds.add(c.user_id));
     listLikes.forEach(l => allUserIds.add(l.user_id));
 
     const { data: profiles } = await supabase
@@ -116,7 +134,16 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
 
     reviewLikes.forEach(l => {
       const p = pMap.get(l.user_id);
-      allItems.push({ type: "review_like", id: l.id, userId: l.user_id, username: p?.username || "User", profilePicture: p?.profile_picture || null, createdAt: l.created_at });
+      const placeId = reviewPlaceMap.get(l.review_id);
+      const placeName = placeId ? placeNameMap.get(placeId) || "a destination" : "a destination";
+      allItems.push({ type: "review_like", id: l.id, userId: l.user_id, username: p?.username || "User", profilePicture: p?.profile_picture || null, extra: placeName, createdAt: l.created_at });
+    });
+
+    reviewComments.forEach(c => {
+      const p = pMap.get(c.user_id);
+      const placeId = reviewPlaceMap.get(c.review_id);
+      const placeName = placeId ? placeNameMap.get(placeId) || "a destination" : "a destination";
+      allItems.push({ type: "review_comment", id: c.id, userId: c.user_id, username: p?.username || "User", profilePicture: p?.profile_picture || null, extra: placeName, createdAt: c.created_at });
     });
 
     listLikes.forEach(l => {
@@ -187,7 +214,8 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
                       {" "}
                       {item.type === "new_follower" && "started following you"}
                       {item.type === "follow_request" && "wants to follow you"}
-                      {item.type === "review_like" && "liked your review"}
+                      {item.type === "review_like" && <>liked your review of <span className="font-medium">{item.extra}</span></>}
+                      {item.type === "review_comment" && <>replied to your review of <span className="font-medium">{item.extra}</span></>}
                       {item.type === "list_like" && <>liked your list "<span className="font-medium">{item.extra}</span>"</>}
                     </p>
                   </div>
