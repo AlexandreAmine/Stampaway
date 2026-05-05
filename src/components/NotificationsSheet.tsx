@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
 
 interface NotificationsSheetProps {
   open: boolean;
@@ -218,6 +219,7 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
                       {item.type === "review_comment" && <>replied to your review of <span className="font-medium">{item.extra}</span></>}
                       {item.type === "list_like" && <>liked your list "<span className="font-medium">{item.extra}</span>"</>}
                     </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}</p>
                   </div>
                   {item.type === "follow_request" && (
                     <div className="flex items-center gap-1 shrink-0">
