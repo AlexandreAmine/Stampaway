@@ -340,7 +340,15 @@ export default function PlacePage() {
   const flagUrl = getFlagUrl(place.type === "country" ? place.name : place.country, 40);
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-24 relative">
+      {/* Background poster — blurred & faded, matches hero */}
+      {place.image && (
+        <div className="fixed inset-0 pointer-events-none z-0">
+          <img src={place.image} alt="" aria-hidden className="w-full h-full object-cover opacity-20 blur-2xl scale-110" />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/80 to-background" />
+        </div>
+      )}
+      <div className="relative z-10">
       {/* Poster Hero */}
       <div className="relative h-64 w-full">
         <DestinationPoster
