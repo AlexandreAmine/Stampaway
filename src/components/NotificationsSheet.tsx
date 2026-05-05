@@ -113,6 +113,7 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
     (followers || []).forEach(f => allUserIds.add(f.follower_id));
     (requests || []).forEach(r => allUserIds.add(r.requester_id));
     reviewLikes.forEach(l => allUserIds.add(l.user_id));
+    reviewComments.forEach(c => allUserIds.add(c.user_id));
     listLikes.forEach(l => allUserIds.add(l.user_id));
 
     const { data: profiles } = await supabase
@@ -133,7 +134,16 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
 
     reviewLikes.forEach(l => {
       const p = pMap.get(l.user_id);
-      allItems.push({ type: "review_like", id: l.id, userId: l.user_id, username: p?.username || "User", profilePicture: p?.profile_picture || null, createdAt: l.created_at });
+      const placeId = reviewPlaceMap.get(l.review_id);
+      const placeName = placeId ? placeNameMap.get(placeId) || "a destination" : "a destination";
+      allItems.push({ type: "review_like", id: l.id, userId: l.user_id, username: p?.username || "User", profilePicture: p?.profile_picture || null, extra: placeName, createdAt: l.created_at });
+    });
+
+    reviewComments.forEach(c => {
+      const p = pMap.get(c.user_id);
+      const placeId = reviewPlaceMap.get(c.review_id);
+      const placeName = placeId ? placeNameMap.get(placeId) || "a destination" : "a destination";
+      allItems.push({ type: "review_comment", id: c.id, userId: c.user_id, username: p?.username || "User", profilePicture: p?.profile_picture || null, extra: placeName, createdAt: c.created_at });
     });
 
     listLikes.forEach(l => {
