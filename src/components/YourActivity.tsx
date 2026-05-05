@@ -49,17 +49,24 @@ export function YourActivity({ onBack }: { onBack: () => void }) {
       
       if (reviewLikes && reviewLikes.length > 0) {
         const rlReviewIds = reviewLikes.map(l => l.review_id);
-        const { data: likedReviews } = await supabase.from("reviews").select("id, user_id").in("id", rlReviewIds);
+        const { data: likedReviews } = await supabase.from("reviews").select("id, user_id, place_id").in("id", rlReviewIds);
         const likedUserIds = [...new Set((likedReviews || []).map(r => r.user_id))];
+        const likedPlaceIds = [...new Set((likedReviews || []).map(r => r.place_id))];
         let userMap: Record<string, string> = {};
+        let rlPlaceMap: Record<string, string> = {};
         if (likedUserIds.length > 0) {
           const { data: profiles } = await supabase.from("profiles").select("user_id, username").in("user_id", likedUserIds);
           (profiles || []).forEach(p => { userMap[p.user_id] = p.username; });
         }
+        if (likedPlaceIds.length > 0) {
+          const { data: lPlaces } = await supabase.from("places").select("id, name").in("id", likedPlaceIds);
+          (lPlaces || []).forEach(p => { rlPlaceMap[p.id] = p.name; });
+        }
         reviewLikes.forEach(l => {
           const rev = (likedReviews || []).find(r => r.id === l.review_id);
           const uname = rev ? userMap[rev.user_id] || "someone" : "someone";
-          all.push({ id: `rl-${l.id}`, type: "review_like", description: `Liked ${uname}'s review`, created_at: l.created_at });
+          const pname = rev ? rlPlaceMap[rev.place_id] || "a destination" : "a destination";
+          all.push({ id: `rl-${l.id}`, type: "review_like", description: `Liked ${uname}'s review of ${pname}`, created_at: l.created_at });
         });
       }
 
@@ -71,18 +78,25 @@ export function YourActivity({ onBack }: { onBack: () => void }) {
 
       if (myComments && myComments.length > 0) {
         const cReviewIds = [...new Set(myComments.map(c => c.review_id))];
-        const { data: cReviews } = await supabase.from("reviews").select("id, user_id").in("id", cReviewIds);
+        const { data: cReviews } = await supabase.from("reviews").select("id, user_id, place_id").in("id", cReviewIds);
         const cUserIds = [...new Set((cReviews || []).map(r => r.user_id))];
+        const cPlaceIds = [...new Set((cReviews || []).map(r => r.place_id))];
         let cUserMap: Record<string, string> = {};
+        let cPlaceMap: Record<string, string> = {};
         if (cUserIds.length > 0) {
           const { data: cProfiles } = await supabase.from("profiles").select("user_id, username").in("user_id", cUserIds);
           (cProfiles || []).forEach(p => { cUserMap[p.user_id] = p.username; });
         }
+        if (cPlaceIds.length > 0) {
+          const { data: cPlaces } = await supabase.from("places").select("id, name").in("id", cPlaceIds);
+          (cPlaces || []).forEach(p => { cPlaceMap[p.id] = p.name; });
+        }
         myComments.forEach(c => {
           const rev = (cReviews || []).find(r => r.id === c.review_id);
           const uname = rev ? cUserMap[rev.user_id] || "someone" : "someone";
+          const pname = rev ? cPlaceMap[rev.place_id] || "a destination" : "a destination";
           const verb = c.parent_id ? "Replied to" : "Commented on";
-          all.push({ id: `cm-${c.id}`, type: "comment", description: `${verb} ${uname}'s review`, created_at: c.created_at });
+          all.push({ id: `cm-${c.id}`, type: "comment", description: `${verb} ${uname}'s review of ${pname}`, created_at: c.created_at });
         });
       }
 
