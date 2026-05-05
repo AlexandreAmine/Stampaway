@@ -190,12 +190,14 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
           listIds.map(async (lid) => {
             const l = lists.find((ls: any) => ls.id === lid);
             if (!l) return null;
-            const { count } = await supabase
+            const { data: items } = await supabase
               .from("list_items")
-              .select("*", { count: "exact", head: true })
-              .eq("list_id", l.id);
+              .select("id, position, places!inner(id, name, country, type, image)")
+              .eq("list_id", l.id)
+              .order("position", { ascending: true })
+              .limit(8);
             const prof = profileMap.get(l.user_id);
-            return { ...l, item_count: count || 0, username: prof?.username, profile_picture: prof?.profile_picture };
+            return { ...l, items: items || [], item_count: items?.length || 0, username: prof?.username, profile_picture: prof?.profile_picture };
           })
         );
         setLikedLists(enriched.filter(Boolean));
