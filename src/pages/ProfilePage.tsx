@@ -242,7 +242,9 @@ export default function ProfilePage() {
     setFollowingCount(followingRes.count || 0);
     setFollowersCount(followersRes.count || 0);
     setTotalCountries(totalCountriesRes.count || 0);
-    setLikesCount(likesRes.count || 0);
+    // Total likes = liked destinations (countries+cities, deduped) + liked reviews + liked lists
+    const dedupedLikedDestPlaceIds = new Set((likedDestRes.data || []).map((r: any) => r.place_id));
+    setLikesCount(dedupedLikedDestPlaceIds.size + (reviewLikesRes.count || 0) + (listLikesRes.count || 0));
     setWrittenReviewsCount(writtenReviewsRes.count || 0);
 
     // Fetch map data
