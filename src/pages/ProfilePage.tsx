@@ -384,13 +384,13 @@ export default function ProfilePage() {
   };
 
   const renderFavoriteSlots = (type: "city" | "country", favorites: (FavoriteSlot | null)[]) => (
-    <div className="flex gap-3 overflow-x-auto scrollbar-hide -mx-5 px-5">
+    <div className="grid grid-cols-4 gap-2">
       {[0, 1, 2, 3].map((i) => {
         const fav = favorites[i];
         return fav ? (
           <div
             key={i}
-            className="relative w-28 h-36 shrink-0"
+            className="relative w-full aspect-[3/4]"
             draggable={isOwnProfile}
             onDragStart={() => handleDragStart(type, i)}
             onDragOver={(e) => e.preventDefault()}
@@ -414,7 +414,7 @@ export default function ProfilePage() {
             onClick={() => handleOpenPicker(type, i)}
             onDragOver={(e) => e.preventDefault()}
             onDrop={() => handleDrop(type, i)}
-            className="w-28 h-36 rounded-2xl border-2 border-dashed border-border flex items-center justify-center shrink-0 hover:border-primary transition-colors"
+            className="w-full aspect-[3/4] rounded-2xl border-2 border-dashed border-border flex items-center justify-center hover:border-primary transition-colors"
           >
             <Plus className="w-8 h-8 text-muted-foreground" />
           </button>
