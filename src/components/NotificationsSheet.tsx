@@ -12,7 +12,7 @@ interface NotificationsSheetProps {
 }
 
 interface NotifItem {
-  type: "new_follower" | "follow_request" | "review_like" | "list_like";
+  type: "new_follower" | "follow_request" | "review_like" | "list_like" | "review_comment";
   id: string;
   userId: string;
   username: string;
