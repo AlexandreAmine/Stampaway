@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
 
 interface NotificationsSheetProps {
   open: boolean;
