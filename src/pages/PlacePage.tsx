@@ -623,6 +623,7 @@ export default function PlacePage() {
           onSaved={() => fetchAll()}
         />
       )}
+      </div>
     </div>
   );
 }
