@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft } from "lucide-react";
 import { PasswordInput } from "@/components/PasswordInput";
+import logoImage from "@/assets/stampaway-logo.jpeg";
 
 type AuthMode = "login" | "signup";
 type Step = "form" | "otp" | "forgot" | "forgotOtp" | "resetPassword";
@@ -151,8 +152,11 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-1">Stampaway</h1>
+        <div className="text-center mb-10 flex flex-col items-center">
+          <div className="w-20 h-20 rounded-2xl overflow-hidden mb-4 shadow-lg ring-1 ring-white/10">
+            <img src={logoImage} alt="Stampaway" className="w-full h-full object-cover" />
+          </div>
+          <h1 className="font-brand text-4xl font-normal text-foreground tracking-tight mb-1">Stampaway</h1>
           <p className="text-sm text-muted-foreground">Log your adventures</p>
         </div>
 
