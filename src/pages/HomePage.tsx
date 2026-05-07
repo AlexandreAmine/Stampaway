@@ -221,7 +221,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-lg pointer-events-auto">
           {/* Header */}
           <div className="pt-12 pb-2 px-5 flex items-center justify-between relative z-10">
-            <h1 className="text-2xl font-bold text-foreground tracking-tight">{t("home.title")}</h1>
+            <h1 className="font-brand text-3xl font-normal text-foreground tracking-tight leading-none">{t("home.title")}</h1>
             <button onClick={() => {
               setNotifOpen(true);
               if (user) localStorage.setItem(`notif_last_read_${user.id}`, new Date().toISOString());
