@@ -153,7 +153,7 @@ async function flush() {
 const ATTRS = ["placeholder", "aria-label", "title", "alt"] as const;
 type AttrRec = { el: Element; attr: string; orig: string };
 const knownAttrs: Set<AttrRec> = new Set();
-const seenAttr: WeakSet<Element> = new WeakSet();
+// const seenAttr: WeakSet<Element> = new WeakSet();
 
 function processAttrs(root: Node) {
   if (typeof document === "undefined") return;
