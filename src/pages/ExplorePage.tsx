@@ -710,7 +710,7 @@ function ListCard({ list, showLikes = false }: { list: any; showLikes?: boolean 
             )}
             <span className="text-xs text-muted-foreground">{list.username || "User"}</span>
           </div>
-          <p className="text-sm font-bold text-foreground">{list.name}</p>
+          <p className="text-sm font-bold text-foreground" data-no-translate>{list.name}</p>
           <p className="text-xs text-muted-foreground">
             {list.item_count} destination{list.item_count !== 1 ? "s" : ""}
           </p>

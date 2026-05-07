@@ -348,7 +348,7 @@ export default function SearchPage() {
                   </Avatar>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground">{l.name}</p>
+                  <p className="text-sm font-semibold text-foreground" data-no-translate>{l.name}</p>
                   {l.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{l.description}</p>}
                   <div className="flex items-center gap-2 mt-1">
                     {l.profiles && <p className="text-xs text-muted-foreground">by {l.profiles.username}</p>}

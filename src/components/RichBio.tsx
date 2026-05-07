@@ -44,7 +44,7 @@ export function RichBio({ text }: RichBioProps) {
   const urlParts = text.split(URL_REGEX);
 
   return (
-    <span className="text-sm text-muted-foreground">
+    <span className="text-sm text-muted-foreground" data-no-translate>
       {urlParts.map((part, i) => {
         if (URL_REGEX.test(part)) {
           return (

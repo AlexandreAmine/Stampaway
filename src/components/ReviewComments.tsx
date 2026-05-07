@@ -123,7 +123,7 @@ export function ReviewComments({ reviewId }: { reviewId: string }) {
             </button>
             <span className="text-[10px] text-muted-foreground">{formatDate(comment.created_at)}</span>
           </div>
-          <p className="text-xs text-muted-foreground leading-relaxed mt-0.5">{comment.comment_text}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed mt-0.5" data-no-translate>{comment.comment_text}</p>
           <div className="flex items-center gap-3 mt-1">
             {user && (
               <button

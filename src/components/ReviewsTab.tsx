@@ -97,7 +97,7 @@ export function ReviewsTab({ userId }: { userId?: string }) {
             <div className="mt-0.5">
               <StarRating rating={r.rating} size={12} />
             </div>
-            <p className="text-xs text-muted-foreground mt-1 line-clamp-3">{r.review_text.length > 800 ? r.review_text.slice(0, 800) + "..." : r.review_text}</p>
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-3" data-no-translate>{r.review_text.length > 800 ? r.review_text.slice(0, 800) + "..." : r.review_text}</p>
           </div>
         </button>
       ))}

@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { translations, Language, TranslationKey } from "@/i18n/translations";
+import { startDomTranslator, setDomTranslatorLanguage } from "@/lib/domTranslator";
 
 interface LanguageContextType {
   language: Language;
@@ -17,7 +18,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem("app_language", lang);
+    setDomTranslatorLanguage(lang);
   };
+
+  useEffect(() => {
+    // Start the DOM-level auto-translator once mounted
+    startDomTranslator(language);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const t = useCallback((key: TranslationKey, replacements?: Record<string, string>): string => {
     let text = translations[language]?.[key] || translations.en[key] || key;

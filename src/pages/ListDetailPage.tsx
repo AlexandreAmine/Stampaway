@@ -101,7 +101,7 @@ export default function ListDetailPage() {
           <button onClick={() => navigate(-1)}>
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
-          <h1 className="text-xl font-bold text-foreground flex-1">{list.name}</h1>
+          <h1 className="text-xl font-bold text-foreground flex-1" data-no-translate>{list.name}</h1>
           {user && (
             <button onClick={toggleLike} className="flex items-center gap-1.5 active:scale-95 transition-transform">
               <Heart className={`w-5 h-5 transition-colors ${liked ? "text-red-500 fill-red-500" : "text-muted-foreground"}`} />

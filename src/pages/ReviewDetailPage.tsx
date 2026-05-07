@@ -186,7 +186,7 @@ export default function ReviewDetailPage() {
               <h3 className="text-sm font-semibold text-foreground">Review</h3>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed bg-card rounded-xl p-4 border border-border whitespace-pre-wrap break-words">
-              <Linkify text={review.review_text} />
+              <span data-no-translate><Linkify text={review.review_text} /></span>
             </p>
           </motion.div>
         )}
@@ -223,7 +223,7 @@ export default function ReviewDetailPage() {
                       </div>
                     </div>
                     {log.review_text && (
-                      <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{log.review_text}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2 mt-1" data-no-translate>{log.review_text}</p>
                     )}
                   </button>
                 );

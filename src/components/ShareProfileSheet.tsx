@@ -135,7 +135,7 @@ export function ShareProfileSheet({ open, onClose, profile, stats }: ShareProfil
                 <AvatarFallback className="text-lg font-semibold">{initials}</AvatarFallback>
               </Avatar>
               <div className="mt-3 flex items-center gap-1.5">
-                <span className="text-base font-semibold text-foreground">@{profile.username}</span>
+                <span className="text-base font-semibold text-foreground" data-no-translate>@{profile.username}</span>
                 {firstCountry && (
                   <span className="text-base leading-none">{getFlagEmoji(firstCountry)}</span>
                 )}
