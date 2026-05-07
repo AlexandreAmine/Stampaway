@@ -64,7 +64,7 @@ function isSkipped(el: Element | null): boolean {
 // nouns (place names, brand words) so DeepL does not mistranslate e.g. "Riga".
 const noTranslateExact: Set<string> = new Set([
   // Brand / product
-  "StampAway", "Stampaway", "Tags",
+  "StampAway", "Stampaway", "Tags", "Map",
 ]);
 export function addNoTranslateStrings(values: Iterable<string>) {
   for (const v of values) {
@@ -138,6 +138,49 @@ async function flush() {
       if (langCache[orig]) applyTranslation(n);
     });
   }
+  // Re-apply attribute targets too
+  if (currentLang !== "en") {
+    const langCache = cache[currentLang] || {};
+    knownAttrs.forEach((rec) => {
+      if (!rec.el.isConnected) { knownAttrs.delete(rec); return; }
+      const t = langCache[rec.orig.trim()];
+      if (t) rec.el.setAttribute(rec.attr, t);
+    });
+  }
+}
+
+// ---- Attribute translation (placeholder, aria-label, title, alt) ----
+const ATTRS = ["placeholder", "aria-label", "title", "alt"] as const;
+type AttrRec = { el: Element; attr: string; orig: string };
+const knownAttrs: Set<AttrRec> = new Set();
+// const seenAttr: WeakSet<Element> = new WeakSet();
+
+function processAttrs(root: Node) {
+  if (typeof document === "undefined") return;
+  if (root.nodeType !== 1 && root.nodeType !== 9 && root.nodeType !== 11) return;
+  const elements: Element[] = [];
+  if ((root as Element).nodeType === 1) elements.push(root as Element);
+  const all = (root as Element).querySelectorAll?.("[placeholder],[aria-label],[title],[alt]");
+  if (all) all.forEach((e) => elements.push(e));
+  const langCache = cache[currentLang] || {};
+  for (const el of elements) {
+    if (isSkipped(el)) continue;
+    for (const a of ATTRS) {
+      const v = el.getAttribute(a);
+      if (!v || !shouldTranslate(v)) continue;
+      // De-dupe per element+attr by stamping data attribute
+      const stamp = `__t_${a}`;
+      if ((el as any)[stamp] === v) continue;
+      (el as any)[stamp] = v;
+      const rec: AttrRec = { el, attr: a, orig: v };
+      knownAttrs.add(rec);
+      if (currentLang !== "en") {
+        const t = langCache[v.trim()];
+        if (t) el.setAttribute(a, t);
+        else enqueue(currentLang, v.trim());
+      }
+    }
+  }
 }
 
 function enqueue(lang: Language, text: string) {
@@ -193,7 +236,10 @@ function scheduleScan(root: Node) {
     const roots = Array.from(pendingRoots);
     pendingRoots.clear();
     for (const r of roots) {
-      if ((r as any).isConnected !== false) processSubtree(r);
+      if ((r as any).isConnected !== false) {
+        processSubtree(r);
+        processAttrs(r);
+      }
     }
   });
 }
@@ -202,6 +248,7 @@ export function startDomTranslator(lang: Language) {
   currentLang = lang;
   if (typeof document === "undefined") return;
   processSubtree(document.body);
+  processAttrs(document.body);
   if (!observer && typeof MutationObserver !== "undefined") {
     observer = new MutationObserver((mutations) => {
       for (const m of mutations) {
@@ -236,6 +283,16 @@ export function setDomTranslatorLanguage(lang: Language) {
       applyTranslation(n);
     } else if (orig) {
       enqueue(lang, orig);
+    }
+  });
+  knownAttrs.forEach((rec) => {
+    if (!rec.el.isConnected) { knownAttrs.delete(rec); return; }
+    if (lang === "en") {
+      rec.el.setAttribute(rec.attr, rec.orig);
+    } else {
+      const t = langCache[rec.orig.trim()];
+      if (t) rec.el.setAttribute(rec.attr, t);
+      else enqueue(lang, rec.orig.trim());
     }
   });
 }

@@ -215,9 +215,9 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
                       {" "}
                       {item.type === "new_follower" && "started following you"}
                       {item.type === "follow_request" && "wants to follow you"}
-                      {item.type === "review_like" && <>liked your review of <span className="font-medium">{item.extra}</span></>}
-                      {item.type === "review_comment" && <>replied to your review of <span className="font-medium">{item.extra}</span></>}
-                      {item.type === "list_like" && <>liked your list "<span className="font-medium">{item.extra}</span>"</>}
+                      {item.type === "review_like" && <>liked your review of <span className="font-medium" data-no-translate>{item.extra}</span></>}
+                      {item.type === "review_comment" && <>replied to your review of <span className="font-medium" data-no-translate>{item.extra}</span></>}
+                      {item.type === "list_like" && <>liked your list "<span className="font-medium" data-no-translate>{item.extra}</span>"</>}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">{formatDistanceToNow(new Date(item.createdAt), { addSuffix: true }).replace(/^about /, "")}</p>
                   </div>
