@@ -158,7 +158,7 @@ export default function ProfilePage() {
 
   const currentProfile = isOwnProfile ? (ownProfileFull || profile) : viewedProfile;
   const displayName = currentProfile?.username || "User";
-  const avatarUrl = currentProfile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3B82F6&color=fff`;
+  const avatarUrl = currentProfile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0B1E46&color=fff`;
   const profileBio = (currentProfile as any)?.bio as string | null;
   const profileCountry = (currentProfile as any)?.country as string | null;
   const countryList = profileCountry ? profileCountry.split(",").map((s: string) => s.trim()).filter(Boolean) : [];
@@ -671,7 +671,7 @@ export default function ProfilePage() {
               {!isOwnProfile && mapTheirData ? (
                 <>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(217, 91%, 60%)" }} />
+                    <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(222, 73%, 16%)" }} />
                     <span>You</span>
                   </div>
                   <div className="flex items-center gap-1.5">

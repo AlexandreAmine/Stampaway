@@ -542,7 +542,7 @@ export default function ExplorePage() {
                                   className="flex items-start gap-1.5 mt-1.5 px-0.5 w-full text-left"
                                 >
                                   <img
-                                    src={comment.profile_picture || `https://ui-avatars.com/api/?name=U&background=3B82F6&color=fff&size=20`}
+                                    src={comment.profile_picture || `https://ui-avatars.com/api/?name=U&background=0B1E46&color=fff&size=20`}
                                     className="w-4 h-4 rounded-full shrink-0 mt-0.5"
                                     loading="lazy"
                                     decoding="async"
