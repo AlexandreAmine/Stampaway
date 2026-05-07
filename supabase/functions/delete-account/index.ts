@@ -21,12 +21,12 @@ Deno.serve(async (req) => {
     const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
     const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Verify the caller using their JWT
     const userClient = createClient(SUPABASE_URL, ANON_KEY, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: userData, error: userErr } = await userClient.auth.getUser();
     if (userErr || !userData.user) {
+      console.error("auth.getUser failed:", userErr);
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -35,46 +35,43 @@ Deno.serve(async (req) => {
 
     const userId = userData.user.id;
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    console.log(`Deleting account for user ${userId}`);
 
-    // Delete user-owned content across all public tables.
-    // Order matters: delete dependent rows before parents where FKs aren't cascading.
-    const tablesByUserId = [
-      "review_likes",
-      "review_comments",
-      "list_likes",
-      "list_items", // will also be cleaned via lists cascade, but harmless
-      "favorite_places",
-      "wishlists",
-      "yearly_goal_places",
-      "yearly_goals",
-      "follow_requests",
-      "followers",
-      "blocked_users",
-      "review_tags",
-      "reviews",
-      "lists",
-      "user_roles",
-      "profiles",
-    ];
+    const safe = async (label: string, p: Promise<{ error: any }>) => {
+      const { error } = await p;
+      if (error) console.warn(`[${label}] ${error.message}`);
+    };
 
-    // Special: review_tags has tagged_user_id and tagged_by_user_id
-    await admin.from("review_tags").delete().or(`tagged_user_id.eq.${userId},tagged_by_user_id.eq.${userId}`);
+    // 1) Get user's reviews and lists ids so we can clean their dependents
+    const { data: userReviews } = await admin.from("reviews").select("id").eq("user_id", userId);
+    const reviewIds = (userReviews ?? []).map((r: any) => r.id);
+    const { data: userLists } = await admin.from("lists").select("id").eq("user_id", userId);
+    const listIds = (userLists ?? []).map((l: any) => l.id);
 
-    // followers: follower_id or following_id
-    await admin.from("followers").delete().or(`follower_id.eq.${userId},following_id.eq.${userId}`);
+    // 2) Clean dependents on user's reviews (others' likes, comments, tags, sub-ratings)
+    if (reviewIds.length) {
+      await safe("review_sub_ratings", admin.from("review_sub_ratings").delete().in("review_id", reviewIds));
+      await safe("review_likes(on user reviews)", admin.from("review_likes").delete().in("review_id", reviewIds));
+      await safe("review_comments(on user reviews)", admin.from("review_comments").delete().in("review_id", reviewIds));
+      await safe("review_tags(on user reviews)", admin.from("review_tags").delete().in("review_id", reviewIds));
+    }
 
-    // follow_requests: requester_id or target_id
-    await admin.from("follow_requests").delete().or(`requester_id.eq.${userId},target_id.eq.${userId}`);
+    // 3) Clean dependents on user's lists (others' likes, items)
+    if (listIds.length) {
+      await safe("list_likes(on user lists)", admin.from("list_likes").delete().in("list_id", listIds));
+      await safe("list_items(on user lists)", admin.from("list_items").delete().in("list_id", listIds));
+    }
 
-    // blocked_users: blocker_id or blocked_id
-    await admin.from("blocked_users").delete().or(`blocker_id.eq.${userId},blocked_id.eq.${userId}`);
+    // 4) Clean rows the user authored or that reference them
+    await safe("review_tags(by/about user)", admin.from("review_tags").delete().or(`tagged_user_id.eq.${userId},tagged_by_user_id.eq.${userId}`));
+    await safe("followers", admin.from("followers").delete().or(`follower_id.eq.${userId},following_id.eq.${userId}`));
+    await safe("follow_requests", admin.from("follow_requests").delete().or(`requester_id.eq.${userId},target_id.eq.${userId}`));
+    await safe("blocked_users", admin.from("blocked_users").delete().or(`blocker_id.eq.${userId},blocked_id.eq.${userId}`));
 
-    // Per-user_id columns
     const userIdTables = [
       "review_likes",
       "review_comments",
       "list_likes",
-      "list_items",
       "favorite_places",
       "wishlists",
       "yearly_goal_places",
@@ -85,22 +82,20 @@ Deno.serve(async (req) => {
       "profiles",
     ];
     for (const table of userIdTables) {
-      const { error } = await admin.from(table).delete().eq("user_id", userId);
-      if (error && !/does not exist|column .* does not exist/i.test(error.message)) {
-        console.warn(`delete from ${table} failed:`, error.message);
-      }
+      await safe(table, admin.from(table).delete().eq("user_id", userId));
     }
 
-    // Finally, delete the auth user (this frees up the email)
+    // 5) Finally, delete the auth user (frees the email)
     const { error: delErr } = await admin.auth.admin.deleteUser(userId);
     if (delErr) {
-      console.error("auth deleteUser failed:", delErr);
+      console.error("auth.admin.deleteUser failed:", delErr);
       return new Response(JSON.stringify({ error: delErr.message }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    console.log(`Successfully deleted user ${userId}`);
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
