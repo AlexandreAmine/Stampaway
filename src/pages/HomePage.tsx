@@ -215,7 +215,7 @@ export default function HomePage() {
   const mapHeight = Math.round(mapWidth * 1.1);
 
   return (
-    <div className="min-h-screen bg-background pb-24 relative">
+    <div className="min-h-screen pb-24 relative" style={{ backgroundColor: '#0B1E46' }}>
       {/* Fixed map background — stays visible while the activity list scrolls over it */}
       <div className="fixed top-0 left-0 right-0 z-0 pointer-events-none">
         <div className="mx-auto max-w-lg pointer-events-auto">
