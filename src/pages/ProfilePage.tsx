@@ -671,7 +671,7 @@ export default function ProfilePage() {
               {!isOwnProfile && mapTheirData ? (
                 <>
                   <div className="flex items-center gap-1.5">
-                    <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(217, 91%, 60%)" }} />
+                    <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(222, 73%, 16%)" }} />
                     <span>You</span>
                   </div>
                   <div className="flex items-center gap-1.5">
