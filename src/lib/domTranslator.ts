@@ -64,7 +64,7 @@ function isSkipped(el: Element | null): boolean {
 // nouns (place names, brand words) so DeepL does not mistranslate e.g. "Riga".
 const noTranslateExact: Set<string> = new Set([
   // Brand / product
-  "StampAway", "Stampaway", "Tags",
+  "StampAway", "Stampaway", "Tags", "Map",
 ]);
 export function addNoTranslateStrings(values: Iterable<string>) {
   for (const v of values) {
