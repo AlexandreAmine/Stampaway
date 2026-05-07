@@ -211,7 +211,7 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
                   </button>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-foreground">
-                      <button onClick={() => { onClose(); navigate(`/profile/${item.userId}`); }} className="font-semibold hover:underline">{item.username}</button>
+                      <button onClick={() => { onClose(); navigate(`/profile/${item.userId}`); }} className="font-semibold hover:underline" data-no-translate>{item.username}</button>
                       {" "}
                       {item.type === "new_follower" && "started following you"}
                       {item.type === "follow_request" && "wants to follow you"}

@@ -129,6 +129,7 @@ export function GlobeActivityPopup({ activity, onClose, onNavigate, onProfileNav
                   onProfileNavigate(activity.user_id);
                 }}
                 className="text-sm font-semibold text-foreground"
+                data-no-translate
               >
                 {activity.username}
               </button>
@@ -185,7 +186,7 @@ export function GlobeActivityPopup({ activity, onClose, onNavigate, onProfileNav
                       <Avatar className="w-4 h-4">
                         {p.profile_picture ? <AvatarImage src={p.profile_picture} /> : <AvatarFallback className="text-[7px]">{p.username[0]?.toUpperCase()}</AvatarFallback>}
                       </Avatar>
-                      <span className="text-xs font-medium text-foreground">{p.username}</span>
+                      <span className="text-xs font-medium text-foreground" data-no-translate>{p.username}</span>
                       {i < taggedPeople.length - 1 && <span className="text-xs text-muted-foreground">,</span>}
                     </div>
                   ))}

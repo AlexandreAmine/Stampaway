@@ -141,7 +141,7 @@ export function ShareProfileSheet({ open, onClose, profile, stats }: ShareProfil
                 )}
               </div>
               {profile.bio && (
-                <p className="mt-1 text-xs text-muted-foreground line-clamp-2 max-w-[260px]">
+                <p className="mt-1 text-xs text-muted-foreground line-clamp-2 max-w-[260px]" data-no-translate>
                   {profile.bio}
                 </p>
               )}
