@@ -236,7 +236,10 @@ function scheduleScan(root: Node) {
     const roots = Array.from(pendingRoots);
     pendingRoots.clear();
     for (const r of roots) {
-      if ((r as any).isConnected !== false) processSubtree(r);
+      if ((r as any).isConnected !== false) {
+        processSubtree(r);
+        processAttrs(r);
+      }
     }
   });
 }
