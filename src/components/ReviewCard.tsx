@@ -142,9 +142,9 @@ export function ReviewCard({ review, showImage = true, hidePlaceName = false }: 
               </button>
             </div>
           </div>
-          {!hidePlaceName && placeName && <p className="text-sm font-semibold text-foreground mt-1">{placeName}</p>}
+          {!hidePlaceName && placeName && <p className="text-sm font-semibold text-foreground mt-1" data-no-translate>{placeName}</p>}
           {reviewText && (
-            <p className="text-xs text-muted-foreground mt-1 leading-relaxed line-clamp-2">
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed line-clamp-2" data-no-translate>
               {reviewText.length > 800 ? reviewText.slice(0, 800) + "..." : reviewText}
             </p>
           )}
