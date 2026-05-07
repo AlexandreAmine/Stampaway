@@ -9,6 +9,16 @@ export const languageNames: Record<Language, string> = {
   nl: "Nederlands",
 };
 
+/** Language names AS WRITTEN in each viewer language. */
+export const languageNamesByViewer: Record<Language, Record<Language, string>> = {
+  en: { en: "English", fr: "French", es: "Spanish", it: "Italian", pt: "Portuguese", nl: "Dutch" },
+  fr: { en: "Anglais", fr: "Français", es: "Espagnol", it: "Italien", pt: "Portugais", nl: "Néerlandais" },
+  es: { en: "Inglés", fr: "Francés", es: "Español", it: "Italiano", pt: "Portugués", nl: "Neerlandés" },
+  it: { en: "Inglese", fr: "Francese", es: "Spagnolo", it: "Italiano", pt: "Portoghese", nl: "Olandese" },
+  pt: { en: "Inglês", fr: "Francês", es: "Espanhol", it: "Italiano", pt: "Português", nl: "Holandês" },
+  nl: { en: "Engels", fr: "Frans", es: "Spaans", it: "Italiaans", pt: "Portugees", nl: "Nederlands" },
+};
+
 // All translatable UI keys
 const en = {
   // Common
