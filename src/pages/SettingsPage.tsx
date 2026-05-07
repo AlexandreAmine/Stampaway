@@ -120,9 +120,18 @@ export default function SettingsPage() {
 
   const handleDeleteAccount = async () => {
     if (deleteConfirm !== "DELETE") { toast.error(t("toast.typeDelete")); return; }
-    toast.success(t("toast.accountDeleted"));
-    await signOut();
-    navigate("/auth");
+    try {
+      const { error } = await supabase.functions.invoke("delete-account");
+      if (error) {
+        toast.error(error.message || "Failed to delete account");
+        return;
+      }
+      toast.success(t("toast.accountDeleted"));
+      await signOut();
+      navigate("/auth");
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to delete account");
+    }
   };
 
   if (loading) return <div className="min-h-screen bg-background" />;
