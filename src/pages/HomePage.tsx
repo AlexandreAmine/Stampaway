@@ -175,7 +175,7 @@ export default function HomePage() {
   }, [user]);
 
   const getAvatarUrl = (a: FriendActivity) =>
-    a.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(a.username)}&background=0B1E46&color=fff&size=40`;
+    a.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(a.username)}&background=3B82F6&color=fff&size=40`;
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
