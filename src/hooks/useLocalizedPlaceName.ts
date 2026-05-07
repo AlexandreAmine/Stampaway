@@ -38,11 +38,15 @@ export function useLocalizedPlaceNames(names: string[], isCountry: boolean): str
   const [out, setOut] = useState<string[]>(initial);
 
   useEffect(() => {
+    addNoTranslateStrings(names);
     setOut(names.map((n) => getCachedPlaceName(n, language, isCountry)));
     if (language === "en" || names.length === 0) return;
     let cancelled = false;
     ensurePlaceNamesTranslated(names, language, isCountry).then((res) => {
-      if (!cancelled) setOut(res);
+      if (!cancelled) {
+        addNoTranslateStrings(res);
+        setOut(res);
+      }
     });
     return () => { cancelled = true; };
   }, [names.join("|"), language, isCountry]);
