@@ -25,6 +25,7 @@ interface NotifItem {
 
 export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [items, setItems] = useState<NotifItem[]>([]);
   const [loading, setLoading] = useState(true);
