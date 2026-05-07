@@ -155,7 +155,7 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
             </button>
           )}
         </div>
-        <h3 className="text-lg font-bold text-foreground">{openList.name}</h3>
+        <h3 className="text-lg font-bold text-foreground" data-no-translate>{openList.name}</h3>
         {openList.description && <p className="text-xs text-muted-foreground">{openList.description}</p>}
 
         {!readOnly && (
@@ -273,7 +273,7 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-bold text-foreground">{list.name}</p>
+                  <p className="text-sm font-bold text-foreground" data-no-translate>{list.name}</p>
                   <p className="text-xs text-muted-foreground">{list.items.length} destination{list.items.length !== 1 ? "s" : ""}</p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />

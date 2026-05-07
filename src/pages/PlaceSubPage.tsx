@@ -258,7 +258,7 @@ export default function PlaceSubPage() {
                     <AvatarFallback>{l.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{l.list_name}</p>
+                    <p className="text-sm font-medium text-foreground truncate" data-no-translate>{l.list_name}</p>
                     <p className="text-xs text-muted-foreground">by {l.profile?.username || "User"}</p>
                   </div>
                 </button>

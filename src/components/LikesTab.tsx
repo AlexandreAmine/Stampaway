@@ -472,7 +472,7 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
                   )}
                   <span className="text-xs text-muted-foreground">{l.username || "User"}</span>
                 </div>
-                <p className="text-sm font-bold text-foreground">{l.name}</p>
+                <p className="text-sm font-bold text-foreground" data-no-translate>{l.name}</p>
                 <p className="text-xs text-muted-foreground">{l.item_count} destination{l.item_count !== 1 ? "s" : ""}</p>
                 {l.items && l.items.length > 0 && (
                   <div className="flex gap-2 mt-2 overflow-x-auto scrollbar-hide">
