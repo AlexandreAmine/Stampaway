@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { translations, Language, TranslationKey } from "@/i18n/translations";
-import { startDomTranslator, setDomTranslatorLanguage } from "@/lib/domTranslator";
+import { startDomTranslator, setDomTranslatorLanguage, addNoTranslateStrings } from "@/lib/domTranslator";
+import { getAllLocalizedPlaceNames } from "@/lib/placeNames";
 
 interface LanguageContextType {
   language: Language;
