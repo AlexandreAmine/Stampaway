@@ -343,7 +343,7 @@ export default function SearchPage() {
               <div className="flex items-center gap-3">
                 {l.profiles && (
                   <Avatar className="w-8 h-8 shrink-0">
-                    <AvatarImage src={l.profiles.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(l.profiles.username || "?")}&background=0B1E46&color=fff`} />
+                    <AvatarImage src={l.profiles.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(l.profiles.username || "?")}&background=3B82F6&color=fff`} />
                     <AvatarFallback>{l.profiles.username?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                 )}
@@ -374,7 +374,7 @@ export default function SearchPage() {
               <motion.div key={u.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between py-3">
                 <button onClick={() => navigate(isMe ? "/profile" : `/profile/${u.user_id}`)} className="flex items-center gap-3">
                   <Avatar className="w-10 h-10">
-                    <AvatarImage src={u.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=0B1E46&color=fff`} />
+                    <AvatarImage src={u.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=3B82F6&color=fff`} />
                     <AvatarFallback>{u.username?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div>

@@ -90,7 +90,7 @@ export function GlobeActivityPopup({ activity, onClose, onNavigate, onProfileNav
   if (!activity) return null;
 
   const flag = getFlagEmoji(activity.place_country);
-  const avatarUrl = activity.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(activity.username)}&background=0B1E46&color=fff&size=40`;
+  const avatarUrl = activity.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(activity.username)}&background=3B82F6&color=fff&size=40`;
 
   return (
     <AnimatePresence mode="wait">

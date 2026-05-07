@@ -132,12 +132,12 @@ export function MapboxFriendsMap({
       // Pins are added immediately (see below). Spin starts after style loads.
 
       map.on("style.load", () => {
-        // Starry deep-space background around the globe
+        // Navy deep-space background around the globe
         map.setFog({
-          color: "rgb(10, 12, 22)",
-          "high-color": "rgb(20, 30, 60)",
+          color: "rgb(11, 30, 70)",
+          "high-color": "rgb(11, 30, 70)",
           "horizon-blend": 0.04,
-          "space-color": "rgb(0, 0, 0)",
+          "space-color": "rgb(11, 30, 70)",
           "star-intensity": 0.85,
         } as any);
 
@@ -223,13 +223,13 @@ export function MapboxFriendsMap({
       el.style.cursor = "pointer";
       const avatar =
         pin.profile_picture ||
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(pin.username)}&background=0B1E46&color=fff&size=40`;
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(pin.username)}&background=3B82F6&color=fff&size=40`;
       el.innerHTML = `
         <div style="display:flex;align-items:center;gap:3px;background:white;border-radius:20px;padding:3px 8px 3px 3px;box-shadow:0 2px 8px rgba(0,0,0,0.4);white-space:nowrap;">
           <img src="${avatar}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;" />
           ${
             pin.rating != null
-              ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="hsl(222,73%,16%)" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+              ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="#3B82F6" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
                  <span style="font-size:12px;font-weight:700;color:#111;">${pin.rating}</span>`
               : ``
           }

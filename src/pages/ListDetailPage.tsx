@@ -113,7 +113,7 @@ export default function ListDetailPage() {
         {owner && (
           <button onClick={() => navigate(`/profile/${owner.user_id}`)} className="flex items-center gap-2 mb-4">
             <Avatar className="w-7 h-7">
-              <AvatarImage src={owner.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(owner.username)}&background=0B1E46&color=fff`} />
+              <AvatarImage src={owner.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(owner.username)}&background=3B82F6&color=fff`} />
               <AvatarFallback>{owner.username?.[0]?.toUpperCase()}</AvatarFallback>
             </Avatar>
             <span className="text-sm text-muted-foreground" data-no-translate>{owner.username}</span>

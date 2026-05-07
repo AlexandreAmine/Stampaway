@@ -175,7 +175,7 @@ export default function HomePage() {
   }, [user]);
 
   const getAvatarUrl = (a: FriendActivity) =>
-    a.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(a.username)}&background=0B1E46&color=fff&size=40`;
+    a.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(a.username)}&background=3B82F6&color=fff&size=40`;
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -215,7 +215,7 @@ export default function HomePage() {
   const mapHeight = Math.round(mapWidth * 1.1);
 
   return (
-    <div className="min-h-screen bg-background pb-24 relative">
+    <div className="min-h-screen pb-24 relative" style={{ backgroundColor: '#0B1E46' }}>
       {/* Fixed map background — stays visible while the activity list scrolls over it */}
       <div className="fixed top-0 left-0 right-0 z-0 pointer-events-none">
         <div className="mx-auto max-w-lg pointer-events-auto">
@@ -265,9 +265,9 @@ export default function HomePage() {
 
       {/* Activity list — scrolls over the fixed globe with a smooth fade into background */}
       <div className="relative z-10">
-        {/* Soft fade from transparent to background so the globe blends into the list */}
-        <div className="h-16 bg-gradient-to-b from-transparent to-background pointer-events-none" />
-        <div className="bg-background px-5 min-h-[60vh]">
+        {/* Soft fade from transparent to navy so the globe blends into the list */}
+        <div className="h-16 bg-gradient-to-b from-transparent to-[#0B1E46] pointer-events-none" />
+        <div className="px-5 min-h-[60vh]" style={{ backgroundColor: '#0B1E46' }}>
           <h2 className="text-xl font-bold text-foreground mb-4">{t("home.recentActivity")}</h2>
 
           {!hasFollowing && !loading ? (

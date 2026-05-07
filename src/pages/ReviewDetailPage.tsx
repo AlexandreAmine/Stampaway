@@ -124,7 +124,7 @@ export default function ReviewDetailPage() {
           <div className="flex items-center gap-3 mb-4">
             <button onClick={() => navigate(profile?.user_id === user?.id ? "/profile" : `/profile/${profile?.user_id}`)}>
               <Avatar className="w-12 h-12 border-2 border-background">
-                <AvatarImage src={profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.username || "?")}&background=0B1E46&color=fff`} />
+                <AvatarImage src={profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.username || "?")}&background=3B82F6&color=fff`} />
                 <AvatarFallback>{profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
               </Avatar>
             </button>

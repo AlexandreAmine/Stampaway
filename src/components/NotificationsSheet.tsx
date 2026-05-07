@@ -207,7 +207,7 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
                 <div key={`${item.type}-${item.id}`} className="flex items-center gap-3">
                   <button onClick={() => { onClose(); navigate(item.userId === user?.id ? "/profile" : `/profile/${item.userId}`); }}>
                     <Avatar className="w-9 h-9">
-                      <AvatarImage src={item.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.username)}&background=0B1E46&color=fff`} />
+                      <AvatarImage src={item.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.username)}&background=3B82F6&color=fff`} />
                       <AvatarFallback>{item.username[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                   </button>
