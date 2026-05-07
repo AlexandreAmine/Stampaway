@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ensurePlaceNamesTranslated, getCachedPlaceName } from "@/lib/placeNames";
+import { addNoTranslateStrings } from "@/lib/domTranslator";
 
 /**
  * Returns a localized version of a single place name.
@@ -13,11 +14,16 @@ export function useLocalizedPlaceName(name: string | undefined | null, isCountry
 
   useEffect(() => {
     if (!name) { setOut(""); return; }
+    addNoTranslateStrings([name]);
     setOut(getCachedPlaceName(name, language, isCountry));
     if (language === "en") return;
     let cancelled = false;
     ensurePlaceNamesTranslated([name], language, isCountry).then((res) => {
-      if (!cancelled) setOut(res[0] || name);
+      if (!cancelled) {
+        const v = res[0] || name;
+        addNoTranslateStrings([v]);
+        setOut(v);
+      }
     });
     return () => { cancelled = true; };
   }, [name, language, isCountry]);
@@ -32,11 +38,15 @@ export function useLocalizedPlaceNames(names: string[], isCountry: boolean): str
   const [out, setOut] = useState<string[]>(initial);
 
   useEffect(() => {
+    addNoTranslateStrings(names);
     setOut(names.map((n) => getCachedPlaceName(n, language, isCountry)));
     if (language === "en" || names.length === 0) return;
     let cancelled = false;
     ensurePlaceNamesTranslated(names, language, isCountry).then((res) => {
-      if (!cancelled) setOut(res);
+      if (!cancelled) {
+        addNoTranslateStrings(res);
+        setOut(res);
+      }
     });
     return () => { cancelled = true; };
   }, [names.join("|"), language, isCountry]);

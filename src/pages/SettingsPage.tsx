@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { languageNames, Language } from "@/i18n/translations";
+import { languageNames, languageNamesByViewer, Language } from "@/i18n/translations";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
@@ -180,8 +180,8 @@ export default function SettingsPage() {
                   language === lang ? "bg-primary/10 border border-primary" : "hover:bg-muted/50"
                 }`}
               >
-                <span className={`text-sm font-medium ${language === lang ? "text-primary" : "text-foreground"}`}>
-                  {languageNames[lang]}
+                <span className={`text-sm font-medium ${language === lang ? "text-primary" : "text-foreground"}`} data-no-translate>
+                  {languageNamesByViewer[language][lang]}{lang !== language ? ` (${languageNames[lang]})` : ""}
                 </span>
                 {language === lang && (
                   <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">

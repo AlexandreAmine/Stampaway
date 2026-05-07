@@ -242,6 +242,24 @@ function hydrate() {
   for (const k in m) aiCache.set(k, m[k]);
 }
 
+/** Returns all known English place names (countries + cities). */
+export function getAllStaticPlaceNames(): string[] {
+  return [...Object.keys(COUNTRY_NAME_TRANSLATIONS), ...Object.keys(CITY_NAME_TRANSLATIONS)];
+}
+
+/** Returns all localized variants for the given language. */
+export function getAllLocalizedPlaceNames(language: Language): string[] {
+  const out: string[] = [];
+  for (const map of [COUNTRY_NAME_TRANSLATIONS, CITY_NAME_TRANSLATIONS]) {
+    for (const k of Object.keys(map)) {
+      out.push(k);
+      const v = map[k][language];
+      if (v) out.push(v);
+    }
+  }
+  return out;
+}
+
 /** Synchronous lookup. Returns localized name or original. */
 export function getStaticPlaceName(name: string, language: Language, isCountry: boolean): string {
   if (!name || language === "en") return name;

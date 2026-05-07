@@ -18,7 +18,7 @@ import type { Language } from "@/i18n/translations";
  * `data-no-translate` (or any ancestor).
  */
 
-const STORAGE_KEY = "stampaway_dom_t_v2";
+const STORAGE_KEY = "stampaway_dom_t_v3";
 const SEEN = Symbol("stampaway_seen");
 const ORIG = Symbol("stampaway_orig");
 
@@ -60,11 +60,24 @@ function isSkipped(el: Element | null): boolean {
   return false;
 }
 
+// Exact-string blocklist: never send these texts to DeepL. Used for proper
+// nouns (place names, brand words) so DeepL does not mistranslate e.g. "Riga".
+const noTranslateExact: Set<string> = new Set([
+  // Brand / product
+  "StampAway", "Stampaway", "Tags",
+]);
+export function addNoTranslateStrings(values: Iterable<string>) {
+  for (const v of values) {
+    if (v && v.trim()) noTranslateExact.add(v.trim());
+  }
+}
+
 function shouldTranslate(text: string): boolean {
   const trimmed = text.trim();
   if (trimmed.length < 2) return false;
   if (!/[A-Za-z]/.test(trimmed)) return false;
   if (/^[\d.,:/\s\-+%]+$/.test(trimmed)) return false;
+  if (noTranslateExact.has(trimmed)) return false;
   return true;
 }
 
