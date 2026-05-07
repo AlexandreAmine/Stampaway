@@ -129,6 +129,7 @@ export function GlobeActivityPopup({ activity, onClose, onNavigate, onProfileNav
                   onProfileNavigate(activity.user_id);
                 }}
                 className="text-sm font-semibold text-foreground"
+                data-no-translate
               >
                 {activity.username}
               </button>
