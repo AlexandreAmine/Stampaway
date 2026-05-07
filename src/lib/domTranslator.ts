@@ -18,7 +18,7 @@ import type { Language } from "@/i18n/translations";
  * `data-no-translate` (or any ancestor).
  */
 
-const STORAGE_KEY = "stampaway_dom_t_v2";
+const STORAGE_KEY = "stampaway_dom_t_v3";
 const SEEN = Symbol("stampaway_seen");
 const ORIG = Symbol("stampaway_orig");
 
