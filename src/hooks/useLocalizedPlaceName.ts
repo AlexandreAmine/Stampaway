@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { ensurePlaceNamesTranslated, getCachedPlaceName } from "@/lib/placeNames";
+import { addNoTranslateStrings } from "@/lib/domTranslator";
 
 /**
  * Returns a localized version of a single place name.
