@@ -248,6 +248,7 @@ export function startDomTranslator(lang: Language) {
   currentLang = lang;
   if (typeof document === "undefined") return;
   processSubtree(document.body);
+  processAttrs(document.body);
   if (!observer && typeof MutationObserver !== "undefined") {
     observer = new MutationObserver((mutations) => {
       for (const m of mutations) {
