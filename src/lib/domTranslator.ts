@@ -285,4 +285,14 @@ export function setDomTranslatorLanguage(lang: Language) {
       enqueue(lang, orig);
     }
   });
+  knownAttrs.forEach((rec) => {
+    if (!rec.el.isConnected) { knownAttrs.delete(rec); return; }
+    if (lang === "en") {
+      rec.el.setAttribute(rec.attr, rec.orig);
+    } else {
+      const t = langCache[rec.orig.trim()];
+      if (t) rec.el.setAttribute(rec.attr, t);
+      else enqueue(lang, rec.orig.trim());
+    }
+  });
 }
