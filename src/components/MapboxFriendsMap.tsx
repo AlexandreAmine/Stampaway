@@ -132,12 +132,12 @@ export function MapboxFriendsMap({
       // Pins are added immediately (see below). Spin starts after style loads.
 
       map.on("style.load", () => {
-        // Starry deep-space background around the globe
+        // Navy deep-space background around the globe
         map.setFog({
-          color: "rgb(10, 12, 22)",
-          "high-color": "rgb(20, 30, 60)",
+          color: "rgb(11, 30, 70)",
+          "high-color": "rgb(11, 30, 70)",
           "horizon-blend": 0.04,
-          "space-color": "rgb(0, 0, 0)",
+          "space-color": "rgb(11, 30, 70)",
           "star-intensity": 0.85,
         } as any);
 
