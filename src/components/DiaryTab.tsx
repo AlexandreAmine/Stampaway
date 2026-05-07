@@ -189,7 +189,7 @@ export function DiaryTab({ userId }: { userId?: string }) {
                      <p className="text-xs text-muted-foreground mt-1">No rating</p>
                    )}
                   {entry.review_text && (
-                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{entry.review_text}</p>
+                    <p className="text-xs text-muted-foreground mt-1 line-clamp-2" data-no-translate>{entry.review_text}</p>
                   )}
                 </button>
                 {isOwnProfile && (

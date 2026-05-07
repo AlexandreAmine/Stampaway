@@ -450,7 +450,7 @@ export default function PlacePage() {
                 <span className="text-sm font-semibold text-foreground">{myReview.rating}</span>
               </div>
               {myReview.review_text && (
-                <p className="text-xs text-muted-foreground mt-2">{myReview.review_text}</p>
+                <p className="text-xs text-muted-foreground mt-2" data-no-translate>{myReview.review_text}</p>
               )}
             </button>
           </motion.div>
