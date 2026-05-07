@@ -550,7 +550,7 @@ export default function ExplorePage() {
                                     height={16}
                                     alt=""
                                   />
-                                  <span className="text-[10px] text-muted-foreground line-clamp-2">{comment.text}</span>
+                                  <span className="text-[10px] text-muted-foreground line-clamp-2" data-no-translate>{comment.text}</span>
                                 </button>
                               );
                             })()}
