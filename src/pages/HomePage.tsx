@@ -265,9 +265,9 @@ export default function HomePage() {
 
       {/* Activity list — scrolls over the fixed globe with a smooth fade into background */}
       <div className="relative z-10">
-        {/* Soft fade from transparent to background so the globe blends into the list */}
-        <div className="h-16 bg-gradient-to-b from-transparent to-background pointer-events-none" />
-        <div className="bg-background px-5 min-h-[60vh]">
+        {/* Soft fade from transparent to navy so the globe blends into the list */}
+        <div className="h-16 bg-gradient-to-b from-transparent to-[#0B1E46] pointer-events-none" />
+        <div className="px-5 min-h-[60vh]" style={{ backgroundColor: '#0B1E46' }}>
           <h2 className="text-xl font-bold text-foreground mb-4">{t("home.recentActivity")}</h2>
 
           {!hasFollowing && !loading ? (
