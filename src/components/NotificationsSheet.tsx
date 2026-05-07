@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { X, UserPlus, Heart, Check, XIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -24,6 +25,7 @@ interface NotifItem {
 
 export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [items, setItems] = useState<NotifItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -213,11 +215,11 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
                     <p className="text-sm text-foreground">
                       <button onClick={() => { onClose(); navigate(`/profile/${item.userId}`); }} className="font-semibold hover:underline" data-no-translate>{item.username}</button>
                       {" "}
-                      {item.type === "new_follower" && "started following you"}
-                      {item.type === "follow_request" && "wants to follow you"}
-                      {item.type === "review_like" && <>liked your review of <span className="font-medium" data-no-translate>{item.extra}</span></>}
-                      {item.type === "review_comment" && <>replied to your review of <span className="font-medium" data-no-translate>{item.extra}</span></>}
-                      {item.type === "list_like" && <>liked your list "<span className="font-medium" data-no-translate>{item.extra}</span>"</>}
+                      {item.type === "new_follower" && t("notifications.newFollower")}
+                      {item.type === "follow_request" && t("notifications.followRequest")}
+                      {item.type === "review_like" && <>{t("notifications.likedReview")} <span className="font-medium" data-no-translate>{item.extra}</span></>}
+                      {item.type === "review_comment" && <>{t("notifications.commentedReview")} <span className="font-medium" data-no-translate>{item.extra}</span></>}
+                      {item.type === "list_like" && <>{t("notifications.likedListPre")} "<span className="font-medium" data-no-translate>{item.extra}</span>"</>}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">{formatDistanceToNow(new Date(item.createdAt), { addSuffix: true }).replace(/^about /, "")}</p>
                   </div>
