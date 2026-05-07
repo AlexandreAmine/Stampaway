@@ -121,14 +121,18 @@ export default function SettingsPage() {
   const handleDeleteAccount = async () => {
     if (deleteConfirm !== "DELETE") { toast.error(t("toast.typeDelete")); return; }
     try {
-      const { error } = await supabase.functions.invoke("delete-account");
-      if (error) {
-        toast.error(error.message || "Failed to delete account");
+      const { data, error } = await supabase.functions.invoke("delete-account");
+      if (error || (data && (data as any).error)) {
+        const msg = (data as any)?.error || error?.message || "Failed to delete account";
+        toast.error(msg);
         return;
       }
       toast.success(t("toast.accountDeleted"));
+      // Clear local session entirely so the user cannot stay logged in
+      try { await supabase.auth.signOut({ scope: "local" } as any); } catch {}
       await signOut();
-      navigate("/auth");
+      try { localStorage.clear(); } catch {}
+      navigate("/auth", { replace: true });
     } catch (e: any) {
       toast.error(e?.message || "Failed to delete account");
     }
