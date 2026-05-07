@@ -213,11 +213,11 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
                     <p className="text-sm text-foreground">
                       <button onClick={() => { onClose(); navigate(`/profile/${item.userId}`); }} className="font-semibold hover:underline" data-no-translate>{item.username}</button>
                       {" "}
-                      {item.type === "new_follower" && "started following you"}
-                      {item.type === "follow_request" && "wants to follow you"}
-                      {item.type === "review_like" && <>liked your review of <span className="font-medium" data-no-translate>{item.extra}</span></>}
-                      {item.type === "review_comment" && <>replied to your review of <span className="font-medium" data-no-translate>{item.extra}</span></>}
-                      {item.type === "list_like" && <>liked your list "<span className="font-medium" data-no-translate>{item.extra}</span>"</>}
+                      {item.type === "new_follower" && t("notifications.newFollower")}
+                      {item.type === "follow_request" && t("notifications.followRequest")}
+                      {item.type === "review_like" && <>{t("notifications.likedReview")} <span className="font-medium" data-no-translate>{item.extra}</span></>}
+                      {item.type === "review_comment" && <>{t("notifications.commentedReview")} <span className="font-medium" data-no-translate>{item.extra}</span></>}
+                      {item.type === "list_like" && <>{t("notifications.likedListPre")} "<span className="font-medium" data-no-translate>{item.extra}</span>"</>}
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5">{formatDistanceToNow(new Date(item.createdAt), { addSuffix: true }).replace(/^about /, "")}</p>
                   </div>
