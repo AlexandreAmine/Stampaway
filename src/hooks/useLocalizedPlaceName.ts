@@ -14,11 +14,16 @@ export function useLocalizedPlaceName(name: string | undefined | null, isCountry
 
   useEffect(() => {
     if (!name) { setOut(""); return; }
+    addNoTranslateStrings([name]);
     setOut(getCachedPlaceName(name, language, isCountry));
     if (language === "en") return;
     let cancelled = false;
     ensurePlaceNamesTranslated([name], language, isCountry).then((res) => {
-      if (!cancelled) setOut(res[0] || name);
+      if (!cancelled) {
+        const v = res[0] || name;
+        addNoTranslateStrings([v]);
+        setOut(v);
+      }
     });
     return () => { cancelled = true; };
   }, [name, language, isCountry]);
