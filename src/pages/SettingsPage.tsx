@@ -236,7 +236,7 @@ export default function SettingsPage() {
                     <Avatar className="w-6 h-6">
                       {p.profile_picture ? <AvatarImage src={p.profile_picture} /> : <AvatarFallback className="text-[10px]">{p.username[0]?.toUpperCase()}</AvatarFallback>}
                     </Avatar>
-                    <span className="text-sm text-foreground">{p.username}</span>
+                    <span className="text-sm text-foreground" data-no-translate>{p.username}</span>
                   </button>
                 ))}
               </div>
@@ -252,7 +252,7 @@ export default function SettingsPage() {
                     <Avatar className="w-8 h-8">
                       {b.profile_picture ? <AvatarImage src={b.profile_picture} /> : <AvatarFallback className="text-xs">{b.username[0]?.toUpperCase()}</AvatarFallback>}
                     </Avatar>
-                    <span className="text-sm font-medium text-foreground">{b.username}</span>
+                    <span className="text-sm font-medium text-foreground" data-no-translate>{b.username}</span>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => handleUnblock(b.id)}>{t("settings.unblock")}</Button>
                 </div>

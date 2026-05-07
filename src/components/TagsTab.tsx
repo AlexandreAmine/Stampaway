@@ -121,7 +121,7 @@ export function TagsTab({ userId }: { userId?: string }) {
                     <AvatarFallback className="text-[8px]">{tag.tagger?.username?.[0]?.toUpperCase()}</AvatarFallback>
                   )}
                 </Avatar>
-                <span className="text-xs font-semibold text-foreground">{tag.tagger?.username || "Unknown"}</span>
+                <span className="text-xs font-semibold text-foreground" data-no-translate>{tag.tagger?.username || "Unknown"}</span>
               </button>
             </div>
             {tag.review?.visit_year && (

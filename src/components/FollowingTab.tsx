@@ -169,7 +169,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
                       height={32}
                       className="w-8 h-8 rounded-full object-cover"
                     />
-                    <span className="text-sm font-medium text-foreground">{u.username}</span>
+                    <span className="text-sm font-medium text-foreground" data-no-translate>{u.username}</span>
                   </button>
                   {!isFollowing && (
                     <button onClick={() => handleFollow(u.user_id)} className="text-xs bg-primary text-primary-foreground px-3 py-1 rounded-lg font-medium">
@@ -201,7 +201,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
                   height={32}
                   className="w-8 h-8 rounded-full object-cover"
                 />
-                <span className="text-sm font-medium text-foreground">{f.username}</span>
+                <span className="text-sm font-medium text-foreground" data-no-translate>{f.username}</span>
               </button>
               {!readOnly && (
                 <button onClick={() => setPendingUnfollow(f)} className="p-1.5">

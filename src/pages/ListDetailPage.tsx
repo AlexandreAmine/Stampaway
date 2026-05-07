@@ -116,7 +116,7 @@ export default function ListDetailPage() {
               <AvatarImage src={owner.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(owner.username)}&background=3B82F6&color=fff`} />
               <AvatarFallback>{owner.username?.[0]?.toUpperCase()}</AvatarFallback>
             </Avatar>
-            <span className="text-sm text-muted-foreground">{owner.username}</span>
+            <span className="text-sm text-muted-foreground" data-no-translate>{owner.username}</span>
           </button>
         )}
 

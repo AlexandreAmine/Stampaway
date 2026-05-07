@@ -307,7 +307,7 @@ export default function HomePage() {
                 </button>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1">
-                    <span className="text-sm font-medium text-foreground">{a.username}</span>
+                    <span className="text-sm font-medium text-foreground" data-no-translate>{a.username}</span>
                     <span className="text-xs text-muted-foreground">• {formatDate(a.created_at)}</span>
                   </div>
                   <div className="flex items-center gap-1.5">

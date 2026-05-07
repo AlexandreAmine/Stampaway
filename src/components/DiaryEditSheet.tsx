@@ -317,7 +317,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
                         <Avatar className="w-4 h-4">
                           {u.profile_picture ? <AvatarImage src={u.profile_picture} /> : <AvatarFallback className="text-[8px]">{u.username[0]?.toUpperCase()}</AvatarFallback>}
                         </Avatar>
-                        <span className="text-xs font-medium text-foreground">{u.username}</span>
+                        <span className="text-xs font-medium text-foreground" data-no-translate>{u.username}</span>
                         <button onClick={() => setTaggedUsers(prev => prev.filter(t => t.user_id !== u.user_id))} className="ml-0.5">
                           <X className="w-3 h-3 text-muted-foreground" />
                         </button>
@@ -348,7 +348,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
                           <Avatar className="w-6 h-6">
                             {p.profile_picture ? <AvatarImage src={p.profile_picture} /> : <AvatarFallback className="text-[10px]">{p.username[0]?.toUpperCase()}</AvatarFallback>}
                           </Avatar>
-                          <span className="text-sm text-foreground">{p.username}</span>
+                          <span className="text-sm text-foreground" data-no-translate>{p.username}</span>
                         </button>
                       ))}
                     </div>

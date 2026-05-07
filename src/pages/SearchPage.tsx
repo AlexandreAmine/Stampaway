@@ -351,7 +351,7 @@ export default function SearchPage() {
                   <p className="text-sm font-semibold text-foreground" data-no-translate>{l.name}</p>
                   {l.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{l.description}</p>}
                   <div className="flex items-center gap-2 mt-1">
-                    {l.profiles && <p className="text-xs text-muted-foreground">by {l.profiles.username}</p>}
+                    {l.profiles && <p className="text-xs text-muted-foreground">by <span data-no-translate>{l.profiles.username}</span></p>}
                     <span className="text-xs text-muted-foreground">• {l.item_count ?? "?"} destination{(l.item_count ?? 0) !== 1 ? "s" : ""}</span>
                   </div>
                 </div>
@@ -378,7 +378,7 @@ export default function SearchPage() {
                     <AvatarFallback>{u.username?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div>
-                    <p className="text-sm font-semibold text-foreground">{u.username}</p>
+                    <p className="text-sm font-semibold text-foreground" data-no-translate>{u.username}</p>
                   </div>
                 </button>
                 {!isMe && !isFollowing && (

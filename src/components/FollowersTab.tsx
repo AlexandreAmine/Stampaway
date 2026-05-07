@@ -113,7 +113,7 @@ export function FollowersTab({ userId }: { userId?: string }) {
                   height={32}
                   className="w-8 h-8 rounded-full object-cover"
                 />
-                <span className="text-sm font-medium text-foreground">{f.username}</span>
+                <span className="text-sm font-medium text-foreground" data-no-translate>{f.username}</span>
               </button>
               {isOwnProfile && (
                 <button onClick={() => setPendingRemove(f)} className="p-1.5 rounded-full hover:bg-muted/50 shrink-0">
