@@ -23,6 +23,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // Seed all known place names (English + localized variants) into the
+    // do-not-translate registry so DeepL never mistranslates "Riga" -> "chemise".
+    const seed: string[] = [];
+    (["en","fr","es","it","pt","nl"] as Language[]).forEach((l) => {
+      seed.push(...getAllLocalizedPlaceNames(l));
+    });
+    addNoTranslateStrings(seed);
     // Start the DOM-level auto-translator once mounted
     startDomTranslator(language);
     // eslint-disable-next-line react-hooks/exhaustive-deps
