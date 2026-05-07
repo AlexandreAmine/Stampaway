@@ -104,7 +104,7 @@ export function DestinationPoster({
           )}
 
           {/* Destination name - bottom */}
-          <div className="absolute bottom-0 left-0 right-0 p-2.5">
+          <div className="absolute bottom-0 left-0 right-0 p-2.5" data-no-translate>
             <p className="text-sm font-bold text-white leading-tight truncate">
               {localizedName}
             </p>
