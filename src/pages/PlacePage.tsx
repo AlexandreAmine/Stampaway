@@ -474,7 +474,7 @@ export default function PlacePage() {
                   className="flex-shrink-0 flex items-center gap-1.5 bg-card border border-border rounded-full pl-1 pr-3 py-1"
                 >
                   <Avatar className="w-8 h-8" onClick={(e) => { e.stopPropagation(); navigate(fv.user_id === user?.id ? "/profile" : `/profile/${fv.user_id}`); }}>
-                    <AvatarImage src={fv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fv.profile?.username || "?")}&background=0B1E46&color=fff`} />
+                    <AvatarImage src={fv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fv.profile?.username || "?")}&background=3B82F6&color=fff`} />
                     <AvatarFallback>{fv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className="flex items-center gap-0.5">
@@ -503,7 +503,7 @@ export default function PlacePage() {
               {friendWishlist.map((fw: any) => (
                 <button key={fw.user_id} onClick={() => navigate(fw.user_id === user?.id ? "/profile" : `/profile/${fw.user_id}`)}>
                   <Avatar className="w-9 h-9 border-2 border-border">
-                    <AvatarImage src={fw.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fw.username || "?")}&background=0B1E46&color=fff`} />
+                    <AvatarImage src={fw.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fw.username || "?")}&background=3B82F6&color=fff`} />
                     <AvatarFallback>{fw.username?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                 </button>
