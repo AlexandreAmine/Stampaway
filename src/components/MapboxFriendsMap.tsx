@@ -223,7 +223,7 @@ export function MapboxFriendsMap({
       el.style.cursor = "pointer";
       const avatar =
         pin.profile_picture ||
-        `https://ui-avatars.com/api/?name=${encodeURIComponent(pin.username)}&background=3B82F6&color=fff&size=40`;
+        `https://ui-avatars.com/api/?name=${encodeURIComponent(pin.username)}&background=0B1E46&color=fff&size=40`;
       el.innerHTML = `
         <div style="display:flex;align-items:center;gap:3px;background:white;border-radius:20px;padding:3px 8px 3px 3px;box-shadow:0 2px 8px rgba(0,0,0,0.4);white-space:nowrap;">
           <img src="${avatar}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;" />

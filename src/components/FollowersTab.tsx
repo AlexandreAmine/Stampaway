@@ -105,7 +105,7 @@ export function FollowersTab({ userId }: { userId?: string }) {
             <div key={f.id} className="flex items-center gap-3 py-2.5 w-full">
               <button onClick={() => navigate(`/profile/${f.id}`)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
                 <img
-                  src={f.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.username)}&background=3B82F6&color=fff&size=32`}
+                  src={f.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.username)}&background=0B1E46&color=fff&size=32`}
                   alt={f.username}
                   loading="lazy"
                   decoding="async"
