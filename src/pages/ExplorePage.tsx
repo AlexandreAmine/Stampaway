@@ -515,7 +515,7 @@ export default function ExplorePage() {
                     {section.places.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No data yet</p>
                     ) : (
-                    <div className="flex gap-2.5 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
+                    <div className="flex items-start gap-2.5 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
                         {section.places.map((place) => (
                           <button
                             key={place.id}
