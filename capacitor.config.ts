@@ -15,7 +15,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 const isDev = process.env.CAP_ENV === "dev";
 
 const config: CapacitorConfig = {
-  appId: "app.lovable.29bacedb019c46d6a9a8dea7867a9954",
+  appId: "app.stampaway.mobile",
   appName: "Stampaway",
   webDir: "dist",
   ...(isDev
