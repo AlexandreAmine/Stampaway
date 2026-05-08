@@ -256,22 +256,6 @@ export default function HomePage() {
               }}
               onProfileNavigate={(userId) => navigate(userId === user?.id ? "/profile" : `/profile/${userId}`)}
             />
-
-            {/* Empty-state CTA overlay — visible without scrolling when user follows nobody */}
-            {!hasFollowing && !loading && (
-              <div className="absolute inset-x-0 bottom-4 flex flex-col items-center gap-3 px-6 z-20">
-                <p className="text-sm text-foreground/90 text-center bg-background/60 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                  {t("home.followFriends")}
-                </p>
-                <button
-                  onClick={() => navigate("/search?tab=Users")}
-                  className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full text-sm font-medium shadow-lg"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  {t("home.findFriends")}
-                </button>
-              </div>
-            )}
           </div>
         </div>
       </div>
