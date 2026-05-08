@@ -1,49 +1,34 @@
-## Add Pexels as a poster source + generate Georgia cities
+## Goal
+Change the Capacitor App ID from the invalid `app.lovable.29bacedb019c46d6a9a8dea7867a9954` to a clean, store-ready `app.stampaway.mobile`, then add iOS and Android native platforms.
 
-### What we'll build
+## What I will change in the codebase
+**File:** `capacitor.config.ts`
+- Change `appId: "app.lovable.29bacedb019c46d6a9a8dea7867a9954"` → `appId: "app.stampaway.mobile"`
 
-1. **Store the Pexels API key** as a Supabase secret (`PEXELS_API_KEY`). You shared it in chat — I'll add it via the secret tool so it's not hardcoded in the repo.
+That's the only code change needed.
 
-2. **New edge function `fetch-pexels-poster`** — same shape as `fetch-unsplash-poster`:
-   - Takes `place_id`, looks up the place
-   - Skips if `places.image` is already set (unless `force: true`)
-   - Loads all currently-used Pexels photo IDs from `places.image` to enforce **uniqueness across the whole DB** (no duplicate poster anywhere)
-   - Queries Pexels `/v1/search` with multiple wide-shot queries:
-     - `"{name} {country} aerial cityscape skyline"`
-     - `"{name} {country} city skyline panorama"`
-     - `"{name} {country} cityscape"`
-     - `"{name} {country}"`
-   - Per query: `per_page=80`, `orientation=portrait` (matches the 3:4 poster), `size=large`
-   - Filters out photos whose `alt` mentions people (`person`, `selfie`, `portrait of`, `wedding`, `bride`, `groom`, `model`, `man`, `woman`, `couple`)
-   - Scores remaining photos: base score + bonuses for wide-shot keywords (`skyline`, `cityscape`, `aerial`, `panorama`, `drone`, `view`, `downtown`, `harbor`) − penalties for narrow shots (`close-up`, `interior`, `facade`, `door`, `window`, `food`, `statue`, `detail`)
-   - Picks highest score not already used; saves the Pexels CDN URL into `places.image`
-   - Returns `{ image_url, photo_id, photographer }`
+## What you will paste in Terminal (after I apply the change)
 
-3. **Update `DestinationPoster.tsx`** to add a `provider` prop (`"unsplash" | "pexels"`, default `"unsplash"`) so existing behavior is unchanged. When `provider="pexels"` it calls the new function instead.
+After clicking "Implement plan", wait until I confirm the change is done, then in your Mac Terminal (inside the `Stampaway` folder) run these commands **one at a time**:
 
-4. **Generate all Georgia city posters now** — once the function is deployed, I'll:
-   - Query: `select id from places where type='city' and country='Georgia'`
-   - For each, invoke `fetch-pexels-poster` with `force: true` (overwrites whatever is currently cached, since you want the best Pexels result)
-   - Run sequentially with a small delay to respect Pexels' 200 req/hour free tier
+```bash
+git pull
+```
 
-### Why Pexels works well here
+```bash
+git add capacitor.config.ts && git commit -m "chore: set clean app id"
+```
 
-- Separate quota from Unsplash → no interference with what we already built
-- Free tier: 200/hour, 20k/month — plenty for a one-shot Georgia regen
-- Different photographer pool → cities Unsplash had weak results for (small Georgian towns) will get fresh coverage
-- Uniqueness check still runs DB-wide, so a Pexels poster won't collide with an existing Unsplash one (different URL patterns; we extract Pexels photo ID separately)
+```bash
+npx cap add ios
+```
 
-### Open question
+```bash
+npx cap add android
+```
 
-**Q: Do you want Pexels to be the source going forward for all cities (everywhere in the app), or only for this Georgia regen?**
-- **Option A — Georgia only now**: I add the function, regen Georgia, leave the rest of the app on Unsplash. Safer, lets you compare.
-- **Option B — Switch all city posters to Pexels**: I change `DestinationPoster` default to `pexels` so any new auto-generation across the app uses Pexels. Existing cached images stay until you wipe them.
+After all four finish successfully, tell me "done" and I'll guide you through the next step (building the app and opening it in Xcode).
 
-I recommend **A** — regen Georgia, see if you prefer the look, then decide.
-
-### Files touched
-
-- `supabase/functions/fetch-pexels-poster/index.ts` (new)
-- `src/components/DestinationPoster.tsx` (add `provider` prop)
-- New secret: `PEXELS_API_KEY`
-- One-shot DB script run: invoke function for every Georgia city
+## Notes
+- `app.stampaway.mobile` is permanent — it's the bundle ID Apple and Google will use forever for this app. If you'd prefer a different one (e.g. `com.yourname.stampaway`), tell me before approving and I'll use that instead.
+- Capgo will still work — when we re-run the Capgo onboarding it will pick up the new App ID automatically.
