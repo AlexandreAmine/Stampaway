@@ -139,7 +139,7 @@ export { fetchUserMapData };
 export type { UserMapData };
 
 function getRatingColor(rating: number | null | undefined): string {
-  if (rating == null) return "hsl(222, 73%, 16%)"; // blue - no grade
+  if (rating == null) return "hsl(217, 91%, 60%)"; // blue - no grade
   if (rating >= 4.5) return "hsl(0, 85%, 50%)";    // red
   if (rating >= 3.5) return "hsl(25, 95%, 53%)";   // orange
   if (rating >= 2) return "hsl(45, 95%, 50%)";     // yellow
@@ -172,7 +172,7 @@ export const SoloMapChart = memo(({ data, onCountryClick, onCityClick, coloredMo
             if (isVisited) {
               fill = coloredMode
                 ? getRatingColor(data.countryRatings[alpha2])
-                : "hsl(222, 73%, 16%)";
+                : "hsl(217, 91%, 60%)";
             }
             return (
               <Geography
@@ -229,7 +229,7 @@ export const CompareMapChart = memo(({ myData, theirData, onCountryClick }: {
             const theirs = theirData.visitedCodes.has(alpha2);
             let fill = "hsl(0, 0%, 18%)";
             if (mine && theirs) fill = "hsl(150, 60%, 45%)"; // green = both
-            else if (mine) fill = "hsl(222, 73%, 16%)";       // blue = me
+            else if (mine) fill = "hsl(217, 91%, 60%)";       // blue = me
             else if (theirs) fill = "hsl(40, 95%, 55%)";      // yellow/orange = them
             const isVisited = mine || theirs;
             return (
@@ -332,7 +332,7 @@ export function MapTab({ userId }: { userId?: string }) {
         {/* Legend */}
         <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(222, 73%, 16%)" }} />
+            <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(217, 91%, 60%)" }} />
             <span>You</span>
           </div>
           <div className="flex items-center gap-1.5">
@@ -443,7 +443,7 @@ export function MapTab({ userId }: { userId?: string }) {
           <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(25, 95%, 53%)" }} /><span>4 - 3.5</span></div>
           <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(45, 95%, 50%)" }} /><span>3 - 2</span></div>
           <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(75, 60%, 45%)" }} /><span>1.5 - 0.5</span></div>
-          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(222, 73%, 16%)" }} /><span>No grade</span></div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(217, 91%, 60%)" }} /><span>No grade</span></div>
           <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(270, 70%, 50%)" }} /><span>5★ city</span></div>
         </div>
       )}
