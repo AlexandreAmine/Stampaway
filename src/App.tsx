@@ -24,6 +24,7 @@ import SettingsPage from "./pages/SettingsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 
+import WelcomePage from "./pages/WelcomePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,7 +32,7 @@ const queryClient = new QueryClient();
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, mustCompletePasswordReset } = useAuth();
   if (loading) return null;
-  if (!user) return <Navigate to="/auth" replace />;
+  if (!user) return <Navigate to="/welcome" replace />;
   if (mustCompletePasswordReset) return <Navigate to="/auth" replace />;
   return <>{children}</>;
 }
@@ -43,6 +44,7 @@ function AppRoutes() {
     <div className="max-w-lg mx-auto relative min-h-screen">
       <ScrollRestoration />
       <Routes>
+        <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/terms" element={<TermsOfServicePage />} />
