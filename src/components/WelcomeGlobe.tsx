@@ -2,6 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
+import a1 from "@/assets/avatars/a1.png";
+import a2 from "@/assets/avatars/a2.png";
+import a3 from "@/assets/avatars/a3.png";
+import a4 from "@/assets/avatars/a4.png";
+import a5 from "@/assets/avatars/a5.png";
+import a6 from "@/assets/avatars/a6.png";
+import a7 from "@/assets/avatars/a7.png";
+import a8 from "@/assets/avatars/a8.png";
 
 const TOKEN_STORAGE_KEY = "mapbox_public_token_v1";
 
@@ -24,22 +32,23 @@ interface WelcomePin {
   lng: number;
   name: string;
   rating: number;
+  avatar: string;
 }
 
 // 12 pins spread across the world with ratings 2 → 5 in 0.5 steps
 const PINS: WelcomePin[] = [
-  { lat: 48.8566, lng: 2.3522, name: "Aria", rating: 4.5 },        // Paris
-  { lat: 35.6762, lng: 139.6503, name: "Kenji", rating: 5 },        // Tokyo
-  { lat: -33.8688, lng: 151.2093, name: "Liam", rating: 4 },        // Sydney
-  { lat: 40.7128, lng: -74.006, name: "Maya", rating: 3.5 },        // New York
-  { lat: -22.9068, lng: -43.1729, name: "Lucas", rating: 4.5 },     // Rio
-  { lat: 55.7558, lng: 37.6173, name: "Nina", rating: 3 },          // Moscow
-  { lat: 1.3521, lng: 103.8198, name: "Ravi", rating: 5 },          // Singapore
-  { lat: -1.2921, lng: 36.8219, name: "Zara", rating: 4 },          // Nairobi
-  { lat: 64.1466, lng: -21.9426, name: "Erik", rating: 2.5 },       // Reykjavik
-  { lat: 19.4326, lng: -99.1332, name: "Sofia", rating: 3.5 },      // Mexico City
-  { lat: 28.6139, lng: 77.209, name: "Ishaan", rating: 2 },         // New Delhi
-  { lat: 41.9028, lng: 12.4964, name: "Giulia", rating: 4.5 },      // Rome
+  { lat: 48.8566, lng: 2.3522, name: "Aria", rating: 5, avatar: a1 },        // Paris (was 4.5)
+  { lat: 35.6762, lng: 139.6503, name: "Kenji", rating: 5, avatar: a3 },     // Tokyo
+  { lat: -33.8688, lng: 151.2093, name: "Liam", rating: 4, avatar: a6 },     // Sydney
+  { lat: 40.7128, lng: -74.006, name: "Maya", rating: 3.5, avatar: a2 },     // New York
+  { lat: -22.9068, lng: -43.1729, name: "Lucas", rating: 5, avatar: a7 },    // Rio (was 4.5)
+  { lat: 55.7558, lng: 37.6173, name: "Nina", rating: 3, avatar: a4 },       // Moscow
+  { lat: 1.3521, lng: 103.8198, name: "Ravi", rating: 5, avatar: a5 },       // Singapore
+  { lat: -1.2921, lng: 36.8219, name: "Zara", rating: 4, avatar: a2 },       // Nairobi
+  { lat: 64.1466, lng: -21.9426, name: "Erik", rating: 2.5, avatar: a6 },    // Reykjavik
+  { lat: 19.4326, lng: -99.1332, name: "Sofia", rating: 3.5, avatar: a8 },   // Mexico City
+  { lat: 28.6139, lng: 77.209, name: "Ishaan", rating: 2, avatar: a3 },      // New Delhi
+  { lat: 41.9028, lng: 12.4964, name: "Giulia", rating: 4.5, avatar: a8 },   // Rome
 ];
 
 export function WelcomeGlobe({ width, height }: { width: number; height: number }) {
@@ -96,7 +105,7 @@ export function WelcomeGlobe({ width, height }: { width: number; height: number 
         PINS.forEach((p) => {
           const el = document.createElement("div");
           el.style.pointerEvents = "none";
-          const avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(p.name)}&background=3B82F6&color=fff&size=40`;
+          const avatar = p.avatar;
           el.innerHTML = `
             <div style="display:flex;align-items:center;gap:3px;background:white;border-radius:20px;padding:3px 8px 3px 3px;box-shadow:0 2px 8px rgba(0,0,0,0.4);white-space:nowrap;">
               <img src="${avatar}" style="width:22px;height:22px;border-radius:50%;object-fit:cover;" />
