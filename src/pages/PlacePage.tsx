@@ -384,6 +384,19 @@ export default function PlacePage() {
             </button>
           </div>
         )}
+        {user && myReview && (
+          <div
+            className="absolute right-6 pointer-events-none select-none"
+            style={{ top: "5.5rem", transform: "rotate(-14deg)" }}
+            aria-hidden
+          >
+            <svg width="68" height="68" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="50" cy="50" r="44" stroke="hsl(var(--primary))" strokeWidth="4" fill="none" opacity="0.95" />
+              <circle cx="50" cy="50" r="36" stroke="hsl(var(--primary))" strokeWidth="2" strokeDasharray="2 3" fill="none" opacity="0.95" />
+              <text x="50" y="50" textAnchor="middle" dominantBaseline="central" fontFamily="Georgia, serif" fontWeight="700" fontSize="44" fill="hsl(var(--primary))" style={{ opacity: 0.95 }}>S</text>
+            </svg>
+          </div>
+        )}
       </div>
 
       <div className="px-5 -mt-16 relative z-10">
