@@ -515,12 +515,12 @@ export default function ExplorePage() {
                     {section.places.length === 0 ? (
                       <p className="text-sm text-muted-foreground">No data yet</p>
                     ) : (
-                    <div className="flex gap-2.5 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
+                    <div className="flex items-start gap-2.5 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
                         {section.places.map((place) => (
                           <button
                             key={place.id}
                             onClick={() => navigate(`/place/${place.id}`)}
-                            className="flex-shrink-0 w-[130px]"
+                            className="flex-shrink-0 w-[130px] flex flex-col items-stretch text-left"
                           >
                             <div className="aspect-[3/4] w-full relative">
                               <PosterWishlistButton placeId={place.id} placeName={place.name} />
