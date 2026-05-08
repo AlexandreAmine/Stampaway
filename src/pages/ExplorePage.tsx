@@ -520,7 +520,7 @@ export default function ExplorePage() {
                           <button
                             key={place.id}
                             onClick={() => navigate(`/place/${place.id}`)}
-                            className="flex-shrink-0 w-[130px]"
+                            className="flex-shrink-0 w-[130px] flex flex-col items-stretch text-left"
                           >
                             <div className="aspect-[3/4] w-full relative">
                               <PosterWishlistButton placeId={place.id} placeName={place.name} />
