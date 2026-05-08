@@ -271,7 +271,7 @@ export default function HomePage() {
           <h2 className="text-xl font-bold text-foreground mb-4">{t("home.recentActivity")}</h2>
 
           {!hasFollowing && !loading ? (
-            <div className="flex flex-col items-center justify-center py-16 gap-4">
+            <div className="flex flex-col items-center justify-center py-8 gap-4">
               <p className="text-sm text-muted-foreground text-center">{t("home.followFriends")}</p>
               <button
                 onClick={() => navigate("/search?tab=Users")}
