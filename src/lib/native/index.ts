@@ -10,7 +10,7 @@
 export { App } from "@capacitor/app";
 export { Browser } from "@capacitor/browser";
 export { Camera, CameraResultType, CameraSource } from "@capacitor/camera";
-export { Contacts } from "@capacitor-community/contacts";
+export { CapacitorContacts as Contacts } from "@capgo/capacitor-contacts";
 export { Device } from "@capacitor/device";
 export { Filesystem, Directory, Encoding } from "@capacitor/filesystem";
 export { Geolocation } from "@capacitor/geolocation";
