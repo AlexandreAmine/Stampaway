@@ -3,21 +3,29 @@ import type { CapacitorConfig } from "@capacitor/cli";
 /**
  * Capacitor configuration for Stampaway.
  *
- * The `server.url` enables hot-reload from the Lovable sandbox so any change
- * pushed in Lovable is reflected instantly in the installed app during dev.
- *
- * IMPORTANT — for production App Store / Play Store builds:
- *   Comment out or remove the entire `server` block below so the app loads
- *   the bundled `dist/` assets instead of the live preview URL.
+ * Build modes:
+ *   - DEV (default `npm run dev` / `npm run build:dev`):
+ *       CAP_ENV=dev → loads from the live Lovable preview URL (hot reload).
+ *   - PRODUCTION (`npm run build`, used for App Store / Play Store):
+ *       CAP_ENV unset → loads bundled `dist/` assets.
+ *       Live updates still ship via Capgo (over-the-air JS bundle updates),
+ *       so any change you make in Lovable can reach installed apps without
+ *       resubmitting to the stores.
  */
+const isDev = process.env.CAP_ENV === "dev";
+
 const config: CapacitorConfig = {
   appId: "app.lovable.29bacedb019c46d6a9a8dea7867a9954",
   appName: "Stampaway",
   webDir: "dist",
-  server: {
-    url: "https://29bacedb-019c-46d6-a9a8-dea7867a9954.lovableproject.com?forceHideBadge=true",
-    cleartext: true,
-  },
+  ...(isDev
+    ? {
+        server: {
+          url: "https://29bacedb-019c-46d6-a9a8-dea7867a9954.lovableproject.com?forceHideBadge=true",
+          cleartext: true,
+        },
+      }
+    : {}),
   plugins: {
     SplashScreen: {
       launchShowDuration: 1500,
@@ -41,6 +49,17 @@ const config: CapacitorConfig = {
       resize: "body",
       style: "DARK",
       resizeOnFullScreen: true,
+    },
+    // Capgo OTA live updates — production only.
+    // Auto-checks for new bundles on every app launch + resume, downloads in
+    // background, and applies on next launch. Fully App Store / Play Store
+    // compliant (JS/CSS/HTML only, no native code changes).
+    CapacitorUpdater: {
+      autoUpdate: true,
+      autoDeleteFailed: true,
+      autoDeletePrevious: true,
+      resetWhenUpdate: true,
+      directUpdate: true,
     },
   },
   ios: {
