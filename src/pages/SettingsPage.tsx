@@ -423,7 +423,7 @@ export default function SettingsPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={async () => { await signOut(); navigate("/auth"); }}
+              onClick={async () => { await signOut(); navigate("/welcome", { replace: true }); }}
             >
               Sign out
             </AlertDialogAction>
