@@ -1,34 +1,58 @@
 ## Goal
-Change the Capacitor App ID from the invalid `app.lovable.29bacedb019c46d6a9a8dea7867a9954` to a clean, store-ready `app.stampaway.mobile`, then add iOS and Android native platforms.
+Switch the iOS/Android Bundle ID from the rejected `app.stampaway.mobile` to `com.stampaway.app`, so Apple will accept the App ID registration.
 
-## What I will change in the codebase
+## Code change
 **File:** `capacitor.config.ts`
-- Change `appId: "app.lovable.29bacedb019c46d6a9a8dea7867a9954"` → `appId: "app.stampaway.mobile"`
+- Change `appId: "app.stampaway.mobile"` → `appId: "com.stampaway.app"`
 
-That's the only code change needed.
+That is the only file I will edit.
 
-## What you will paste in Terminal (after I apply the change)
+## What you do after I apply the change
 
-After clicking "Implement plan", wait until I confirm the change is done, then in your Mac Terminal (inside the `Stampaway` folder) run these commands **one at a time**:
+### 1. Pull + rebuild native projects (Mac Terminal, inside your `Stampaway` folder)
+
+Run these one at a time:
 
 ```bash
 git pull
 ```
 
 ```bash
-git add capacitor.config.ts && git commit -m "chore: set clean app id"
+npm run build
 ```
+
+Because the appId changed, the safest path is to regenerate the iOS folder:
 
 ```bash
-npx cap add ios
+rm -rf ios && npx cap add ios && npx cap sync ios
 ```
+
+(Same for Android when you're ready: `rm -rf android && npx cap add android && npx cap sync android`.)
+
+### 2. Register the new Bundle ID with Apple
+
+1. Go to https://developer.apple.com/account/resources/identifiers/list
+2. Click **+** → **App IDs** → **App** → Continue
+3. **Description:** `Stampaway`
+4. **Bundle ID:** Explicit → `com.stampaway.app`
+5. Capabilities: tick **Push Notifications** and **Sign In with Apple**
+6. Continue → Register
+
+### 3. Reopen Xcode
 
 ```bash
-npx cap add android
+npx cap open ios
 ```
 
-After all four finish successfully, tell me "done" and I'll guide you through the next step (building the app and opening it in Xcode).
+In Xcode → **App** target → **Signing & Capabilities**:
+- Confirm Bundle Identifier shows `com.stampaway.app`
+- Team: ALEXANDRE KARL AMINE
+- Click **Try Again** if any red errors remain — they should clear within ~10 seconds
+
+### 4. Continue with the App Store steps I gave you previously
+(Steps 3–7 from my last message: version/icon/App Store Connect listing/Archive/Upload/Submit. Just use `com.stampaway.app` instead of the old ID when creating the App Store Connect entry.)
 
 ## Notes
-- `app.stampaway.mobile` is permanent — it's the bundle ID Apple and Google will use forever for this app. If you'd prefer a different one (e.g. `com.yourname.stampaway`), tell me before approving and I'll use that instead.
-- Capgo will still work — when we re-run the Capgo onboarding it will pick up the new App ID automatically.
+- `com.stampaway.app` is permanent — Apple and Google will tie the app to it forever.
+- Capgo OTA updates will continue to work; re-run the Capgo onboarding once after the new iOS folder is generated so it picks up the new App ID.
+- You have not uploaded any build yet, so changing the Bundle ID now is free of consequences.
