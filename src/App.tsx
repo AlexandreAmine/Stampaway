@@ -24,6 +24,7 @@ import SettingsPage from "./pages/SettingsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import DeleteAccountPage from "./pages/DeleteAccountPage";
+import SupportPage from "./pages/SupportPage";
 
 import WelcomePage from "./pages/WelcomePage";
 import NotFound from "./pages/NotFound";
@@ -50,6 +51,7 @@ function AppRoutes() {
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/terms" element={<TermsOfServicePage />} />
         <Route path="/delete-account" element={<DeleteAccountPage />} />
+        <Route path="/support" element={<SupportPage />} />
 
         <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
         <Route path="/explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
