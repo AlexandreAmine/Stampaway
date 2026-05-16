@@ -51,6 +51,7 @@ function AppRoutes() {
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/terms" element={<TermsOfServicePage />} />
         <Route path="/delete-account" element={<DeleteAccountPage />} />
+        <Route path="/support" element={<SupportPage />} />
 
         <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
         <Route path="/explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
