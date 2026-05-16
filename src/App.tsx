@@ -24,6 +24,7 @@ import SettingsPage from "./pages/SettingsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import DeleteAccountPage from "./pages/DeleteAccountPage";
+import SupportPage from "./pages/SupportPage";
 
 import WelcomePage from "./pages/WelcomePage";
 import NotFound from "./pages/NotFound";
