@@ -54,6 +54,12 @@ export default function AuthPage() {
     if (!trimmedUsername) { toast.error(t("auth.usernameRequired")); return; }
     if (!/^[a-zA-Z0-9_.]{3,20}$/.test(trimmedUsername)) { toast.error(t("auth.usernameInvalid")); return; }
     if (!dateOfBirth) { toast.error(t("auth.dobRequired")); return; }
+    const dob = new Date(dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - dob.getFullYear();
+    const m = today.getMonth() - dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+    if (isNaN(dob.getTime()) || age < 16) { toast.error(t("auth.minAge")); return; }
     setSubmitting(true);
 
     // Check username availability before creating the account

@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BottomNav } from "@/components/BottomNav";
 import ScrollRestoration from "@/components/ScrollRestoration";
+import EdgeSwipeBack from "@/components/EdgeSwipeBack";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import HomePage from "./pages/HomePage";
@@ -45,6 +46,7 @@ function AppRoutes() {
   return (
     <div className="max-w-lg mx-auto relative min-h-screen">
       <ScrollRestoration />
+      <EdgeSwipeBack />
       <Routes>
         <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/auth" element={<AuthPage />} />
