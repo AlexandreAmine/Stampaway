@@ -46,6 +46,7 @@ function AppRoutes() {
   return (
     <div className="max-w-lg mx-auto relative min-h-screen">
       <ScrollRestoration />
+      <EdgeSwipeBack />
       <Routes>
         <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/auth" element={<AuthPage />} />
