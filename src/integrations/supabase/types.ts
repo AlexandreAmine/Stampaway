@@ -423,6 +423,39 @@ export type Database = {
         }
         Relationships: []
       }
+      reports: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          reason: string
+          reporter_id: string
+          target_id: string
+          target_type: string
+          target_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          reason: string
+          reporter_id: string
+          target_id: string
+          target_type: string
+          target_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          reason?: string
+          reporter_id?: string
+          target_id?: string
+          target_type?: string
+          target_user_id?: string | null
+        }
+        Relationships: []
+      }
       review_comments: {
         Row: {
           comment_text: string

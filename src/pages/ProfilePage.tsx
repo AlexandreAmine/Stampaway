@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminStats } from "@/components/AdminStats";
 import { ProfileEditSheet } from "@/components/ProfileEditSheet";
 import { ShareProfileSheet } from "@/components/ShareProfileSheet";
+import { ProfileActionsMenu } from "@/components/ProfileActionsMenu";
 import { getFlagEmoji } from "@/lib/countryFlags";
 import { RichBio } from "@/components/RichBio";
 import { SocialLinks } from "@/components/SocialLinks";
@@ -564,32 +565,41 @@ export default function ProfilePage() {
                 <Settings className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
-          ) : user && !isBlocked && (
-            <button
-              onClick={toggleFollow}
-              disabled={togglingFollow}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                isFollowing
-                  ? "bg-card border border-border text-foreground"
-                  : hasPendingRequest
-                    ? "bg-muted text-muted-foreground border border-border"
-                    : "bg-primary text-primary-foreground"
-              }`}
-            >
-              {isFollowing ? (
-                <>
-                  <UserMinus className="w-3.5 h-3.5" />
-                  {t("profile.unfollow")}
-                </>
-              ) : hasPendingRequest ? (
-                <span>{t("profile.requested")}</span>
-              ) : (
-                <>
-                  <UserPlus className="w-3.5 h-3.5" />
-                  {t("profile.follow")}
-                </>
+          ) : user && viewingUserId && (
+            <div className="flex items-center gap-1">
+              {!isBlocked && (
+                <button
+                  onClick={toggleFollow}
+                  disabled={togglingFollow}
+                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    isFollowing
+                      ? "bg-card border border-border text-foreground"
+                      : hasPendingRequest
+                        ? "bg-muted text-muted-foreground border border-border"
+                        : "bg-primary text-primary-foreground"
+                  }`}
+                >
+                  {isFollowing ? (
+                    <>
+                      <UserMinus className="w-3.5 h-3.5" />
+                      {t("profile.unfollow")}
+                    </>
+                  ) : hasPendingRequest ? (
+                    <span>{t("profile.requested")}</span>
+                  ) : (
+                    <>
+                      <UserPlus className="w-3.5 h-3.5" />
+                      {t("profile.follow")}
+                    </>
+                  )}
+                </button>
               )}
-            </button>
+              <ProfileActionsMenu
+                targetUserId={viewingUserId}
+                isBlocked={isBlocked}
+                onBlockChange={setIsBlocked}
+              />
+            </div>
           )}
         </div>
 
