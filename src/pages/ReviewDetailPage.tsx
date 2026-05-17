@@ -10,6 +10,7 @@ import { DestinationPoster } from "@/components/DestinationPoster";
 import { ReviewComments } from "@/components/ReviewComments";
 import { SubRatingsDisplay } from "@/components/SubRatingsDisplay";
 import { Linkify } from "@/components/Linkify";
+import { ReviewActionsMenu } from "@/components/ReviewActionsMenu";
 import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
 
 export default function ReviewDetailPage() {
