@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminStats } from "@/components/AdminStats";
 import { ProfileEditSheet } from "@/components/ProfileEditSheet";
 import { ShareProfileSheet } from "@/components/ShareProfileSheet";
+import { ProfileActionsMenu } from "@/components/ProfileActionsMenu";
 import { getFlagEmoji } from "@/lib/countryFlags";
 import { RichBio } from "@/components/RichBio";
 import { SocialLinks } from "@/components/SocialLinks";
