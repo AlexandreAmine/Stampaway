@@ -229,6 +229,7 @@ const en = {
   "auth.usernameInvalid": "Username must be 3–20 characters (letters, numbers, _ or .)",
   "auth.usernameTaken": "This username is already taken",
   "auth.dobRequired": "Date of birth is required",
+  "auth.minAge": "You must be at least 16 years old to use this app",
   "auth.checkEmail": "Check your email for a verification code",
   "auth.checkPhone": "Check your phone for a verification code",
   "auth.enterCode": "Enter verification code",
