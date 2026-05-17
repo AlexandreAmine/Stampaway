@@ -117,6 +117,11 @@ export default function ReviewDetailPage() {
         >
           <ChevronLeft className="w-5 h-5 text-foreground" />
         </button>
+        {user && review.user_id !== user.id && (
+          <div className="absolute top-12 right-5">
+            <ReviewActionsMenu reviewId={review.id} reviewUserId={review.user_id} />
+          </div>
+        )}
       </div>
 
       <div className="px-5 -mt-12 relative z-10">
