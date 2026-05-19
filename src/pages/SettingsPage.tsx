@@ -33,7 +33,6 @@ export default function SettingsPage() {
 
   // Personal details state
   const [personalEmail, setPersonalEmail] = useState("");
-  const [personalDob, setPersonalDob] = useState("");
   const [personalUsername, setPersonalUsername] = useState("");
 
 
@@ -47,11 +46,10 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("profiles").select("is_private, email, date_of_birth, username").eq("user_id", user.id).single().then(({ data }) => {
+    supabase.from("profiles").select("is_private, email, username").eq("user_id", user.id).single().then(({ data }) => {
       if (data) {
         setIsPrivate((data as any).is_private || false);
         setPersonalEmail((data as any).email || "");
-        setPersonalDob((data as any).date_of_birth || "");
         setPersonalUsername((data as any).username || "");
       }
       setLoading(false);
@@ -157,12 +155,6 @@ export default function SettingsPage() {
               <label className="text-xs text-muted-foreground mb-1 block">{t("auth.email")}</label>
               <p className="text-sm text-foreground bg-card rounded-xl py-3 px-4 border border-border">
                 {personalEmail || user?.email || t("settings.notSet")}
-              </p>
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">{t("settings.dateOfBirth")}</label>
-              <p className="text-sm text-foreground bg-card rounded-xl py-3 px-4 border border-border">
-                {personalDob ? new Date(personalDob).toLocaleDateString() : t("settings.notSet")}
               </p>
             </div>
           </div>
