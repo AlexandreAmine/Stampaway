@@ -31,7 +31,6 @@ export default function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
-  const [dateOfBirth, setDateOfBirth] = useState("");
   const [otpCode, setOtpCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
@@ -53,13 +52,6 @@ export default function AuthPage() {
     const trimmedUsername = username.trim();
     if (!trimmedUsername) { toast.error(t("auth.usernameRequired")); return; }
     if (!/^[a-zA-Z0-9_.]{3,20}$/.test(trimmedUsername)) { toast.error(t("auth.usernameInvalid")); return; }
-    if (!dateOfBirth) { toast.error(t("auth.dobRequired")); return; }
-    const dob = new Date(dateOfBirth);
-    const today = new Date();
-    let age = today.getFullYear() - dob.getFullYear();
-    const m = today.getMonth() - dob.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-    if (isNaN(dob.getTime()) || age < 16) { toast.error(t("auth.minAge")); return; }
     setSubmitting(true);
 
     // Check username availability before creating the account
@@ -67,7 +59,7 @@ export default function AuthPage() {
     if (checkError) { toast.error(checkError.message); setSubmitting(false); return; }
     if (!available) { toast.error(t("auth.usernameTaken")); setSubmitting(false); return; }
 
-    const metadata = { username: trimmedUsername, date_of_birth: dateOfBirth };
+    const metadata = { username: trimmedUsername };
 
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -287,12 +279,6 @@ export default function AuthPage() {
 
                 <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t("auth.password")} required minLength={6} className={`${inputClass} pr-10`} />
 
-                {mode === "signup" && (
-                  <div>
-                    <label className="text-xs text-muted-foreground mb-1 block">{t("auth.dateOfBirth")}</label>
-                    <input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} required className={inputClass} />
-                  </div>
-                )}
 
                 {mode === "login" && (
                   <button type="button" onClick={() => setStep("forgot")} className="text-xs text-primary font-medium">

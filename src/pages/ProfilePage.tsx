@@ -32,6 +32,7 @@ import { SocialLinks } from "@/components/SocialLinks";
 import { sanitizeSocialLinks } from "@/lib/socialLinks";
 import { Camera } from "lucide-react";
 import { toast } from "sonner";
+import { isNative, Camera as CapCamera, CameraResultType, CameraSource } from "@/lib/native";
 
 interface FavoriteSlot {
   slot_index: number;
@@ -499,7 +500,6 @@ export default function ProfilePage() {
                   <input
                     type="file"
                     accept="image/*"
-                    
                     id="profile-pic-input"
                     className="hidden"
                     onChange={async (e) => {
@@ -517,7 +517,43 @@ export default function ProfilePage() {
                     }}
                   />
                   <button
-                    onClick={() => document.getElementById('profile-pic-input')?.click()}
+                    onClick={async () => {
+                      if (!user) return;
+                      // On native, use Capacitor Camera (shows native Take Photo / Choose from Library sheet)
+                      if (isNative()) {
+                        try {
+                          const photo = await CapCamera.getPhoto({
+                            quality: 85,
+                            allowEditing: true,
+                            resultType: CameraResultType.Base64,
+                            source: CameraSource.Prompt,
+                            promptLabelHeader: "Profile photo",
+                            promptLabelPhoto: "Choose from Library",
+                            promptLabelPicture: "Take Photo",
+                          });
+                          if (!photo.base64String) return;
+                          const ext = photo.format || "jpg";
+                          const bytes = Uint8Array.from(atob(photo.base64String), c => c.charCodeAt(0));
+                          const blob = new Blob([bytes], { type: `image/${ext}` });
+                          const path = `${user.id}/avatar.${ext}`;
+                          const { error: uploadErr } = await supabase.storage.from('profile-pictures').upload(path, blob, { upsert: true, contentType: `image/${ext}` });
+                          if (uploadErr) { toast.error("Upload failed"); return; }
+                          const { data: urlData } = supabase.storage.from('profile-pictures').getPublicUrl(path);
+                          const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+                          await supabase.from('profiles').update({ profile_picture: publicUrl }).eq('user_id', user.id);
+                          setOwnProfileFull(prev => prev ? { ...prev, profile_picture: publicUrl } : prev);
+                          toast.success("Profile picture updated");
+                        } catch (err: any) {
+                          // User cancelled or denied permission — silent
+                          if (err?.message && !/cancel|denied/i.test(err.message)) {
+                            toast.error("Could not open camera");
+                          }
+                        }
+                        return;
+                      }
+                      // Web fallback
+                      document.getElementById('profile-pic-input')?.click();
+                    }}
                     className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center border-2 border-background"
                   >
                     <Camera className="w-3 h-3 text-primary-foreground" />
