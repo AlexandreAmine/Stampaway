@@ -1,0 +1,657 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="app.stampaway.mobile"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="24"
+9        android:targetSdkVersion="36" />
+10
+11    <!-- Permissions -->
+12
+13    <uses-permission android:name="android.permission.INTERNET" />
+13-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:40:5-67
+13-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:40:22-64
+14
+15    <queries>
+15-->[:capacitor-browser] /Users/jeanamine/Stampaway/node_modules/@capacitor/browser/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:7:5-11:15
+16        <intent>
+16-->[:capacitor-browser] /Users/jeanamine/Stampaway/node_modules/@capacitor/browser/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:8:9-10:18
+17            <action android:name="android.support.customtabs.action.CustomTabsService" />
+17-->[:capacitor-browser] /Users/jeanamine/Stampaway/node_modules/@capacitor/browser/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:9:13-90
+17-->[:capacitor-browser] /Users/jeanamine/Stampaway/node_modules/@capacitor/browser/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:9:21-87
+18        </intent>
+19        <intent>
+19-->[:capacitor-camera] /Users/jeanamine/Stampaway/node_modules/@capacitor/camera/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:8:9-10:18
+20            <action android:name="android.media.action.IMAGE_CAPTURE" />
+20-->[:capacitor-camera] /Users/jeanamine/Stampaway/node_modules/@capacitor/camera/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:9:13-73
+20-->[:capacitor-camera] /Users/jeanamine/Stampaway/node_modules/@capacitor/camera/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:9:21-70
+21        </intent>
+22        <intent>
+22-->[:capacitor-camera] /Users/jeanamine/Stampaway/node_modules/@capacitor/camera/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:11:9-13:18
+23            <action android:name="android.intent.action.GET_CONTENT" />
+23-->[:capacitor-camera] /Users/jeanamine/Stampaway/node_modules/@capacitor/camera/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:12:13-72
+23-->[:capacitor-camera] /Users/jeanamine/Stampaway/node_modules/@capacitor/camera/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:12:21-69
+24        </intent>
+25        <intent>
+25-->[:capacitor-camera] /Users/jeanamine/Stampaway/node_modules/@capacitor/camera/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:14:9-16:18
+26            <action android:name="android.intent.action.PICK" />
+26-->[:capacitor-camera] /Users/jeanamine/Stampaway/node_modules/@capacitor/camera/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:15:13-65
+26-->[:capacitor-camera] /Users/jeanamine/Stampaway/node_modules/@capacitor/camera/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:15:21-62
+27        </intent>
+28    </queries>
+29
+30    <uses-permission android:name="android.permission.VIBRATE" />
+30-->[:capacitor-haptics] /Users/jeanamine/Stampaway/node_modules/@capacitor/haptics/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:7:5-66
+30-->[:capacitor-haptics] /Users/jeanamine/Stampaway/node_modules/@capacitor/haptics/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:7:22-63
+31    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+31-->[:capacitor-network] /Users/jeanamine/Stampaway/node_modules/@capacitor/network/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:7:5-79
+31-->[:capacitor-network] /Users/jeanamine/Stampaway/node_modules/@capacitor/network/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:7:22-76
+32    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+32-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:23:5-77
+32-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:23:22-74
+33    <uses-permission android:name="android.permission.WAKE_LOCK" /> <!-- Required by older versions of Google Play services to create IID tokens -->
+33-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:24:5-68
+33-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:24:22-65
+34    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+34-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:26:5-82
+34-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:26:22-79
+35    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+35-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:25:5-81
+35-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:25:22-78
+36    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+36-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:26:5-77
+36-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:26:22-74
+37
+38    <permission
+38-->[androidx.core:core:1.17.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:22:5-24:47
+39        android:name="app.stampaway.mobile.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+39-->[androidx.core:core:1.17.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:23:9-81
+40        android:protectionLevel="signature" />
+40-->[androidx.core:core:1.17.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:24:9-44
+41
+42    <uses-permission android:name="app.stampaway.mobile.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+42-->[androidx.core:core:1.17.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:26:5-97
+42-->[androidx.core:core:1.17.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:26:22-94
+43
+44    <application
+44-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:4:5-36:19
+45        android:allowBackup="true"
+45-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:5:9-35
+46        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+46-->[androidx.core:core:1.17.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/11094a199bb7945826b161d8a9c17beb/transformed/core-1.17.0/AndroidManifest.xml:28:18-86
+47        android:extractNativeLibs="false"
+48        android:icon="@mipmap/ic_launcher"
+48-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:6:9-43
+49        android:label="@string/app_name"
+49-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:7:9-41
+50        android:requestLegacyExternalStorage="true"
+50-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:8:18-61
+51        android:roundIcon="@mipmap/ic_launcher_round"
+51-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:8:9-54
+52        android:supportsRtl="true"
+52-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:9:9-35
+53        android:theme="@style/AppTheme" >
+53-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:10:9-40
+54        <activity
+54-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:12:9-25:20
+55            android:name="app.stampaway.mobile.MainActivity"
+55-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:14:13-41
+56            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode|navigation|density"
+56-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:13:13-148
+57            android:exported="true"
+57-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:18:13-36
+58            android:label="@string/title_activity_main"
+58-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:15:13-56
+59            android:launchMode="singleTask"
+59-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:17:13-44
+60            android:theme="@style/AppTheme.NoActionBarLaunch" >
+60-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:16:13-62
+61            <intent-filter>
+61-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:20:13-23:29
+62                <action android:name="android.intent.action.MAIN" />
+62-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:21:17-69
+62-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:21:25-66
+63
+64                <category android:name="android.intent.category.LAUNCHER" />
+64-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:22:17-77
+64-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:22:27-74
+65            </intent-filter>
+66        </activity>
+67
+68        <provider
+69            android:name="androidx.core.content.FileProvider"
+69-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:28:13-62
+70            android:authorities="app.stampaway.mobile.fileprovider"
+70-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:29:13-64
+71            android:exported="false"
+71-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:30:13-37
+72            android:grantUriPermissions="true" >
+72-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:31:13-47
+73            <meta-data
+73-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:32:13-34:64
+74                android:name="android.support.FILE_PROVIDER_PATHS"
+74-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:33:17-67
+75                android:resource="@xml/file_paths" />
+75-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:34:17-51
+76        </provider>
+77
+78        <activity
+78-->[:capacitor-browser] /Users/jeanamine/Stampaway/node_modules/@capacitor/browser/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:14:9-18:75
+79            android:name="com.capacitorjs.plugins.browser.BrowserControllerActivity"
+79-->[:capacitor-browser] /Users/jeanamine/Stampaway/node_modules/@capacitor/browser/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:15:13-85
+80            android:exported="false"
+80-->[:capacitor-browser] /Users/jeanamine/Stampaway/node_modules/@capacitor/browser/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:16:13-37
+81            android:launchMode="singleTask"
+81-->[:capacitor-browser] /Users/jeanamine/Stampaway/node_modules/@capacitor/browser/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:17:13-44
+82            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+82-->[:capacitor-browser] /Users/jeanamine/Stampaway/node_modules/@capacitor/browser/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:18:13-72
+83
+84        <service
+84-->[:capacitor-push-notifications] /Users/jeanamine/Stampaway/node_modules/@capacitor/push-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:8:9-14:19
+85            android:name="com.capacitorjs.plugins.pushnotifications.MessagingService"
+85-->[:capacitor-push-notifications] /Users/jeanamine/Stampaway/node_modules/@capacitor/push-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:9:13-86
+86            android:exported="false" >
+86-->[:capacitor-push-notifications] /Users/jeanamine/Stampaway/node_modules/@capacitor/push-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:10:13-37
+87            <intent-filter>
+87-->[:capacitor-push-notifications] /Users/jeanamine/Stampaway/node_modules/@capacitor/push-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:11:13-13:29
+88                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+88-->[:capacitor-push-notifications] /Users/jeanamine/Stampaway/node_modules/@capacitor/push-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:12:17-78
+88-->[:capacitor-push-notifications] /Users/jeanamine/Stampaway/node_modules/@capacitor/push-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:12:25-75
+89            </intent-filter>
+90        </service>
+91
+92        <activity
+92-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:9:9-11:86
+93            android:name="io.ionic.libs.ioncameralib.view.IONCAMRLoadingActivity"
+93-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:10:13-82
+94            android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen" />
+94-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:11:13-83
+95        <activity
+95-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:12:9-16:36
+96            android:name="io.ionic.libs.ioncameralib.view.IONCAMRImageEditorActivity"
+96-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:13:13-86
+97            android:enableOnBackInvokedCallback="true"
+97-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:14:13-55
+98            android:theme="@android:style/Theme.Black.NoTitleBar" />
+98-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:15:13-66
+99        <activity
+99-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:17:9-20:86
+100            android:name="io.ionic.libs.ioncameralib.view.IONCAMROpenPhotoPickerActivity"
+100-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:18:13-90
+101            android:exported="false"
+101-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:19:13-37
+102            android:theme="@android:style/Theme.Translucent.NoTitleBar.Fullscreen" /> <!-- Trigger Google Play services to install the backported photo picker module. -->
+102-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:20:13-83
+103        <service
+103-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:22:9-34:19
+104            android:name="com.google.android.gms.metadata.ModuleDependencies"
+104-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:23:13-78
+105            android:enabled="false"
+105-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:24:13-36
+106            android:exported="false" >
+106-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:25:13-37
+107            <intent-filter>
+107-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:27:13-29:29
+108                <action android:name="com.google.android.gms.metadata.MODULE_DEPENDENCIES" />
+108-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:28:17-94
+108-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:28:25-91
+109            </intent-filter>
+110
+111            <meta-data
+111-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:31:13-33:36
+112                android:name="photopicker_activity:0:required"
+112-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:32:17-63
+113                android:value="" />
+113-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:33:17-33
+114        </service>
+115
+116        <provider
+116-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:36:9-44:20
+117            android:name="io.ionic.libs.ioncameralib.IONCAMRFileProvider"
+117-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:37:13-74
+118            android:authorities="app.stampaway.mobile.camera.provider"
+118-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:38:13-67
+119            android:exported="false"
+119-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:39:13-37
+120            android:grantUriPermissions="true" >
+120-->[io.ionic.libs:ioncamera-android:1.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/a295b38db932f479cec579b2dc812c1a/transformed/ioncamera-android-1.0.1/AndroidManifest.xml:40:13-47
+121            <meta-data
+121-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:32:13-34:64
+122                android:name="android.support.FILE_PROVIDER_PATHS"
+122-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:33:17-67
+123                android:resource="@xml/ioncamera_paths" />
+123-->/Users/jeanamine/Stampaway/android/app/src/main/AndroidManifest.xml:34:17-51
+124        </provider>
+125
+126        <receiver
+126-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:29:9-40:20
+127            android:name="com.google.firebase.iid.FirebaseInstanceIdReceiver"
+127-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:30:13-78
+128            android:exported="true"
+128-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:31:13-36
+129            android:permission="com.google.android.c2dm.permission.SEND" >
+129-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:32:13-73
+130            <intent-filter>
+130-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:33:13-35:29
+131                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+131-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:34:17-81
+131-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:34:25-78
+132            </intent-filter>
+133
+134            <meta-data
+134-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:37:13-39:40
+135                android:name="com.google.android.gms.cloudmessaging.FINISHED_AFTER_HANDLED"
+135-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:38:17-92
+136                android:value="true" />
+136-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:39:17-37
+137        </receiver>
+138        <!--
+139             FirebaseMessagingService performs security checks at runtime,
+140             but set to not exported to explicitly avoid allowing another app to call it.
+141        -->
+142        <service
+142-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:46:9-53:19
+143            android:name="com.google.firebase.messaging.FirebaseMessagingService"
+143-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:47:13-82
+144            android:directBootAware="true"
+144-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:48:13-43
+145            android:exported="false" >
+145-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:49:13-37
+146            <intent-filter android:priority="-500" >
+146-->[:capacitor-push-notifications] /Users/jeanamine/Stampaway/node_modules/@capacitor/push-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:11:13-13:29
+147                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+147-->[:capacitor-push-notifications] /Users/jeanamine/Stampaway/node_modules/@capacitor/push-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:12:17-78
+147-->[:capacitor-push-notifications] /Users/jeanamine/Stampaway/node_modules/@capacitor/push-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:12:25-75
+148            </intent-filter>
+149        </service>
+150        <service
+150-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:54:9-63:19
+151            android:name="com.google.firebase.components.ComponentDiscoveryService"
+151-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:55:13-84
+152            android:directBootAware="true"
+152-->[com.google.firebase:firebase-common:22.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/cb546919c09df4bb1e2d2127157bcaa2/transformed/firebase-common-22.0.1/AndroidManifest.xml:32:13-43
+153            android:exported="false" >
+153-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:56:13-37
+154            <meta-data
+154-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:57:13-59:85
+155                android:name="com.google.firebase.components:com.google.firebase.messaging.FirebaseMessagingKtxRegistrar"
+155-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:58:17-122
+156                android:value="com.google.firebase.components.ComponentRegistrar" />
+156-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:59:17-82
+157            <meta-data
+157-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:60:13-62:85
+158                android:name="com.google.firebase.components:com.google.firebase.messaging.FirebaseMessagingRegistrar"
+158-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:61:17-119
+159                android:value="com.google.firebase.components.ComponentRegistrar" />
+159-->[com.google.firebase:firebase-messaging:25.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fee7827030cf30b9c64fc7d59fae02bb/transformed/firebase-messaging-25.0.1/AndroidManifest.xml:62:17-82
+160            <meta-data
+160-->[com.google.firebase:firebase-installations:18.0.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/df907beae055c1d2434697ac5cd0594d/transformed/firebase-installations-18.0.0/AndroidManifest.xml:15:13-17:85
+161                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsKtxRegistrar"
+161-->[com.google.firebase:firebase-installations:18.0.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/df907beae055c1d2434697ac5cd0594d/transformed/firebase-installations-18.0.0/AndroidManifest.xml:16:17-130
+162                android:value="com.google.firebase.components.ComponentRegistrar" />
+162-->[com.google.firebase:firebase-installations:18.0.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/df907beae055c1d2434697ac5cd0594d/transformed/firebase-installations-18.0.0/AndroidManifest.xml:17:17-82
+163            <meta-data
+163-->[com.google.firebase:firebase-installations:18.0.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/df907beae055c1d2434697ac5cd0594d/transformed/firebase-installations-18.0.0/AndroidManifest.xml:18:13-20:85
+164                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsRegistrar"
+164-->[com.google.firebase:firebase-installations:18.0.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/df907beae055c1d2434697ac5cd0594d/transformed/firebase-installations-18.0.0/AndroidManifest.xml:19:17-127
+165                android:value="com.google.firebase.components.ComponentRegistrar" />
+165-->[com.google.firebase:firebase-installations:18.0.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/df907beae055c1d2434697ac5cd0594d/transformed/firebase-installations-18.0.0/AndroidManifest.xml:20:17-82
+166            <meta-data
+166-->[com.google.firebase:firebase-common:22.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/cb546919c09df4bb1e2d2127157bcaa2/transformed/firebase-common-22.0.1/AndroidManifest.xml:35:13-37:85
+167                android:name="com.google.firebase.components:com.google.firebase.FirebaseCommonKtxRegistrar"
+167-->[com.google.firebase:firebase-common:22.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/cb546919c09df4bb1e2d2127157bcaa2/transformed/firebase-common-22.0.1/AndroidManifest.xml:36:17-109
+168                android:value="com.google.firebase.components.ComponentRegistrar" />
+168-->[com.google.firebase:firebase-common:22.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/cb546919c09df4bb1e2d2127157bcaa2/transformed/firebase-common-22.0.1/AndroidManifest.xml:37:17-82
+169            <meta-data
+169-->[com.google.firebase:firebase-datatransport:18.2.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/37804962654ec3e9f031e2012e83e63f/transformed/firebase-datatransport-18.2.0/AndroidManifest.xml:25:13-27:85
+170                android:name="com.google.firebase.components:com.google.firebase.datatransport.TransportRegistrar"
+170-->[com.google.firebase:firebase-datatransport:18.2.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/37804962654ec3e9f031e2012e83e63f/transformed/firebase-datatransport-18.2.0/AndroidManifest.xml:26:17-115
+171                android:value="com.google.firebase.components.ComponentRegistrar" />
+171-->[com.google.firebase:firebase-datatransport:18.2.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/37804962654ec3e9f031e2012e83e63f/transformed/firebase-datatransport-18.2.0/AndroidManifest.xml:27:17-82
+172        </service>
+173
+174        <activity
+174-->[com.google.android.gms:play-services-base:18.5.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/c1b0052ae712299163f2612d6db27779/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:9-173
+175            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+175-->[com.google.android.gms:play-services-base:18.5.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/c1b0052ae712299163f2612d6db27779/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:19-85
+176            android:exported="false"
+176-->[com.google.android.gms:play-services-base:18.5.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/c1b0052ae712299163f2612d6db27779/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:146-170
+177            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+177-->[com.google.android.gms:play-services-base:18.5.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/c1b0052ae712299163f2612d6db27779/transformed/play-services-base-18.5.0/AndroidManifest.xml:5:86-145
+178
+179        <provider
+179-->[androidx.emoji2:emoji2:1.3.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/353d69426d62513a7e19e841051a3a44/transformed/emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
+180            android:name="androidx.startup.InitializationProvider"
+180-->[androidx.emoji2:emoji2:1.3.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/353d69426d62513a7e19e841051a3a44/transformed/emoji2-1.3.0/AndroidManifest.xml:25:13-67
+181            android:authorities="app.stampaway.mobile.androidx-startup"
+181-->[androidx.emoji2:emoji2:1.3.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/353d69426d62513a7e19e841051a3a44/transformed/emoji2-1.3.0/AndroidManifest.xml:26:13-68
+182            android:exported="false" >
+182-->[androidx.emoji2:emoji2:1.3.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/353d69426d62513a7e19e841051a3a44/transformed/emoji2-1.3.0/AndroidManifest.xml:27:13-37
+183            <meta-data
+183-->[androidx.emoji2:emoji2:1.3.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/353d69426d62513a7e19e841051a3a44/transformed/emoji2-1.3.0/AndroidManifest.xml:29:13-31:52
+184                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+184-->[androidx.emoji2:emoji2:1.3.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/353d69426d62513a7e19e841051a3a44/transformed/emoji2-1.3.0/AndroidManifest.xml:30:17-75
+185                android:value="androidx.startup" />
+185-->[androidx.emoji2:emoji2:1.3.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/353d69426d62513a7e19e841051a3a44/transformed/emoji2-1.3.0/AndroidManifest.xml:31:17-49
+186            <meta-data
+186-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:34:13-36:52
+187                android:name="androidx.work.WorkManagerInitializer"
+187-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:35:17-68
+188                android:value="androidx.startup" />
+188-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:36:17-49
+189            <meta-data
+189-->[androidx.lifecycle:lifecycle-process:2.10.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fb4a7db81e3200939f18f45e6994608f/transformed/lifecycle-process-2.10.0/AndroidManifest.xml:29:13-31:52
+190                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+190-->[androidx.lifecycle:lifecycle-process:2.10.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fb4a7db81e3200939f18f45e6994608f/transformed/lifecycle-process-2.10.0/AndroidManifest.xml:30:17-78
+191                android:value="androidx.startup" />
+191-->[androidx.lifecycle:lifecycle-process:2.10.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/fb4a7db81e3200939f18f45e6994608f/transformed/lifecycle-process-2.10.0/AndroidManifest.xml:31:17-49
+192            <meta-data
+192-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:29:13-31:52
+193                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+193-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:30:17-85
+194                android:value="androidx.startup" />
+194-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:31:17-49
+195        </provider>
+196
+197        <service
+197-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:39:9-45:35
+198            android:name="androidx.work.impl.background.systemalarm.SystemAlarmService"
+198-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:40:13-88
+199            android:directBootAware="false"
+199-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:41:13-44
+200            android:enabled="@bool/enable_system_alarm_service_default"
+200-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:42:13-72
+201            android:exported="false" />
+201-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:43:13-37
+202        <service
+202-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:46:9-52:35
+203            android:name="androidx.work.impl.background.systemjob.SystemJobService"
+203-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:47:13-84
+204            android:directBootAware="false"
+204-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:48:13-44
+205            android:enabled="@bool/enable_system_job_service_default"
+205-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:49:13-70
+206            android:exported="true"
+206-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:50:13-36
+207            android:permission="android.permission.BIND_JOB_SERVICE" />
+207-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:51:13-69
+208        <service
+208-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:53:9-59:35
+209            android:name="androidx.work.impl.foreground.SystemForegroundService"
+209-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:54:13-81
+210            android:directBootAware="false"
+210-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:55:13-44
+211            android:enabled="@bool/enable_system_foreground_service_default"
+211-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:56:13-77
+212            android:exported="false" />
+212-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:57:13-37
+213
+214        <receiver
+214-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:61:9-66:35
+215            android:name="androidx.work.impl.utils.ForceStopRunnable$BroadcastReceiver"
+215-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:62:13-88
+216            android:directBootAware="false"
+216-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:63:13-44
+217            android:enabled="true"
+217-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:64:13-35
+218            android:exported="false" />
+218-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:65:13-37
+219        <receiver
+219-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:67:9-77:20
+220            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryChargingProxy"
+220-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:68:13-106
+221            android:directBootAware="false"
+221-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:69:13-44
+222            android:enabled="false"
+222-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:70:13-36
+223            android:exported="false" >
+223-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:71:13-37
+224            <intent-filter>
+224-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:73:13-76:29
+225                <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
+225-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:74:17-87
+225-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:74:25-84
+226                <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
+226-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:75:17-90
+226-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:75:25-87
+227            </intent-filter>
+228        </receiver>
+229        <receiver
+229-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:78:9-88:20
+230            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$BatteryNotLowProxy"
+230-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:79:13-104
+231            android:directBootAware="false"
+231-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:80:13-44
+232            android:enabled="false"
+232-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:81:13-36
+233            android:exported="false" >
+233-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:82:13-37
+234            <intent-filter>
+234-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:84:13-87:29
+235                <action android:name="android.intent.action.BATTERY_OKAY" />
+235-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:85:17-77
+235-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:85:25-74
+236                <action android:name="android.intent.action.BATTERY_LOW" />
+236-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:86:17-76
+236-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:86:25-73
+237            </intent-filter>
+238        </receiver>
+239        <receiver
+239-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:89:9-99:20
+240            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$StorageNotLowProxy"
+240-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:90:13-104
+241            android:directBootAware="false"
+241-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:91:13-44
+242            android:enabled="false"
+242-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:92:13-36
+243            android:exported="false" >
+243-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:93:13-37
+244            <intent-filter>
+244-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:95:13-98:29
+245                <action android:name="android.intent.action.DEVICE_STORAGE_LOW" />
+245-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:96:17-83
+245-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:96:25-80
+246                <action android:name="android.intent.action.DEVICE_STORAGE_OK" />
+246-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:97:17-82
+246-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:97:25-79
+247            </intent-filter>
+248        </receiver>
+249        <receiver
+249-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:100:9-109:20
+250            android:name="androidx.work.impl.background.systemalarm.ConstraintProxy$NetworkStateProxy"
+250-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:101:13-103
+251            android:directBootAware="false"
+251-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:102:13-44
+252            android:enabled="false"
+252-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:103:13-36
+253            android:exported="false" >
+253-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:104:13-37
+254            <intent-filter>
+254-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:106:13-108:29
+255                <action android:name="android.net.conn.CONNECTIVITY_CHANGE" />
+255-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:107:17-79
+255-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:107:25-76
+256            </intent-filter>
+257        </receiver>
+258        <receiver
+258-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:110:9-121:20
+259            android:name="androidx.work.impl.background.systemalarm.RescheduleReceiver"
+259-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:111:13-88
+260            android:directBootAware="false"
+260-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:112:13-44
+261            android:enabled="false"
+261-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:113:13-36
+262            android:exported="false" >
+262-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:114:13-37
+263            <intent-filter>
+263-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:116:13-120:29
+264                <action android:name="android.intent.action.BOOT_COMPLETED" />
+264-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:117:17-79
+264-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:117:25-76
+265                <action android:name="android.intent.action.TIME_SET" />
+265-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:118:17-73
+265-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:118:25-70
+266                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+266-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:119:17-81
+266-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:119:25-78
+267            </intent-filter>
+268        </receiver>
+269        <receiver
+269-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:122:9-131:20
+270            android:name="androidx.work.impl.background.systemalarm.ConstraintProxyUpdateReceiver"
+270-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:123:13-99
+271            android:directBootAware="false"
+271-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:124:13-44
+272            android:enabled="@bool/enable_system_alarm_service_default"
+272-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:125:13-72
+273            android:exported="false" >
+273-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:126:13-37
+274            <intent-filter>
+274-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:128:13-130:29
+275                <action android:name="androidx.work.impl.background.systemalarm.UpdateProxies" />
+275-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:129:17-98
+275-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:129:25-95
+276            </intent-filter>
+277        </receiver>
+278        <receiver
+278-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:132:9-142:20
+279            android:name="androidx.work.impl.diagnostics.DiagnosticsReceiver"
+279-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:133:13-78
+280            android:directBootAware="false"
+280-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:134:13-44
+281            android:enabled="true"
+281-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:135:13-35
+282            android:exported="true"
+282-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:136:13-36
+283            android:permission="android.permission.DUMP" >
+283-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:137:13-57
+284            <intent-filter>
+284-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:139:13-141:29
+285                <action android:name="androidx.work.diagnostics.REQUEST_DIAGNOSTICS" />
+285-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:140:17-88
+285-->[androidx.work:work-runtime:2.10.5] /Users/jeanamine/.gradle/caches/8.14.3/transforms/15f22f4a38c795b6ac775597b7b5780a/transformed/work-runtime-2.10.5/AndroidManifest.xml:140:25-85
+286            </intent-filter>
+287        </receiver>
+288        <!--
+289        Service for holding metadata. Cannot be instantiated.
+290        Metadata will be merged from other manifests.
+291        -->
+292        <service
+292-->[androidx.camera:camera-core:1.4.2] /Users/jeanamine/.gradle/caches/8.14.3/transforms/1bed5d73aa0783bafdf646ee8d6db11d/transformed/camera-core-1.4.2/AndroidManifest.xml:29:9-33:78
+293            android:name="androidx.camera.core.impl.MetadataHolderService"
+293-->[androidx.camera:camera-core:1.4.2] /Users/jeanamine/.gradle/caches/8.14.3/transforms/1bed5d73aa0783bafdf646ee8d6db11d/transformed/camera-core-1.4.2/AndroidManifest.xml:30:13-75
+294            android:enabled="false"
+294-->[androidx.camera:camera-core:1.4.2] /Users/jeanamine/.gradle/caches/8.14.3/transforms/1bed5d73aa0783bafdf646ee8d6db11d/transformed/camera-core-1.4.2/AndroidManifest.xml:31:13-36
+295            android:exported="false" />
+295-->[androidx.camera:camera-core:1.4.2] /Users/jeanamine/.gradle/caches/8.14.3/transforms/1bed5d73aa0783bafdf646ee8d6db11d/transformed/camera-core-1.4.2/AndroidManifest.xml:32:13-37
+296        <service
+296-->[androidx.room:room-runtime:2.6.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/16d4fd1c63f87c5fc78791257aceaa94/transformed/room-runtime-2.6.1/AndroidManifest.xml:24:9-28:63
+297            android:name="androidx.room.MultiInstanceInvalidationService"
+297-->[androidx.room:room-runtime:2.6.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/16d4fd1c63f87c5fc78791257aceaa94/transformed/room-runtime-2.6.1/AndroidManifest.xml:25:13-74
+298            android:directBootAware="true"
+298-->[androidx.room:room-runtime:2.6.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/16d4fd1c63f87c5fc78791257aceaa94/transformed/room-runtime-2.6.1/AndroidManifest.xml:26:13-43
+299            android:exported="false" />
+299-->[androidx.room:room-runtime:2.6.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/16d4fd1c63f87c5fc78791257aceaa94/transformed/room-runtime-2.6.1/AndroidManifest.xml:27:13-37
+300
+301        <provider
+301-->[com.google.firebase:firebase-common:22.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/cb546919c09df4bb1e2d2127157bcaa2/transformed/firebase-common-22.0.1/AndroidManifest.xml:23:9-28:39
+302            android:name="com.google.firebase.provider.FirebaseInitProvider"
+302-->[com.google.firebase:firebase-common:22.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/cb546919c09df4bb1e2d2127157bcaa2/transformed/firebase-common-22.0.1/AndroidManifest.xml:24:13-77
+303            android:authorities="app.stampaway.mobile.firebaseinitprovider"
+303-->[com.google.firebase:firebase-common:22.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/cb546919c09df4bb1e2d2127157bcaa2/transformed/firebase-common-22.0.1/AndroidManifest.xml:25:13-72
+304            android:directBootAware="true"
+304-->[com.google.firebase:firebase-common:22.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/cb546919c09df4bb1e2d2127157bcaa2/transformed/firebase-common-22.0.1/AndroidManifest.xml:26:13-43
+305            android:exported="false"
+305-->[com.google.firebase:firebase-common:22.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/cb546919c09df4bb1e2d2127157bcaa2/transformed/firebase-common-22.0.1/AndroidManifest.xml:27:13-37
+306            android:initOrder="100" />
+306-->[com.google.firebase:firebase-common:22.0.1] /Users/jeanamine/.gradle/caches/8.14.3/transforms/cb546919c09df4bb1e2d2127157bcaa2/transformed/firebase-common-22.0.1/AndroidManifest.xml:28:13-36
+307
+308        <meta-data
+308-->[com.google.android.gms:play-services-basement:18.10.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/3517ad3f2de6dcef9c9cb6b72930e98e/transformed/play-services-basement-18.10.0/AndroidManifest.xml:21:9-23:69
+309            android:name="com.google.android.gms.version"
+309-->[com.google.android.gms:play-services-basement:18.10.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/3517ad3f2de6dcef9c9cb6b72930e98e/transformed/play-services-basement-18.10.0/AndroidManifest.xml:22:13-58
+310            android:value="@integer/google_play_services_version" />
+310-->[com.google.android.gms:play-services-basement:18.10.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/3517ad3f2de6dcef9c9cb6b72930e98e/transformed/play-services-basement-18.10.0/AndroidManifest.xml:23:13-66
+311
+312        <receiver
+312-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:34:9-52:20
+313            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+313-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:35:13-76
+314            android:directBootAware="false"
+314-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:36:13-44
+315            android:enabled="true"
+315-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:37:13-35
+316            android:exported="true"
+316-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:38:13-36
+317            android:permission="android.permission.DUMP" >
+317-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:39:13-57
+318            <intent-filter>
+318-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:40:13-42:29
+319                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+319-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:17-91
+319-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:41:25-88
+320            </intent-filter>
+321            <intent-filter>
+321-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:43:13-45:29
+322                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+322-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:17-85
+322-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:44:25-82
+323            </intent-filter>
+324            <intent-filter>
+324-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:46:13-48:29
+325                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+325-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:17-88
+325-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:47:25-85
+326            </intent-filter>
+327            <intent-filter>
+327-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:49:13-51:29
+328                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+328-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:17-95
+328-->[androidx.profileinstaller:profileinstaller:1.4.0] /Users/jeanamine/.gradle/caches/8.14.3/transforms/f95ab50c54d3211c648684c462933e30/transformed/profileinstaller-1.4.0/AndroidManifest.xml:50:25-92
+329            </intent-filter>
+330        </receiver>
+331
+332        <service
+332-->[com.google.android.datatransport:transport-backend-cct:3.1.9] /Users/jeanamine/.gradle/caches/8.14.3/transforms/ea620a6b5afc7c5e432bbec109041d91/transformed/transport-backend-cct-3.1.9/AndroidManifest.xml:28:9-34:19
+333            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
+333-->[com.google.android.datatransport:transport-backend-cct:3.1.9] /Users/jeanamine/.gradle/caches/8.14.3/transforms/ea620a6b5afc7c5e432bbec109041d91/transformed/transport-backend-cct-3.1.9/AndroidManifest.xml:29:13-103
+334            android:exported="false" >
+334-->[com.google.android.datatransport:transport-backend-cct:3.1.9] /Users/jeanamine/.gradle/caches/8.14.3/transforms/ea620a6b5afc7c5e432bbec109041d91/transformed/transport-backend-cct-3.1.9/AndroidManifest.xml:30:13-37
+335            <meta-data
+335-->[com.google.android.datatransport:transport-backend-cct:3.1.9] /Users/jeanamine/.gradle/caches/8.14.3/transforms/ea620a6b5afc7c5e432bbec109041d91/transformed/transport-backend-cct-3.1.9/AndroidManifest.xml:31:13-33:39
+336                android:name="backend:com.google.android.datatransport.cct.CctBackendFactory"
+336-->[com.google.android.datatransport:transport-backend-cct:3.1.9] /Users/jeanamine/.gradle/caches/8.14.3/transforms/ea620a6b5afc7c5e432bbec109041d91/transformed/transport-backend-cct-3.1.9/AndroidManifest.xml:32:17-94
+337                android:value="cct" />
+337-->[com.google.android.datatransport:transport-backend-cct:3.1.9] /Users/jeanamine/.gradle/caches/8.14.3/transforms/ea620a6b5afc7c5e432bbec109041d91/transformed/transport-backend-cct-3.1.9/AndroidManifest.xml:33:17-36
+338        </service>
+339        <service
+339-->[com.google.android.datatransport:transport-runtime:3.1.9] /Users/jeanamine/.gradle/caches/8.14.3/transforms/1491c73c5d15eb22051217da9a2fb39c/transformed/transport-runtime-3.1.9/AndroidManifest.xml:26:9-30:19
+340            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService"
+340-->[com.google.android.datatransport:transport-runtime:3.1.9] /Users/jeanamine/.gradle/caches/8.14.3/transforms/1491c73c5d15eb22051217da9a2fb39c/transformed/transport-runtime-3.1.9/AndroidManifest.xml:27:13-117
+341            android:exported="false"
+341-->[com.google.android.datatransport:transport-runtime:3.1.9] /Users/jeanamine/.gradle/caches/8.14.3/transforms/1491c73c5d15eb22051217da9a2fb39c/transformed/transport-runtime-3.1.9/AndroidManifest.xml:28:13-37
+342            android:permission="android.permission.BIND_JOB_SERVICE" >
+342-->[com.google.android.datatransport:transport-runtime:3.1.9] /Users/jeanamine/.gradle/caches/8.14.3/transforms/1491c73c5d15eb22051217da9a2fb39c/transformed/transport-runtime-3.1.9/AndroidManifest.xml:29:13-69
+343        </service>
+344
+345        <receiver
+345-->[com.google.android.datatransport:transport-runtime:3.1.9] /Users/jeanamine/.gradle/caches/8.14.3/transforms/1491c73c5d15eb22051217da9a2fb39c/transformed/transport-runtime-3.1.9/AndroidManifest.xml:32:9-34:40
+346            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver"
+346-->[com.google.android.datatransport:transport-runtime:3.1.9] /Users/jeanamine/.gradle/caches/8.14.3/transforms/1491c73c5d15eb22051217da9a2fb39c/transformed/transport-runtime-3.1.9/AndroidManifest.xml:33:13-132
+347            android:exported="false" /> <!-- The activities will be merged into the manifest of the hosting app. -->
+347-->[com.google.android.datatransport:transport-runtime:3.1.9] /Users/jeanamine/.gradle/caches/8.14.3/transforms/1491c73c5d15eb22051217da9a2fb39c/transformed/transport-runtime-3.1.9/AndroidManifest.xml:34:13-37
+348        <activity
+348-->[com.google.android.play:core-common:2.0.3] /Users/jeanamine/.gradle/caches/8.14.3/transforms/6e7ce74072759d15a6db2a117c209940/transformed/core-common-2.0.3/AndroidManifest.xml:14:9-18:65
+349            android:name="com.google.android.play.core.common.PlayCoreDialogWrapperActivity"
+349-->[com.google.android.play:core-common:2.0.3] /Users/jeanamine/.gradle/caches/8.14.3/transforms/6e7ce74072759d15a6db2a117c209940/transformed/core-common-2.0.3/AndroidManifest.xml:15:13-93
+350            android:exported="false"
+350-->[com.google.android.play:core-common:2.0.3] /Users/jeanamine/.gradle/caches/8.14.3/transforms/6e7ce74072759d15a6db2a117c209940/transformed/core-common-2.0.3/AndroidManifest.xml:16:13-37
+351            android:stateNotNeeded="true"
+351-->[com.google.android.play:core-common:2.0.3] /Users/jeanamine/.gradle/caches/8.14.3/transforms/6e7ce74072759d15a6db2a117c209940/transformed/core-common-2.0.3/AndroidManifest.xml:17:13-42
+352            android:theme="@style/Theme.PlayCore.Transparent" />
+352-->[com.google.android.play:core-common:2.0.3] /Users/jeanamine/.gradle/caches/8.14.3/transforms/6e7ce74072759d15a6db2a117c209940/transformed/core-common-2.0.3/AndroidManifest.xml:18:13-62
+353    </application>
+354
+355</manifest>
