@@ -2,20 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-<<<<<<< HEAD
 	<key>CAPACITOR_DEBUG</key>
-=======
-    <key>CAPACITOR_DEBUG</key>
->>>>>>> 973d3b9 (chore: configure iOS app and Capgo live updates)
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-<<<<<<< HEAD
 	<string>Stampaway</string>
-=======
-        <string>Stampaway</string>
->>>>>>> 973d3b9 (chore: configure iOS app and Capgo live updates)
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -32,7 +24,6 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-<<<<<<< HEAD
 	<key>NSCameraUsageDescription</key>
 	<string>Stampaway uses the camera so you can take a profile picture.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
@@ -43,8 +34,6 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
-=======
->>>>>>> 973d3b9 (chore: configure iOS app and Capgo live updates)
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

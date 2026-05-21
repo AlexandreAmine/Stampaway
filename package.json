@@ -1,7 +1,7 @@
 {
   "name": "vite_react_shadcn_ts",
   "private": true,
-  "version": "1.0.1",
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,24 +13,20 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-<<<<<<< HEAD
     "@capacitor/android": "^8.3.1",
-=======
-    "@capacitor/android": "^8.3.3",
->>>>>>> 973d3b9 (chore: configure iOS app and Capgo live updates)
     "@capacitor/app": "^8.1.0",
     "@capacitor/browser": "^8.0.3",
-    "@capacitor/camera": "^8.1.0",
+    "@capacitor/camera": "^8.2.0",
     "@capacitor/core": "^8.3.1",
     "@capacitor/device": "^8.0.2",
     "@capacitor/filesystem": "^8.1.2",
     "@capacitor/geolocation": "^8.2.0",
     "@capacitor/haptics": "^8.0.2",
-    "@capacitor/ios": "^8.3.3",
+    "@capacitor/ios": "^8.3.1",
     "@capacitor/keyboard": "^8.0.3",
     "@capacitor/network": "^8.0.1",
     "@capacitor/preferences": "^8.0.1",
-    "@capacitor/push-notifications": "^8.0.3",
+    "@capacitor/push-notifications": "^8.1.1",
     "@capacitor/share": "^8.0.1",
     "@capacitor/splash-screen": "^8.0.1",
     "@capacitor/status-bar": "^8.0.2",
