@@ -40,8 +40,10 @@ export function ShareProfileSheet({ open, onClose, profile, stats }: ShareProfil
   const [copied, setCopied] = useState(false);
 
   const profileUrl = useMemo(() => {
-    if (typeof window === "undefined") return "";
-    return `${window.location.origin}/profile/${profile.userId}`;
+    // Always use the public web URL so links work from any device
+    // (native app uses capacitor://localhost, which can't be shared).
+    const SHARE_BASE = "https://stampaway.lovable.app";
+    return `${SHARE_BASE}/profile/${profile.userId}`;
   }, [profile.userId]);
 
   const shareText = `${t("share.checkOut")} @${profile.username} ${t("share.onStampaway")}`;
