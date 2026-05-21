@@ -1,0 +1,16 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appIDs": ["REPLACE_TEAM_ID.com.stampaway.app"],
+        "components": [
+          { "/": "/profile/*", "comment": "Open user profiles in the app" },
+          { "/": "/place/*",   "comment": "Open destination pages in the app" },
+          { "/": "/review/*",  "comment": "Open review pages in the app" },
+          { "/": "/list/*",    "comment": "Open list pages in the app" }
+        ]
+      }
+    ]
+  }
+}
