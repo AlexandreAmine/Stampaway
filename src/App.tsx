@@ -7,6 +7,7 @@ import { BottomNav } from "@/components/BottomNav";
 import ScrollRestoration from "@/components/ScrollRestoration";
 import EdgeSwipeBack from "@/components/EdgeSwipeBack";
 import DeepLinkHandler from "@/components/DeepLinkHandler";
+import { PushNotificationsHandler } from "@/components/PushNotificationsHandler";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import HomePage from "./pages/HomePage";
@@ -49,6 +50,7 @@ function AppRoutes() {
       <ScrollRestoration />
       <EdgeSwipeBack />
       <DeepLinkHandler />
+      {user && <PushNotificationsHandler />}
       <Routes>
         <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/auth" element={<AuthPage />} />
