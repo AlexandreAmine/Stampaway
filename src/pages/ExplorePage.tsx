@@ -13,6 +13,7 @@ import {
   fetchAverageRatingMap,
   fetchAllPlaces,
   fetchCategoryAverageMap,
+  fetchAllTimeVisitorCountMap,
 } from "@/lib/placeRankings";
 import {
   EUROPE_COUNTRIES,
@@ -90,7 +91,6 @@ export default function ExplorePage() {
     // If no monthly data, fall back to all-time visitor counts
     let trendingCountMap = monthlyCountMap;
     if (monthlyCountMap.size === 0) {
-      const { fetchAllTimeVisitorCountMap } = await import("@/lib/placeRankings");
       trendingCountMap = await fetchAllTimeVisitorCountMap();
     }
 

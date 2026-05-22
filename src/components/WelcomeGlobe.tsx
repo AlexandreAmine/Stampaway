@@ -2,14 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { supabase } from "@/integrations/supabase/client";
-import a1 from "@/assets/avatars/a1.png";
-import a2 from "@/assets/avatars/a2.png";
-import a3 from "@/assets/avatars/a3.png";
-import a4 from "@/assets/avatars/a4.png";
-import a5 from "@/assets/avatars/a5.png";
-import a6 from "@/assets/avatars/a6.png";
-import a7 from "@/assets/avatars/a7.png";
-import a8 from "@/assets/avatars/a8.png";
+import a1 from "@/assets/avatars/a1.webp";
+import a2 from "@/assets/avatars/a2.webp";
+import a3 from "@/assets/avatars/a3.webp";
+import a4 from "@/assets/avatars/a4.webp";
+import a5 from "@/assets/avatars/a5.webp";
+import a6 from "@/assets/avatars/a6.webp";
+import a7 from "@/assets/avatars/a7.webp";
+import a8 from "@/assets/avatars/a8.webp";
 
 const TOKEN_STORAGE_KEY = "mapbox_public_token_v1";
 
