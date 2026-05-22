@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
+import { PushNotifications } from "@capacitor/push-notifications";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -22,7 +23,6 @@ export const PushNotificationsHandler = () => {
     (async () => {
       try {
         console.log("[Push] Setting up push notifications...");
-        const { PushNotifications } = await import("@capacitor/push-notifications");
 
         const perm = await PushNotifications.checkPermissions();
         console.log("[Push] Current permission:", perm.receive);
