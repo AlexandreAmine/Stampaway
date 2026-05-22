@@ -26,7 +26,8 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks(id) {
           if (!id.includes("node_modules")) return;
-          if (id.includes("mapbox-gl")) return "mapbox";
+          // NOTE: do NOT split mapbox-gl into its own chunk — its worker/CSS
+          // initialization breaks when isolated and the globe renders blank.
           if (id.includes("react-simple-maps") || id.includes("d3-")) return "simplemaps";
           if (id.includes("framer-motion")) return "motion";
           if (id.includes("recharts")) return "charts";
