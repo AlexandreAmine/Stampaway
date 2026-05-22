@@ -286,6 +286,23 @@ async function handleWebhook(req: Request): Promise<Response> {
 
   console.log('Auth email enqueued', { emailType, email: payload.data.email, run_id })
 
+  // Kick the dispatcher immediately so the email is sent now instead of
+  // waiting up to 5s for the next pg_cron tick. Fire-and-forget — we do not
+  // await or fail the webhook if this call errors; the cron will pick it up.
+  try {
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    fetch(`${supabaseUrl}/functions/v1/process-email-queue`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json',
+      },
+    }).catch((err) => console.error('Failed to kick dispatcher', { err }))
+  } catch (err) {
+    console.error('Failed to schedule dispatcher kick', { err })
+  }
+
   return new Response(
     JSON.stringify({ success: true, queued: true }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
