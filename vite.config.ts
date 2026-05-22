@@ -19,28 +19,11 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    // Most heavy deps are isolated into their own chunks below so route
-    // bundles stay small and shared deps cache well across navigations.
-    chunkSizeWarningLimit: 1000,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (!id.includes("node_modules")) return;
-          // NOTE: do NOT split mapbox-gl into its own chunk — its worker/CSS
-          // initialization breaks when isolated and the globe renders blank.
-          if (id.includes("react-simple-maps") || id.includes("d3-")) return "simplemaps";
-          if (id.includes("framer-motion")) return "motion";
-          if (id.includes("recharts")) return "charts";
-          if (id.includes("qrcode.react")) return "qrcode";
-          if (id.includes("@supabase")) return "supabase";
-          if (id.includes("@radix-ui")) return "radix";
-          if (id.includes("lucide-react")) return "icons";
-          if (id.includes("react-router")) return "router";
-          if (id.includes("@tanstack")) return "react-query";
-          if (id.includes("date-fns")) return "date-fns";
-          if (id.includes("embla-carousel")) return "embla";
-        },
-      },
-    },
+    // Route-level code splitting (via React.lazy in App.tsx) already keeps
+    // the entry small. We intentionally do NOT split vendor libraries into
+    // manual chunks because mapbox-gl's worker/CSS init and chunk loading
+    // inside the iOS Capacitor WebView are unreliable when isolated, which
+    // breaks both globes. Let Rollup decide vendor chunking automatically.
+    chunkSizeWarningLimit: 1500,
   },
 }));
