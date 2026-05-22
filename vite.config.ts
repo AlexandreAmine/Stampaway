@@ -18,4 +18,28 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    // Most heavy deps are isolated into their own chunks below so route
+    // bundles stay small and shared deps cache well across navigations.
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (id.includes("mapbox-gl")) return "mapbox";
+          if (id.includes("react-simple-maps") || id.includes("d3-")) return "simplemaps";
+          if (id.includes("framer-motion")) return "motion";
+          if (id.includes("recharts")) return "charts";
+          if (id.includes("qrcode.react")) return "qrcode";
+          if (id.includes("@supabase")) return "supabase";
+          if (id.includes("@radix-ui")) return "radix";
+          if (id.includes("lucide-react")) return "icons";
+          if (id.includes("react-router")) return "router";
+          if (id.includes("@tanstack")) return "react-query";
+          if (id.includes("date-fns")) return "date-fns";
+          if (id.includes("embla-carousel")) return "embla";
+        },
+      },
+    },
+  },
 }));
