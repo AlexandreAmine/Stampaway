@@ -11,9 +11,11 @@ import DeepLinkHandler from "@/components/DeepLinkHandler";
 import { PushNotificationsHandler } from "@/components/PushNotificationsHandler";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import HomePage from "./pages/HomePage";
+import WelcomePage from "./pages/WelcomePage";
 
-// Code-split every route so the initial bundle only loads the shell.
-const HomePage = lazy(() => import("./pages/HomePage"));
+// Keep the two Mapbox globe routes eagerly loaded. In the native WebView,
+// splitting these route modules can leave the globe canvases mounted but blank.
 const ExplorePage = lazy(() => import("./pages/ExplorePage"));
 const AddPlacePage = lazy(() => import("./pages/AddPlacePage"));
 const SearchPage = lazy(() => import("./pages/SearchPage"));
@@ -31,7 +33,6 @@ const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
 const TermsOfServicePage = lazy(() => import("./pages/TermsOfServicePage"));
 const DeleteAccountPage = lazy(() => import("./pages/DeleteAccountPage"));
 const SupportPage = lazy(() => import("./pages/SupportPage"));
-const WelcomePage = lazy(() => import("./pages/WelcomePage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
