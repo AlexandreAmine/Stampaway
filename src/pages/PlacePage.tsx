@@ -42,11 +42,8 @@ export default function PlacePage() {
   const [visitorsCount, setVisitorsCount] = useState(0);
   const [writtenReviewsCount, setWrittenReviewsCount] = useState(0);
   const [listsCount, setListsCount] = useState(0);
-  const [allVisitors, setAllVisitors] = useState<any[]>([]);
-  const [allLists, setAllLists] = useState<any[]>([]);
   const [friendVisitors, setFriendVisitors] = useState<any[]>([]);
   const [friendWishlist, setFriendWishlist] = useState<any[]>([]);
-  const [writtenReviews, setWrittenReviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [ratingsCount, setRatingsCount] = useState(0);
   const [inWishlist, setInWishlist] = useState(false);
@@ -74,11 +71,8 @@ export default function PlacePage() {
     setWrittenReviewsCount(0);
     setListsCount(0);
     setRatingsCount(0);
-    setAllVisitors([]);
-    setAllLists([]);
     setFriendVisitors([]);
     setFriendWishlist([]);
-    setWrittenReviews([]);
     setCountryCities([]);
     setWishlistCities([]);
     setInWishlist(false);
@@ -108,34 +102,12 @@ export default function PlacePage() {
     // Written reviews with profiles
     const written = reviews.filter((r) => r.review_text && r.review_text.trim() !== "");
     setWrittenReviewsCount(written.length);
-    if (written.length > 0) {
-      const writerIds = [...new Set(written.map((w) => w.user_id))];
-      const { data: writerProfiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", writerIds);
-      setWrittenReviews(
-        written
-          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-          .map((w) => {
-            const p = (writerProfiles || []).find((p: any) => p.user_id === w.user_id);
-            return { ...w, profile: p };
-          })
-      );
-    }
 
     // Unique visitors (newest visit date per user, fallback to most recent created_at)
     const uniqueReviews = dedupeByNewest(reviews, (r) => r.user_id);
     const uniqueVisitorIds = uniqueReviews.map((r) => r.user_id);
     setVisitorsCount(uniqueVisitorIds.length);
     // ratingsCount set below after filtering
-
-    if (uniqueVisitorIds.length > 0) {
-      const { data: visitorProfiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", uniqueVisitorIds);
-      setAllVisitors(
-        uniqueReviews.map((r) => {
-          const p = (visitorProfiles || []).find((pr: any) => pr.user_id === r.user_id);
-          return { user_id: r.user_id, profile: p, rating: r.rating, liked: r.liked, review_id: r.id, has_review: !!(r.review_text && r.review_text.trim() !== "") };
-        })
-      );
-    }
 
     // My review (newest visit date)
     if (user) {
@@ -159,22 +131,12 @@ export default function PlacePage() {
     }
     setRatingsCount(ratedReviews.length);
 
-    // Lists containing this place (with list details)
+    // Lists containing this place. Keep the existing row-length count semantics,
+    // but avoid downloading unused list owner/profile data.
     const { data: listItemsData } = await supabase
       .from("list_items")
-      .select("list_id, lists!inner(id, name, user_id)")
+      .select("list_id, lists!inner(id)")
       .eq("place_id", id);
-    
-    if (listItemsData && listItemsData.length > 0) {
-      const listUserIds = [...new Set((listItemsData as any[]).map((li: any) => li.lists.user_id))];
-      const { data: listProfiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", listUserIds);
-      setAllLists(
-        (listItemsData as any[]).map((li: any) => {
-          const p = (listProfiles || []).find((pr: any) => pr.user_id === li.lists.user_id);
-          return { list_id: li.lists.id, list_name: li.lists.name, profile: p };
-        })
-      );
-    }
     setListsCount(listItemsData?.length || 0);
 
     // Friends activity (people I follow)
