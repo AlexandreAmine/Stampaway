@@ -71,6 +71,65 @@ type ExploreFetchOptions = {
   silent: boolean;
 };
 
+const REVIEW_LIKE_PAGE_SIZE = 1000;
+const REVIEW_ID_CHUNK_SIZE = 100;
+
+type ReviewLikeSnapshot = {
+  likeCounts: Map<string, number>;
+  likedByCurrentUser: Set<string>;
+};
+
+type ReviewCardLikeSnapshotStatus = "loading" | "ready" | "unavailable";
+
+type ReviewCardLikeSnapshotState = ReviewLikeSnapshot & {
+  requestId: number;
+  cacheKey: string;
+  cacheVersion: number;
+  userId: string | null;
+  status: ReviewCardLikeSnapshotStatus;
+};
+
+const chunkReviewIds = (reviewIds: string[]) => {
+  const ids = [...new Set(reviewIds.filter(Boolean))];
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += REVIEW_ID_CHUNK_SIZE) {
+    chunks.push(ids.slice(i, i + REVIEW_ID_CHUNK_SIZE));
+  }
+  return chunks;
+};
+
+async function fetchReviewCardLikeSnapshot(reviewIds: string[], currentUserId: string | null): Promise<ReviewLikeSnapshot> {
+  const likeCounts = new Map<string, number>();
+  const likedByCurrentUser = new Set<string>();
+  reviewIds.forEach((reviewId) => likeCounts.set(reviewId, 0));
+
+  for (const reviewIdChunk of chunkReviewIds(reviewIds)) {
+    let offset = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from("review_likes")
+        .select("id, review_id, user_id")
+        .in("review_id", reviewIdChunk)
+        .order("review_id", { ascending: true })
+        .order("id", { ascending: true })
+        .range(offset, offset + REVIEW_LIKE_PAGE_SIZE - 1);
+
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+
+      data.forEach((like: any) => {
+        likeCounts.set(like.review_id, (likeCounts.get(like.review_id) || 0) + 1);
+        if (currentUserId && like.user_id === currentUserId) likedByCurrentUser.add(like.review_id);
+      });
+
+      if (data.length < REVIEW_LIKE_PAGE_SIZE) break;
+      offset += REVIEW_LIKE_PAGE_SIZE;
+    }
+  }
+
+  return { likeCounts, likedByCurrentUser };
+}
+
 const getExploreCacheKey = (userId: string | null, tab: ExploreTab) =>
   [
     EXPLORE_PLACES_PUBLIC_CACHE_VERSION,
@@ -96,6 +155,7 @@ export default function ExplorePage() {
   const [friendReviews, setFriendReviews] = useState<any[]>([]);
   const [popularReviews, setPopularReviews] = useState<any[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
+  const [reviewCardLikeSnapshot, setReviewCardLikeSnapshot] = useState<ReviewCardLikeSnapshotState | null>(null);
 
   // Lists state
   const [friendLists, setFriendLists] = useState<any[]>([]);
@@ -103,9 +163,10 @@ export default function ExplorePage() {
   const [listsLoading, setListsLoading] = useState(true);
   const currentCacheKey = getExploreCacheKey(userId, activeTab);
   const [visibleExploreCacheKey, setVisibleExploreCacheKey] = useState<string | null>(null);
-  const activeExploreRef = useRef({ cacheKey: currentCacheKey });
+  const activeExploreRef = useRef({ cacheKey: currentCacheKey, userId });
+  const reviewCardLikeSnapshotRequestIdRef = useRef(0);
 
-  activeExploreRef.current = { cacheKey: currentCacheKey };
+  activeExploreRef.current = { cacheKey: currentCacheKey, userId };
 
   const isCurrentExploreRequest = useCallback((options: ExploreFetchOptions) => {
     return (
@@ -113,6 +174,64 @@ export default function ExplorePage() {
       isExploreCacheVersion(options.cacheVersion)
     );
   }, []);
+
+  const isCurrentReviewCardLikeContext = (
+    snapshot: Pick<ReviewCardLikeSnapshotState, "requestId" | "cacheKey" | "cacheVersion" | "userId">
+  ) => (
+    reviewCardLikeSnapshotRequestIdRef.current === snapshot.requestId &&
+    activeExploreRef.current.cacheKey === snapshot.cacheKey &&
+    activeExploreRef.current.userId === snapshot.userId &&
+    isExploreCacheVersion(snapshot.cacheVersion)
+  );
+
+  const startReviewCardLikeSnapshot = (reviewIds: string[], options: ExploreFetchOptions) => {
+    const requestId = reviewCardLikeSnapshotRequestIdRef.current + 1;
+    reviewCardLikeSnapshotRequestIdRef.current = requestId;
+
+    const requestContext = {
+      requestId,
+      cacheKey: options.cacheKey,
+      cacheVersion: options.cacheVersion,
+      userId,
+    };
+
+    setReviewCardLikeSnapshot({
+      ...requestContext,
+      status: "loading",
+      likeCounts: new Map(),
+      likedByCurrentUser: new Set(),
+    });
+
+    if (reviewIds.length === 0) {
+      setReviewCardLikeSnapshot({
+        ...requestContext,
+        status: "ready",
+        likeCounts: new Map(),
+        likedByCurrentUser: new Set(),
+      });
+      return;
+    }
+
+    fetchReviewCardLikeSnapshot(reviewIds, requestContext.userId)
+      .then((snapshot) => {
+        const nextSnapshot = { ...requestContext, ...snapshot, status: "ready" as const };
+        if (isCurrentReviewCardLikeContext(nextSnapshot)) {
+          setReviewCardLikeSnapshot(nextSnapshot);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to fetch explore review card like snapshot:", error);
+        const unavailableSnapshot = {
+          ...requestContext,
+          status: "unavailable" as const,
+          likeCounts: new Map<string, number>(),
+          likedByCurrentUser: new Set<string>(),
+        };
+        if (isCurrentReviewCardLikeContext(unavailableSnapshot)) {
+          setReviewCardLikeSnapshot(unavailableSnapshot);
+        }
+      });
+  };
 
   const applyPlacesPublicSnapshot = useCallback(
     (snapshot: PlacesPublicSnapshot, cacheKey: string) => {
@@ -331,6 +450,9 @@ export default function ExplorePage() {
       return;
     }
 
+    let nextFriendReviews: any[] = [];
+    let nextPopularReviews: any[] = [];
+
     // Get who I follow
     const { data: following } = await supabase
       .from("followers")
@@ -357,7 +479,7 @@ export default function ExplorePage() {
         .in("user_id", userIds);
       const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
 
-      setFriendReviews(
+      nextFriendReviews =
         (fRevs || []).map((r: any) => {
           const prof = profileMap.get(r.user_id);
           return {
@@ -367,9 +489,10 @@ export default function ExplorePage() {
             place_name: r.places?.name,
             place_image: r.places?.image,
           };
-        })
-      );
+        });
+      setFriendReviews(nextFriendReviews);
     } else {
+      nextFriendReviews = [];
       setFriendReviews([]);
     }
 
@@ -416,7 +539,8 @@ export default function ExplorePage() {
       });
       // Sort by like count
       enriched.sort((a: any, b: any) => (counts.get(b.id) || 0) - (counts.get(a.id) || 0));
-      setPopularReviews(enriched);
+      nextPopularReviews = enriched;
+      setPopularReviews(nextPopularReviews);
     } else {
       // Fallback: most recent written reviews (exclude own)
       const { data: recentRevs } = await supabase
@@ -435,7 +559,7 @@ export default function ExplorePage() {
         .in("user_id", userIds);
       const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
 
-      setPopularReviews(
+      nextPopularReviews =
         (recentRevs || []).map((r: any) => {
           const prof = profileMap.get(r.user_id);
           return {
@@ -445,9 +569,15 @@ export default function ExplorePage() {
             place_name: r.places?.name,
             place_image: r.places?.image,
           };
-        })
-      );
+        });
+      setPopularReviews(nextPopularReviews);
     }
+
+    const displayedReviewIds = [
+      ...new Set([...nextFriendReviews, ...nextPopularReviews].map((review) => review.id).filter(Boolean)),
+    ];
+
+    startReviewCardLikeSnapshot(displayedReviewIds, options);
 
     setReviewsLoading(false);
     if (isCurrentExploreRequest(options)) {
@@ -701,7 +831,23 @@ export default function ExplorePage() {
                     <div className="space-y-3">
                       {friendReviews.map((r) => (
                         <motion.div key={r.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-                          <ReviewCard review={r} />
+                          <ReviewCard
+                            review={r}
+                            likeDataStatus={
+                              reviewCardLikeSnapshot?.cacheKey === currentCacheKey &&
+                              reviewCardLikeSnapshot.userId === userId &&
+                              reviewCardLikeSnapshot.status === "loading"
+                                ? "loading"
+                                : reviewCardLikeSnapshot?.cacheKey === currentCacheKey &&
+                                  reviewCardLikeSnapshot.userId === userId &&
+                                  reviewCardLikeSnapshot.status === "ready" &&
+                                  reviewCardLikeSnapshot.likeCounts.has(r.id)
+                                ? "ready"
+                                : "unavailable"
+                            }
+                            initialLikeCount={reviewCardLikeSnapshot?.status === "ready" ? reviewCardLikeSnapshot.likeCounts.get(r.id) : undefined}
+                            initialLikedByCurrentUser={reviewCardLikeSnapshot?.status === "ready" && reviewCardLikeSnapshot.likedByCurrentUser.has(r.id)}
+                          />
                         </motion.div>
                       ))}
                     </div>
@@ -715,7 +861,23 @@ export default function ExplorePage() {
                     <div className="space-y-3">
                       {popularReviews.map((r) => (
                         <motion.div key={r.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-                          <ReviewCard review={r} />
+                          <ReviewCard
+                            review={r}
+                            likeDataStatus={
+                              reviewCardLikeSnapshot?.cacheKey === currentCacheKey &&
+                              reviewCardLikeSnapshot.userId === userId &&
+                              reviewCardLikeSnapshot.status === "loading"
+                                ? "loading"
+                                : reviewCardLikeSnapshot?.cacheKey === currentCacheKey &&
+                                  reviewCardLikeSnapshot.userId === userId &&
+                                  reviewCardLikeSnapshot.status === "ready" &&
+                                  reviewCardLikeSnapshot.likeCounts.has(r.id)
+                                ? "ready"
+                                : "unavailable"
+                            }
+                            initialLikeCount={reviewCardLikeSnapshot?.status === "ready" ? reviewCardLikeSnapshot.likeCounts.get(r.id) : undefined}
+                            initialLikedByCurrentUser={reviewCardLikeSnapshot?.status === "ready" && reviewCardLikeSnapshot.likedByCurrentUser.has(r.id)}
+                          />
                         </motion.div>
                       ))}
                     </div>
