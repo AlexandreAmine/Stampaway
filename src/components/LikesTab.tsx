@@ -446,9 +446,18 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
           <p className="text-sm text-muted-foreground text-center py-8">No liked reviews yet</p>
         ) : (
           <div className="space-y-3">
-            {likedReviews.map((r: any) => (
-              <ReviewCard key={r.id} review={r} />
-            ))}
+            {likedReviews.map((r: any) => {
+              const isKnownLikedByCurrentUser = !!user?.id && targetUserId === user.id;
+
+              return (
+                <ReviewCard
+                  key={r.id}
+                  review={r}
+                  likeDataStatus={isKnownLikedByCurrentUser ? "ready" : "unavailable"}
+                  initialLikedByCurrentUser={isKnownLikedByCurrentUser ? true : undefined}
+                />
+              );
+            })}
           </div>
         )
       )}
