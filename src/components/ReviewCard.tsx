@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Star, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,16 +29,49 @@ interface ReviewCardProps {
   };
   showImage?: boolean;
   hidePlaceName?: boolean;
+  initialLikeCount?: number;
+  initialLikedByCurrentUser?: boolean;
+  likeDataStatus?: "unavailable" | "loading" | "ready";
 }
 
-export function ReviewCard({ review, showImage = true, hidePlaceName = false }: ReviewCardProps) {
+type ReviewLikeState = {
+  reviewId: string;
+  likeCount: number;
+  liked: boolean;
+};
+
+const getInitialLikeState = (
+  reviewId: string,
+  initialLikeCount?: number,
+  initialLikedByCurrentUser?: boolean
+): ReviewLikeState => ({
+  reviewId,
+  likeCount: typeof initialLikeCount === "number" ? initialLikeCount : 0,
+  liked: typeof initialLikedByCurrentUser === "boolean" ? initialLikedByCurrentUser : false,
+});
+
+export function ReviewCard({
+  review,
+  showImage = true,
+  hidePlaceName = false,
+  initialLikeCount,
+  initialLikedByCurrentUser,
+  likeDataStatus = "unavailable",
+}: ReviewCardProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [likeCount, setLikeCount] = useState(0);
-  const [liked, setLiked] = useState(false);
-  const [toggling, setToggling] = useState(false);
-
   const reviewId = review.id;
+  const hasInitialLikeCount = likeDataStatus === "ready" && typeof initialLikeCount === "number";
+  const hasInitialLikedByCurrentUser = likeDataStatus === "ready" && typeof initialLikedByCurrentUser === "boolean";
+  const [likeState, setLikeState] = useState(() =>
+    getInitialLikeState(
+      reviewId,
+      hasInitialLikeCount ? initialLikeCount : undefined,
+      hasInitialLikedByCurrentUser ? initialLikedByCurrentUser : undefined
+    )
+  );
+  const [toggling, setToggling] = useState(false);
+  const localMutationReviewIdRef = useRef<string | null>(null);
   const userName = review.userName || review.profile_username || "User";
   const userAvatar = review.userAvatar || review.profile_picture || "";
   const placeName = review.placeName || review.place_name || "";
@@ -46,28 +79,91 @@ export function ReviewCard({ review, showImage = true, hidePlaceName = false }: 
   const rating = review.rating;
   const reviewText = review.reviewText || review.review_text || "";
   const createdAt = review.createdAt || (review.created_at ? new Date(review.created_at).toLocaleDateString() : "");
+  const currentLikeState = likeState.reviewId === reviewId
+    ? likeState
+    : getInitialLikeState(
+        reviewId,
+        hasInitialLikeCount ? initialLikeCount : undefined,
+        hasInitialLikedByCurrentUser ? initialLikedByCurrentUser : undefined
+      );
+  const likeCount = currentLikeState.likeCount;
+  const liked = currentLikeState.liked;
 
   useEffect(() => {
-    fetchLikes();
-  }, [reviewId]);
+    localMutationReviewIdRef.current = null;
+    setLikeState(
+      getInitialLikeState(
+        reviewId,
+        hasInitialLikeCount ? initialLikeCount : undefined,
+        hasInitialLikedByCurrentUser ? initialLikedByCurrentUser : undefined
+      )
+    );
+  }, [reviewId, user?.id]);
 
-  const fetchLikes = async () => {
-    const { count } = await supabase
-      .from("review_likes")
-      .select("*", { count: "exact", head: true })
-      .eq("review_id", reviewId);
-    setLikeCount(count || 0);
+  useEffect(() => {
+    if (likeDataStatus !== "ready") return;
+    if (!hasInitialLikeCount && !hasInitialLikedByCurrentUser) return;
+    if (localMutationReviewIdRef.current === reviewId) return;
 
-    if (user) {
+    setLikeState((prev) => {
+      const base = prev.reviewId === reviewId ? prev : getInitialLikeState(reviewId);
+      return {
+        reviewId,
+        likeCount: hasInitialLikeCount ? initialLikeCount : base.likeCount,
+        liked: hasInitialLikedByCurrentUser ? initialLikedByCurrentUser : base.liked,
+      };
+    });
+  }, [
+    reviewId,
+    likeDataStatus,
+    hasInitialLikeCount,
+    initialLikeCount,
+    hasInitialLikedByCurrentUser,
+    initialLikedByCurrentUser,
+  ]);
+
+  useEffect(() => {
+    const needsLikeCount = !hasInitialLikeCount;
+    const needsLikedByCurrentUser = !hasInitialLikedByCurrentUser;
+    if (likeDataStatus === "loading") return;
+    if (!needsLikeCount && !needsLikedByCurrentUser) return;
+    if (localMutationReviewIdRef.current === reviewId) return;
+
+    let cancelled = false;
+    const requestReviewId = reviewId;
+    const requestUserId = user?.id ?? null;
+
+    const applyFetchedState = (partial: Partial<Omit<ReviewLikeState, "reviewId">>) => {
+      if (cancelled || localMutationReviewIdRef.current === requestReviewId) return;
+      setLikeState((prev) => {
+        const base = prev.reviewId === requestReviewId ? prev : getInitialLikeState(requestReviewId);
+        return { ...base, ...partial, reviewId: requestReviewId };
+      });
+    };
+
+    const fetchMissingLikes = async () => {
+      if (needsLikeCount) {
+        const { count } = await supabase
+          .from("review_likes")
+          .select("*", { count: "exact", head: true })
+          .eq("review_id", requestReviewId);
+        applyFetchedState({ likeCount: count || 0 });
+      }
+
+      if (!needsLikedByCurrentUser || !requestUserId) return;
+
       const { data } = await supabase
         .from("review_likes")
         .select("id")
-        .eq("review_id", reviewId)
-        .eq("user_id", user.id)
+        .eq("review_id", requestReviewId)
+        .eq("user_id", requestUserId)
         .maybeSingle();
-      setLiked(!!data);
-    }
-  };
+      applyFetchedState({ liked: !!data });
+    };
+
+    fetchMissingLikes();
+    return () => { cancelled = true; };
+  }, [reviewId, user?.id, likeDataStatus, hasInitialLikeCount, hasInitialLikedByCurrentUser]);
 
   const toggleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -80,15 +176,21 @@ export function ReviewCard({ review, showImage = true, hidePlaceName = false }: 
         .eq("review_id", reviewId)
         .eq("user_id", user.id);
       if (!error) invalidateOwnProfileContentCache(user.id);
-      setLiked(false);
-      setLikeCount((c) => Math.max(0, c - 1));
+      localMutationReviewIdRef.current = reviewId;
+      setLikeState((prev) => {
+        const base = prev.reviewId === reviewId ? prev : getInitialLikeState(reviewId, likeCount, liked);
+        return { ...base, reviewId, liked: false, likeCount: Math.max(0, base.likeCount - 1) };
+      });
     } else {
       const { error } = await supabase
         .from("review_likes")
         .insert({ review_id: reviewId, user_id: user.id });
       if (!error) invalidateOwnProfileContentCache(user.id);
-      setLiked(true);
-      setLikeCount((c) => c + 1);
+      localMutationReviewIdRef.current = reviewId;
+      setLikeState((prev) => {
+        const base = prev.reviewId === reviewId ? prev : getInitialLikeState(reviewId, likeCount, liked);
+        return { ...base, reviewId, liked: true, likeCount: base.likeCount + 1 };
+      });
     }
     setToggling(false);
   };

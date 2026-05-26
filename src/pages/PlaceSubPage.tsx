@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, MessageSquare, SlidersHorizontal } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -16,6 +16,64 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 type Section = "visitors" | "friendvisitors" | "reviews" | "lists" | "wanttovisit" | "categories";
+const REVIEW_LIKE_PAGE_SIZE = 1000;
+const REVIEW_ID_CHUNK_SIZE = 100;
+
+type ReviewLikeSnapshot = {
+  likeCounts: Map<string, number>;
+  likedByCurrentUser: Set<string>;
+};
+
+type ReviewCardLikeSnapshotStatus = "loading" | "ready" | "unavailable";
+
+type ReviewCardLikeSnapshotState = ReviewLikeSnapshot & {
+  requestId: number;
+  placeId: string | null;
+  section: string | null;
+  userId: string | null;
+  status: ReviewCardLikeSnapshotStatus;
+};
+
+const chunkReviewIds = (reviewIds: string[]) => {
+  const ids = [...new Set(reviewIds.filter(Boolean))];
+  const chunks: string[][] = [];
+  for (let i = 0; i < ids.length; i += REVIEW_ID_CHUNK_SIZE) {
+    chunks.push(ids.slice(i, i + REVIEW_ID_CHUNK_SIZE));
+  }
+  return chunks;
+};
+
+async function fetchReviewCardLikeSnapshot(reviewIds: string[], currentUserId: string | null): Promise<ReviewLikeSnapshot> {
+  const likeCounts = new Map<string, number>();
+  const likedByCurrentUser = new Set<string>();
+  reviewIds.forEach((reviewId) => likeCounts.set(reviewId, 0));
+
+  for (const reviewIdChunk of chunkReviewIds(reviewIds)) {
+    let offset = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from("review_likes")
+        .select("id, review_id, user_id")
+        .in("review_id", reviewIdChunk)
+        .order("review_id", { ascending: true })
+        .order("id", { ascending: true })
+        .range(offset, offset + REVIEW_LIKE_PAGE_SIZE - 1);
+
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+
+      data.forEach((like: any) => {
+        likeCounts.set(like.review_id, (likeCounts.get(like.review_id) || 0) + 1);
+        if (currentUserId && like.user_id === currentUserId) likedByCurrentUser.add(like.review_id);
+      });
+
+      if (data.length < REVIEW_LIKE_PAGE_SIZE) break;
+      offset += REVIEW_LIKE_PAGE_SIZE;
+    }
+  }
+
+  return { likeCounts, likedByCurrentUser };
+}
 
 export default function PlaceSubPage() {
   const { id, section } = useParams<{ id: string; section: string }>();
@@ -26,7 +84,68 @@ export default function PlaceSubPage() {
   const [loading, setLoading] = useState(true);
   const [reviewFilter, setReviewFilter] = useState<"most_liked" | "most_recent" | "friends_first">("most_liked");
   const [reviewLikeCounts, setReviewLikeCounts] = useState<Map<string, number>>(new Map());
+  const [reviewCardLikeSnapshot, setReviewCardLikeSnapshot] = useState<ReviewCardLikeSnapshotState | null>(null);
   const [friendIds, setFriendIds] = useState<string[]>([]);
+  const currentContextRef = useRef({ placeId: null as string | null, section: null as string | null, userId: null as string | null });
+  const reviewCardLikeSnapshotRequestIdRef = useRef(0);
+
+  currentContextRef.current = { placeId: id ?? null, section: section ?? null, userId: user?.id ?? null };
+
+  const isCurrentReviewCardLikeContext = (snapshot: Pick<ReviewCardLikeSnapshotState, "requestId" | "placeId" | "section" | "userId">) => (
+    reviewCardLikeSnapshotRequestIdRef.current === snapshot.requestId &&
+    currentContextRef.current.placeId === snapshot.placeId &&
+    currentContextRef.current.section === snapshot.section &&
+    currentContextRef.current.userId === snapshot.userId
+  );
+
+  const startReviewCardLikeSnapshot = (reviewIds: string[]) => {
+    const requestId = reviewCardLikeSnapshotRequestIdRef.current + 1;
+    reviewCardLikeSnapshotRequestIdRef.current = requestId;
+
+    const requestContext = {
+      requestId,
+      placeId: id ?? null,
+      section: section ?? null,
+      userId: user?.id ?? null,
+    };
+
+    setReviewCardLikeSnapshot({
+      ...requestContext,
+      status: "loading",
+      likeCounts: new Map(),
+      likedByCurrentUser: new Set(),
+    });
+
+    if (reviewIds.length === 0) {
+      setReviewCardLikeSnapshot({
+        ...requestContext,
+        status: "ready",
+        likeCounts: new Map(),
+        likedByCurrentUser: new Set(),
+      });
+      return;
+    }
+
+    fetchReviewCardLikeSnapshot(reviewIds, requestContext.userId)
+      .then((snapshot) => {
+        const nextSnapshot = { ...requestContext, ...snapshot, status: "ready" as const };
+        if (isCurrentReviewCardLikeContext(nextSnapshot)) {
+          setReviewCardLikeSnapshot(nextSnapshot);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to fetch review card like snapshot:", error);
+        const unavailableSnapshot = {
+          ...requestContext,
+          status: "unavailable" as const,
+          likeCounts: new Map<string, number>(),
+          likedByCurrentUser: new Set<string>(),
+        };
+        if (isCurrentReviewCardLikeContext(unavailableSnapshot)) {
+          setReviewCardLikeSnapshot(unavailableSnapshot);
+        }
+      });
+  };
 
   useEffect(() => {
     if (id && section) fetchData();
@@ -108,6 +227,7 @@ export default function PlaceSubPage() {
         });
       }
       setReviewLikeCounts(likeCounts);
+      startReviewCardLikeSnapshot(reviewIds);
 
       // Fetch friend IDs
       if (user) {
@@ -232,22 +352,41 @@ export default function PlaceSubPage() {
                     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
                   });
                 }
-                return sorted.map((rv: any) => (
-                  <ReviewCard
-                    key={rv.id}
-                    review={{
-                      id: rv.id,
-                      user_id: rv.user_id,
-                      rating: rv.rating,
-                      review_text: rv.review_text,
-                      created_at: rv.created_at,
-                      profile_username: rv.profile?.username,
-                      profile_picture: rv.profile?.profile_picture,
-                    }}
-                    showImage={false}
-                    hidePlaceName
-                  />
-                ));
+                return sorted.map((rv: any) => {
+                  const snapshotMatches =
+                    reviewCardLikeSnapshot?.placeId === id &&
+                    reviewCardLikeSnapshot.section === section &&
+                    reviewCardLikeSnapshot.userId === (user?.id ?? null);
+                  const hasReviewCardLikeSnapshot =
+                    snapshotMatches &&
+                    reviewCardLikeSnapshot.status === "ready" &&
+                    reviewCardLikeSnapshot.likeCounts.has(rv.id);
+                  const likeDataStatus = hasReviewCardLikeSnapshot
+                    ? "ready"
+                    : snapshotMatches && reviewCardLikeSnapshot.status === "loading"
+                    ? "loading"
+                    : "unavailable";
+
+                  return (
+                    <ReviewCard
+                      key={rv.id}
+                      review={{
+                        id: rv.id,
+                        user_id: rv.user_id,
+                        rating: rv.rating,
+                        review_text: rv.review_text,
+                        created_at: rv.created_at,
+                        profile_username: rv.profile?.username,
+                        profile_picture: rv.profile?.profile_picture,
+                      }}
+                      showImage={false}
+                      hidePlaceName
+                      likeDataStatus={likeDataStatus}
+                      initialLikeCount={hasReviewCardLikeSnapshot ? reviewCardLikeSnapshot.likeCounts.get(rv.id) : undefined}
+                      initialLikedByCurrentUser={hasReviewCardLikeSnapshot ? reviewCardLikeSnapshot.likedByCurrentUser.has(rv.id) : undefined}
+                    />
+                  );
+                });
               })()}
 
             {section === "lists" &&
