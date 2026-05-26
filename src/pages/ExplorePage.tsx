@@ -13,7 +13,7 @@ import {
   fetchMonthlyVisitorCountMap,
   fetchAverageRatingMap,
   fetchAllPlaces,
-  fetchCategoryAverageMap,
+  fetchCategoryAverageMaps,
   fetchAllTimeVisitorCountMap,
 } from "@/lib/placeRankings";
 import {
@@ -37,6 +37,13 @@ import {
 const tabs = ["Places", "Reviews", "Lists"] as const;
 type ExploreTab = typeof tabs[number];
 const EXPLORE_PLACES_PUBLIC_CACHE_VERSION = "places-public-v1";
+const EXPLORE_CATEGORY_RANKINGS = [
+  "Affordability",
+  "Entertainment & Nightlife",
+  "Natural Beauty",
+  "Safety & Security",
+  "Hospitality & People",
+] as const;
 
 type PlaceWithStat = {
   id: string;
@@ -149,16 +156,17 @@ export default function ExplorePage() {
 
     try {
       // Fetch all data in parallel using centralized helpers
-      const [monthlyCountMap, avgRatingMap, allPlaces, affordMap, nightlifeMap, natureMap, safetyMap, hospitalityMap] = await Promise.all([
+      const [monthlyCountMap, avgRatingMap, allPlaces, categoryAverageMaps] = await Promise.all([
         fetchMonthlyVisitorCountMap(),
         fetchAverageRatingMap(),
         fetchAllPlaces(),
-        fetchCategoryAverageMap("Affordability"),
-        fetchCategoryAverageMap("Entertainment & Nightlife"),
-        fetchCategoryAverageMap("Natural Beauty"),
-        fetchCategoryAverageMap("Safety & Security"),
-        fetchCategoryAverageMap("Hospitality & People"),
+        fetchCategoryAverageMaps([...EXPLORE_CATEGORY_RANKINGS]),
       ]);
+      const affordMap = categoryAverageMaps.get("Affordability") ?? new Map<string, number>();
+      const nightlifeMap = categoryAverageMaps.get("Entertainment & Nightlife") ?? new Map<string, number>();
+      const natureMap = categoryAverageMaps.get("Natural Beauty") ?? new Map<string, number>();
+      const safetyMap = categoryAverageMaps.get("Safety & Security") ?? new Map<string, number>();
+      const hospitalityMap = categoryAverageMaps.get("Hospitality & People") ?? new Map<string, number>();
 
       const placesMap = new Map(allPlaces.map((p) => [p.id, p]));
 
@@ -262,48 +270,50 @@ export default function ExplorePage() {
 
       const snapshot: PlacesPublicSnapshot = { sections: nextSections };
 
-      if (options.silent && isCurrentExploreRequest(options)) {
-        applyPlacesPublicSnapshot(snapshot, options.cacheKey);
-        setExploreCache(userId, options.cacheKey, snapshot);
-      }
+      if (!isCurrentExploreRequest(options)) return;
+
+      applyPlacesPublicSnapshot(snapshot, options.cacheKey);
+      setExploreCache(userId, options.cacheKey, snapshot);
 
       const commentMap = new Map<string, { profile_picture: string | null; text: string; review_id: string }>();
+      const displayedPlaceIds = [
+        ...new Set(nextSections.flatMap((section) => section.places.map((place) => place.id))),
+      ];
 
       // Fetch friend comments fresh only; never render them from the public cache.
-      if (user) {
-        const { data: following } = await supabase.from("followers").select("following_id").eq("follower_id", user.id);
-        const followingIds = (following || []).map((f) => f.following_id);
-        if (followingIds.length > 0) {
-          const { data: friendRevs } = await supabase
-            .from("reviews")
-            .select("id, place_id, review_text, user_id, created_at")
-            .in("user_id", followingIds)
-            .not("review_text", "is", null)
-            .neq("review_text", "")
-            .order("created_at", { ascending: false });
+      try {
+        if (user && displayedPlaceIds.length > 0) {
+          const { data: following } = await supabase.from("followers").select("following_id").eq("follower_id", user.id);
+          const followingIds = (following || []).map((f) => f.following_id);
+          if (followingIds.length > 0) {
+            const { data: friendRevs } = await supabase
+              .from("reviews")
+              .select("id, place_id, review_text, user_id, created_at")
+              .in("user_id", followingIds)
+              .in("place_id", displayedPlaceIds)
+              .not("review_text", "is", null)
+              .neq("review_text", "")
+              .order("created_at", { ascending: false });
 
-          if (friendRevs && friendRevs.length > 0) {
-            const userIds = [...new Set(friendRevs.map((r) => r.user_id))];
-            const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
-            const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
+            if (friendRevs && friendRevs.length > 0) {
+              const userIds = [...new Set(friendRevs.map((r) => r.user_id))];
+              const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
+              const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
 
-            friendRevs.forEach((r) => {
-              if (!commentMap.has(r.place_id)) {
-                const prof = profileMap.get(r.user_id);
-                commentMap.set(r.place_id, { profile_picture: prof?.profile_picture || null, text: r.review_text!, review_id: r.id });
-              }
-            });
+              friendRevs.forEach((r) => {
+                if (!commentMap.has(r.place_id)) {
+                  const prof = profileMap.get(r.user_id);
+                  commentMap.set(r.place_id, { profile_picture: prof?.profile_picture || null, text: r.review_text!, review_id: r.id });
+                }
+              });
+            }
           }
         }
+      } catch (commentError) {
+        console.error("Error fetching friend comments:", commentError);
       }
 
       if (!isCurrentExploreRequest(options)) return;
-
-      if (!options.silent) {
-        applyPlacesPublicSnapshot(snapshot, options.cacheKey);
-        setExploreCache(userId, options.cacheKey, snapshot);
-      }
-
       setFriendComments(commentMap);
     } catch (error) {
       console.error("Error fetching places sections:", error);

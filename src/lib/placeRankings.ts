@@ -42,15 +42,23 @@ export function clearRankingsCache() {
 /**
  * Fetch ALL reviews in paginated batches to bypass Supabase's 1000-row default limit.
  */
-async function fetchAllReviews(columns: string): Promise<any[]> {
+async function fetchAllReviews(
+  columns: string,
+  options: { throwOnError?: boolean } = {}
+): Promise<any[]> {
   const PAGE = 1000;
   let all: any[] = [];
   let offset = 0;
   while (true) {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("reviews")
       .select(columns)
       .range(offset, offset + PAGE - 1);
+    if (error) {
+      if (options.throwOnError) throw error;
+      console.error("Failed to fetch reviews:", error);
+      break;
+    }
     if (!data || data.length === 0) break;
     all = all.concat(data);
     if (data.length < PAGE) break;
@@ -147,6 +155,103 @@ export async function fetchCategoryAverageMap(
     });
   }
   return computeCategoryAverageMap(category, placeIds);
+}
+
+export async function fetchCategoryAverageMaps(
+  categories: string[]
+): Promise<Map<string, Map<string, number>>> {
+  const result = new Map<string, Map<string, number>>();
+  const missingCategories: string[] = [];
+
+  categories.forEach((category) => {
+    const cached = categoryCache.get(category);
+    if (isFresh(cached || null)) {
+      result.set(category, cached!.data);
+      return;
+    }
+
+    if (!missingCategories.includes(category)) {
+      missingCategories.push(category);
+    }
+  });
+
+  if (missingCategories.length === 0) return result;
+
+  const cacheKey = `cats:${[...missingCategories].sort().join("|")}`;
+  const fetchedMaps = await dedup(cacheKey, async () => {
+    const maps = new Map<string, Map<string, number>>();
+    missingCategories.forEach((category) => maps.set(category, new Map<string, number>()));
+
+    const allReviews = await fetchAllReviews("id, place_id", { throwOnError: true });
+    if (allReviews.length === 0) return maps;
+
+    const reviewPlaceMap = new Map<string, string>(
+      allReviews.map((r: any) => [r.id, r.place_id])
+    );
+    const reviewIds = allReviews.map((r: any) => r.id);
+    const categorySet = new Set(missingCategories);
+    const aggregateByCategory = new Map<string, Map<string, { sum: number; count: number }>>();
+    missingCategories.forEach((category) => {
+      aggregateByCategory.set(category, new Map());
+    });
+
+    const ID_CHUNK = 500;
+    const PAGE = 1000;
+    for (let i = 0; i < reviewIds.length; i += ID_CHUNK) {
+      const slice = reviewIds.slice(i, i + ID_CHUNK);
+      let offset = 0;
+
+      while (true) {
+        const { data, error } = await supabase
+          .from("review_sub_ratings")
+          .select("review_id, category, rating")
+          .in("review_id", slice)
+          .in("category", missingCategories)
+          .range(offset, offset + PAGE - 1);
+
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+
+        data.forEach((sr: any) => {
+          if (!categorySet.has(sr.category)) return;
+
+          const placeId = reviewPlaceMap.get(sr.review_id);
+          if (!placeId) return;
+
+          const categoryAgg = aggregateByCategory.get(sr.category);
+          if (!categoryAgg) return;
+
+          const current = categoryAgg.get(placeId) || { sum: 0, count: 0 };
+          current.sum += Number(sr.rating);
+          current.count += 1;
+          categoryAgg.set(placeId, current);
+        });
+
+        if (data.length < PAGE) break;
+        offset += PAGE;
+      }
+    }
+
+    aggregateByCategory.forEach((placeAgg, category) => {
+      const map = new Map<string, number>();
+      placeAgg.forEach((value, placeId) => {
+        map.set(placeId, value.sum / value.count);
+      });
+      maps.set(category, map);
+    });
+
+    return maps;
+  });
+
+  missingCategories.forEach((category) => {
+    const map = fetchedMaps.get(category);
+    if (!map) return;
+
+    categoryCache.set(category, { data: map, ts: Date.now() });
+    result.set(category, map);
+  });
+
+  return result;
 }
 
 async function computeCategoryAverageMap(
