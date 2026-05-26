@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Users, List, MessageSquare, Bookmark, Plus, BarChart3, Pencil } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -27,6 +27,13 @@ interface PlaceData {
   image: string | null;
 }
 
+interface PlaceFetchContext {
+  requestId: number;
+  placeId: string;
+  userId: string | null;
+  language: string;
+}
+
 export default function PlacePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -45,12 +52,29 @@ export default function PlacePage() {
   const [friendVisitors, setFriendVisitors] = useState<any[]>([]);
   const [friendWishlist, setFriendWishlist] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [secondaryLoaded, setSecondaryLoaded] = useState(false);
   const [ratingsCount, setRatingsCount] = useState(0);
   const [inWishlist, setInWishlist] = useState(false);
   const [togglingWishlist, setTogglingWishlist] = useState(false);
   const [countryCities, setCountryCities] = useState<any[]>([]);
   const [wishlistCities, setWishlistCities] = useState<any[]>([]);
   const [editSheetOpen, setEditSheetOpen] = useState(false);
+  const placeFetchRequestIdRef = useRef(0);
+  const currentFetchContextRef = useRef({
+    placeId: null as string | null,
+    userId: null as string | null,
+    language,
+  });
+
+  currentFetchContextRef.current = { placeId: id ?? null, userId: user?.id ?? null, language };
+
+  const isCurrentPlaceFetch = (context: PlaceFetchContext) => (
+    placeFetchRequestIdRef.current === context.requestId &&
+    currentFetchContextRef.current.placeId === context.placeId &&
+    currentFetchContextRef.current.userId === context.userId &&
+    currentFetchContextRef.current.language === context.language
+  );
+
   useEffect(() => {
     if (id) fetchAll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -58,7 +82,15 @@ export default function PlacePage() {
 
   const fetchAll = async () => {
     if (!id) return;
+    const requestContext: PlaceFetchContext = {
+      requestId: placeFetchRequestIdRef.current + 1,
+      placeId: id,
+      userId: user?.id ?? null,
+      language,
+    };
+    placeFetchRequestIdRef.current = requestContext.requestId;
     setLoading(true);
+    setSecondaryLoaded(false);
 
     // Reset all per-place state so data from a previously viewed place
     // (e.g. country) doesn't leak into the new page (e.g. one of its cities)
@@ -78,24 +110,27 @@ export default function PlacePage() {
     setInWishlist(false);
 
     // Fetch place
-    const { data: placeData } = await supabase.from("places").select("*").eq("id", id).maybeSingle();
+    const { data: placeData } = await supabase.from("places").select("*").eq("id", requestContext.placeId).maybeSingle();
+    if (!isCurrentPlaceFetch(requestContext)) return;
     if (!placeData) { setLoading(false); return; }
     setPlace(placeData);
 
     // Check wishlist status
-    if (user) {
-      const { data: wl } = await supabase.from("wishlists").select("id").eq("user_id", user.id).eq("place_id", id).maybeSingle();
+    if (requestContext.userId) {
+      const { data: wl } = await supabase.from("wishlists").select("id").eq("user_id", requestContext.userId).eq("place_id", requestContext.placeId).maybeSingle();
+      if (!isCurrentPlaceFetch(requestContext)) return;
       setInWishlist(!!wl);
     }
 
     // Fetch description - use DB description first, fallback to Wikipedia
-    fetchDescription(placeData.name, placeData.type, placeData.country, (placeData as any).description);
+    fetchDescription(placeData.name, placeData.type, placeData.country, (placeData as any).description, requestContext);
 
     // Fetch all reviews for this place
     const { data: allReviews } = await supabase
       .from("reviews")
       .select("id, rating, user_id, review_text, liked, created_at, visit_year, visit_month, duration_days")
-      .eq("place_id", id);
+      .eq("place_id", requestContext.placeId);
+    if (!isCurrentPlaceFetch(requestContext)) return;
 
     const reviews = allReviews || [];
 
@@ -110,8 +145,8 @@ export default function PlacePage() {
     // ratingsCount set below after filtering
 
     // My review (newest visit date)
-    if (user) {
-      const myReviews = reviews.filter((r) => r.user_id === user.id);
+    if (requestContext.userId) {
+      const myReviews = reviews.filter((r) => r.user_id === requestContext.userId);
       const newest = dedupeByNewest(myReviews, (r) => r.user_id);
       setMyReview(newest[0] || null);
     }
@@ -136,12 +171,25 @@ export default function PlacePage() {
     const { data: listItemsData } = await supabase
       .from("list_items")
       .select("list_id, lists!inner(id)")
-      .eq("place_id", id);
+      .eq("place_id", requestContext.placeId);
+    if (!isCurrentPlaceFetch(requestContext)) return;
     setListsCount(listItemsData?.length || 0);
 
+    setLoading(false);
+    fetchSecondaryPlaceData(placeData, reviews, requestContext);
+  };
+
+  const fetchSecondaryPlaceData = async (placeData: PlaceData, reviews: any[], requestContext: PlaceFetchContext) => {
+    let nextFriendVisitors: any[] = [];
+    let nextFriendWishlist: any[] = [];
+    let nextCountryCities: any[] = [];
+    let nextWishlistCities: any[] = [];
+
+    try {
     // Friends activity (people I follow)
-    if (user) {
-      const { data: following } = await supabase.from("followers").select("following_id").eq("follower_id", user.id);
+    if (requestContext.userId) {
+      const { data: following } = await supabase.from("followers").select("following_id").eq("follower_id", requestContext.userId);
+      if (!isCurrentPlaceFetch(requestContext)) return;
       const followingIds = (following || []).map((f) => f.following_id);
 
       if (followingIds.length > 0) {
@@ -157,20 +205,22 @@ export default function PlacePage() {
         if (uniqueFriendReviews.length > 0) {
           const friendIds = uniqueFriendReviews.map((r) => r.user_id);
           const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", friendIds);
-          setFriendVisitors(
+          if (!isCurrentPlaceFetch(requestContext)) return;
+          nextFriendVisitors =
             uniqueFriendReviews.map((r) => {
               const p = (profiles || []).find((p: any) => p.user_id === r.user_id);
               return { ...r, profile: p, review_id: r.id, has_review: !!(r.review_text && r.review_text.trim() !== "") };
-            })
-          );
+            });
         }
 
         // Friends who want to visit
-        const { data: friendWish } = await supabase.from("wishlists").select("user_id").eq("place_id", id).in("user_id", followingIds);
+        const { data: friendWish } = await supabase.from("wishlists").select("user_id").eq("place_id", requestContext.placeId).in("user_id", followingIds);
+        if (!isCurrentPlaceFetch(requestContext)) return;
         if (friendWish && friendWish.length > 0) {
           const wishIds = friendWish.map((w) => w.user_id);
           const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", wishIds);
-          setFriendWishlist(profiles || []);
+          if (!isCurrentPlaceFetch(requestContext)) return;
+          nextFriendWishlist = profiles || [];
         }
       }
     }
@@ -182,6 +232,7 @@ export default function PlacePage() {
         .select("id, name, country, type, image")
         .eq("type", "city")
         .eq("country", placeData.name);
+      if (!isCurrentPlaceFetch(requestContext)) return;
 
       if (citiesData && citiesData.length > 0) {
         const cityIds = citiesData.map((c) => c.id);
@@ -189,6 +240,7 @@ export default function PlacePage() {
           .from("reviews")
           .select("place_id")
           .in("place_id", cityIds);
+        if (!isCurrentPlaceFetch(requestContext)) return;
 
         const counts = new Map<string, number>();
         (cityReviews || []).forEach((r) => {
@@ -198,28 +250,41 @@ export default function PlacePage() {
         const sorted = citiesData
           .map((c) => ({ ...c, review_count: counts.get(c.id) || 0 }))
           .sort((a, b) => b.review_count - a.review_count);
-        setCountryCities(sorted);
+        nextCountryCities = sorted;
       }
 
       // Wishlist cities in this country
-      if (user) {
+      if (requestContext.userId) {
         const { data: wishData } = await supabase
           .from("wishlists")
           .select("place_id, places!inner(id, name, country, type)")
-          .eq("user_id", user.id);
+          .eq("user_id", requestContext.userId);
+        if (!isCurrentPlaceFetch(requestContext)) return;
 
         const wishCities = (wishData || [])
           .filter((w: any) => w.places.type === "city" && w.places.country === placeData.name);
-        setWishlistCities(wishCities);
+        nextWishlistCities = wishCities;
       }
     }
 
-    setLoading(false);
+      if (!isCurrentPlaceFetch(requestContext)) return;
+      setFriendVisitors(nextFriendVisitors);
+      setFriendWishlist(nextFriendWishlist);
+      setCountryCities(nextCountryCities);
+      setWishlistCities(nextWishlistCities);
+      setSecondaryLoaded(true);
+    } catch (error) {
+      console.error("Error fetching secondary place data:", error);
+      if (isCurrentPlaceFetch(requestContext)) {
+        setSecondaryLoaded(true);
+      }
+    }
   };
 
-  const fetchDescription = async (name: string, type: string, country: string, dbDescription?: string | null) => {
+  const fetchDescription = async (name: string, type: string, country: string, dbDescription?: string | null, requestContext?: PlaceFetchContext) => {
     setLoadingDesc(true);
     let baseEn = dbDescription || "";
+    const targetLanguage = requestContext?.language ?? language;
     if (!baseEn) {
       try {
         const searchTerm = type === "city" ? `${name} ${country}` : name;
@@ -237,12 +302,14 @@ export default function PlacePage() {
     }
 
     if (!baseEn) {
+      if (requestContext && !isCurrentPlaceFetch(requestContext)) return;
       setDescription("");
       setLoadingDesc(false);
       return;
     }
 
-    if (language === "en") {
+    if (targetLanguage === "en") {
+      if (requestContext && !isCurrentPlaceFetch(requestContext)) return;
       setDescription(baseEn);
       setLoadingDesc(false);
       return;
@@ -251,11 +318,13 @@ export default function PlacePage() {
     // Translate to current language
     try {
       const { data } = await supabase.functions.invoke("translate-text", {
-        body: { texts: [baseEn], language, kind: "description" },
+        body: { texts: [baseEn], language: targetLanguage, kind: "description" },
       });
       const translated = data?.translations?.[0] || baseEn;
+      if (requestContext && !isCurrentPlaceFetch(requestContext)) return;
       setDescription(translated);
     } catch {
+      if (requestContext && !isCurrentPlaceFetch(requestContext)) return;
       setDescription(baseEn);
     }
     setLoadingDesc(false);
@@ -529,12 +598,12 @@ export default function PlacePage() {
         </motion.div>
 
         {/* City Key Facts */}
-        {place.type === "city" && (
+        {secondaryLoaded && place.type === "city" && (
           <CityFacts cityName={place.name} countryName={place.country} placeId={place.id} />
         )}
 
         {/* Country-specific: Cities in country */}
-        {place.type === "country" && (
+        {secondaryLoaded && place.type === "country" && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-6">
             {/* Cities in country header */}
             <button
