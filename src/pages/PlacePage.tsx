@@ -16,6 +16,8 @@ import { DiaryEditSheet } from "@/components/DiaryEditSheet";
 import { dedupeByNewest } from "@/lib/reviewDedup";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
+import { setCachedWishlistStatus } from "@/lib/wishlistCache";
+import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 
 interface PlaceData {
   id: string;
@@ -307,11 +309,23 @@ export default function PlacePage() {
     if (!user || !id || togglingWishlist) return;
     setTogglingWishlist(true);
     if (inWishlist) {
-      await supabase.from("wishlists").delete().eq("user_id", user.id).eq("place_id", id);
+      const { error } = await supabase.from("wishlists").delete().eq("user_id", user.id).eq("place_id", id);
+      if (error) {
+        setTogglingWishlist(false);
+        return;
+      }
       setInWishlist(false);
+      setCachedWishlistStatus(user.id, id, false);
+      invalidateOwnProfileContentCache(user.id);
     } else {
-      await supabase.from("wishlists").insert({ user_id: user.id, place_id: id });
+      const { error } = await supabase.from("wishlists").insert({ user_id: user.id, place_id: id });
+      if (error) {
+        setTogglingWishlist(false);
+        return;
+      }
       setInWishlist(true);
+      setCachedWishlistStatus(user.id, id, true);
+      invalidateOwnProfileContentCache(user.id);
       toast.success(`${place?.name} added to wishlist`, { duration: 2000 });
     }
     setTogglingWishlist(false);

@@ -9,6 +9,10 @@ import { StarRating } from "@/components/StarRating";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { setCachedWishlistStatus } from "@/lib/wishlistCache";
+import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
+import { invalidateExploreCache } from "@/lib/exploreCache";
+import { clearRankingsCache } from "@/lib/placeRankings";
 
 type Step = "search" | "review";
 
@@ -140,7 +144,14 @@ export default function AddPlacePage() {
 
     // Auto-remove from wishlist if present
     if (!error) {
-      await supabase.from("wishlists").delete().eq("user_id", user.id).eq("place_id", selectedPlace.id);
+      invalidateOwnProfileContentCache(user.id);
+      clearRankingsCache();
+      invalidateExploreCache(user.id);
+      const { error: wishlistError } = await supabase.from("wishlists").delete().eq("user_id", user.id).eq("place_id", selectedPlace.id);
+      if (!wishlistError) {
+        setCachedWishlistStatus(user.id, selectedPlace.id, false);
+        invalidateOwnProfileContentCache(user.id);
+      }
 
       // Auto-tick must-visit goal places
       const currentYear = new Date().getFullYear();
@@ -241,14 +252,16 @@ export default function AddPlacePage() {
         .maybeSingle();
 
       if (existing) {
-        await supabase.from("favorite_places").update({ place_id: selectedPlace.id }).eq("id", existing.id);
+        const { error: favError } = await supabase.from("favorite_places").update({ place_id: selectedPlace.id }).eq("id", existing.id);
+        if (!favError) invalidateOwnProfileContentCache(user.id);
       } else {
-        await supabase.from("favorite_places").insert({
+        const { error: favError } = await supabase.from("favorite_places").insert({
           user_id: user.id,
           place_id: selectedPlace.id,
           slot_index: slotIdx,
           type: favoriteType,
         });
+        if (!favError) invalidateOwnProfileContentCache(user.id);
       }
     }
 

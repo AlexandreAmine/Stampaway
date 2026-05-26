@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ChevronRight, ChevronLeft, Settings, Plus, X, UserPlus, UserMinus, Pencil, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
@@ -33,6 +33,14 @@ import { sanitizeSocialLinks } from "@/lib/socialLinks";
 import { Camera } from "lucide-react";
 import { toast } from "sonner";
 import { isNative, Camera as CapCamera, CameraResultType, CameraSource } from "@/lib/native";
+import {
+  getFreshOwnProfileContentCache,
+  getOwnProfileContentCacheVersion,
+  invalidateOwnProfileContentCache,
+  isOwnProfileContentCacheVersion,
+  setOwnProfileContentCache,
+  syncOwnProfileContentCacheUser,
+} from "@/lib/profileContentCache";
 
 interface FavoriteSlot {
   slot_index: number;
@@ -43,10 +51,90 @@ interface FavoriteSlot {
   place_type: string;
 }
 
+interface ProfileCoreSnapshot {
+  favoriteCities: (FavoriteSlot | null)[];
+  favoriteCountries: (FavoriteSlot | null)[];
+  countriesCount: number;
+  citiesCount: number;
+  totalCountries: number;
+  reviewsCount: number;
+  listsCount: number;
+  wishlistCount: number;
+  followingCount: number;
+  followersCount: number;
+  likesCount: number;
+  writtenReviewsCount: number;
+  cityDistribution: number[];
+  countryDistribution: number[];
+}
+
+interface ProfileContentSnapshot extends ProfileCoreSnapshot {
+  mapMyData: UserMapData | null;
+  mapTheirData: UserMapData | null;
+}
+
+function buildDistribution(ratings: number[]) {
+  const dist: number[] = Array(10).fill(0);
+  ratings.forEach((r) => {
+    const idx = Math.round(r * 2) - 1;
+    if (idx >= 0 && idx < 10) dist[idx]++;
+  });
+  return dist;
+}
+
+function buildProfileCoreSnapshot(favData: any[], reviewData: any[], counts: {
+  lists: number; wishlist: number; following: number; followers: number;
+  totalCountries: number; reviewLikes: number; listLikes: number; writtenReviews: number;
+}, likedDestData: any[]): ProfileCoreSnapshot {
+  const favoriteCities: (FavoriteSlot | null)[] = [null, null, null, null];
+  const favoriteCountries: (FavoriteSlot | null)[] = [null, null, null, null];
+  favData.forEach((f: any) => {
+    const slot: FavoriteSlot = {
+      slot_index: f.slot_index, place_id: f.place_id,
+      place_name: f.places.name, place_image: f.places.image,
+      place_country: f.places.country, place_type: f.places.type,
+    };
+    if (f.type === "city") favoriteCities[f.slot_index] = slot;
+    else favoriteCountries[f.slot_index] = slot;
+  });
+
+  const cityRatings: number[] = [];
+  const countryRatings: number[] = [];
+  const uniqueCities = new Set<string>();
+  const uniqueCountries = new Set<string>();
+  reviewData.forEach((r: any) => {
+    if (r.places.type === "city") {
+      cityRatings.push(Number(r.rating));
+      uniqueCities.add(r.place_id);
+    } else {
+      countryRatings.push(Number(r.rating));
+      uniqueCountries.add(r.place_id);
+    }
+  });
+
+  const dedupedLikedDestPlaceIds = new Set(likedDestData.map((r: any) => r.place_id));
+  return {
+    favoriteCities, favoriteCountries,
+    countriesCount: uniqueCountries.size,
+    citiesCount: uniqueCities.size,
+    totalCountries: counts.totalCountries,
+    reviewsCount: reviewData.length,
+    listsCount: counts.lists,
+    wishlistCount: counts.wishlist,
+    followingCount: counts.following,
+    followersCount: counts.followers,
+    likesCount: dedupedLikedDestPlaceIds.size + counts.reviewLikes + counts.listLikes,
+    writtenReviewsCount: counts.writtenReviews,
+    cityDistribution: buildDistribution(cityRatings),
+    countryDistribution: buildDistribution(countryRatings),
+  };
+}
+
 type SubPage = null | "Countries" | "Cities" | "Diary" | "Map" | "Lists" | "Wishlist" | "Likes" | "Tags" | "Reviews" | "YearlyGoals" | "Following" | "Followers" | "CountriesByRating" | "CitiesByRating";
 
 export default function ProfilePage() {
   const { user, profile } = useAuth();
+  const viewerUserId = user?.id ?? null;
   const { t } = useLanguage();
   const subPageLabels: Record<string, string> = {
     Countries: t("profile.countries"), Cities: t("profile.cities"), Diary: t("profile.diary"),
@@ -60,6 +148,8 @@ export default function ProfilePage() {
   // Determine if viewing own profile or another user's
   const viewingUserId = paramUserId || user?.id;
   const isOwnProfile = !paramUserId || paramUserId === user?.id;
+  const activeProfileRef = useRef({ viewerUserId, viewingUserId, isOwnProfile });
+  activeProfileRef.current = { viewerUserId, viewingUserId, isOwnProfile };
 
   const [viewedProfile, setViewedProfile] = useState<{ username: string; profile_picture: string | null; bio: string | null; country: string | null; is_private?: boolean; social_links?: any } | null>(null);
   const [ownProfileFull, setOwnProfileFull] = useState<{ username: string; profile_picture: string | null; bio: string | null; country: string | null; social_links?: any } | null>(null);
@@ -93,6 +183,36 @@ export default function ProfilePage() {
 
   const [subPage, setSubPage] = useState<SubPage>(null);
   const [ratingFilter, setRatingFilter] = useState<number | undefined>(undefined);
+
+  const applyProfileCoreSnapshot = useCallback((snapshot: ProfileCoreSnapshot) => {
+    setFavoriteCities(snapshot.favoriteCities);
+    setFavoriteCountries(snapshot.favoriteCountries);
+    setCountriesCount(snapshot.countriesCount);
+    setCitiesCount(snapshot.citiesCount);
+    setTotalCountries(snapshot.totalCountries);
+    setReviewsCount(snapshot.reviewsCount);
+    setListsCount(snapshot.listsCount);
+    setWishlistCount(snapshot.wishlistCount);
+    setFollowingCount(snapshot.followingCount);
+    setFollowersCount(snapshot.followersCount);
+    setLikesCount(snapshot.likesCount);
+    setWrittenReviewsCount(snapshot.writtenReviewsCount);
+    setCityDistribution(snapshot.cityDistribution);
+    setCountryDistribution(snapshot.countryDistribution);
+  }, []);
+
+  const applyProfileContentSnapshot = useCallback((snapshot: ProfileContentSnapshot) => {
+    applyProfileCoreSnapshot(snapshot);
+    setMapMyData(snapshot.mapMyData);
+    setMapTheirData(snapshot.mapTheirData);
+  }, [applyProfileCoreSnapshot]);
+
+  useEffect(() => {
+    syncOwnProfileContentCacheUser(viewerUserId);
+    if (!viewerUserId || !isOwnProfile || viewingUserId !== viewerUserId) return;
+    const cached = getFreshOwnProfileContentCache<ProfileContentSnapshot>(viewerUserId);
+    if (cached) applyProfileContentSnapshot(cached);
+  }, [viewerUserId, isOwnProfile, viewingUserId, applyProfileContentSnapshot]);
 
   // Reset subpage and fetch profile when navigating to a different user
   useEffect(() => {
@@ -136,7 +256,8 @@ export default function ProfilePage() {
     if (!user || !viewingUserId || togglingFollow) return;
     setTogglingFollow(true);
     if (isFollowing) {
-      await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", viewingUserId);
+      const { error } = await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", viewingUserId);
+      if (!error) invalidateOwnProfileContentCache(user.id);
       setIsFollowing(false);
       setFollowersCount((c) => Math.max(0, c - 1));
     } else if (hasPendingRequest) {
@@ -150,7 +271,8 @@ export default function ProfilePage() {
         await supabase.from("follow_requests").insert({ requester_id: user.id, target_id: viewingUserId });
         setHasPendingRequest(true);
       } else {
-        await supabase.from("followers").insert({ follower_id: user.id, following_id: viewingUserId });
+        const { error } = await supabase.from("followers").insert({ follower_id: user.id, following_id: viewingUserId });
+        if (!error) invalidateOwnProfileContentCache(user.id);
         setIsFollowing(true);
         setFollowersCount((c) => c + 1);
       }
@@ -176,7 +298,18 @@ export default function ProfilePage() {
   const fetchData = useCallback(async () => {
     if (!viewingUserId) return;
     const uid = viewingUserId;
+    const canUseOwnProfileCache = isOwnProfile && viewerUserId === uid;
+    const requestViewerUserId = viewerUserId;
+    const requestProfileUserId = uid;
+    const cacheVersion = getOwnProfileContentCacheVersion();
+    const isStillCurrentOwnProfile = () => {
+      const active = activeProfileRef.current;
+      return active.viewerUserId === requestViewerUserId
+        && active.viewingUserId === requestProfileUserId
+        && active.isOwnProfile;
+    };
 
+    try {
     const [favRes, reviewRes, listRes, wishRes, followingRes, followersRes, totalCountriesRes, likedDestRes, reviewLikesRes, listLikesRes, writtenReviewsRes] = await Promise.all([
       supabase.from("favorite_places").select("slot_index, place_id, type, places!inner(name, image, country, type)").eq("user_id", uid),
       supabase.from("reviews").select("rating, place_id, places!inner(type)").eq("user_id", uid),
@@ -190,6 +323,57 @@ export default function ProfilePage() {
       supabase.from("list_likes").select("id", { count: "exact", head: true }).eq("user_id", uid),
       supabase.from("reviews").select("id", { count: "exact", head: true }).eq("user_id", uid).not("review_text", "is", null).neq("review_text", ""),
     ]);
+
+    if (canUseOwnProfileCache) {
+      const profileContentError = [favRes, reviewRes, listRes, wishRes, followingRes, followersRes, totalCountriesRes, likedDestRes, reviewLikesRes, listLikesRes, writtenReviewsRes]
+        .find((res) => res.error)?.error;
+      if (profileContentError || !Array.isArray(favRes.data) || !Array.isArray(reviewRes.data) || !Array.isArray(likedDestRes.data)) {
+        console.error("Profile data refresh failed:", profileContentError);
+        return;
+      }
+      if (!isOwnProfileContentCacheVersion(cacheVersion) || !isStillCurrentOwnProfile()) return;
+
+      const coreSnapshot = buildProfileCoreSnapshot(
+        favRes.data,
+        reviewRes.data,
+        {
+          lists: listRes.count || 0,
+          wishlist: wishRes.count || 0,
+          following: followingRes.count || 0,
+          followers: followersRes.count || 0,
+          totalCountries: totalCountriesRes.count || 0,
+          reviewLikes: reviewLikesRes.count || 0,
+          listLikes: listLikesRes.count || 0,
+          writtenReviews: writtenReviewsRes.count || 0,
+        },
+        likedDestRes.data,
+      );
+
+      applyProfileCoreSnapshot(coreSnapshot);
+      const previousSnapshot = getFreshOwnProfileContentCache<ProfileContentSnapshot>(viewerUserId);
+      setOwnProfileContentCache<ProfileContentSnapshot>(viewerUserId, {
+        ...coreSnapshot,
+        mapMyData: previousSnapshot?.mapMyData ?? null,
+        mapTheirData: previousSnapshot?.mapTheirData ?? null,
+      });
+
+      try {
+        const mapData = await fetchUserMapData(uid, { throwOnError: true });
+        if (!isOwnProfileContentCacheVersion(cacheVersion) || !isStillCurrentOwnProfile()) return;
+        const latestSnapshot = getFreshOwnProfileContentCache<ProfileContentSnapshot>(viewerUserId);
+        const nextSnapshot: ProfileContentSnapshot = {
+          ...(latestSnapshot ?? { ...coreSnapshot, mapMyData: null, mapTheirData: null }),
+          mapMyData: mapData,
+          mapTheirData: null,
+        };
+        setMapMyData(mapData);
+        setMapTheirData(null);
+        setOwnProfileContentCache<ProfileContentSnapshot>(viewerUserId, nextSnapshot);
+      } catch (error) {
+        console.error("Profile map refresh failed:", error);
+      }
+      return;
+    }
 
     if (favRes.data) {
       const cities: (FavoriteSlot | null)[] = [null, null, null, null];
@@ -262,7 +446,10 @@ export default function ProfilePage() {
       setMapMyData(mapData);
       setMapTheirData(null);
     }
-  }, [viewingUserId, isOwnProfile, user?.id]);
+    } catch (error) {
+      console.error("Profile data refresh failed:", error);
+    }
+  }, [viewingUserId, isOwnProfile, user?.id, viewerUserId, applyProfileCoreSnapshot]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -297,6 +484,7 @@ export default function ProfilePage() {
       } else {
         const updated = [...favoriteCountries]; updated[pickerSlot] = newSlot; setFavoriteCountries(updated);
       }
+      invalidateOwnProfileContentCache(viewerUserId);
       toast.success("Favorite saved!");
     } else {
       // Not yet logged — redirect directly to logging form with place pre-selected
@@ -319,6 +507,7 @@ export default function ProfilePage() {
     } else {
       const updated = [...favoriteCountries]; updated[pickerSlot] = newSlot; setFavoriteCountries(updated);
     }
+    invalidateOwnProfileContentCache(viewerUserId);
   };
 
   const stats: { label: string; value: string; subPage: SubPage }[] = [
@@ -353,6 +542,7 @@ export default function ProfilePage() {
     } else {
       const updated = [...favoriteCountries]; updated[slotIndex] = null; setFavoriteCountries(updated);
     }
+    invalidateOwnProfileContentCache(viewerUserId);
   };
 
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -387,6 +577,7 @@ export default function ProfilePage() {
 
     setDragIndex(null);
     setDragType(null);
+    invalidateOwnProfileContentCache(viewerUserId);
   };
 
   const renderFavoriteSlots = (type: "city" | "country", favorites: (FavoriteSlot | null)[]) => (

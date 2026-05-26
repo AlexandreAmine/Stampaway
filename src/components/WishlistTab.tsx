@@ -19,6 +19,8 @@ import {
   SOUTH_AMERICA_COUNTRIES, AFRICA_COUNTRIES, OCEANIA_COUNTRIES,
 } from "@/lib/continents";
 import { CategorySortDropdown, type SubRatingCategory } from "@/components/CategorySortDropdown";
+import { setCachedWishlistStatus } from "@/lib/wishlistCache";
+import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 
 type WishSort = "recent" | "avg-highest" | "category-avg";
 
@@ -144,12 +146,19 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
     if (exists) { toast("Already in wishlist"); return; }
     const { error } = await supabase.from("wishlists").insert({ user_id: user.id, place_id: placeId });
     if (error) { toast.error("Failed to add"); return; }
+    setCachedWishlistStatus(user.id, placeId, true);
+    invalidateOwnProfileContentCache(user.id);
     toast.success("Added to wishlist!");
     fetchWishlist();
   };
 
   const handleRemove = async (wishlistId: string) => {
-    await supabase.from("wishlists").delete().eq("id", wishlistId);
+    const removed = items.find((item) => item.id === wishlistId);
+    const { error } = await supabase.from("wishlists").delete().eq("id", wishlistId);
+    if (!error && user && removed && targetUserId === user.id) {
+      setCachedWishlistStatus(user.id, removed.place.id, false);
+      invalidateOwnProfileContentCache(user.id);
+    }
     toast.success("Removed from wishlist");
     fetchWishlist();
   };

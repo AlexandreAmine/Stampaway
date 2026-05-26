@@ -12,6 +12,7 @@ import { fetchAllTimeVisitorCountMap, fetchAverageRatingMap, fetchAllPlaces, fet
 import { ListPreviewPosters } from "@/components/ListPreviewPosters";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -72,6 +73,11 @@ export default function SearchPage() {
   const [selectedCategory, setSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
   const [grouped, setGrouped] = useState(false);
   const [visibleCount, setVisibleCount] = useState(250);
+  const searchStateRef = useRef<{ initialized: boolean; query: string; activeFilter: FilterTab }>({
+    initialized: false,
+    query: "",
+    activeFilter: initialTab,
+  });
 
   useEffect(() => {
     if (!user) return;
@@ -81,11 +87,22 @@ export default function SearchPage() {
   }, [user]);
 
   useEffect(() => {
-    const t = setTimeout(() => search(), 250);
-    return () => clearTimeout(t);
-  }, [query, activeFilter]);
+    const previous = searchStateRef.current;
+    const filterChanged = previous.initialized && previous.activeFilter !== activeFilter;
+    const queryChanged = previous.initialized && previous.query !== query;
 
-  useEffect(() => { search(); }, [activeFilter]);
+    searchStateRef.current = { initialized: true, query, activeFilter };
+
+    if (!previous.initialized || filterChanged) {
+      search();
+      return;
+    }
+
+    if (queryChanged) {
+      const t = setTimeout(() => search(), 250);
+      return () => clearTimeout(t);
+    }
+  }, [query, activeFilter]);
 
   useEffect(() => { setVisibleCount(250); }, [query, activeFilter, destSort, selectedCategory, grouped]);
 
@@ -387,6 +404,7 @@ export default function SearchPage() {
                       if (!user) return;
                       const { error } = await supabase.from("followers").insert({ follower_id: user.id, following_id: u.user_id });
                       if (error) { toast.error("Failed to follow"); return; }
+                      invalidateOwnProfileContentCache(user.id);
                       setFollowingIds((prev) => new Set([...prev, u.user_id]));
                       toast.success(`Following ${u.username}!`);
                     }}

@@ -8,6 +8,9 @@ import { DestinationPoster } from "@/components/DestinationPoster";
 import { StarRating } from "@/components/StarRating";
 import { DiaryEditSheet } from "@/components/DiaryEditSheet";
 import { toast } from "sonner";
+import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
+import { invalidateExploreCache } from "@/lib/exploreCache";
+import { clearRankingsCache } from "@/lib/placeRankings";
 
 interface DiaryEntry {
   id: string;
@@ -84,6 +87,11 @@ export function DiaryTab({ userId }: { userId?: string }) {
       return;
     }
     toast.success("Entry deleted");
+    if (user?.id) {
+      invalidateOwnProfileContentCache(user.id);
+      clearRankingsCache();
+      invalidateExploreCache(user.id);
+    }
     setEntries((prev) => prev.filter((e) => e.id !== entryId));
   };
 

@@ -5,6 +5,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { StarRating } from "@/components/StarRating";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
+import { invalidateExploreCache } from "@/lib/exploreCache";
+import { clearRankingsCache } from "@/lib/placeRankings";
 
 const SUB_CATEGORIES = [
   "Affordability", "Natural Beauty", "Culture & Heritage", "Safety & Security",
@@ -174,6 +177,9 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
       }
 
       toast.success("Entry updated");
+      invalidateOwnProfileContentCache(user.id);
+      clearRankingsCache();
+      invalidateExploreCache(user.id);
       onSaved();
       onClose();
     } else {

@@ -63,11 +63,13 @@ interface UserMapData {
   ratedCities: { name: string; coords: [number, number]; placeId: string; rating: number | null }[];
 }
 
-async function fetchUserMapData(userId: string): Promise<UserMapData> {
+async function fetchUserMapData(userId: string, options: { throwOnError?: boolean } = {}): Promise<UserMapData> {
   const res = await supabase
     .from("reviews")
     .select("place_id, rating, places!inner(name, country, type)")
     .eq("user_id", userId);
+
+  if (res.error && options.throwOnError) throw res.error;
 
   const codes = new Set<string>();
   const fiveStarCountryCodes = new Set<string>();

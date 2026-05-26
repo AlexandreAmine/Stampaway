@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -88,6 +89,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
     if (already) { toast("Already following"); return; }
     const { error } = await supabase.from("followers").insert({ follower_id: user.id, following_id: targetId });
     if (error) { toast.error("Failed to follow"); return; }
+    invalidateOwnProfileContentCache(user.id);
     toast.success("Following!");
     setShowSearch(false);
     setQuery("");
@@ -95,7 +97,8 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
   };
 
   const handleUnfollow = async (followId: string, username: string) => {
-    await supabase.from("followers").delete().eq("id", followId);
+    const { error } = await supabase.from("followers").delete().eq("id", followId);
+    if (!error && user?.id) invalidateOwnProfileContentCache(user.id);
     toast.success(`Unfollowed ${username}`);
     fetchFollowing();
   };

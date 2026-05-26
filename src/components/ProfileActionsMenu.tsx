@@ -10,6 +10,7 @@ import { ReportSheet } from "@/components/ReportSheet";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,12 +36,13 @@ export function ProfileActionsMenu({ targetUserId, isBlocked, onBlockChange }: P
   const handleBlock = async () => {
     if (!user) return;
     // Remove mutual follows
-    await Promise.all([
+    const followResults = await Promise.all([
       supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", targetUserId),
       supabase.from("followers").delete().eq("follower_id", targetUserId).eq("following_id", user.id),
       supabase.from("follow_requests").delete().eq("requester_id", user.id).eq("target_id", targetUserId),
       supabase.from("follow_requests").delete().eq("requester_id", targetUserId).eq("target_id", user.id),
     ]);
+    if (followResults.some((result) => !result.error)) invalidateOwnProfileContentCache(user.id);
     const { error } = await supabase.from("blocked_users").insert({ blocker_id: user.id, blocked_id: targetUserId });
     if (error) { toast.error("Could not block"); return; }
     toast.success("User blocked");

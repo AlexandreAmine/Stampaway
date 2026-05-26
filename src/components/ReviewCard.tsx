@@ -3,6 +3,7 @@ import { Star, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 
 interface ReviewCardProps {
   review: {
@@ -73,17 +74,19 @@ export function ReviewCard({ review, showImage = true, hidePlaceName = false }: 
     if (!user || toggling) return;
     setToggling(true);
     if (liked) {
-      await supabase
+      const { error } = await supabase
         .from("review_likes")
         .delete()
         .eq("review_id", reviewId)
         .eq("user_id", user.id);
+      if (!error) invalidateOwnProfileContentCache(user.id);
       setLiked(false);
       setLikeCount((c) => Math.max(0, c - 1));
     } else {
-      await supabase
+      const { error } = await supabase
         .from("review_likes")
         .insert({ review_id: reviewId, user_id: user.id });
+      if (!error) invalidateOwnProfileContentCache(user.id);
       setLiked(true);
       setLikeCount((c) => c + 1);
     }

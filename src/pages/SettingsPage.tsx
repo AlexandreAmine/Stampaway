@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { YourActivity } from "@/components/YourActivity";
+import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -94,8 +95,11 @@ export default function SettingsPage() {
       toast.error("Failed to block user");
       return;
     }
-    await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", targetId);
-    await supabase.from("followers").delete().eq("follower_id", targetId).eq("following_id", user.id);
+    const [{ error: followingError }, { error: followerError }] = await Promise.all([
+      supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", targetId),
+      supabase.from("followers").delete().eq("follower_id", targetId).eq("following_id", user.id),
+    ]);
+    if (!followingError || !followerError) invalidateOwnProfileContentCache(user.id);
     setBlockQuery("");
     setBlockSearchResults([]);
     const { data: profile } = await supabase.from("profiles").select("user_id, username, profile_picture").eq("user_id", targetId).maybeSingle();

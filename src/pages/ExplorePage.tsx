@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ChevronRight, Heart } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import { useAuth } from "@/contexts/AuthContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { PosterWishlistButton } from "@/components/PosterWishlistButton";
@@ -16,6 +17,13 @@ import {
   fetchAllTimeVisitorCountMap,
 } from "@/lib/placeRankings";
 import {
+  getExploreCacheVersion,
+  getFreshExploreCache,
+  isExploreCacheVersion,
+  setExploreCache,
+  syncExploreCacheUser,
+} from "@/lib/exploreCache";
+import {
   EUROPE_COUNTRIES,
   ASIA_COUNTRIES,
   NORTH_AMERICA_COUNTRIES,
@@ -26,7 +34,9 @@ import {
   MIDDLE_EAST_COUNTRIES,
 } from "@/lib/continents";
 
-const tabs = ["Places", "Reviews", "Lists"];
+const tabs = ["Places", "Reviews", "Lists"] as const;
+type ExploreTab = typeof tabs[number];
+const EXPLORE_PLACES_PUBLIC_CACHE_VERSION = "places-public-v1";
 
 type PlaceWithStat = {
   id: string;
@@ -44,10 +54,31 @@ type SectionConfig = {
   linkParams: string;
 };
 
+type PlacesPublicSnapshot = {
+  sections: SectionConfig[];
+};
+
+type ExploreFetchOptions = {
+  cacheKey: string;
+  cacheVersion: number;
+  silent: boolean;
+};
+
+const getExploreCacheKey = (userId: string | null, tab: ExploreTab) =>
+  [
+    EXPLORE_PLACES_PUBLIC_CACHE_VERSION,
+    `user=${userId ?? "anonymous"}`,
+    `tab=${tab}`,
+    "filters=none",
+    "sort=fixed-rankings",
+    "locale=source-data",
+  ].join("|");
+
 export default function ExplorePage() {
-  const [activeTab, setActiveTab] = useState("Places");
+  const [activeTab, setActiveTab] = useState<ExploreTab>("Places");
   const navigate = useNavigate();
   const { user } = useAuth();
+  const userId = user?.id ?? null;
 
   // Places state
   const [sections, setSections] = useState<SectionConfig[]>([]);
@@ -63,166 +94,232 @@ export default function ExplorePage() {
   const [friendLists, setFriendLists] = useState<any[]>([]);
   const [popularLists, setPopularLists] = useState<any[]>([]);
   const [listsLoading, setListsLoading] = useState(true);
+  const currentCacheKey = getExploreCacheKey(userId, activeTab);
+  const [visibleExploreCacheKey, setVisibleExploreCacheKey] = useState<string | null>(null);
+  const activeExploreRef = useRef({ cacheKey: currentCacheKey });
+
+  activeExploreRef.current = { cacheKey: currentCacheKey };
+
+  const isCurrentExploreRequest = useCallback((options: ExploreFetchOptions) => {
+    return (
+      activeExploreRef.current.cacheKey === options.cacheKey &&
+      isExploreCacheVersion(options.cacheVersion)
+    );
+  }, []);
+
+  const applyPlacesPublicSnapshot = useCallback(
+    (snapshot: PlacesPublicSnapshot, cacheKey: string) => {
+      setSections(snapshot.sections);
+      setFriendComments(new Map());
+      setPlacesLoading(false);
+      setVisibleExploreCacheKey(cacheKey);
+    },
+    []
+  );
 
   useEffect(() => {
-    if (activeTab === "Places") fetchPlacesSections();
-    if (activeTab === "Reviews") fetchReviewsSections();
-    if (activeTab === "Lists") fetchListsSections();
-  }, [activeTab]);
+    syncExploreCacheUser(userId);
+
+    const cacheKey = getExploreCacheKey(userId, activeTab);
+    const cacheVersion = getExploreCacheVersion();
+
+    if (activeTab === "Places") {
+      const cached = getFreshExploreCache<PlacesPublicSnapshot>(userId, cacheKey);
+
+      if (cached) {
+        applyPlacesPublicSnapshot(cached, cacheKey);
+      }
+
+      fetchPlacesSections({
+        cacheKey,
+        cacheVersion,
+        silent: Boolean(cached),
+      });
+    }
+
+    if (activeTab === "Reviews") fetchReviewsSections({ cacheKey, cacheVersion, silent: false });
+    if (activeTab === "Lists") fetchListsSections({ cacheKey, cacheVersion, silent: false });
+  }, [activeTab, userId, applyPlacesPublicSnapshot]);
 
   // ── PLACES ──
-  const fetchPlacesSections = async () => {
-    setPlacesLoading(true);
-
-    // Fetch all data in parallel using centralized helpers
-    const [monthlyCountMap, avgRatingMap, allPlaces, affordMap, nightlifeMap, natureMap, safetyMap, hospitalityMap] = await Promise.all([
-      fetchMonthlyVisitorCountMap(),
-      fetchAverageRatingMap(),
-      fetchAllPlaces(),
-      fetchCategoryAverageMap("Affordability"),
-      fetchCategoryAverageMap("Entertainment & Nightlife"),
-      fetchCategoryAverageMap("Natural Beauty"),
-      fetchCategoryAverageMap("Safety & Security"),
-      fetchCategoryAverageMap("Hospitality & People"),
-    ]);
-
-    const placesMap = new Map(allPlaces.map((p) => [p.id, p]));
-
-    // If no monthly data, fall back to all-time visitor counts
-    let trendingCountMap = monthlyCountMap;
-    if (monthlyCountMap.size === 0) {
-      trendingCountMap = await fetchAllTimeVisitorCountMap();
+  const fetchPlacesSections = async (options: ExploreFetchOptions) => {
+    if (!options.silent) {
+      setPlacesLoading(true);
     }
 
-    const buildTrending = (type: string): PlaceWithStat[] => {
-      const entries = [...trendingCountMap.entries()]
-        .map(([id, count]) => ({ place: placesMap.get(id), count }))
-        .filter((e): e is { place: NonNullable<typeof e.place>; count: number } =>
-          !!e.place && e.place.type === type
-        )
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 8);
-      return entries.map((e) => ({ ...e.place, stat: e.count }));
-    };
+    try {
+      // Fetch all data in parallel using centralized helpers
+      const [monthlyCountMap, avgRatingMap, allPlaces, affordMap, nightlifeMap, natureMap, safetyMap, hospitalityMap] = await Promise.all([
+        fetchMonthlyVisitorCountMap(),
+        fetchAverageRatingMap(),
+        fetchAllPlaces(),
+        fetchCategoryAverageMap("Affordability"),
+        fetchCategoryAverageMap("Entertainment & Nightlife"),
+        fetchCategoryAverageMap("Natural Beauty"),
+        fetchCategoryAverageMap("Safety & Security"),
+        fetchCategoryAverageMap("Hospitality & People"),
+      ]);
 
-    const buildTopRated = (type: string, countries: string[], limit: number): PlaceWithStat[] =>
-      allPlaces
-        .filter((p) => {
-          if (p.type !== type) return false;
-          return type === "country" ? countries.includes(p.name) : countries.includes(p.country);
-        })
-        .map((p) => ({ ...p, stat: avgRatingMap.get(p.id) || 0 }))
-        .sort((a, b) => {
-          if (b.stat !== a.stat) return b.stat - a.stat;
-          return a.name.localeCompare(b.name);
-        })
-        .slice(0, limit);
+      const placesMap = new Map(allPlaces.map((p) => [p.id, p]));
 
-    // Build category-based section: top N by sub-rating average for a given place type.
-    const buildByCategory = (type: string, catMap: Map<string, number>, previewLimit = 8): PlaceWithStat[] =>
-      allPlaces
-        .filter((p) => p.type === type && catMap.has(p.id))
-        .map((p) => ({ ...p, stat: catMap.get(p.id) || 0 }))
-        .sort((a, b) => {
-          if (b.stat !== a.stat) return b.stat - a.stat;
-          return a.name.localeCompare(b.name);
-        })
-        .slice(0, previewLimit);
+      // If no monthly data, fall back to all-time visitor counts
+      let trendingCountMap = monthlyCountMap;
+      if (monthlyCountMap.size === 0) {
+        trendingCountMap = await fetchAllTimeVisitorCountMap();
+      }
 
-    // Same as buildByCategory but restricted to a region's country list.
-    const buildByCategoryInRegion = (
-      type: string,
-      catMap: Map<string, number>,
-      countries: string[],
-      previewLimit = 8
-    ): PlaceWithStat[] =>
-      allPlaces
-        .filter((p) => {
-          if (p.type !== type || !catMap.has(p.id)) return false;
-          return type === "country" ? countries.includes(p.name) : countries.includes(p.country);
-        })
-        .map((p) => ({ ...p, stat: catMap.get(p.id) || 0 }))
-        .sort((a, b) => {
-          if (b.stat !== a.stat) return b.stat - a.stat;
-          return a.name.localeCompare(b.name);
-        })
-        .slice(0, previewLimit);
+      const buildTrending = (type: string): PlaceWithStat[] => {
+        const entries = [...trendingCountMap.entries()]
+          .map(([id, count]) => ({ place: placesMap.get(id), count }))
+          .filter((e): e is { place: NonNullable<typeof e.place>; count: number } =>
+            !!e.place && e.place.type === type
+          )
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 8);
+        return entries.map((e) => ({ ...e.place, stat: e.count }));
+      };
 
-    setSections([
-      { key: "tc", title: "Trendy countries this month", places: buildTrending("country"), linkParams: "mode=trending&type=country" },
-      { key: "tci", title: "Trendy cities this month", places: buildTrending("city"), linkParams: "mode=trending&type=city" },
-      { key: "te", title: "Top 20 countries in Europe", places: buildTopRated("country", EUROPE_COUNTRIES, 8), linkParams: "mode=top-rated&type=country&continent=Europe&limit=20" },
-      { key: "tce", title: "Top 30 cities in Europe", places: buildTopRated("city", EUROPE_COUNTRIES, 8), linkParams: "mode=top-rated&type=city&continent=Europe&limit=30" },
-      { key: "tna", title: "Top 15 cities in North America", places: buildTopRated("city", NORTH_AMERICA_COUNTRIES, 8), linkParams: "mode=top-rated&type=city&continent=North America&limit=15" },
-      { key: "ta", title: "Top 25 countries in Asia", places: buildTopRated("country", ASIA_COUNTRIES, 8), linkParams: "mode=top-rated&type=country&continent=Asia&limit=25" },
-      { key: "tsa", title: "Top 10 countries in South America", places: buildTopRated("country", SOUTH_AMERICA_COUNTRIES, 8), linkParams: "mode=top-rated&type=country&continent=South America&limit=10" },
-      { key: "afford", title: "30 most affordable countries", places: buildByCategory("country", affordMap), linkParams: "mode=by-category&type=country&category=Affordability&limit=30" },
-      { key: "vibrant", title: "30 most vibrant cities", places: buildByCategory("city", nightlifeMap), linkParams: "mode=by-category&type=city&category=Entertainment+%26+Nightlife&limit=30" },
-      { key: "scenic", title: "30 most scenic countries", places: buildByCategory("country", natureMap), linkParams: "mode=by-category&type=country&category=Natural+Beauty&limit=30" },
-      { key: "safe", title: "30 safest cities", places: buildByCategory("city", safetyMap), linkParams: "mode=by-category&type=city&category=Safety+%26+Security&limit=30" },
-      {
-        key: "afford-sea",
-        title: "Most affordable countries in Southeast Asia",
-        places: buildByCategoryInRegion("country", affordMap, SOUTHEAST_ASIA_COUNTRIES),
-        linkParams: "mode=by-category&type=country&category=Affordability&region=Southeast+Asia&limit=30",
-      },
-      {
-        key: "scenic-carib",
-        title: "Most scenic countries in the Caribbean",
-        places: buildByCategoryInRegion("country", natureMap, CARIBBEAN_COUNTRIES),
-        linkParams: "mode=by-category&type=country&category=Natural+Beauty&region=Caribbean&limit=30",
-      },
-      {
-        key: "top-ee",
-        title: "Top Eastern European countries",
-        places: buildTopRated("country", EASTERN_EUROPE_COUNTRIES, 8),
-        linkParams: "mode=top-rated&type=country&continent=Eastern Europe&limit=30",
-      },
-      {
-        key: "welcoming-me",
-        title: "Most welcoming countries in the Middle East",
-        places: buildByCategoryInRegion("country", hospitalityMap, MIDDLE_EAST_COUNTRIES),
-        linkParams: "mode=by-category&type=country&category=Hospitality+%26+People&region=Middle+East&limit=30",
-      },
-    ]);
+      const buildTopRated = (type: string, countries: string[], limit: number): PlaceWithStat[] =>
+        allPlaces
+          .filter((p) => {
+            if (p.type !== type) return false;
+            return type === "country" ? countries.includes(p.name) : countries.includes(p.country);
+          })
+          .map((p) => ({ ...p, stat: avgRatingMap.get(p.id) || 0 }))
+          .sort((a, b) => {
+            if (b.stat !== a.stat) return b.stat - a.stat;
+            return a.name.localeCompare(b.name);
+          })
+          .slice(0, limit);
 
-    // Fetch friend comments for displayed places
-    if (user) {
-      const { data: following } = await supabase.from("followers").select("following_id").eq("follower_id", user.id);
-      const followingIds = (following || []).map((f) => f.following_id);
-      if (followingIds.length > 0) {
-        const { data: friendRevs } = await supabase
-          .from("reviews")
-          .select("id, place_id, review_text, user_id, created_at")
-          .in("user_id", followingIds)
-          .not("review_text", "is", null)
-          .neq("review_text", "")
-          .order("created_at", { ascending: false });
-        
-        if (friendRevs && friendRevs.length > 0) {
-          const userIds = [...new Set(friendRevs.map((r) => r.user_id))];
-          const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
-          const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
-          
-          const commentMap = new Map<string, { profile_picture: string | null; text: string; review_id: string }>();
-          friendRevs.forEach((r) => {
-            if (!commentMap.has(r.place_id)) {
-              const prof = profileMap.get(r.user_id);
-              commentMap.set(r.place_id, { profile_picture: prof?.profile_picture || null, text: r.review_text!, review_id: r.id });
-            }
-          });
-          setFriendComments(commentMap);
+      // Build category-based section: top N by sub-rating average for a given place type.
+      const buildByCategory = (type: string, catMap: Map<string, number>, previewLimit = 8): PlaceWithStat[] =>
+        allPlaces
+          .filter((p) => p.type === type && catMap.has(p.id))
+          .map((p) => ({ ...p, stat: catMap.get(p.id) || 0 }))
+          .sort((a, b) => {
+            if (b.stat !== a.stat) return b.stat - a.stat;
+            return a.name.localeCompare(b.name);
+          })
+          .slice(0, previewLimit);
+
+      // Same as buildByCategory but restricted to a region's country list.
+      const buildByCategoryInRegion = (
+        type: string,
+        catMap: Map<string, number>,
+        countries: string[],
+        previewLimit = 8
+      ): PlaceWithStat[] =>
+        allPlaces
+          .filter((p) => {
+            if (p.type !== type || !catMap.has(p.id)) return false;
+            return type === "country" ? countries.includes(p.name) : countries.includes(p.country);
+          })
+          .map((p) => ({ ...p, stat: catMap.get(p.id) || 0 }))
+          .sort((a, b) => {
+            if (b.stat !== a.stat) return b.stat - a.stat;
+            return a.name.localeCompare(b.name);
+          })
+          .slice(0, previewLimit);
+
+      const nextSections = [
+        { key: "tc", title: "Trendy countries this month", places: buildTrending("country"), linkParams: "mode=trending&type=country" },
+        { key: "tci", title: "Trendy cities this month", places: buildTrending("city"), linkParams: "mode=trending&type=city" },
+        { key: "te", title: "Top 20 countries in Europe", places: buildTopRated("country", EUROPE_COUNTRIES, 8), linkParams: "mode=top-rated&type=country&continent=Europe&limit=20" },
+        { key: "tce", title: "Top 30 cities in Europe", places: buildTopRated("city", EUROPE_COUNTRIES, 8), linkParams: "mode=top-rated&type=city&continent=Europe&limit=30" },
+        { key: "tna", title: "Top 15 cities in North America", places: buildTopRated("city", NORTH_AMERICA_COUNTRIES, 8), linkParams: "mode=top-rated&type=city&continent=North America&limit=15" },
+        { key: "ta", title: "Top 25 countries in Asia", places: buildTopRated("country", ASIA_COUNTRIES, 8), linkParams: "mode=top-rated&type=country&continent=Asia&limit=25" },
+        { key: "tsa", title: "Top 10 countries in South America", places: buildTopRated("country", SOUTH_AMERICA_COUNTRIES, 8), linkParams: "mode=top-rated&type=country&continent=South America&limit=10" },
+        { key: "afford", title: "30 most affordable countries", places: buildByCategory("country", affordMap), linkParams: "mode=by-category&type=country&category=Affordability&limit=30" },
+        { key: "vibrant", title: "30 most vibrant cities", places: buildByCategory("city", nightlifeMap), linkParams: "mode=by-category&type=city&category=Entertainment+%26+Nightlife&limit=30" },
+        { key: "scenic", title: "30 most scenic countries", places: buildByCategory("country", natureMap), linkParams: "mode=by-category&type=country&category=Natural+Beauty&limit=30" },
+        { key: "safe", title: "30 safest cities", places: buildByCategory("city", safetyMap), linkParams: "mode=by-category&type=city&category=Safety+%26+Security&limit=30" },
+        {
+          key: "afford-sea",
+          title: "Most affordable countries in Southeast Asia",
+          places: buildByCategoryInRegion("country", affordMap, SOUTHEAST_ASIA_COUNTRIES),
+          linkParams: "mode=by-category&type=country&category=Affordability&region=Southeast+Asia&limit=30",
+        },
+        {
+          key: "scenic-carib",
+          title: "Most scenic countries in the Caribbean",
+          places: buildByCategoryInRegion("country", natureMap, CARIBBEAN_COUNTRIES),
+          linkParams: "mode=by-category&type=country&category=Natural+Beauty&region=Caribbean&limit=30",
+        },
+        {
+          key: "top-ee",
+          title: "Top Eastern European countries",
+          places: buildTopRated("country", EASTERN_EUROPE_COUNTRIES, 8),
+          linkParams: "mode=top-rated&type=country&continent=Eastern Europe&limit=30",
+        },
+        {
+          key: "welcoming-me",
+          title: "Most welcoming countries in the Middle East",
+          places: buildByCategoryInRegion("country", hospitalityMap, MIDDLE_EAST_COUNTRIES),
+          linkParams: "mode=by-category&type=country&category=Hospitality+%26+People&region=Middle+East&limit=30",
+        },
+      ];
+
+      const snapshot: PlacesPublicSnapshot = { sections: nextSections };
+
+      if (options.silent && isCurrentExploreRequest(options)) {
+        applyPlacesPublicSnapshot(snapshot, options.cacheKey);
+        setExploreCache(userId, options.cacheKey, snapshot);
+      }
+
+      const commentMap = new Map<string, { profile_picture: string | null; text: string; review_id: string }>();
+
+      // Fetch friend comments fresh only; never render them from the public cache.
+      if (user) {
+        const { data: following } = await supabase.from("followers").select("following_id").eq("follower_id", user.id);
+        const followingIds = (following || []).map((f) => f.following_id);
+        if (followingIds.length > 0) {
+          const { data: friendRevs } = await supabase
+            .from("reviews")
+            .select("id, place_id, review_text, user_id, created_at")
+            .in("user_id", followingIds)
+            .not("review_text", "is", null)
+            .neq("review_text", "")
+            .order("created_at", { ascending: false });
+
+          if (friendRevs && friendRevs.length > 0) {
+            const userIds = [...new Set(friendRevs.map((r) => r.user_id))];
+            const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
+            const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
+
+            friendRevs.forEach((r) => {
+              if (!commentMap.has(r.place_id)) {
+                const prof = profileMap.get(r.user_id);
+                commentMap.set(r.place_id, { profile_picture: prof?.profile_picture || null, text: r.review_text!, review_id: r.id });
+              }
+            });
+          }
         }
       }
-    }
 
-    setPlacesLoading(false);
+      if (!isCurrentExploreRequest(options)) return;
+
+      if (!options.silent) {
+        applyPlacesPublicSnapshot(snapshot, options.cacheKey);
+        setExploreCache(userId, options.cacheKey, snapshot);
+      }
+
+      setFriendComments(commentMap);
+    } catch (error) {
+      console.error("Error fetching places sections:", error);
+    }
   };
 
   // ── REVIEWS ──
-  const fetchReviewsSections = async () => {
+  const fetchReviewsSections = async (options: ExploreFetchOptions) => {
     setReviewsLoading(true);
-    if (!user) { setReviewsLoading(false); return; }
+    if (!user) {
+      setReviewsLoading(false);
+      if (isCurrentExploreRequest(options)) {
+        setVisibleExploreCacheKey(options.cacheKey);
+      }
+      return;
+    }
 
     // Get who I follow
     const { data: following } = await supabase
@@ -343,12 +440,21 @@ export default function ExplorePage() {
     }
 
     setReviewsLoading(false);
+    if (isCurrentExploreRequest(options)) {
+      setVisibleExploreCacheKey(options.cacheKey);
+    }
   };
 
   // ── LISTS ──
-  const fetchListsSections = async () => {
+  const fetchListsSections = async (options: ExploreFetchOptions) => {
     setListsLoading(true);
-    if (!user) { setListsLoading(false); return; }
+    if (!user) {
+      setListsLoading(false);
+      if (isCurrentExploreRequest(options)) {
+        setVisibleExploreCacheKey(options.cacheKey);
+      }
+      return;
+    }
 
     const { data: following } = await supabase
       .from("followers")
@@ -455,6 +561,9 @@ export default function ExplorePage() {
     setPopularLists(enrichedPopular);
 
     setListsLoading(false);
+    if (isCurrentExploreRequest(options)) {
+      setVisibleExploreCacheKey(options.cacheKey);
+    }
   };
 
   return (
@@ -488,7 +597,7 @@ export default function ExplorePage() {
         {/* ── PLACES TAB ── */}
         {activeTab === "Places" && (
           <>
-            {placesLoading ? (
+            {placesLoading || visibleExploreCacheKey !== currentCacheKey ? (
               <div className="space-y-6">
                 {[...Array(3)].map((_, s) => (
                   <div key={s}>
@@ -568,7 +677,7 @@ export default function ExplorePage() {
         {/* ── REVIEWS TAB ── */}
         {activeTab === "Reviews" && (
           <>
-            {reviewsLoading ? (
+            {reviewsLoading || visibleExploreCacheKey !== currentCacheKey ? (
               <div className="space-y-3">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="h-32 bg-muted/40 rounded-xl animate-pulse" />
@@ -610,7 +719,7 @@ export default function ExplorePage() {
         {/* ── LISTS TAB ── */}
         {activeTab === "Lists" && (
           <>
-            {listsLoading ? (
+            {listsLoading || visibleExploreCacheKey !== currentCacheKey ? (
               <div className="space-y-3">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="h-24 bg-muted/40 rounded-xl animate-pulse" />
@@ -682,11 +791,13 @@ function ListCard({ list, showLikes = false }: { list: any; showLikes?: boolean 
     if (!user || toggling) return;
     setToggling(true);
     if (liked) {
-      await supabase.from("list_likes").delete().eq("list_id", list.id).eq("user_id", user.id);
+      const { error } = await supabase.from("list_likes").delete().eq("list_id", list.id).eq("user_id", user.id);
+      if (!error) invalidateOwnProfileContentCache(user.id);
       setLiked(false);
       setLikeCount((c: number) => Math.max(0, c - 1));
     } else {
-      await supabase.from("list_likes").insert({ list_id: list.id, user_id: user.id });
+      const { error } = await supabase.from("list_likes").insert({ list_id: list.id, user_id: user.id });
+      if (!error) invalidateOwnProfileContentCache(user.id);
       setLiked(true);
       setLikeCount((c: number) => c + 1);
     }

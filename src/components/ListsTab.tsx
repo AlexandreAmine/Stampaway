@@ -6,6 +6,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { FavoritePicker } from "@/components/FavoritePicker";
 import { toast } from "sonner";
+import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
+import { invalidateListPreviewPostersCache } from "@/lib/listPreviewPostersCache";
 
 interface ListItem {
   id: string;
@@ -78,6 +80,7 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
     });
     setCreating(false);
     if (error) { toast.error("Failed to create list"); return; }
+    invalidateOwnProfileContentCache(user.id);
     toast.success("List created!");
     setNewName("");
     setNewDesc("");
@@ -86,8 +89,14 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
   };
 
   const handleDeleteList = async (listId: string) => {
-    await supabase.from("list_items").delete().eq("list_id", listId);
-    await supabase.from("lists").delete().eq("id", listId);
+    const { error: itemsError } = await supabase.from("list_items").delete().eq("list_id", listId);
+    if (!itemsError) invalidateListPreviewPostersCache(listId);
+
+    const { error } = await supabase.from("lists").delete().eq("id", listId);
+    if (!error && user?.id) {
+      invalidateOwnProfileContentCache(user.id);
+      invalidateListPreviewPostersCache(listId);
+    }
     toast.success("List deleted");
     setOpenList(null);
     fetchLists();
@@ -100,12 +109,15 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
     const maxPos = openList.items.reduce((max, i) => Math.max(max, i.position), -1);
     const { error } = await supabase.from("list_items").insert({ list_id: openList.id, place_id: placeId, position: maxPos + 1 });
     if (error) { toast.error("Failed to add"); return; }
+    invalidateListPreviewPostersCache(openList.id);
     toast.success("Added to list!");
     fetchLists();
   };
 
   const handleRemoveItem = async (itemId: string) => {
-    await supabase.from("list_items").delete().eq("id", itemId);
+    const listId = openList?.id;
+    const { error } = await supabase.from("list_items").delete().eq("id", itemId);
+    if (!error) invalidateListPreviewPostersCache(listId);
     toast.success("Removed from list");
     fetchLists();
   };
@@ -115,10 +127,15 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
     const updated = { ...openList, items: newItems };
     setOpenList(updated);
     // Update positions in DB
+    let updatedAnyPosition = false;
     for (let i = 0; i < newItems.length; i++) {
       if (newItems[i].position !== i) {
-        await supabase.from("list_items").update({ position: i }).eq("id", newItems[i].id);
+        const { error } = await supabase.from("list_items").update({ position: i }).eq("id", newItems[i].id);
+        if (!error) updatedAnyPosition = true;
       }
+    }
+    if (updatedAnyPosition) {
+      invalidateListPreviewPostersCache(openList.id);
     }
   };
 

@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 
 export default function ListDetailPage() {
   const { listId } = useParams();
@@ -58,11 +59,13 @@ export default function ListDetailPage() {
     if (!user || !listId || toggling) return;
     setToggling(true);
     if (liked) {
-      await supabase.from("list_likes").delete().eq("list_id", listId).eq("user_id", user.id);
+      const { error } = await supabase.from("list_likes").delete().eq("list_id", listId).eq("user_id", user.id);
+      if (!error) invalidateOwnProfileContentCache(user.id);
       setLiked(false);
       setLikeCount(c => Math.max(0, c - 1));
     } else {
-      await supabase.from("list_likes").insert({ list_id: listId, user_id: user.id });
+      const { error } = await supabase.from("list_likes").insert({ list_id: listId, user_id: user.id });
+      if (!error) invalidateOwnProfileContentCache(user.id);
       setLiked(true);
       setLikeCount(c => c + 1);
     }

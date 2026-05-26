@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { App as CapApp } from "@capacitor/app";
-import { isNative } from "@/lib/native";
+import { isNative } from "@/lib/native/platform";
 
 /**
  * Handles Universal Links (iOS) / App Links (Android).

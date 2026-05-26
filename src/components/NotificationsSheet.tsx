@@ -6,6 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import { formatDistanceToNow } from "date-fns";
 
 interface NotificationsSheetProps {
@@ -168,7 +169,8 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
   const acceptRequest = async (requestId: string, requesterId: string) => {
     if (!user) return;
     // Add to followers
-    await supabase.from("followers").insert({ follower_id: requesterId, following_id: user.id });
+    const { error } = await supabase.from("followers").insert({ follower_id: requesterId, following_id: user.id });
+    if (!error) invalidateOwnProfileContentCache(user.id);
     // Remove request
     await supabase.from("follow_requests").delete().eq("id", requestId);
     const profile = items.find(i => i.id === requestId);

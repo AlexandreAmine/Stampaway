@@ -1,8 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { getFlagUrl } from "@/lib/countryFlags";
 import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
+import {
+  fetchDestinationPosterUrl,
+  getCachedDestinationPosterUrl,
+  getDestinationPosterRequestToken,
+  isDestinationPosterRequestTokenCurrent,
+  setCachedDestinationPosterUrl,
+  type DestinationPosterProvider,
+  type DestinationPosterRequestToken,
+} from "@/lib/destinationPosterCache";
 
 interface DestinationPosterProps {
   placeId: string;
@@ -13,7 +21,7 @@ interface DestinationPosterProps {
   className?: string;
   autoGenerate?: boolean;
   onImageGenerated?: (url: string) => void;
-  provider?: "unsplash" | "pexels";
+  provider?: DestinationPosterProvider;
   bare?: boolean;
 }
 
@@ -32,35 +40,59 @@ export function DestinationPoster({
   const [imageUrl, setImageUrl] = useState(image || null);
   const [loading, setLoading] = useState(false);
   const generatedRef = useRef(false);
+  const activeRequestRef = useRef<DestinationPosterRequestToken | null>(null);
 
   useEffect(() => {
+    generatedRef.current = false;
+    activeRequestRef.current = null;
     setImageUrl(image || null);
-  }, [image]);
+    setLoading(false);
+
+    if (image) {
+      setCachedDestinationPosterUrl(placeId, provider, image);
+    }
+  }, [image, placeId, provider]);
 
   useEffect(() => {
     if (autoGenerate && !imageUrl && !loading && !generatedRef.current) {
+      const cached = getCachedDestinationPosterUrl(placeId, provider);
+      if (cached) {
+        generatedRef.current = true;
+        activeRequestRef.current = null;
+        setImageUrl(cached);
+        return;
+      }
+
       generatedRef.current = true;
       generatePoster();
     }
-  }, [autoGenerate, imageUrl]);
+  }, [autoGenerate, imageUrl, loading, placeId, provider]);
 
   const generatePoster = async () => {
+    const token = getDestinationPosterRequestToken(placeId, provider);
+    activeRequestRef.current = token;
     setLoading(true);
+
     try {
-      const fnName = provider === "pexels" ? "fetch-pexels-poster" : "fetch-unsplash-poster";
-      const { data, error } = await supabase.functions.invoke(
-        fnName,
-        { body: { place_id: placeId } }
-      );
-      if (data?.image_url) {
-        setImageUrl(data.image_url);
-        onImageGenerated?.(data.image_url);
+      const result = await fetchDestinationPosterUrl(placeId, provider, token);
+      if (
+        result.url &&
+        activeRequestRef.current === token &&
+        isDestinationPosterRequestTokenCurrent(placeId, provider, token)
+      ) {
+        setImageUrl(result.url);
+        if (!result.fromCache) {
+          onImageGenerated?.(result.url);
+        }
       }
-      if (error) console.error("Poster generation error:", error);
     } catch (e) {
       console.error("Failed to generate poster:", e);
+    } finally {
+      if (activeRequestRef.current === token) {
+        activeRequestRef.current = null;
+        setLoading(false);
+      }
     }
-    setLoading(false);
   };
 
   const flagCountry = type === "country" ? name : country;

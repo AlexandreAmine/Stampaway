@@ -5,6 +5,7 @@ import { X, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,7 +60,8 @@ export function FollowersTab({ userId }: { userId?: string }) {
 
   const removeFollower = async (followerId: string, username: string) => {
     if (!user) return;
-    await supabase.from("followers").delete().eq("follower_id", followerId).eq("following_id", user.id);
+    const { error } = await supabase.from("followers").delete().eq("follower_id", followerId).eq("following_id", user.id);
+    if (!error) invalidateOwnProfileContentCache(user.id);
     setFollowers((prev) => prev.filter((f) => f.id !== followerId));
     toast.success(`${username} removed from followers`);
   };
