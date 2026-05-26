@@ -8,6 +8,10 @@ import { FavoritePicker } from "@/components/FavoritePicker";
 import { toast } from "sonner";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import { invalidateListPreviewPostersCache } from "@/lib/listPreviewPostersCache";
+import {
+  fetchListItemsByListId,
+  fetchListItemsByListIdIndividually,
+} from "@/lib/listItemBatching";
 
 interface ListItem {
   id: string;
@@ -49,23 +53,21 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
 
     if (!listsData) { setLoading(false); return; }
 
-    const enriched: ListWithItems[] = [];
-    for (const list of listsData) {
-      const { data: items } = await supabase
-        .from("list_items")
-        .select("id, position, places!inner(id, name, country, type, image)")
-        .eq("list_id", list.id)
-        .order("position", { ascending: true });
-
-      enriched.push({
-        ...list,
-        items: (items || []).map((i: any) => ({
-          id: i.id,
-          position: i.position || 0,
-          place: { id: i.places.id, name: i.places.name, country: i.places.country, type: i.places.type, image: i.places.image },
-        })),
-      });
+    const listIds = listsData.map((list) => list.id);
+    let itemsByListId = new Map<string, ListItem[]>();
+    if (listIds.length > 0) {
+      try {
+        itemsByListId = await fetchListItemsByListId(listIds);
+      } catch (error) {
+        console.error("Failed to fetch batched list items:", error);
+        itemsByListId = await fetchListItemsByListIdIndividually(listIds);
+      }
     }
+
+    const enriched: ListWithItems[] = listsData.map((list) => ({
+      ...list,
+      items: itemsByListId.get(list.id) || [],
+    }));
     setLists(enriched);
     setLoading(false);
   };
