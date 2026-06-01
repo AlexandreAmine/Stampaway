@@ -5,8 +5,9 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Apple } from "lucide-react";
 import { PasswordInput } from "@/components/PasswordInput";
+import { lovable } from "@/integrations/lovable";
 import logoImage from "@/assets/stampaway-logo.jpeg";
 
 type AuthMode = "login" | "signup";
