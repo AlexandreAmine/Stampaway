@@ -291,6 +291,24 @@ export default function AuthPage() {
                   {submitting ? "..." : mode === "login" ? t("auth.signIn") : t("auth.createAccount")}
                 </button>
 
+                <div className="flex items-center gap-2 my-2">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs text-muted-foreground">or</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const result = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin });
+                    if (result.error) toast.error(result.error.message);
+                  }}
+                  className="w-full bg-white text-black rounded-xl py-3 text-sm font-semibold hover:bg-white/90 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Apple className="w-4 h-4" fill="currentColor" />
+                  Continue with Apple
+                </button>
+
                 {mode === "signup" && (
                   <p className="text-[11px] text-muted-foreground text-center leading-relaxed px-2">
                     {t("auth.legalConsentPrefix")}{" "}
