@@ -3,6 +3,9 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { WelcomeGlobe } from "@/components/WelcomeGlobe";
+import { lovable } from "@/integrations/lovable";
+import { toast } from "sonner";
+import { Apple } from "lucide-react";
 import logoImage from "@/assets/stampaway-logo.jpeg";
 
 export default function WelcomePage() {
