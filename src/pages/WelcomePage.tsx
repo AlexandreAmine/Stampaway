@@ -63,6 +63,16 @@ export default function WelcomePage() {
           >
             Create Account
           </button>
+          <button
+            onClick={async () => {
+              const result = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin });
+              if (result.error) toast.error(result.error.message);
+            }}
+            className="w-full bg-white text-black rounded-xl py-3.5 text-sm font-semibold hover:bg-white/90 transition-colors flex items-center justify-center gap-2"
+          >
+            <Apple className="w-4 h-4" fill="currentColor" />
+            Continue with Apple
+          </button>
         </div>
       </motion.div>
     </div>
