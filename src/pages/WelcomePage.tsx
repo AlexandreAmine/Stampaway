@@ -6,6 +6,7 @@ import { WelcomeGlobe } from "@/components/WelcomeGlobe";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
 import { Apple } from "lucide-react";
+import { canUseNativeAppleSignIn, nativeAppleSignIn } from "@/lib/native/appleSignIn";
 import logoImage from "@/assets/stampaway-logo.jpeg";
 
 export default function WelcomePage() {
@@ -65,8 +66,19 @@ export default function WelcomePage() {
           </button>
           <button
             onClick={async () => {
-              const result = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin });
-              if (result.error) toast.error(result.error.message);
+              try {
+                if (canUseNativeAppleSignIn()) {
+                  await nativeAppleSignIn();
+                } else {
+                  const result = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin });
+                  if (result.error) toast.error(result.error.message);
+                }
+              } catch (e: any) {
+                // 1001 = user canceled the native Apple sheet — stay silent.
+                if (e?.code !== "1001" && e?.error !== "1001") {
+                  toast.error(e?.message ?? "Apple sign-in failed");
+                }
+              }
             }}
             className="w-full bg-white text-black rounded-xl py-3.5 text-sm font-semibold hover:bg-white/90 transition-colors flex items-center justify-center gap-2"
           >

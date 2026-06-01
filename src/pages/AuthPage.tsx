@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft, Apple } from "lucide-react";
 import { PasswordInput } from "@/components/PasswordInput";
 import { lovable } from "@/integrations/lovable";
+import { canUseNativeAppleSignIn, nativeAppleSignIn } from "@/lib/native/appleSignIn";
 import logoImage from "@/assets/stampaway-logo.jpeg";
 
 type AuthMode = "login" | "signup";
@@ -300,8 +301,18 @@ export default function AuthPage() {
                 <button
                   type="button"
                   onClick={async () => {
-                    const result = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin });
-                    if (result.error) toast.error(result.error.message);
+                    try {
+                      if (canUseNativeAppleSignIn()) {
+                        await nativeAppleSignIn();
+                      } else {
+                        const result = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin });
+                        if (result.error) toast.error(result.error.message);
+                      }
+                    } catch (e: any) {
+                      if (e?.code !== "1001" && e?.error !== "1001") {
+                        toast.error(e?.message ?? "Apple sign-in failed");
+                      }
+                    }
                   }}
                   className="w-full bg-white text-black rounded-xl py-3 text-sm font-semibold hover:bg-white/90 transition-colors flex items-center justify-center gap-2"
                 >
