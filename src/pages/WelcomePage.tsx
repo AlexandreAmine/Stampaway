@@ -3,6 +3,9 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { WelcomeGlobe } from "@/components/WelcomeGlobe";
+import { lovable } from "@/integrations/lovable";
+import { toast } from "sonner";
+import { Apple } from "lucide-react";
 import logoImage from "@/assets/stampaway-logo.jpeg";
 
 export default function WelcomePage() {
@@ -59,6 +62,16 @@ export default function WelcomePage() {
             className="w-full bg-card text-foreground border border-border rounded-xl py-3.5 text-sm font-semibold hover:bg-card/80 transition-colors"
           >
             Create Account
+          </button>
+          <button
+            onClick={async () => {
+              const result = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin });
+              if (result.error) toast.error(result.error.message);
+            }}
+            className="w-full bg-white text-black rounded-xl py-3.5 text-sm font-semibold hover:bg-white/90 transition-colors flex items-center justify-center gap-2"
+          >
+            <Apple className="w-4 h-4" fill="currentColor" />
+            Continue with Apple
           </button>
         </div>
       </motion.div>

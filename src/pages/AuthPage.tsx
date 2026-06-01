@@ -5,8 +5,9 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Apple } from "lucide-react";
 import { PasswordInput } from "@/components/PasswordInput";
+import { lovable } from "@/integrations/lovable";
 import logoImage from "@/assets/stampaway-logo.jpeg";
 
 type AuthMode = "login" | "signup";
@@ -288,6 +289,24 @@ export default function AuthPage() {
 
                 <button type="submit" disabled={submitting} className={btnClass}>
                   {submitting ? "..." : mode === "login" ? t("auth.signIn") : t("auth.createAccount")}
+                </button>
+
+                <div className="flex items-center gap-2 my-2">
+                  <div className="flex-1 h-px bg-border" />
+                  <span className="text-xs text-muted-foreground">or</span>
+                  <div className="flex-1 h-px bg-border" />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const result = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin });
+                    if (result.error) toast.error(result.error.message);
+                  }}
+                  className="w-full bg-white text-black rounded-xl py-3 text-sm font-semibold hover:bg-white/90 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Apple className="w-4 h-4" fill="currentColor" />
+                  Continue with Apple
                 </button>
 
                 {mode === "signup" && (
