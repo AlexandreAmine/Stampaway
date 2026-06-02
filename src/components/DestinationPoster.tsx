@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { getFlagUrl } from "@/lib/countryFlags";
 import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
+import { getCountryPosterOverride } from "@/lib/countryPosterOverrides";
 import {
   fetchDestinationPosterUrl,
   getCachedDestinationPosterUrl,
@@ -37,7 +38,9 @@ export function DestinationPoster({
   provider = "unsplash",
   bare = false,
 }: DestinationPosterProps) {
-  const [imageUrl, setImageUrl] = useState(image || null);
+  const overrideImage = type === "country" ? getCountryPosterOverride(name) : null;
+  const resolvedImage = overrideImage || image || null;
+  const [imageUrl, setImageUrl] = useState(resolvedImage);
   const [loading, setLoading] = useState(false);
   const generatedRef = useRef(false);
   const activeRequestRef = useRef<DestinationPosterRequestToken | null>(null);
@@ -45,13 +48,13 @@ export function DestinationPoster({
   useEffect(() => {
     generatedRef.current = false;
     activeRequestRef.current = null;
-    setImageUrl(image || null);
+    setImageUrl(resolvedImage);
     setLoading(false);
 
-    if (image) {
-      setCachedDestinationPosterUrl(placeId, provider, image);
+    if (resolvedImage) {
+      setCachedDestinationPosterUrl(placeId, provider, resolvedImage);
     }
-  }, [image, placeId, provider]);
+  }, [resolvedImage, placeId, provider]);
 
   useEffect(() => {
     if (autoGenerate && !imageUrl && !loading && !generatedRef.current) {

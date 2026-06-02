@@ -9,6 +9,7 @@ import { RatingHistogram } from "@/components/RatingHistogram";
 import { StarRating } from "@/components/StarRating";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getFlagUrl } from "@/lib/countryFlags";
+import { getCountryPosterOverride } from "@/lib/countryPosterOverrides";
 import { CountryFacts } from "@/components/CountryFacts";
 import { CityFacts } from "@/components/CityFacts";
 import { toast } from "sonner";
@@ -383,13 +384,14 @@ export default function PlacePage() {
   }
 
   const flagUrl = getFlagUrl(place.type === "country" ? place.name : place.country, 40);
+  const placePosterImage = place.type === "country" ? getCountryPosterOverride(place.name) || place.image : place.image;
 
   return (
     <div className="min-h-screen bg-background pb-24 relative">
       {/* Background poster — blurred & faded, matches hero */}
-      {place.image && (
+      {placePosterImage && (
         <div className="fixed inset-0 pointer-events-none z-0">
-          <img src={place.image} alt="" aria-hidden className="w-full h-full object-cover opacity-20 blur-2xl scale-110" />
+          <img src={placePosterImage} alt="" aria-hidden className="w-full h-full object-cover opacity-20 blur-2xl scale-110" />
           <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/80 to-background" />
         </div>
       )}
@@ -401,7 +403,7 @@ export default function PlacePage() {
           name={place.name}
           country={place.country}
           type={place.type as "city" | "country"}
-          image={place.image}
+          image={placePosterImage}
           autoGenerate
           bare
           className="w-full h-full rounded-none"
