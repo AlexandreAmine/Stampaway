@@ -3,9 +3,9 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { WelcomeGlobe } from "@/components/WelcomeGlobe";
+import { AppleLogo } from "@/components/AppleLogo";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
-import { Apple } from "lucide-react";
 import { canUseNativeAppleSignIn, nativeAppleSignIn } from "@/lib/native/appleSignIn";
 import logoImage from "@/assets/stampaway-logo.jpeg";
 
@@ -82,7 +82,7 @@ export default function WelcomePage() {
             }}
             className="w-full bg-white text-black rounded-xl py-3.5 text-sm font-semibold hover:bg-white/90 transition-colors flex items-center justify-center gap-2"
           >
-            <Apple className="w-4 h-4" fill="currentColor" />
+            <AppleLogo className="w-4 h-4" />
             Continue with Apple
           </button>
         </div>

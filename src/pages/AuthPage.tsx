@@ -5,7 +5,8 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { ChevronLeft, Apple } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
+import { AppleLogo } from "@/components/AppleLogo";
 import { PasswordInput } from "@/components/PasswordInput";
 import { lovable } from "@/integrations/lovable";
 import { canUseNativeAppleSignIn, nativeAppleSignIn } from "@/lib/native/appleSignIn";
@@ -316,7 +317,7 @@ export default function AuthPage() {
                   }}
                   className="w-full bg-white text-black rounded-xl py-3 text-sm font-semibold hover:bg-white/90 transition-colors flex items-center justify-center gap-2"
                 >
-                  <Apple className="w-4 h-4" fill="currentColor" />
+                  <AppleLogo className="w-4 h-4" />
                   Continue with Apple
                 </button>
 
