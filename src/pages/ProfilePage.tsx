@@ -675,7 +675,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <div className="pt-12 px-5">
+      <div className="pt-14 px-5">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">

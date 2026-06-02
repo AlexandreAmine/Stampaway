@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -428,11 +428,8 @@ export default function SearchPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <div className="pt-12 px-5">
+      <div className="pt-14 px-5">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate(-1)}>
-            <ChevronLeft className="w-6 h-6 text-foreground" />
-          </button>
           <h1 className="text-xl font-bold text-foreground">{t("nav.search")}</h1>
         </div>
 
