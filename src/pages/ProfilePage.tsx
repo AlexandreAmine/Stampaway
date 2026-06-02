@@ -658,7 +658,7 @@ export default function ProfilePage() {
   if (subPage) {
     return (
       <div className="min-h-screen bg-background pb-24">
-        <div className="pt-12 px-5">
+        <div className="pt-14 px-5">
           <div className="flex items-center gap-3 mb-6">
             <button onClick={() => { setSubPage(null); setRatingFilter(undefined); }}>
               <ChevronLeft className="w-6 h-6 text-foreground" />
