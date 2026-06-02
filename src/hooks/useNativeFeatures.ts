@@ -76,10 +76,8 @@ export function useNativeFeatures() {
     if (!isNative()) return { ok: false, contacts: [] as unknown[] };
     try {
       const perm = await Contacts.requestPermissions();
-      if (perm.contacts !== "granted") return { ok: false, contacts: [] };
-      const result = await Contacts.getContacts({
-        projection: { name: true, phones: true, emails: true },
-      });
+      if (perm.readContacts !== "granted") return { ok: false, contacts: [] };
+      const result = await Contacts.getContacts();
       return { ok: true, contacts: result.contacts };
     } catch {
       return { ok: false, contacts: [] };
