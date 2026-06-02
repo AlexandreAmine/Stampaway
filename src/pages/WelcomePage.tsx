@@ -82,7 +82,7 @@ export default function WelcomePage() {
             }}
             className="w-full bg-white text-black rounded-xl py-3.5 text-sm font-semibold hover:bg-white/90 transition-colors flex items-center justify-center gap-2"
           >
-            <Apple className="w-4 h-4" fill="currentColor" />
+            <AppleLogo className="w-4 h-4" />
             Continue with Apple
           </button>
         </div>
