@@ -137,31 +137,32 @@ export function fetchListPreviewPosters(
   const inflight = previewInflight.get(cacheKey);
   if (inflight) return inflight;
 
-  const request = supabase
-    .from("list_items")
-    .select("id, position, places!inner(id, name, country, type, image)")
-    .eq("list_id", listId)
-    .order("position", { ascending: true })
-    .limit(maxItems)
-    .then(({ data, error }) => {
-      if (error) throw error;
+  const request = Promise.resolve(
+    supabase
+      .from("list_items")
+      .select("id, position, places!inner(id, name, country, type, image)")
+      .eq("list_id", listId)
+      .order("position", { ascending: true })
+      .limit(maxItems)
+      .then(({ data, error }) => {
+        if (error) throw error;
 
-      const items = (data || []).map((i: any) => i.places as ListPreviewPosterPlace);
+        const items = (data || []).map((i: any) => i.places as ListPreviewPosterPlace);
 
-      if (isListPreviewPostersRequestTokenCurrent(userId, listId, token)) {
-        previewCache.set(cacheKey, {
-          items,
-          cachedAt: Date.now(),
-        });
-      }
+        if (isListPreviewPostersRequestTokenCurrent(userId, listId, token)) {
+          previewCache.set(cacheKey, {
+            items,
+            cachedAt: Date.now(),
+          });
+        }
 
-      return items;
-    })
-    .finally(() => {
-      if (previewInflight.get(cacheKey) === request) {
-        previewInflight.delete(cacheKey);
-      }
-    });
+        return items;
+      })
+  ).finally(() => {
+    if (previewInflight.get(cacheKey) === request) {
+      previewInflight.delete(cacheKey);
+    }
+  });
 
   previewInflight.set(cacheKey, request);
   return request;
