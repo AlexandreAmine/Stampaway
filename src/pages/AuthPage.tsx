@@ -94,6 +94,18 @@ export default function AuthPage() {
     setSubmitting(false);
   };
 
+  const handleOtpPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text");
+    const digits = pasted.replace(/\D/g, "").slice(0, 6);
+    setOtpCode(digits);
+    const inputs = (e.currentTarget.parentElement as HTMLDivElement)?.querySelectorAll("input");
+    if (inputs) {
+      const focusIndex = Math.min(digits.length, 5);
+      (inputs[focusIndex] as HTMLInputElement)?.focus();
+    }
+  };
+
   const handleVerifyOtp = async () => {
     if (otpCode.length !== 6) return;
     setSubmitting(true);
