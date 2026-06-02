@@ -256,6 +256,7 @@ export default function AuthPage() {
                         (e.target.nextElementSibling as HTMLInputElement).focus();
                       }
                     }}
+                    onPaste={handleOtpPaste}
                     onKeyDown={(e) => {
                       if (e.key === "Backspace" && !otpCode[i] && e.currentTarget.previousElementSibling) {
                         (e.currentTarget.previousElementSibling as HTMLInputElement).focus();
