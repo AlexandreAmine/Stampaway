@@ -1,6 +1,7 @@
 import { Star } from "lucide-react";
 import type { Place } from "@/data/mockData";
 import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
+import { getDestinationPosterOverride } from "@/lib/countryPosterOverrides";
 
 interface PlaceCardProps {
   place: Place;
@@ -10,11 +11,12 @@ interface PlaceCardProps {
 export function PlaceCard({ place, variant = "small" }: PlaceCardProps) {
   const localizedName = useLocalizedPlaceName(place.name, false);
   const localizedCountry = useLocalizedPlaceName(place.country, true);
+  const posterImage = getDestinationPosterOverride(place.name, place.type) || place.image;
 
   if (variant === "small") {
     return (
       <div className="relative w-[130px] h-[170px] rounded-2xl overflow-hidden flex-shrink-0">
-        <img src={place.image} alt={localizedName} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+        <img src={posterImage} alt={localizedName} loading="lazy" decoding="async" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
         <div className="absolute bottom-3 left-3">
           <p className="text-sm font-semibold text-foreground">{localizedName}</p>
@@ -25,9 +27,10 @@ export function PlaceCard({ place, variant = "small" }: PlaceCardProps) {
 
   return (
     <div className="relative w-[180px] h-[240px] rounded-2xl overflow-hidden flex-shrink-0">
-      <img src={place.image} alt={localizedName} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+      <img src={posterImage} alt={localizedName} loading="lazy" decoding="async" className="w-full h-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent" />
       <div className="absolute bottom-3 left-3 right-3">
+
         <p className="text-xs text-muted-foreground">{localizedCountry}</p>
         <p className="text-base font-bold text-foreground">{localizedName}</p>
         <div className="flex items-center gap-1 mt-1">

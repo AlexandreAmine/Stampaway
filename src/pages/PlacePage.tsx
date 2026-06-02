@@ -9,7 +9,7 @@ import { RatingHistogram } from "@/components/RatingHistogram";
 import { StarRating } from "@/components/StarRating";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getFlagUrl } from "@/lib/countryFlags";
-import { getCountryPosterOverride } from "@/lib/countryPosterOverrides";
+import { getDestinationPosterOverride } from "@/lib/countryPosterOverrides";
 import { CountryFacts } from "@/components/CountryFacts";
 import { CityFacts } from "@/components/CityFacts";
 import { toast } from "sonner";
@@ -384,7 +384,8 @@ export default function PlacePage() {
   }
 
   const flagUrl = getFlagUrl(place.type === "country" ? place.name : place.country, 40);
-  const placePosterImage = place.type === "country" ? getCountryPosterOverride(place.name) || place.image : place.image;
+  const placePosterImage = getDestinationPosterOverride(place.name, place.type) || place.image;
+
 
   return (
     <div className="min-h-screen bg-background pb-24 relative">

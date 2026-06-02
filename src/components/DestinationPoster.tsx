@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { getFlagUrl } from "@/lib/countryFlags";
 import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
-import { getCountryPosterOverride } from "@/lib/countryPosterOverrides";
+import { getDestinationPosterOverride } from "@/lib/countryPosterOverrides";
 import {
   fetchDestinationPosterUrl,
   getCachedDestinationPosterUrl,
@@ -38,8 +38,9 @@ export function DestinationPoster({
   provider = "unsplash",
   bare = false,
 }: DestinationPosterProps) {
-  const overrideImage = type === "country" ? getCountryPosterOverride(name) : null;
+  const overrideImage = getDestinationPosterOverride(name, type);
   const resolvedImage = overrideImage || image || null;
+
   const [imageUrl, setImageUrl] = useState(resolvedImage);
   const [loading, setLoading] = useState(false);
   const generatedRef = useRef(false);
