@@ -577,6 +577,7 @@ const fr: Record<TranslationKey, string> = {
   "toast.passwordTooShort": "Le mot de passe doit contenir au moins 6 caractères",
   "toast.wrongPassword": "Le mot de passe actuel est incorrect",
   "toast.passwordFailed": "Échec de la mise à jour du mot de passe",
+  "toast.samePassword": "Le nouveau mot de passe doit être différent de l'actuel",
   "toast.accountDeleted": "Suppression du compte demandée. Vous allez être déconnecté.",
   "toast.typeDelete": "Veuillez taper DELETE pour confirmer",
   "toast.entryUpdated": "Entrée mise à jour",
