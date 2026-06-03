@@ -867,6 +867,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_email_taken: { Args: { _email: string }; Returns: boolean }
       is_username_available: { Args: { _username: string }; Returns: boolean }
       move_to_dlq: {
         Args: {
