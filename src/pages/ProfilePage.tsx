@@ -991,6 +991,12 @@ export default function ProfilePage() {
           }}
         />
       )}
+      <ProfilePicturePreview
+        src={avatarUrl}
+        alt={displayName}
+        isOpen={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+      />
     </div>
   );
 }
