@@ -92,6 +92,7 @@ function AppRoutes() {
         </Routes>
       </Suspense>
       {user && !mustCompletePasswordReset && <BottomNav />}
+      <UsernameSetupGate />
     </div>
   );
 }
