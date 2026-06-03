@@ -50,6 +50,15 @@ export default function AuthPage() {
   if (loading) return null;
   if (user && !mustCompletePasswordReset) return <Navigate to="/" replace />;
 
+  const cleanupUnconfirmedSignup = async (targetEmail: string) => {
+    if (!targetEmail) return;
+    try {
+      await supabase.functions.invoke("delete-unconfirmed-signup", { body: { email: targetEmail } });
+    } catch {
+      // best-effort
+    }
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedUsername = username.trim();
@@ -61,6 +70,14 @@ export default function AuthPage() {
     const { data: available, error: checkError } = await supabase.rpc("is_username_available", { _username: trimmedUsername });
     if (checkError) { toast.error(checkError.message); setSubmitting(false); return; }
     if (!available) { toast.error(t("auth.usernameTaken")); setSubmitting(false); return; }
+
+    // Check email availability (catches mobile case where signUp doesn't surface the duplicate clearly)
+    const { data: emailTaken, error: emailErr } = await supabase.rpc("is_email_taken", { _email: email });
+    if (emailErr) { toast.error(emailErr.message); setSubmitting(false); return; }
+    if (emailTaken) { toast.error(t("auth.accountExists")); setMode("login"); setSubmitting(false); return; }
+
+    // Clean up any prior unconfirmed signup for this email so the new attempt is fresh
+    await cleanupUnconfirmedSignup(email);
 
     const metadata = { username: trimmedUsername };
 
