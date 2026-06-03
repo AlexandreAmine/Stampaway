@@ -130,9 +130,14 @@ export default function ReviewDetailPage() {
         {/* User info */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <div className="flex items-center gap-3 mb-4">
-            <button onClick={() => navigate(profile?.user_id === user?.id ? "/profile" : `/profile/${profile?.user_id}`)}>
+            <button onClick={() => setPreviewOpen(true)}>
               <Avatar className="w-12 h-12 border-2 border-background">
-                <AvatarImage src={profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.username || "?")}&background=3B82F6&color=fff`} />
+                <AvatarImage
+                  src={profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.username || "?")}&background=3B82F6&color=fff`}
+                  draggable={false}
+                  onContextMenu={(e: any) => e.preventDefault()}
+                  style={{ WebkitTouchCallout: "none" }}
+                />
                 <AvatarFallback>{profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
               </Avatar>
             </button>
