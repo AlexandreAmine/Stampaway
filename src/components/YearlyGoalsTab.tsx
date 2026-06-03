@@ -150,11 +150,21 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
   const handleSaveGoals = async () => {
     if (!user) return;
     for (const [continent, vals] of Object.entries(editGoals)) {
-      if (vals.countries === 0 && vals.cities === 0) continue;
-      await supabase.from("yearly_goals").upsert({
-        user_id: user.id, year: currentYear, continent,
-        country_goal: vals.countries, city_goal: vals.cities,
-      }, { onConflict: "user_id,year,continent" });
+      const countries = Math.max(0, Math.min(200, vals.countries || 0));
+      const cities = Math.max(0, Math.min(200, vals.cities || 0));
+      if (countries === 0 && cities === 0) {
+        // Reset/delete this continent's goal
+        await supabase.from("yearly_goals")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("year", currentYear)
+          .eq("continent", continent);
+      } else {
+        await supabase.from("yearly_goals").upsert({
+          user_id: user.id, year: currentYear, continent,
+          country_goal: countries, city_goal: cities,
+        }, { onConflict: "user_id,year,continent" });
+      }
     }
     setEditing(false);
     fetchGoals();
