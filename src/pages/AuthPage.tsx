@@ -47,8 +47,33 @@ export default function AuthPage() {
     setOtpCode("");
   }, [mustCompletePasswordReset]);
 
+  // If user abandons the signup OTP step (closes tab / app), remove the unconfirmed account.
+  useEffect(() => {
+    if (step !== "otp" || mode !== "signup" || !email) return;
+    const cleanup = () => {
+      try {
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-unconfirmed-signup`;
+        const blob = new Blob([JSON.stringify({ email })], { type: "application/json" });
+        navigator.sendBeacon?.(url, blob);
+      } catch {
+        // ignore
+      }
+    };
+    window.addEventListener("pagehide", cleanup);
+    return () => window.removeEventListener("pagehide", cleanup);
+  }, [step, mode, email]);
+
   if (loading) return null;
   if (user && !mustCompletePasswordReset) return <Navigate to="/" replace />;
+
+  const cleanupUnconfirmedSignup = async (targetEmail: string) => {
+    if (!targetEmail) return;
+    try {
+      await supabase.functions.invoke("delete-unconfirmed-signup", { body: { email: targetEmail } });
+    } catch {
+      // best-effort
+    }
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,6 +86,14 @@ export default function AuthPage() {
     const { data: available, error: checkError } = await supabase.rpc("is_username_available", { _username: trimmedUsername });
     if (checkError) { toast.error(checkError.message); setSubmitting(false); return; }
     if (!available) { toast.error(t("auth.usernameTaken")); setSubmitting(false); return; }
+
+    // Check email availability (catches mobile case where signUp doesn't surface the duplicate clearly)
+    const { data: emailTaken, error: emailErr } = await supabase.rpc("is_email_taken", { _email: email });
+    if (emailErr) { toast.error(emailErr.message); setSubmitting(false); return; }
+    if (emailTaken) { toast.error(t("auth.accountExists")); setMode("login"); setSubmitting(false); return; }
+
+    // Clean up any prior unconfirmed signup for this email so the new attempt is fresh
+    await cleanupUnconfirmedSignup(email);
 
     const metadata = { username: trimmedUsername };
 
@@ -178,7 +211,7 @@ export default function AuthPage() {
         <AnimatePresence mode="wait">
           {step === "otp" && (
             <motion.div key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-              <button onClick={() => setStep("form")} className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+              <button onClick={() => { cleanupUnconfirmedSignup(email); setOtpCode(""); setStep("form"); }} className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
                 <ChevronLeft className="w-4 h-4" /> {t("back")}
               </button>
               <p className="text-sm text-foreground font-medium">{t("auth.enterCode")}</p>
