@@ -12,6 +12,7 @@ import { SubRatingsDisplay } from "@/components/SubRatingsDisplay";
 import { Linkify } from "@/components/Linkify";
 import { ReviewActionsMenu } from "@/components/ReviewActionsMenu";
 import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
+import { ProfilePicturePreview } from "@/components/ProfilePicturePreview";
 
 export default function ReviewDetailPage() {
   const { reviewId } = useParams<{ reviewId: string }>();
