@@ -62,7 +62,7 @@ export default function UsernameSetupGate() {
             disabled={submitting}
             className="w-full bg-primary text-primary-foreground rounded-xl py-3 text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
-            {submitting ? "..." : t("auth.continue") || "Continue"}
+            {submitting ? "..." : "Continue"}
           </button>
         </form>
       </motion.div>
