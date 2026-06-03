@@ -195,7 +195,7 @@ export default function AuthPage() {
         <AnimatePresence mode="wait">
           {step === "otp" && (
             <motion.div key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-              <button onClick={() => setStep("form")} className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
+              <button onClick={() => { cleanupUnconfirmedSignup(email); setOtpCode(""); setStep("form"); }} className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
                 <ChevronLeft className="w-4 h-4" /> {t("back")}
               </button>
               <p className="text-sm text-foreground font-medium">{t("auth.enterCode")}</p>
