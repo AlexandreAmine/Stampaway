@@ -158,6 +158,7 @@ export default function ProfilePage() {
   const [shareOpen, setShareOpen] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerType, setPickerType] = useState<"city" | "country">("city");
