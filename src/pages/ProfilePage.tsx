@@ -687,7 +687,15 @@ export default function ProfilePage() {
               </button>
             )}
             <div className="relative">
-              <img src={avatarUrl} alt={displayName} className="w-16 h-16 rounded-full object-cover border-2 border-border" />
+              <img
+                src={avatarUrl}
+                alt={displayName}
+                className="w-16 h-16 rounded-full object-cover border-2 border-border cursor-pointer"
+                onClick={() => setPreviewOpen(true)}
+                draggable={false}
+                onContextMenu={(e) => e.preventDefault()}
+                style={{ WebkitTouchCallout: "none" }}
+              />
               {isOwnProfile && (
                 <>
                   <input
