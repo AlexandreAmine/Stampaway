@@ -45,8 +45,8 @@ export default function UsernameSetupGate() {
           <div className="w-20 h-20 rounded-2xl overflow-hidden mb-4 shadow-lg ring-1 ring-white/10">
             <img src={logoImage} alt="Stampaway" className="w-full h-full object-cover" />
           </div>
-          <h1 className="font-brand text-3xl font-normal text-foreground tracking-tight mb-2">{t("auth.chooseUsername") || "Choose a username"}</h1>
-          <p className="text-sm text-muted-foreground">{t("auth.chooseUsernameDesc") || "Pick a unique username to finish setting up your account."}</p>
+          <h1 className="font-brand text-3xl font-normal text-foreground tracking-tight mb-2">Choose a username</h1>
+          <p className="text-sm text-muted-foreground">Pick a unique username to finish setting up your account.</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
