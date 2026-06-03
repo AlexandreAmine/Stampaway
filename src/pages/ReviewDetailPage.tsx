@@ -24,6 +24,7 @@ export default function ReviewDetailPage() {
   const [place, setPlace] = useState<any>(null);
   const [pastLoggings, setPastLoggings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     if (reviewId) fetchReview();
