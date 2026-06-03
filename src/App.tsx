@@ -9,6 +9,7 @@ import ScrollRestoration from "@/components/ScrollRestoration";
 import EdgeSwipeBack from "@/components/EdgeSwipeBack";
 import DeepLinkHandler from "@/components/DeepLinkHandler";
 import { PushNotificationsHandler } from "@/components/PushNotificationsHandler";
+import UsernameSetupGate from "@/components/UsernameSetupGate";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import HomePage from "./pages/HomePage";
@@ -91,6 +92,7 @@ function AppRoutes() {
         </Routes>
       </Suspense>
       {user && !mustCompletePasswordReset && <BottomNav />}
+      <UsernameSetupGate />
     </div>
   );
 }

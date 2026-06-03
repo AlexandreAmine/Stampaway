@@ -7,11 +7,12 @@ const PASSWORD_RESET_LOCK_KEY = "traveld.password-reset-lock";
 interface AuthContextType {
   session: Session | null;
   user: User | null;
-  profile: { username: string; profile_picture: string | null } | null;
+  profile: { username: string; profile_picture: string | null; needs_username: boolean } | null;
   loading: boolean;
   mustCompletePasswordReset: boolean;
   beginPasswordReset: () => void;
   completePasswordReset: () => void;
+  refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -20,7 +21,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<{ username: string; profile_picture: string | null } | null>(null);
+  const [profile, setProfile] = useState<{ username: string; profile_picture: string | null; needs_username: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
   const [mustCompletePasswordReset, setMustCompletePasswordReset] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -30,10 +31,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("username, profile_picture")
+      .select("username, profile_picture, needs_username")
       .eq("user_id", userId)
       .single();
     if (data) setProfile(data);
+  };
+
+  const refreshProfile = async () => {
+    if (user) await fetchProfile(user.id);
   };
 
   const setPasswordResetLock = (locked: boolean) => {
@@ -106,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, mustCompletePasswordReset, beginPasswordReset, completePasswordReset, signOut }}>
+    <AuthContext.Provider value={{ session, user, profile, loading, mustCompletePasswordReset, beginPasswordReset, completePasswordReset, refreshProfile, signOut }}>
       {children}
     </AuthContext.Provider>
   );
