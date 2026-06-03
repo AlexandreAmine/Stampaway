@@ -32,6 +32,7 @@ import { SocialLinks } from "@/components/SocialLinks";
 import { sanitizeSocialLinks } from "@/lib/socialLinks";
 import { Camera } from "lucide-react";
 import { toast } from "sonner";
+import { ProfilePicturePreview } from "@/components/ProfilePicturePreview";
 import { isNative, Camera as CapCamera, CameraResultType, CameraSource } from "@/lib/native";
 import {
   getFreshOwnProfileContentCache,
@@ -157,6 +158,7 @@ export default function ProfilePage() {
   const [shareOpen, setShareOpen] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [hasPendingRequest, setHasPendingRequest] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerType, setPickerType] = useState<"city" | "country">("city");
@@ -685,7 +687,15 @@ export default function ProfilePage() {
               </button>
             )}
             <div className="relative">
-              <img src={avatarUrl} alt={displayName} className="w-16 h-16 rounded-full object-cover border-2 border-border" />
+              <img
+                src={avatarUrl}
+                alt={displayName}
+                className="w-16 h-16 rounded-full object-cover border-2 border-border cursor-pointer"
+                onClick={() => setPreviewOpen(true)}
+                draggable={false}
+                onContextMenu={(e) => e.preventDefault()}
+                style={{ WebkitTouchCallout: "none" }}
+              />
               {isOwnProfile && (
                 <>
                   <input
@@ -981,6 +991,12 @@ export default function ProfilePage() {
           }}
         />
       )}
+      <ProfilePicturePreview
+        src={avatarUrl}
+        alt={displayName}
+        isOpen={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+      />
     </div>
   );
 }

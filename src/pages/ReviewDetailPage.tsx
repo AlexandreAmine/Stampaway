@@ -12,6 +12,7 @@ import { SubRatingsDisplay } from "@/components/SubRatingsDisplay";
 import { Linkify } from "@/components/Linkify";
 import { ReviewActionsMenu } from "@/components/ReviewActionsMenu";
 import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
+import { ProfilePicturePreview } from "@/components/ProfilePicturePreview";
 
 export default function ReviewDetailPage() {
   const { reviewId } = useParams<{ reviewId: string }>();
@@ -23,6 +24,7 @@ export default function ReviewDetailPage() {
   const [place, setPlace] = useState<any>(null);
   const [pastLoggings, setPastLoggings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   useEffect(() => {
     if (reviewId) fetchReview();
@@ -128,9 +130,14 @@ export default function ReviewDetailPage() {
         {/* User info */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <div className="flex items-center gap-3 mb-4">
-            <button onClick={() => navigate(profile?.user_id === user?.id ? "/profile" : `/profile/${profile?.user_id}`)}>
+            <button onClick={() => setPreviewOpen(true)}>
               <Avatar className="w-12 h-12 border-2 border-background">
-                <AvatarImage src={profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.username || "?")}&background=3B82F6&color=fff`} />
+                <AvatarImage
+                  src={profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.username || "?")}&background=3B82F6&color=fff`}
+                  draggable={false}
+                  onContextMenu={(e: any) => e.preventDefault()}
+                  style={{ WebkitTouchCallout: "none" }}
+                />
                 <AvatarFallback>{profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
               </Avatar>
             </button>
@@ -243,6 +250,12 @@ export default function ReviewDetailPage() {
           <ReviewComments reviewId={reviewId!} />
         </motion.div>
       </div>
+      <ProfilePicturePreview
+        src={profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.username || "?")}&background=3B82F6&color=fff`}
+        alt={profile?.username || "User"}
+        isOpen={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+      />
     </div>
   );
 }
