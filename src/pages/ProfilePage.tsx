@@ -32,6 +32,7 @@ import { SocialLinks } from "@/components/SocialLinks";
 import { sanitizeSocialLinks } from "@/lib/socialLinks";
 import { Camera } from "lucide-react";
 import { toast } from "sonner";
+import { ProfilePicturePreview } from "@/components/ProfilePicturePreview";
 import { isNative, Camera as CapCamera, CameraResultType, CameraSource } from "@/lib/native";
 import {
   getFreshOwnProfileContentCache,
