@@ -150,11 +150,21 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
   const handleSaveGoals = async () => {
     if (!user) return;
     for (const [continent, vals] of Object.entries(editGoals)) {
-      if (vals.countries === 0 && vals.cities === 0) continue;
-      await supabase.from("yearly_goals").upsert({
-        user_id: user.id, year: currentYear, continent,
-        country_goal: vals.countries, city_goal: vals.cities,
-      }, { onConflict: "user_id,year,continent" });
+      const countries = Math.max(0, Math.min(200, vals.countries || 0));
+      const cities = Math.max(0, Math.min(200, vals.cities || 0));
+      if (countries === 0 && cities === 0) {
+        // Reset/delete this continent's goal
+        await supabase.from("yearly_goals")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("year", currentYear)
+          .eq("continent", continent);
+      } else {
+        await supabase.from("yearly_goals").upsert({
+          user_id: user.id, year: currentYear, continent,
+          country_goal: countries, city_goal: cities,
+        }, { onConflict: "user_id,year,continent" });
+      }
     }
     setEditing(false);
     fetchGoals();
@@ -263,7 +273,8 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
                         placeholder="0"
                         onChange={e => {
                           const val = e.target.value;
-                          setEditGoals(prev => ({ ...prev, [continent]: { ...prev[continent], countries: val === "" ? 0 : (parseInt(val) || 0) } }));
+                          const n = val === "" ? 0 : Math.max(0, Math.min(200, parseInt(val) || 0));
+                          setEditGoals(prev => ({ ...prev, [continent]: { ...prev[continent], countries: n } }));
                         }}
                         className="h-8"
                       />
@@ -271,12 +282,13 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
                     <div className="flex-1">
                       <label className="text-xs text-muted-foreground">{l("cities")}</label>
                       <Input
-                        type="number" min={0} max={500}
+                        type="number" min={0} max={200}
                         value={editGoals[continent]?.cities === 0 ? "" : (editGoals[continent]?.cities ?? "")}
                         placeholder="0"
                         onChange={e => {
                           const val = e.target.value;
-                          setEditGoals(prev => ({ ...prev, [continent]: { ...prev[continent], cities: val === "" ? 0 : (parseInt(val) || 0) } }));
+                          const n = val === "" ? 0 : Math.max(0, Math.min(200, parseInt(val) || 0));
+                          setEditGoals(prev => ({ ...prev, [continent]: { ...prev[continent], cities: n } }));
                         }}
                         className="h-8"
                       />
