@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { ALL_COUNTRIES, getFlagEmoji } from "@/lib/countryFlags";
 import { X, Plus } from "lucide-react";
@@ -28,6 +29,7 @@ const parseCountries = (raw: string | null): string[] =>
 
 export function ProfileEditSheet({ open, onClose, onSaved, currentData }: ProfileEditSheetProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [username, setUsername] = useState(currentData.username);
   const [bio, setBio] = useState(currentData.bio || "");
   const [countries, setCountries] = useState<string[]>(parseCountries(currentData.country));
@@ -86,12 +88,20 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
 
   const handleSave = async () => {
     if (!user || !username.trim()) return;
+    const trimmed = username.trim();
+    if (trimmed.toLowerCase() !== currentData.username.toLowerCase()) {
+      const { data: available } = await supabase.rpc("is_username_available", { _username: trimmed });
+      if (!available) {
+        toast.error(t("auth.usernameTaken"));
+        return;
+      }
+    }
     setSaving(true);
     const cleanSocials = sanitizeSocialLinks(socialLinks);
     const { error } = await supabase
       .from("profiles")
       .update({
-        username: username.trim(),
+        username: trimmed,
         bio: bio.trim() || null,
         country: countries.length > 0 ? countries.join(", ") : null,
         social_links: cleanSocials,
@@ -101,7 +111,7 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
     if (error) {
       toast.error("Failed to update profile");
     } else {
-      toast.success("Profile updated");
+      toast.success(t("toast.profileUpdated"));
       onSaved();
       onClose();
     }

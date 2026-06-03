@@ -50,6 +50,7 @@ export function PasswordAndAuthSection({ user, t, onBack }: Props) {
     if (!user) return;
     if (newPassword !== confirmPassword) { toast.error(t("toast.passwordMismatch")); return; }
     if (newPassword.length < 6) { toast.error(t("toast.passwordTooShort")); return; }
+    if (newPassword === currentPassword) { toast.error(t("toast.samePassword")); return; }
     setChangingPassword(true);
     const { error: signInErr } = await supabase.auth.signInWithPassword({ email: user.email!, password: currentPassword });
     if (signInErr) { toast.error(t("toast.wrongPassword")); setChangingPassword(false); return; }
