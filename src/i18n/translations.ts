@@ -294,6 +294,7 @@ const en = {
   "toast.passwordTooShort": "Password must be at least 6 characters",
   "toast.wrongPassword": "Current password is incorrect",
   "toast.passwordFailed": "Failed to update password",
+  "toast.samePassword": "The new password must be different from the current one",
   "toast.accountDeleted": "Account deletion requested. You will be signed out.",
   "toast.typeDelete": "Please type DELETE to confirm",
   "toast.entryUpdated": "Entry updated",
