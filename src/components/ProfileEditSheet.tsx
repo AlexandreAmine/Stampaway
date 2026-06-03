@@ -29,6 +29,7 @@ const parseCountries = (raw: string | null): string[] =>
 
 export function ProfileEditSheet({ open, onClose, onSaved, currentData }: ProfileEditSheetProps) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [username, setUsername] = useState(currentData.username);
   const [bio, setBio] = useState(currentData.bio || "");
   const [countries, setCountries] = useState<string[]>(parseCountries(currentData.country));
