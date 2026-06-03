@@ -414,6 +414,7 @@ export type Database = {
           email: string | null
           id: string
           is_private: boolean
+          needs_username: boolean
           phone: string | null
           profile_picture: string | null
           social_links: Json
@@ -429,6 +430,7 @@ export type Database = {
           email?: string | null
           id?: string
           is_private?: boolean
+          needs_username?: boolean
           phone?: string | null
           profile_picture?: string | null
           social_links?: Json
@@ -444,6 +446,7 @@ export type Database = {
           email?: string | null
           id?: string
           is_private?: boolean
+          needs_username?: boolean
           phone?: string | null
           profile_picture?: string | null
           social_links?: Json
