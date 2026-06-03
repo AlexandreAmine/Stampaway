@@ -109,7 +109,7 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
       .eq("user_id", user.id);
 
     if (error) {
-      toast.error(t("toast.passwordFailed"));
+      toast.error("Failed to update profile");
     } else {
       toast.success(t("toast.profileUpdated"));
       onSaved();
