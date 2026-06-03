@@ -7,11 +7,12 @@ const PASSWORD_RESET_LOCK_KEY = "traveld.password-reset-lock";
 interface AuthContextType {
   session: Session | null;
   user: User | null;
-  profile: { username: string; profile_picture: string | null } | null;
+  profile: { username: string; profile_picture: string | null; needs_username: boolean } | null;
   loading: boolean;
   mustCompletePasswordReset: boolean;
   beginPasswordReset: () => void;
   completePasswordReset: () => void;
+  refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
