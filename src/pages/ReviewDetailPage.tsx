@@ -250,6 +250,12 @@ export default function ReviewDetailPage() {
           <ReviewComments reviewId={reviewId!} />
         </motion.div>
       </div>
+      <ProfilePicturePreview
+        src={profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.username || "?")}&background=3B82F6&color=fff`}
+        alt={profile?.username || "User"}
+        isOpen={previewOpen}
+        onClose={() => setPreviewOpen(false)}
+      />
     </div>
   );
 }
