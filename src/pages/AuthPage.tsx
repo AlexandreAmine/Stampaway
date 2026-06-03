@@ -47,6 +47,22 @@ export default function AuthPage() {
     setOtpCode("");
   }, [mustCompletePasswordReset]);
 
+  // If user abandons the signup OTP step (closes tab / app), remove the unconfirmed account.
+  useEffect(() => {
+    if (step !== "otp" || mode !== "signup" || !email) return;
+    const cleanup = () => {
+      try {
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-unconfirmed-signup`;
+        const blob = new Blob([JSON.stringify({ email })], { type: "application/json" });
+        navigator.sendBeacon?.(url, blob);
+      } catch {
+        // ignore
+      }
+    };
+    window.addEventListener("pagehide", cleanup);
+    return () => window.removeEventListener("pagehide", cleanup);
+  }, [step, mode, email]);
+
   if (loading) return null;
   if (user && !mustCompletePasswordReset) return <Navigate to="/" replace />;
 
