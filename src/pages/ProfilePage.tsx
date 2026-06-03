@@ -794,33 +794,6 @@ export default function ProfilePage() {
             </div>
           ) : user && viewingUserId && (
             <div className="flex items-center gap-1">
-              {!isBlocked && (
-                <button
-                  onClick={toggleFollow}
-                  disabled={togglingFollow}
-                  className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                    isFollowing
-                      ? "bg-card border border-border text-foreground"
-                      : hasPendingRequest
-                        ? "bg-muted text-muted-foreground border border-border"
-                        : "bg-primary text-primary-foreground"
-                  }`}
-                >
-                  {isFollowing ? (
-                    <>
-                      <UserMinus className="w-3.5 h-3.5" />
-                      {t("profile.unfollow")}
-                    </>
-                  ) : hasPendingRequest ? (
-                    <span>{t("profile.requested")}</span>
-                  ) : (
-                    <>
-                      <UserPlus className="w-3.5 h-3.5" />
-                      {t("profile.follow")}
-                    </>
-                  )}
-                </button>
-              )}
               <ProfileActionsMenu
                 targetUserId={viewingUserId}
                 isBlocked={isBlocked}
@@ -837,6 +810,38 @@ export default function ProfilePage() {
             <SocialLinks links={sanitizeSocialLinks((currentProfile as any)?.social_links)} />
           </div>
         )}
+
+        {/* Follow / Unfollow button (other users) - placed below bio */}
+        {!isOwnProfile && user && viewingUserId && !isBlocked && (
+          <div className="mb-4">
+            <button
+              onClick={toggleFollow}
+              disabled={togglingFollow}
+              className={`w-full flex items-center justify-center gap-1.5 py-2 rounded-full text-sm font-medium transition-colors ${
+                isFollowing
+                  ? "bg-card border border-border text-foreground"
+                  : hasPendingRequest
+                    ? "bg-muted text-muted-foreground border border-border"
+                    : "bg-primary text-primary-foreground"
+              }`}
+            >
+              {isFollowing ? (
+                <>
+                  <UserMinus className="w-4 h-4" />
+                  {t("profile.unfollow")}
+                </>
+              ) : hasPendingRequest ? (
+                <span>{t("profile.requested")}</span>
+              ) : (
+                <>
+                  <UserPlus className="w-4 h-4" />
+                  {t("profile.follow")}
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
 
         {/* Blocked state */}
         {!isOwnProfile && isBlocked && (
