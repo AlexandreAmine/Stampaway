@@ -221,6 +221,7 @@ export function ReviewCard({
               <button
                 onClick={(e) => { e.stopPropagation(); if (userId) navigate(userId === user?.id ? "/profile" : `/profile/${userId}`); }}
                 className="text-xs font-medium text-muted-foreground truncate hover:underline"
+                data-no-translate
               >
                 {userName}
               </button>
