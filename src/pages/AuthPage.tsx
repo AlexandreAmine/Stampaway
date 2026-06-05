@@ -211,7 +211,7 @@ export default function AuthPage() {
             <img src={logoImage} alt="Stampaway" className="w-full h-full object-cover" />
           </div>
           <h1 className="font-brand text-4xl font-normal text-foreground tracking-tight mb-1">Stampaway</h1>
-          <p className="text-sm text-muted-foreground">Log your adventures</p>
+          <p className="text-sm text-muted-foreground">Your travel social diary</p>
         </div>
 
         <AnimatePresence mode="wait">
