@@ -42,7 +42,7 @@ export default function WelcomePage() {
             <img src={logoImage} alt="Stampaway" className="w-full h-full object-cover" />
           </div>
           <h1 className="font-brand text-3xl font-normal text-foreground tracking-tight">Stampaway</h1>
-          <p className="text-sm text-muted-foreground mt-1">Log & rate your trips</p>
+          <p className="text-sm text-muted-foreground mt-1">Your travel social diary</p>
         </div>
 
         {/* Globe */}
