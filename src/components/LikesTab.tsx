@@ -479,7 +479,7 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
                   {l.profile_picture && (
                     <img src={l.profile_picture} alt="" loading="lazy" decoding="async" width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
                   )}
-                  <span className="text-xs text-muted-foreground">{l.username || "User"}</span>
+                  <span className="text-xs text-muted-foreground" data-no-translate>{l.username || "User"}</span>
                 </div>
                 <p className="text-sm font-bold text-foreground" data-no-translate>{l.name}</p>
                 <p className="text-xs text-muted-foreground">{l.item_count} destination{l.item_count !== 1 ? "s" : ""}</p>

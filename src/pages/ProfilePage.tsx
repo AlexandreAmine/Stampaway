@@ -764,7 +764,7 @@ export default function ProfilePage() {
             </div>
             <div>
               <div className="flex items-center gap-1.5 flex-wrap">
-                <h1 className="text-xl font-bold text-foreground">{displayName}</h1>
+                <h1 className="text-xl font-bold text-foreground" data-no-translate>{displayName}</h1>
                 {countryList.map((c: string) => (
                   <span key={c} className="text-lg" title={c}>{getFlagEmoji(c)}</span>
                 ))}
@@ -928,7 +928,7 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(40, 95%, 55%)" }} />
-                    <span>{displayName}</span>
+                    <span data-no-translate>{displayName}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(150, 60%, 45%)" }} />

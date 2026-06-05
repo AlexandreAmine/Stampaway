@@ -398,7 +398,7 @@ export default function PlaceSubPage() {
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate" data-no-translate>{l.list_name}</p>
-                    <p className="text-xs text-muted-foreground">by {l.profile?.username || "User"}</p>
+                    <p className="text-xs text-muted-foreground" data-no-translate>by {l.profile?.username || "User"}</p>
                   </div>
                 </button>
               ))}
@@ -410,7 +410,7 @@ export default function PlaceSubPage() {
                     <AvatarImage src={w.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(w.username || "?")}&background=3B82F6&color=fff`} />
                     <AvatarFallback>{w.username?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
-                  <p className="text-sm text-foreground flex-1">{w.username || "User"}</p>
+                  <p className="text-sm text-foreground flex-1" data-no-translate>{w.username || "User"}</p>
                 </button>
               ))}
           </motion.div>

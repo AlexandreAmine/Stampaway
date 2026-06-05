@@ -991,7 +991,7 @@ function ListCard({ list, showLikes = false }: { list: any; showLikes?: boolean 
             {list.profile_picture && (
               <img src={list.profile_picture} alt="" loading="lazy" decoding="async" width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
             )}
-            <span className="text-xs text-muted-foreground">{list.username || "User"}</span>
+            <span className="text-xs text-muted-foreground" data-no-translate>{list.username || "User"}</span>
           </div>
           <p className="text-sm font-bold text-foreground" data-no-translate>{list.name}</p>
           <p className="text-xs text-muted-foreground">
