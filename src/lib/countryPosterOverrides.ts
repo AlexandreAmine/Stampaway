@@ -17,28 +17,41 @@ import budapestPoster from "@/assets/cities/budapest.png.asset.json";
 import ibizaPoster from "@/assets/cities/ibiza.png.asset.json";
 import lisbonPoster from "@/assets/cities/lisbon.png.asset.json";
 
+// Lovable serves uploaded assets from a root-relative path (/__l5e/...).
+// That works in a browser (resolves against the published origin) but
+// inside the Capacitor iOS/Android WebView the root is capacitor://localhost,
+// so the images 404. Force an absolute https URL for native builds.
+const ASSET_ORIGIN = "https://stampaway.lovable.app";
+
+function absolutize(url: string): string {
+  if (!url) return url;
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith("/")) return `${ASSET_ORIGIN}${url}`;
+  return url;
+}
+
 const countryPosterOverrides: Record<string, string> = {
-  Portugal: portugalPoster.url,
-  Qatar: qatarPoster.url,
-  Vanuatu: vanuatuPoster.url,
-  Bhutan: bhutanPoster.url,
-  Eritrea: eritreaPoster.url,
-  Iraq: iraqPoster.url,
-  Liberia: liberiaPoster.url,
-  Uganda: ugandaPoster.url,
-  Libya: libyaPoster.url,
-  Mongolia: mongoliaPoster.url,
-  Russia: russiaPoster.url,
-  "Saint Lucia": saintLuciaPoster.url,
+  Portugal: absolutize(portugalPoster.url),
+  Qatar: absolutize(qatarPoster.url),
+  Vanuatu: absolutize(vanuatuPoster.url),
+  Bhutan: absolutize(bhutanPoster.url),
+  Eritrea: absolutize(eritreaPoster.url),
+  Iraq: absolutize(iraqPoster.url),
+  Liberia: absolutize(liberiaPoster.url),
+  Uganda: absolutize(ugandaPoster.url),
+  Libya: absolutize(libyaPoster.url),
+  Mongolia: absolutize(mongoliaPoster.url),
+  Russia: absolutize(russiaPoster.url),
+  "Saint Lucia": absolutize(saintLuciaPoster.url),
 };
 
 const cityPosterOverrides: Record<string, string> = {
-  London: londonPoster.url,
-  Athens: athensPoster.url,
-  Marrakesh: marrakeshPoster.url,
-  Budapest: budapestPoster.url,
-  Ibiza: ibizaPoster.url,
-  Lisbon: lisbonPoster.url,
+  London: absolutize(londonPoster.url),
+  Athens: absolutize(athensPoster.url),
+  Marrakesh: absolutize(marrakeshPoster.url),
+  Budapest: absolutize(budapestPoster.url),
+  Ibiza: absolutize(ibizaPoster.url),
+  Lisbon: absolutize(lisbonPoster.url),
 };
 
 export function getDestinationPosterOverride(name?: string | null, type?: string | null) {
