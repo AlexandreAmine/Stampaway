@@ -40,13 +40,13 @@ export function ProfilePicturePreview({ src, alt, isOpen, onClose }: ProfilePict
 
       {/* Image container - prevents context menu and interaction */}
       <div
-        className="relative max-w-[90vw] max-h-[80vh] flex items-center justify-center"
+        className="relative flex items-center justify-center"
         onClick={(e) => e.stopPropagation()}
       >
         <img
           src={src}
           alt={alt}
-          className="max-w-full max-h-[80vh] object-contain rounded-xl select-none"
+          className="w-[70vw] h-[70vw] max-w-[320px] max-h-[320px] rounded-full object-cover select-none"
           style={{
             WebkitTouchCallout: "none",
             WebkitUserSelect: "none",
