@@ -243,18 +243,27 @@ export default function HomePage() {
           {/* Header */}
           <div className="pt-14 pb-2 px-5 flex items-center justify-between relative z-10">
             <h1 className="font-brand text-3xl font-normal text-foreground tracking-tight leading-none">{t("home.title")}</h1>
-            <button onClick={() => {
-              setNotifOpen(true);
-              if (user) localStorage.setItem(`notif_last_read_${user.id}`, new Date().toISOString());
-              setUnreadCount(0);
-            }} className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center relative">
-              <Bell className="w-5 h-5 text-foreground" />
-              {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1">
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </span>
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 bg-background/60 backdrop-blur-sm rounded-full px-3 h-8">
+                <span className="text-xs font-semibold text-foreground tabular-nums">{countriesCount}</span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("profile.countries")}</span>
+                <span className="text-muted-foreground/40 mx-0.5">·</span>
+                <span className="text-xs font-semibold text-foreground tabular-nums">{citiesCount}</span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("profile.cities")}</span>
+              </div>
+              <button onClick={() => {
+                setNotifOpen(true);
+                if (user) localStorage.setItem(`notif_last_read_${user.id}`, new Date().toISOString());
+                setUnreadCount(0);
+              }} className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center relative">
+                <Bell className="w-5 h-5 text-foreground" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1">
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
 
           <div ref={containerRef} className="relative w-full overflow-hidden" style={{ height: mapHeight }}>
