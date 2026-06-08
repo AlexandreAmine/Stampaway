@@ -116,24 +116,35 @@ export default function PlacePage() {
     if (!placeData) { setLoading(false); return; }
     setPlace(placeData);
 
-    // Check wishlist status
-    if (requestContext.userId) {
-      const { data: wl } = await supabase.from("wishlists").select("id").eq("user_id", requestContext.userId).eq("place_id", requestContext.placeId).maybeSingle();
-      if (!isCurrentPlaceFetch(requestContext)) return;
-      setInWishlist(!!wl);
-    }
-
     // Fetch description - use DB description first, fallback to Wikipedia
-    fetchDescription(placeData.name, placeData.type, placeData.country, (placeData as any).description, requestContext);
+    void fetchDescription(placeData.name, placeData.type, placeData.country, (placeData as any).description, requestContext);
 
-    // Fetch all reviews for this place
-    const { data: allReviews } = await supabase
-      .from("reviews")
-      .select("id, rating, user_id, review_text, liked, created_at, visit_year, visit_month, duration_days")
-      .eq("place_id", requestContext.placeId);
+    const fetchWishlistStatus = async () => {
+      if (!requestContext.userId) return false;
+      const { data } = await supabase
+        .from("wishlists")
+        .select("id")
+        .eq("user_id", requestContext.userId)
+        .eq("place_id", requestContext.placeId)
+        .maybeSingle();
+      return !!data;
+    };
+
+    const [nextInWishlist, reviewsResult, listItemsResult] = await Promise.all([
+      fetchWishlistStatus(),
+      supabase
+        .from("reviews")
+        .select("id, rating, user_id, review_text, liked, created_at, visit_year, visit_month, duration_days")
+        .eq("place_id", requestContext.placeId),
+      supabase
+        .from("list_items")
+        .select("list_id, lists!inner(id)")
+        .eq("place_id", requestContext.placeId),
+    ]);
     if (!isCurrentPlaceFetch(requestContext)) return;
 
-    const reviews = allReviews || [];
+    setInWishlist(nextInWishlist);
+    const reviews = reviewsResult.data || [];
 
     // Written reviews with profiles
     const written = reviews.filter((r) => r.review_text && r.review_text.trim() !== "");
@@ -167,112 +178,149 @@ export default function PlacePage() {
     }
     setRatingsCount(ratedReviews.length);
 
-    // Lists containing this place. Keep the existing row-length count semantics,
-    // but avoid downloading unused list owner/profile data.
-    const { data: listItemsData } = await supabase
-      .from("list_items")
-      .select("list_id, lists!inner(id)")
-      .eq("place_id", requestContext.placeId);
-    if (!isCurrentPlaceFetch(requestContext)) return;
-    setListsCount(listItemsData?.length || 0);
+    setListsCount(listItemsResult.data?.length || 0);
 
     setLoading(false);
-    fetchSecondaryPlaceData(placeData, reviews, requestContext);
+    void fetchSecondaryPlaceData(placeData, reviews, requestContext);
   };
 
   const fetchSecondaryPlaceData = async (placeData: PlaceData, reviews: any[], requestContext: PlaceFetchContext) => {
-    let nextFriendVisitors: any[] = [];
-    let nextFriendWishlist: any[] = [];
-    let nextCountryCities: any[] = [];
-    let nextWishlistCities: any[] = [];
-
     try {
-    // Friends activity (people I follow)
-    if (requestContext.userId) {
-      const { data: following } = await supabase.from("followers").select("following_id").eq("follower_id", requestContext.userId);
-      if (!isCurrentPlaceFetch(requestContext)) return;
-      const followingIds = (following || []).map((f) => f.following_id);
+      const fetchFriendSocialData = async () => {
+        if (!requestContext.userId) {
+          return { friendVisitors: [] as any[], friendWishlist: [] as any[] };
+        }
 
-      if (followingIds.length > 0) {
-        // Friends who visited (most recent per friend)
+        const { data: following } = await supabase
+          .from("followers")
+          .select("following_id")
+          .eq("follower_id", requestContext.userId);
+        if (!isCurrentPlaceFetch(requestContext)) return null;
+
+        const followingIds = (following || []).map((f) => f.following_id);
+        if (followingIds.length === 0) {
+          return { friendVisitors: [] as any[], friendWishlist: [] as any[] };
+        }
+
+        const followingIdSet = new Set(followingIds);
         const friendReviewsByUser = new Map<string, any>();
-        reviews.filter((r) => followingIds.includes(r.user_id)).forEach((r) => {
+        reviews.forEach((r) => {
+          if (!followingIdSet.has(r.user_id)) return;
           const existing = friendReviewsByUser.get(r.user_id);
           if (!existing || new Date(r.created_at) > new Date(existing.created_at)) {
             friendReviewsByUser.set(r.user_id, r);
           }
         });
         const uniqueFriendReviews = Array.from(friendReviewsByUser.values());
-        if (uniqueFriendReviews.length > 0) {
+
+        const fetchFriendVisitors = async () => {
+          if (uniqueFriendReviews.length === 0) return [] as any[];
           const friendIds = uniqueFriendReviews.map((r) => r.user_id);
-          const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", friendIds);
-          if (!isCurrentPlaceFetch(requestContext)) return;
-          nextFriendVisitors =
-            uniqueFriendReviews.map((r) => {
-              const p = (profiles || []).find((p: any) => p.user_id === r.user_id);
-              return { ...r, profile: p, review_id: r.id, has_review: !!(r.review_text && r.review_text.trim() !== "") };
-            });
-        }
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("user_id, username, profile_picture")
+            .in("user_id", friendIds);
+          if (!isCurrentPlaceFetch(requestContext)) return null;
 
-        // Friends who want to visit
-        const { data: friendWish } = await supabase.from("wishlists").select("user_id").eq("place_id", requestContext.placeId).in("user_id", followingIds);
-        if (!isCurrentPlaceFetch(requestContext)) return;
-        if (friendWish && friendWish.length > 0) {
+          return uniqueFriendReviews.map((r) => {
+            const profile = (profiles || []).find((p: any) => p.user_id === r.user_id);
+            return {
+              ...r,
+              profile,
+              review_id: r.id,
+              has_review: !!(r.review_text && r.review_text.trim() !== ""),
+            };
+          });
+        };
+
+        const fetchFriendWishlist = async () => {
+          const { data: friendWish } = await supabase
+            .from("wishlists")
+            .select("user_id")
+            .eq("place_id", requestContext.placeId)
+            .in("user_id", followingIds);
+          if (!isCurrentPlaceFetch(requestContext)) return null;
+          if (!friendWish || friendWish.length === 0) return [] as any[];
+
           const wishIds = friendWish.map((w) => w.user_id);
-          const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", wishIds);
-          if (!isCurrentPlaceFetch(requestContext)) return;
-          nextFriendWishlist = profiles || [];
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("user_id, username, profile_picture")
+            .in("user_id", wishIds);
+          if (!isCurrentPlaceFetch(requestContext)) return null;
+          return profiles || [];
+        };
+
+        const [friendVisitors, friendWishlist] = await Promise.all([
+          fetchFriendVisitors(),
+          fetchFriendWishlist(),
+        ]);
+        if (friendVisitors === null || friendWishlist === null) return null;
+        return { friendVisitors, friendWishlist };
+      };
+
+      const fetchCountryData = async () => {
+        if (placeData.type !== "country") {
+          return { countryCities: [] as any[], wishlistCities: [] as any[] };
         }
-      }
-    }
 
-    // Fetch cities in this country (only for country pages)
-    if (placeData.type === "country") {
-      const { data: citiesData } = await supabase
-        .from("places")
-        .select("id, name, country, type, image")
-        .eq("type", "city")
-        .eq("country", placeData.name);
+        const fetchCountryCities = async () => {
+          const { data: citiesData } = await supabase
+            .from("places")
+            .select("id, name, country, type, image")
+            .eq("type", "city")
+            .eq("country", placeData.name);
+          if (!isCurrentPlaceFetch(requestContext)) return null;
+          if (!citiesData || citiesData.length === 0) return [] as any[];
+
+          const cityIds = citiesData.map((c) => c.id);
+          const { data: cityReviews } = await supabase
+            .from("reviews")
+            .select("place_id")
+            .in("place_id", cityIds);
+          if (!isCurrentPlaceFetch(requestContext)) return null;
+
+          const counts = new Map<string, number>();
+          (cityReviews || []).forEach((r) => {
+            counts.set(r.place_id, (counts.get(r.place_id) || 0) + 1);
+          });
+
+          return citiesData
+            .map((c) => ({ ...c, review_count: counts.get(c.id) || 0 }))
+            .sort((a, b) => b.review_count - a.review_count);
+        };
+
+        const fetchWishlistCities = async () => {
+          if (!requestContext.userId) return [] as any[];
+          const { data: wishData } = await supabase
+            .from("wishlists")
+            .select("place_id, places!inner(id, name, country, type)")
+            .eq("user_id", requestContext.userId);
+          if (!isCurrentPlaceFetch(requestContext)) return null;
+          return (wishData || []).filter(
+            (w: any) => w.places.type === "city" && w.places.country === placeData.name
+          );
+        };
+
+        const [countryCities, wishlistCities] = await Promise.all([
+          fetchCountryCities(),
+          fetchWishlistCities(),
+        ]);
+        if (countryCities === null || wishlistCities === null) return null;
+        return { countryCities, wishlistCities };
+      };
+
+      const [friendSocialData, countryData] = await Promise.all([
+        fetchFriendSocialData(),
+        fetchCountryData(),
+      ]);
       if (!isCurrentPlaceFetch(requestContext)) return;
+      if (!friendSocialData || !countryData) return;
 
-      if (citiesData && citiesData.length > 0) {
-        const cityIds = citiesData.map((c) => c.id);
-        const { data: cityReviews } = await supabase
-          .from("reviews")
-          .select("place_id")
-          .in("place_id", cityIds);
-        if (!isCurrentPlaceFetch(requestContext)) return;
-
-        const counts = new Map<string, number>();
-        (cityReviews || []).forEach((r) => {
-          counts.set(r.place_id, (counts.get(r.place_id) || 0) + 1);
-        });
-
-        const sorted = citiesData
-          .map((c) => ({ ...c, review_count: counts.get(c.id) || 0 }))
-          .sort((a, b) => b.review_count - a.review_count);
-        nextCountryCities = sorted;
-      }
-
-      // Wishlist cities in this country
-      if (requestContext.userId) {
-        const { data: wishData } = await supabase
-          .from("wishlists")
-          .select("place_id, places!inner(id, name, country, type)")
-          .eq("user_id", requestContext.userId);
-        if (!isCurrentPlaceFetch(requestContext)) return;
-
-        const wishCities = (wishData || [])
-          .filter((w: any) => w.places.type === "city" && w.places.country === placeData.name);
-        nextWishlistCities = wishCities;
-      }
-    }
-
-      if (!isCurrentPlaceFetch(requestContext)) return;
-      setFriendVisitors(nextFriendVisitors);
-      setFriendWishlist(nextFriendWishlist);
-      setCountryCities(nextCountryCities);
-      setWishlistCities(nextWishlistCities);
+      setFriendVisitors(friendSocialData.friendVisitors);
+      setFriendWishlist(friendSocialData.friendWishlist);
+      setCountryCities(countryData.countryCities);
+      setWishlistCities(countryData.wishlistCities);
       setSecondaryLoaded(true);
     } catch (error) {
       console.error("Error fetching secondary place data:", error);

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
@@ -72,139 +72,238 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
   const [grouped, setGrouped] = useState(false);
   const targetUserId = userId || user?.id;
   const isOtherUser = !!userId && userId !== user?.id;
+  const likesFetchRequestIdRef = useRef(0);
+  const currentLikesContextRef = useRef({
+    targetUserId: targetUserId ?? null,
+    viewerUserId: user?.id ?? null,
+  });
+  const lastAppliedLikesContextRef = useRef<{
+    targetUserId: string;
+    viewerUserId: string | null;
+  } | null>(null);
+
+  currentLikesContextRef.current = {
+    targetUserId: targetUserId ?? null,
+    viewerUserId: user?.id ?? null,
+  };
 
   useEffect(() => {
     if (!targetUserId) return;
-    fetchAll();
-  }, [targetUserId]);
+    void fetchAll();
+    return () => {
+      likesFetchRequestIdRef.current += 1;
+    };
+  }, [targetUserId, user?.id]);
 
   const fetchAll = async () => {
     if (!targetUserId) return;
+    const requestContext = {
+      requestId: likesFetchRequestIdRef.current + 1,
+      targetUserId,
+      viewerUserId: user?.id ?? null,
+    };
+    likesFetchRequestIdRef.current = requestContext.requestId;
+
+    const isCurrentRequest = () => (
+      likesFetchRequestIdRef.current === requestContext.requestId &&
+      currentLikesContextRef.current.targetUserId === requestContext.targetUserId &&
+      currentLikesContextRef.current.viewerUserId === requestContext.viewerUserId
+    );
+
     setLoading(true);
 
-    // Liked destinations (countries & cities) - include visit info
-    const { data: destData } = await supabase
-      .from("reviews")
-      .select("id, rating, visit_year, visit_month, duration_days, created_at, places!inner(id, name, country, type, image)")
-      .eq("user_id", targetUserId)
-      .eq("liked", true)
-      .order("created_at", { ascending: false });
+    try {
+      const fetchLikedDestinations = async () => {
+        const { data: destData } = await supabase
+          .from("reviews")
+          .select("id, rating, visit_year, visit_month, duration_days, created_at, places!inner(id, name, country, type, image)")
+          .eq("user_id", requestContext.targetUserId)
+          .eq("liked", true)
+          .order("created_at", { ascending: false });
+        if (!destData) return null;
 
-    if (destData) {
-      const allMapped = destData.map((r: any) => ({
-        id: r.id,
-        rating: r.rating,
-        visit_year: r.visit_year,
-        visit_month: r.visit_month,
-        duration_days: r.duration_days,
-        created_at: r.created_at,
-        place: { id: r.places.id, name: r.places.name, country: r.places.country, type: r.places.type, image: r.places.image },
-      }));
-      // Deduplicate per place - keep newest visit date
-      const mapped: LikedEntry[] = dedupeByNewest(allMapped, (m) => m.place.id);
+        const allMapped = destData.map((r: any) => ({
+          id: r.id,
+          rating: r.rating,
+          visit_year: r.visit_year,
+          visit_month: r.visit_month,
+          duration_days: r.duration_days,
+          created_at: r.created_at,
+          place: { id: r.places.id, name: r.places.name, country: r.places.country, type: r.places.type, image: r.places.image },
+        }));
+        // Deduplicate per place - keep newest visit date
+        const mapped: LikedEntry[] = dedupeByNewest(allMapped, (m) => m.place.id);
 
-      // Fetch avg ratings
-      const placeIds = [...new Set(mapped.map((m) => m.place.id))];
-      if (placeIds.length > 0) {
-        const { data: allReviews } = await supabase.from("reviews").select("place_id, rating").in("place_id", placeIds);
-        if (allReviews) {
-          const avgMap: Record<string, { sum: number; count: number }> = {};
-          allReviews.forEach((r: any) => {
-            if (r.rating == null) return;
-            if (!avgMap[r.place_id]) avgMap[r.place_id] = { sum: 0, count: 0 };
-            avgMap[r.place_id].sum += Number(r.rating);
-            avgMap[r.place_id].count++;
-          });
-          mapped.forEach((m) => {
-            const a = avgMap[m.place.id];
-            m.avg_rating = a ? a.sum / a.count : undefined;
-          });
+        // Fetch avg ratings
+        const placeIds = [...new Set(mapped.map((m) => m.place.id))];
+        if (placeIds.length > 0) {
+          const { data: allReviews } = await supabase.from("reviews").select("place_id, rating").in("place_id", placeIds);
+          if (allReviews) {
+            const avgMap: Record<string, { sum: number; count: number }> = {};
+            allReviews.forEach((r: any) => {
+              if (r.rating == null) return;
+              if (!avgMap[r.place_id]) avgMap[r.place_id] = { sum: 0, count: 0 };
+              avgMap[r.place_id].sum += Number(r.rating);
+              avgMap[r.place_id].count++;
+            });
+            mapped.forEach((m) => {
+              const a = avgMap[m.place.id];
+              m.avg_rating = a ? a.sum / a.count : undefined;
+            });
+          }
         }
-      }
 
-      setCountries(mapped.filter((m) => m.place.type === "country"));
-      setCities(mapped.filter((m) => m.place.type === "city"));
-    }
+        return {
+          countries: mapped.filter((m) => m.place.type === "country"),
+          cities: mapped.filter((m) => m.place.type === "city"),
+        };
+      };
 
-    // Liked reviews
-    const { data: reviewLikes } = await supabase
-      .from("review_likes")
-      .select("id, review_id")
-      .eq("user_id", targetUserId)
-      .order("created_at", { ascending: false });
+      const fetchLikedReviews = async () => {
+        const { data: reviewLikes } = await supabase
+          .from("review_likes")
+          .select("id, review_id")
+          .eq("user_id", requestContext.targetUserId)
+          .order("created_at", { ascending: false });
+        if (!reviewLikes) return null;
+        if (reviewLikes.length === 0) return [] as any[];
 
-    if (reviewLikes && reviewLikes.length > 0) {
-      const reviewIds = reviewLikes.map((rl) => rl.review_id);
-      const { data: reviews } = await supabase
-        .from("reviews")
-        .select("*, places!inner(name, image)")
-        .in("id", reviewIds);
+        const reviewIds = reviewLikes.map((rl) => rl.review_id);
+        const { data: reviews } = await supabase
+          .from("reviews")
+          .select("*, places!inner(name, image)")
+          .in("id", reviewIds);
+        if (!reviews) return null;
+        if (reviews.length === 0) return [] as any[];
 
-      if (reviews && reviews.length > 0) {
         const userIds = [...new Set(reviews.map((r) => r.user_id))];
         const { data: profiles } = await supabase
           .from("profiles")
           .select("user_id, username, profile_picture")
           .in("user_id", userIds);
         const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
+        const reviewMap = new Map(reviews.map((review: any) => [review.id, review]));
 
-        setLikedReviews(
-          reviewIds
-            .map((rid) => {
-              const r = reviews.find((rv: any) => rv.id === rid);
-              if (!r) return null;
-              const prof = profileMap.get(r.user_id);
-              return {
-                ...r,
-                profile_username: prof?.username,
-                profile_picture: prof?.profile_picture,
-                place_name: (r as any).places?.name,
-                place_image: (r as any).places?.image,
-              };
-            })
-            .filter(Boolean)
-        );
-      }
-    }
+        return reviewIds
+          .map((reviewId) => {
+            const review: any = reviewMap.get(reviewId);
+            if (!review) return null;
+            const profile = profileMap.get(review.user_id);
+            return {
+              ...review,
+              profile_username: profile?.username,
+              profile_picture: profile?.profile_picture,
+              place_name: review.places?.name,
+              place_image: review.places?.image,
+            };
+          })
+          .filter(Boolean);
+      };
 
-    // Liked lists
-    const { data: listLikes } = await supabase
-      .from("list_likes")
-      .select("id, list_id")
-      .eq("user_id", targetUserId)
-      .order("created_at", { ascending: false });
+      const fetchLikedLists = async () => {
+        const { data: listLikes } = await supabase
+          .from("list_likes")
+          .select("id, list_id")
+          .eq("user_id", requestContext.targetUserId)
+          .order("created_at", { ascending: false });
+        if (!listLikes) return null;
+        if (listLikes.length === 0) return [] as any[];
 
-    if (listLikes && listLikes.length > 0) {
-      const listIds = listLikes.map((ll) => ll.list_id);
-      const { data: lists } = await supabase.from("lists").select("*").in("id", listIds);
+        const listIds = listLikes.map((ll) => ll.list_id);
+        const { data: lists } = await supabase.from("lists").select("*").in("id", listIds);
+        if (!lists) return null;
+        if (lists.length === 0) return [] as any[];
 
-      if (lists && lists.length > 0) {
-        const userIds = [...new Set(lists.map((l) => l.user_id))];
+        const userIds = [...new Set(lists.map((list) => list.user_id))];
         const { data: profiles } = await supabase
           .from("profiles")
           .select("user_id, username, profile_picture")
           .in("user_id", userIds);
-        const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
+        const profileMap = new Map((profiles || []).map((profile) => [profile.user_id, profile]));
+        const listMap = new Map(lists.map((list: any) => [list.id, list]));
 
         const enriched = await Promise.all(
-          listIds.map(async (lid) => {
-            const l = lists.find((ls: any) => ls.id === lid);
-            if (!l) return null;
+          listIds.map(async (listId) => {
+            const list: any = listMap.get(listId);
+            if (!list) return null;
             const { data: items } = await supabase
               .from("list_items")
               .select("id, position, places!inner(id, name, country, type, image)")
-              .eq("list_id", l.id)
+              .eq("list_id", list.id)
               .order("position", { ascending: true })
               .limit(8);
-            const prof = profileMap.get(l.user_id);
-            return { ...l, items: items || [], item_count: items?.length || 0, username: prof?.username, profile_picture: prof?.profile_picture };
+            const profile = profileMap.get(list.user_id);
+            return {
+              ...list,
+              items: items || [],
+              item_count: items?.length || 0,
+              username: profile?.username,
+              profile_picture: profile?.profile_picture,
+            };
           })
         );
-        setLikedLists(enriched.filter(Boolean));
+        return enriched.filter(Boolean);
+      };
+
+      const [destinationResult, reviewResult, listResult] = await Promise.all([
+        fetchLikedDestinations(),
+        fetchLikedReviews(),
+        fetchLikedLists(),
+      ]);
+
+      if (!isCurrentRequest()) return;
+
+      const previousContext = lastAppliedLikesContextRef.current;
+      const previousContextMatches = (
+        previousContext?.targetUserId === requestContext.targetUserId &&
+        previousContext.viewerUserId === requestContext.viewerUserId
+      );
+
+      if (destinationResult) {
+        setCountries(destinationResult.countries);
+        setCities(destinationResult.cities);
+      } else if (!previousContextMatches) {
+        setCountries([]);
+        setCities([]);
+      }
+
+      if (reviewResult) {
+        setLikedReviews(reviewResult);
+      } else if (!previousContextMatches) {
+        setLikedReviews([]);
+      }
+
+      if (listResult) {
+        setLikedLists(listResult);
+      } else if (!previousContextMatches) {
+        setLikedLists([]);
+      }
+
+      lastAppliedLikesContextRef.current = {
+        targetUserId: requestContext.targetUserId,
+        viewerUserId: requestContext.viewerUserId,
+      };
+    } catch (error) {
+      console.error("Failed to load Likes tab:", error);
+      if (!isCurrentRequest()) return;
+
+      const previousContext = lastAppliedLikesContextRef.current;
+      const previousContextMatches = (
+        previousContext?.targetUserId === requestContext.targetUserId &&
+        previousContext.viewerUserId === requestContext.viewerUserId
+      );
+
+      if (!previousContextMatches) {
+        setCountries([]);
+        setCities([]);
+        setLikedReviews([]);
+        setLikedLists([]);
+      }
+    } finally {
+      if (isCurrentRequest()) {
+        setLoading(false);
       }
     }
-
-    setLoading(false);
   };
 
   // Fetch user category ratings for liked destinations
