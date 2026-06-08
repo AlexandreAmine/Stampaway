@@ -45,6 +45,27 @@ export default function HomePage() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showAllActivities, setShowAllActivities] = useState(false);
+  const [countriesCount, setCountriesCount] = useState(0);
+  const [citiesCount, setCitiesCount] = useState(0);
+
+  // Stats: unique countries & cities reviewed (matches Profile page logic)
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("reviews")
+        .select("place_id, places!inner(type)")
+        .eq("user_id", user.id);
+      const countries = new Set<string>();
+      const cities = new Set<string>();
+      (data || []).forEach((r: any) => {
+        if (r.places?.type === "city") cities.add(r.place_id);
+        else if (r.places?.type === "country") countries.add(r.place_id);
+      });
+      setCountriesCount(countries.size);
+      setCitiesCount(cities.size);
+    })();
+  }, [user]);
 
   useEffect(() => {
     const update = () => {
