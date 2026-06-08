@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { StarRating } from "@/components/StarRating";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -15,68 +16,150 @@ interface TagEntry {
 }
 
 export function TagsTab({ userId }: { userId?: string }) {
+  const { user } = useAuth();
   const [tags, setTags] = useState<TagEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const viewerUserId = user?.id ?? null;
+  const fetchRequestIdRef = useRef(0);
+  const currentContextRef = useRef({
+    userId: userId ?? null,
+    viewerUserId,
+  });
+  const lastAppliedContextRef = useRef<{
+    userId: string;
+    viewerUserId: string | null;
+  } | null>(null);
+
+  currentContextRef.current = {
+    userId: userId ?? null,
+    viewerUserId,
+  };
 
   useEffect(() => {
     if (!userId) return;
-    (async () => {
-      setLoading(true);
-      const { data } = await supabase
-        .from("review_tags")
-        .select("review_id, tagged_by_user_id, created_at")
-        .eq("tagged_user_id", userId)
-        .order("created_at", { ascending: false });
 
-      if (!data || data.length === 0) {
+    const requestContext = {
+      requestId: fetchRequestIdRef.current + 1,
+      userId,
+      viewerUserId,
+    };
+    fetchRequestIdRef.current = requestContext.requestId;
+
+    const isCurrentRequest = () => (
+      fetchRequestIdRef.current === requestContext.requestId &&
+      currentContextRef.current.userId === requestContext.userId &&
+      currentContextRef.current.viewerUserId === requestContext.viewerUserId
+    );
+
+    const fetchTags = async () => {
+      const previousContext = lastAppliedContextRef.current;
+      const previousContextMatches = (
+        previousContext?.userId === requestContext.userId &&
+        previousContext.viewerUserId === requestContext.viewerUserId
+      );
+
+      setLoading(true);
+      if (!previousContextMatches) {
         setTags([]);
-        setLoading(false);
-        return;
       }
 
-      // Fetch reviews
-      const reviewIds = [...new Set(data.map(t => t.review_id))];
-      const { data: reviews } = await supabase
-        .from("reviews")
-        .select("id, place_id, rating, visit_year, visit_month")
-        .in("id", reviewIds);
+      try {
+        const { data, error } = await supabase
+          .from("review_tags")
+          .select("review_id, tagged_by_user_id, created_at")
+          .eq("tagged_user_id", requestContext.userId)
+          .order("created_at", { ascending: false });
 
-      // Fetch places
-      const placeIds = [...new Set((reviews || []).map(r => r.place_id))];
-      const { data: places } = await supabase
-        .from("places")
-        .select("id, name, country, type, image")
-        .in("id", placeIds);
+        if (!isCurrentRequest()) return;
+        if (error) return;
 
-      // Fetch tagger profiles
-      const taggerIds = [...new Set(data.map(t => t.tagged_by_user_id))];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, username, profile_picture")
-        .in("user_id", taggerIds);
+        if (!data || data.length === 0) {
+          setTags([]);
+          lastAppliedContextRef.current = {
+            userId: requestContext.userId,
+            viewerUserId: requestContext.viewerUserId,
+          };
+          return;
+        }
 
-      const reviewMap = new Map((reviews || []).map(r => [r.id, r]));
-      const placeMap = new Map((places || []).map(p => [p.id, p]));
-      const profileMap = new Map((profiles || []).map(p => [p.user_id, p]));
+        const reviewIds = [...new Set(data.map((tag) => tag.review_id))];
+        const taggerIds = [...new Set(data.map((tag) => tag.tagged_by_user_id))];
 
-      const entries: TagEntry[] = data.map(t => {
-        const review = reviewMap.get(t.review_id);
-        const place = review ? placeMap.get(review.place_id) || null : null;
-        return {
-          review_id: t.review_id,
-          tagged_by_user_id: t.tagged_by_user_id,
-          created_at: t.created_at,
-          place,
-          review: review ? { rating: review.rating, visit_year: review.visit_year, visit_month: review.visit_month } : null,
-          tagger: profileMap.get(t.tagged_by_user_id) || null,
+        const fetchReviewAndPlaceData = async () => {
+          const { data: reviews } = await supabase
+            .from("reviews")
+            .select("id, place_id, rating, visit_year, visit_month")
+            .in("id", reviewIds);
+          if (!isCurrentRequest()) return null;
+
+          const placeIds = [...new Set((reviews || []).map((review) => review.place_id))];
+          const { data: places } = await supabase
+            .from("places")
+            .select("id, name, country, type, image")
+            .in("id", placeIds);
+          if (!isCurrentRequest()) return null;
+
+          return {
+            reviews: reviews || [],
+            places: places || [],
+          };
         };
-      });
 
-      setTags(entries);
-      setLoading(false);
-    })();
-  }, [userId]);
+        const [reviewPlaceData, profilesResult] = await Promise.all([
+          fetchReviewAndPlaceData(),
+          supabase
+            .from("profiles")
+            .select("user_id, username, profile_picture")
+            .in("user_id", taggerIds),
+        ]);
+
+        if (!isCurrentRequest() || !reviewPlaceData) return;
+
+        const reviewMap = new Map(reviewPlaceData.reviews.map((review) => [review.id, review]));
+        const placeMap = new Map(reviewPlaceData.places.map((place) => [place.id, place]));
+        const profileMap = new Map(
+          (profilesResult.data || []).map((profile) => [profile.user_id, profile])
+        );
+
+        const entries: TagEntry[] = data.map((tag) => {
+          const review = reviewMap.get(tag.review_id);
+          const place = review ? placeMap.get(review.place_id) || null : null;
+          return {
+            review_id: tag.review_id,
+            tagged_by_user_id: tag.tagged_by_user_id,
+            created_at: tag.created_at,
+            place,
+            review: review
+              ? {
+                  rating: review.rating,
+                  visit_year: review.visit_year,
+                  visit_month: review.visit_month,
+                }
+              : null,
+            tagger: profileMap.get(tag.tagged_by_user_id) || null,
+          };
+        });
+
+        setTags(entries);
+        lastAppliedContextRef.current = {
+          userId: requestContext.userId,
+          viewerUserId: requestContext.viewerUserId,
+        };
+      } catch (error) {
+        console.error("Failed to load profile tags:", error);
+      } finally {
+        if (isCurrentRequest()) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void fetchTags();
+    return () => {
+      fetchRequestIdRef.current += 1;
+    };
+  }, [userId, viewerUserId]);
 
   if (loading) return <div className="text-center text-muted-foreground py-8 text-sm">Loading...</div>;
   if (tags.length === 0) return <div className="text-center text-muted-foreground py-8 text-sm">No tags yet</div>;

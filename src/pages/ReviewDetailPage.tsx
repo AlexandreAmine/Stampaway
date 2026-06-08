@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, Heart, MessageSquare, Calendar, Clock, History } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -25,47 +25,83 @@ export default function ReviewDetailPage() {
   const [pastLoggings, setPastLoggings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const fetchRequestIdRef = useRef(0);
+  const currentReviewIdRef = useRef(reviewId ?? null);
+
+  currentReviewIdRef.current = reviewId ?? null;
 
   useEffect(() => {
-    if (reviewId) fetchReview();
+    if (!reviewId) return;
+
+    const requestContext = {
+      requestId: fetchRequestIdRef.current + 1,
+      reviewId,
+    };
+    fetchRequestIdRef.current = requestContext.requestId;
+
+    const isCurrentRequest = () => (
+      fetchRequestIdRef.current === requestContext.requestId &&
+      currentReviewIdRef.current === requestContext.reviewId
+    );
+
+    void fetchReview(requestContext, isCurrentRequest);
+    return () => {
+      fetchRequestIdRef.current += 1;
+    };
   }, [reviewId]);
 
-  const fetchReview = async () => {
+  const fetchReview = async (
+    requestContext: { requestId: number; reviewId: string },
+    isCurrentRequest: () => boolean
+  ) => {
     setLoading(true);
+    setReview(null);
+    setProfile(null);
+    setPlace(null);
+    setPastLoggings([]);
 
-    const { data: reviewData } = await supabase
-      .from("reviews")
-      .select("*, places!inner(id, name, country, type, image)")
-      .eq("id", reviewId)
-      .maybeSingle();
+    try {
+      const { data: reviewData, error: reviewError } = await supabase
+        .from("reviews")
+        .select("*, places!inner(id, name, country, type, image)")
+        .eq("id", requestContext.reviewId)
+        .maybeSingle();
 
-    if (!reviewData) {
-      setLoading(false);
-      return;
+      if (!isCurrentRequest()) return;
+      if (reviewError || !reviewData) return;
+
+      const [profileResult, loggingsResult] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("user_id, username, profile_picture")
+          .eq("user_id", reviewData.user_id)
+          .maybeSingle(),
+        supabase
+          .from("reviews")
+          .select("id, rating, liked, review_text, visit_year, visit_month, duration_days, created_at")
+          .eq("user_id", reviewData.user_id)
+          .eq("place_id", reviewData.place_id)
+          .neq("id", requestContext.reviewId)
+          .order("created_at", { ascending: false }),
+      ]);
+
+      if (!isCurrentRequest()) return;
+
+      setReview(reviewData);
+      setPlace(reviewData.places);
+      if (!profileResult.error) {
+        setProfile(profileResult.data);
+      }
+      if (!loggingsResult.error) {
+        setPastLoggings(loggingsResult.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to load review details:", error);
+    } finally {
+      if (isCurrentRequest()) {
+        setLoading(false);
+      }
     }
-
-    setReview(reviewData);
-    setPlace(reviewData.places);
-
-    const { data: profileData } = await supabase
-      .from("profiles")
-      .select("user_id, username, profile_picture")
-      .eq("user_id", reviewData.user_id)
-      .maybeSingle();
-
-    setProfile(profileData);
-
-    // Fetch past loggings of the same place by the same user
-    const { data: allLoggings } = await supabase
-      .from("reviews")
-      .select("id, rating, liked, review_text, visit_year, visit_month, duration_days, created_at")
-      .eq("user_id", reviewData.user_id)
-      .eq("place_id", reviewData.place_id)
-      .neq("id", reviewId!)
-      .order("created_at", { ascending: false });
-
-    setPastLoggings(allLoggings || []);
-    setLoading(false);
   };
 
   const formatVisitDate = (r: any) => {
