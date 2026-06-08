@@ -32,10 +32,10 @@ export function ProfilePicturePreview({ src, alt, isOpen, onClose }: ProfilePict
       {/* Close button */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/50 flex items-center justify-center"
+        className="absolute top-6 right-4 z-10 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center"
         aria-label="Close"
       >
-        <X className="w-6 h-6 text-white" />
+        <X className="w-5 h-5 text-white" />
       </button>
 
       {/* Image container - prevents context menu and interaction */}
