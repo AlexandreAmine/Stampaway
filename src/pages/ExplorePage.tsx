@@ -71,6 +71,16 @@ type ExploreFetchOptions = {
   silent: boolean;
 };
 
+type ExploreBranchContext = {
+  cacheKey: string;
+  cacheVersion: number;
+  userId: string;
+};
+
+type ExploreRequestContext = ExploreBranchContext & {
+  requestId: number;
+};
+
 const REVIEW_LIKE_PAGE_SIZE = 1000;
 const REVIEW_ID_CHUNK_SIZE = 100;
 
@@ -165,6 +175,16 @@ export default function ExplorePage() {
   const [visibleExploreCacheKey, setVisibleExploreCacheKey] = useState<string | null>(null);
   const activeExploreRef = useRef({ cacheKey: currentCacheKey, userId });
   const reviewCardLikeSnapshotRequestIdRef = useRef(0);
+  const reviewsFetchRequestIdRef = useRef(0);
+  const listsFetchRequestIdRef = useRef(0);
+  const reviewsBranchContextRef = useRef<{
+    friend: ExploreBranchContext | null;
+    popular: ExploreBranchContext | null;
+  }>({ friend: null, popular: null });
+  const listsBranchContextRef = useRef<{
+    friend: ExploreBranchContext | null;
+    popular: ExploreBranchContext | null;
+  }>({ friend: null, popular: null });
 
   activeExploreRef.current = { cacheKey: currentCacheKey, userId };
 
@@ -182,6 +202,15 @@ export default function ExplorePage() {
     activeExploreRef.current.cacheKey === snapshot.cacheKey &&
     activeExploreRef.current.userId === snapshot.userId &&
     isExploreCacheVersion(snapshot.cacheVersion)
+  );
+
+  const branchContextMatches = (
+    stored: ExploreBranchContext | null,
+    current: ExploreBranchContext
+  ) => (
+    stored?.cacheKey === current.cacheKey &&
+    stored.cacheVersion === current.cacheVersion &&
+    stored.userId === current.userId
   );
 
   const startReviewCardLikeSnapshot = (reviewIds: string[], options: ExploreFetchOptions) => {
@@ -442,267 +471,431 @@ export default function ExplorePage() {
   // ── REVIEWS ──
   const fetchReviewsSections = async (options: ExploreFetchOptions) => {
     setReviewsLoading(true);
+
     if (!user) {
-      setReviewsLoading(false);
       if (isCurrentExploreRequest(options)) {
+        setFriendReviews([]);
+        setPopularReviews([]);
+        reviewsBranchContextRef.current = { friend: null, popular: null };
         setVisibleExploreCacheKey(options.cacheKey);
+        setReviewsLoading(false);
       }
       return;
     }
 
-    let nextFriendReviews: any[] = [];
-    let nextPopularReviews: any[] = [];
+    const requestContext: ExploreRequestContext = {
+      requestId: reviewsFetchRequestIdRef.current + 1,
+      cacheKey: options.cacheKey,
+      cacheVersion: options.cacheVersion,
+      userId: user.id,
+    };
+    reviewsFetchRequestIdRef.current = requestContext.requestId;
 
-    // Get who I follow
-    const { data: following } = await supabase
-      .from("followers")
-      .select("following_id")
-      .eq("follower_id", user.id);
-    const followingIds = (following || []).map((f) => f.following_id);
+    const isCurrentRequest = () => (
+      reviewsFetchRequestIdRef.current === requestContext.requestId &&
+      isCurrentExploreRequest(options) &&
+      activeExploreRef.current.userId === requestContext.userId
+    );
 
-    // Recent written reviews from friends (exclude own)
-    if (followingIds.length > 0) {
-      const { data: fRevs } = await supabase
-        .from("reviews")
-        .select("*, places!inner(name, image)")
-        .in("user_id", followingIds)
-        .not("review_text", "is", null)
-        .neq("review_text", "")
-        .order("created_at", { ascending: false })
-        .limit(5);
+    const friendContextIsCurrent = branchContextMatches(
+      reviewsBranchContextRef.current.friend,
+      requestContext
+    );
+    const popularContextIsCurrent = branchContextMatches(
+      reviewsBranchContextRef.current.popular,
+      requestContext
+    );
+    const retainedFriendReviews = friendContextIsCurrent ? friendReviews : [];
+    const retainedPopularReviews = popularContextIsCurrent ? popularReviews : [];
 
-      // Enrich with profile info
-      const userIds = [...new Set((fRevs || []).map((r) => r.user_id))];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, username, profile_picture")
-        .in("user_id", userIds);
-      const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
+    if (!friendContextIsCurrent) setFriendReviews([]);
+    if (!popularContextIsCurrent) setPopularReviews([]);
 
-      nextFriendReviews =
-        (fRevs || []).map((r: any) => {
-          const prof = profileMap.get(r.user_id);
+    try {
+      const { data: following, error: followingError } = await supabase
+        .from("followers")
+        .select("following_id")
+        .eq("follower_id", requestContext.userId);
+
+      if (followingError) throw followingError;
+      if (!isCurrentRequest()) return;
+
+      const followingIds = (following || []).map((entry) => entry.following_id);
+
+      const fetchFriendReviews = async () => {
+        if (followingIds.length === 0) return [] as any[];
+
+        const { data: reviews, error: reviewsError } = await supabase
+          .from("reviews")
+          .select("*, places!inner(name, image)")
+          .in("user_id", followingIds)
+          .not("review_text", "is", null)
+          .neq("review_text", "")
+          .order("created_at", { ascending: false })
+          .limit(5);
+
+        if (reviewsError) throw reviewsError;
+        if (!reviews || reviews.length === 0) return [] as any[];
+
+        const profileUserIds = [...new Set(reviews.map((review) => review.user_id))];
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("user_id, username, profile_picture")
+          .in("user_id", profileUserIds);
+
+        if (profilesError) throw profilesError;
+
+        const profileMap = new Map((profiles || []).map((profile) => [profile.user_id, profile]));
+        return reviews.map((review: any) => {
+          const profile = profileMap.get(review.user_id);
           return {
-            ...r,
-            profile_username: prof?.username,
-            profile_picture: prof?.profile_picture,
-            place_name: r.places?.name,
-            place_image: r.places?.image,
+            ...review,
+            profile_username: profile?.username,
+            profile_picture: profile?.profile_picture,
+            place_name: review.places?.name,
+            place_image: review.places?.image,
           };
         });
-      setFriendReviews(nextFriendReviews);
-    } else {
-      nextFriendReviews = [];
-      setFriendReviews([]);
-    }
+      };
 
-    // Most liked reviews (all users, exclude own)
-    const { data: likeCounts } = await supabase
-      .from("review_likes")
-      .select("review_id");
+      const fetchPopularReviews = async () => {
+        const { data: likeRows, error: likeRowsError } = await supabase
+          .from("review_likes")
+          .select("review_id");
 
-    const counts = new Map<string, number>();
-    (likeCounts || []).forEach((l) => {
-      counts.set(l.review_id, (counts.get(l.review_id) || 0) + 1);
-    });
+        if (likeRowsError) throw likeRowsError;
 
-    const topReviewIds = [...counts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map((e) => e[0]);
+        const counts = new Map<string, number>();
+        (likeRows || []).forEach((like) => {
+          counts.set(like.review_id, (counts.get(like.review_id) || 0) + 1);
+        });
 
-    if (topReviewIds.length > 0) {
-      const { data: popRevs } = await supabase
-        .from("reviews")
-        .select("*, places!inner(name, image)")
-        .in("id", topReviewIds)
-        .not("review_text", "is", null)
-        .neq("review_text", "")
-        .neq("user_id", user.id);
+        const topReviewIds = [...counts.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map((entry) => entry[0]);
 
-      const userIds = [...new Set((popRevs || []).map((r) => r.user_id))];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, username, profile_picture")
-        .in("user_id", userIds);
-      const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
+        if (topReviewIds.length > 0) {
+          const { data: reviews, error: reviewsError } = await supabase
+            .from("reviews")
+            .select("*, places!inner(name, image)")
+            .in("id", topReviewIds)
+            .not("review_text", "is", null)
+            .neq("review_text", "")
+            .neq("user_id", requestContext.userId);
 
-      const enriched = (popRevs || []).map((r: any) => {
-        const prof = profileMap.get(r.user_id);
-        return {
-          ...r,
-          profile_username: prof?.username,
-          profile_picture: prof?.profile_picture,
-          place_name: r.places?.name,
-          place_image: r.places?.image,
-        };
-      });
-      // Sort by like count
-      enriched.sort((a: any, b: any) => (counts.get(b.id) || 0) - (counts.get(a.id) || 0));
-      nextPopularReviews = enriched;
-      setPopularReviews(nextPopularReviews);
-    } else {
-      // Fallback: most recent written reviews (exclude own)
-      const { data: recentRevs } = await supabase
-        .from("reviews")
-        .select("*, places!inner(name, image)")
-        .not("review_text", "is", null)
-        .neq("review_text", "")
-        .neq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(10);
+          if (reviewsError) throw reviewsError;
+          if (!reviews || reviews.length === 0) return [] as any[];
 
-      const userIds = [...new Set((recentRevs || []).map((r) => r.user_id))];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, username, profile_picture")
-        .in("user_id", userIds);
-      const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
+          const profileUserIds = [...new Set(reviews.map((review) => review.user_id))];
+          const { data: profiles, error: profilesError } = await supabase
+            .from("profiles")
+            .select("user_id, username, profile_picture")
+            .in("user_id", profileUserIds);
 
-      nextPopularReviews =
-        (recentRevs || []).map((r: any) => {
-          const prof = profileMap.get(r.user_id);
+          if (profilesError) throw profilesError;
+
+          const profileMap = new Map((profiles || []).map((profile) => [profile.user_id, profile]));
+          const enriched = reviews.map((review: any) => {
+            const profile = profileMap.get(review.user_id);
+            return {
+              ...review,
+              profile_username: profile?.username,
+              profile_picture: profile?.profile_picture,
+              place_name: review.places?.name,
+              place_image: review.places?.image,
+            };
+          });
+
+          enriched.sort((a: any, b: any) => (counts.get(b.id) || 0) - (counts.get(a.id) || 0));
+          return enriched;
+        }
+
+        const { data: reviews, error: reviewsError } = await supabase
+          .from("reviews")
+          .select("*, places!inner(name, image)")
+          .not("review_text", "is", null)
+          .neq("review_text", "")
+          .neq("user_id", requestContext.userId)
+          .order("created_at", { ascending: false })
+          .limit(10);
+
+        if (reviewsError) throw reviewsError;
+        if (!reviews || reviews.length === 0) return [] as any[];
+
+        const profileUserIds = [...new Set(reviews.map((review) => review.user_id))];
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("user_id, username, profile_picture")
+          .in("user_id", profileUserIds);
+
+        if (profilesError) throw profilesError;
+
+        const profileMap = new Map((profiles || []).map((profile) => [profile.user_id, profile]));
+        return reviews.map((review: any) => {
+          const profile = profileMap.get(review.user_id);
           return {
-            ...r,
-            profile_username: prof?.username,
-            profile_picture: prof?.profile_picture,
-            place_name: r.places?.name,
-            place_image: r.places?.image,
+            ...review,
+            profile_username: profile?.username,
+            profile_picture: profile?.profile_picture,
+            place_name: review.places?.name,
+            place_image: review.places?.image,
           };
         });
-      setPopularReviews(nextPopularReviews);
-    }
+      };
 
-    const displayedReviewIds = [
-      ...new Set([...nextFriendReviews, ...nextPopularReviews].map((review) => review.id).filter(Boolean)),
-    ];
+      const [friendResult, popularResult] = await Promise.allSettled([
+        fetchFriendReviews(),
+        fetchPopularReviews(),
+      ]);
 
-    startReviewCardLikeSnapshot(displayedReviewIds, options);
+      if (!isCurrentRequest()) return;
 
-    setReviewsLoading(false);
-    if (isCurrentExploreRequest(options)) {
-      setVisibleExploreCacheKey(options.cacheKey);
+      let displayedFriendReviews = retainedFriendReviews;
+      let displayedPopularReviews = retainedPopularReviews;
+
+      if (friendResult.status === "fulfilled") {
+        displayedFriendReviews = friendResult.value;
+        setFriendReviews(friendResult.value);
+        reviewsBranchContextRef.current.friend = requestContext;
+      } else {
+        console.error("Failed to load Explore friend reviews:", friendResult.reason);
+      }
+
+      if (popularResult.status === "fulfilled") {
+        displayedPopularReviews = popularResult.value;
+        setPopularReviews(popularResult.value);
+        reviewsBranchContextRef.current.popular = requestContext;
+      } else {
+        console.error("Failed to load Explore popular reviews:", popularResult.reason);
+      }
+
+      if (friendResult.status === "fulfilled" || popularResult.status === "fulfilled") {
+        const displayedReviewIds = [
+          ...new Set(
+            [...displayedFriendReviews, ...displayedPopularReviews]
+              .map((review) => review.id)
+              .filter(Boolean)
+          ),
+        ];
+        startReviewCardLikeSnapshot(displayedReviewIds, options);
+      }
+    } catch (error) {
+      console.error("Unexpected Explore reviews loading failure:", error);
+    } finally {
+      if (isCurrentRequest()) {
+        setVisibleExploreCacheKey(options.cacheKey);
+        setReviewsLoading(false);
+      }
     }
   };
 
   // ── LISTS ──
   const fetchListsSections = async (options: ExploreFetchOptions) => {
     setListsLoading(true);
+
     if (!user) {
-      setListsLoading(false);
       if (isCurrentExploreRequest(options)) {
+        setFriendLists([]);
+        setPopularLists([]);
+        listsBranchContextRef.current = { friend: null, popular: null };
         setVisibleExploreCacheKey(options.cacheKey);
+        setListsLoading(false);
       }
       return;
     }
 
-    const { data: following } = await supabase
-      .from("followers")
-      .select("following_id")
-      .eq("follower_id", user.id);
-    const followingIds = (following || []).map((f) => f.following_id);
+    const requestContext: ExploreRequestContext = {
+      requestId: listsFetchRequestIdRef.current + 1,
+      cacheKey: options.cacheKey,
+      cacheVersion: options.cacheVersion,
+      userId: user.id,
+    };
+    listsFetchRequestIdRef.current = requestContext.requestId;
 
-    // Recent lists from friends (exclude own)
-    if (followingIds.length > 0) {
-      const { data: fLists } = await supabase
-        .from("lists")
-        .select("*")
-        .in("user_id", followingIds)
-        .order("created_at", { ascending: false })
-        .limit(5);
-
-      const userIds = [...new Set((fLists || []).map((l) => l.user_id))];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, username, profile_picture")
-        .in("user_id", userIds);
-      const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
-
-      // Get item counts
-      const enriched = await Promise.all(
-        (fLists || []).map(async (l) => {
-          const { count } = await supabase
-            .from("list_items")
-            .select("*", { count: "exact", head: true })
-            .eq("list_id", l.id);
-          const prof = profileMap.get(l.user_id);
-          return { ...l, item_count: count || 0, username: prof?.username, profile_picture: prof?.profile_picture };
-        })
-      );
-      setFriendLists(enriched);
-    } else {
-      setFriendLists([]);
-    }
-
-    // Most liked lists
-    const { data: likeCounts } = await supabase
-      .from("list_likes")
-      .select("list_id");
-
-    const counts = new Map<string, number>();
-    (likeCounts || []).forEach((l) => {
-      counts.set(l.list_id, (counts.get(l.list_id) || 0) + 1);
-    });
-
-    const topListIds = [...counts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 10)
-      .map((e) => e[0]);
-
-    let popularData: any[] = [];
-    if (topListIds.length > 0) {
-      const { data } = await supabase
-        .from("lists")
-        .select("*")
-        .in("id", topListIds);
-      popularData = data || [];
-    }
-
-    if (popularData.length === 0) {
-      const { data } = await supabase
-        .from("lists")
-        .select("*")
-        .neq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(10);
-      popularData = data || [];
-    }
-    // Filter out own lists
-    popularData = popularData.filter((l) => l.user_id !== user.id);
-
-    const userIds = [...new Set(popularData.map((l) => l.user_id))];
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, username, profile_picture, is_private")
-      .in("user_id", userIds);
-    const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
-
-    // Privacy filter: hide lists from private users you don't follow
-    const privateOwnerIds = (profiles || []).filter((p: any) => p.is_private).map((p: any) => p.user_id);
-    let allowedFollowing = new Set<string>(followingIds);
-    popularData = popularData.filter((l: any) => {
-      const p: any = profileMap.get(l.user_id);
-      if (!p?.is_private) return true;
-      return allowedFollowing.has(l.user_id);
-    });
-
-    const enrichedPopular = await Promise.all(
-      popularData.map(async (l) => {
-        const { count } = await supabase
-          .from("list_items")
-          .select("*", { count: "exact", head: true })
-          .eq("list_id", l.id);
-        const prof = profileMap.get(l.user_id);
-        const likeCount = counts.get(l.id) || 0;
-        return { ...l, item_count: count || 0, like_count: likeCount, username: prof?.username, profile_picture: prof?.profile_picture };
-      })
+    const isCurrentRequest = () => (
+      listsFetchRequestIdRef.current === requestContext.requestId &&
+      isCurrentExploreRequest(options) &&
+      activeExploreRef.current.userId === requestContext.userId
     );
-    enrichedPopular.sort((a, b) => b.like_count - a.like_count);
-    setPopularLists(enrichedPopular);
 
-    setListsLoading(false);
-    if (isCurrentExploreRequest(options)) {
-      setVisibleExploreCacheKey(options.cacheKey);
+    const friendContextIsCurrent = branchContextMatches(
+      listsBranchContextRef.current.friend,
+      requestContext
+    );
+    const popularContextIsCurrent = branchContextMatches(
+      listsBranchContextRef.current.popular,
+      requestContext
+    );
+    const retainedFriendLists = friendContextIsCurrent ? friendLists : [];
+    const retainedPopularLists = popularContextIsCurrent ? popularLists : [];
+
+    if (!friendContextIsCurrent) setFriendLists([]);
+    if (!popularContextIsCurrent) setPopularLists([]);
+
+    try {
+      const { data: following, error: followingError } = await supabase
+        .from("followers")
+        .select("following_id")
+        .eq("follower_id", requestContext.userId);
+
+      if (followingError) throw followingError;
+      if (!isCurrentRequest()) return;
+
+      const followingIds = (following || []).map((entry) => entry.following_id);
+
+      const fetchFriendLists = async () => {
+        if (followingIds.length === 0) return [] as any[];
+
+        const { data: lists, error: listsError } = await supabase
+          .from("lists")
+          .select("*")
+          .in("user_id", followingIds)
+          .order("created_at", { ascending: false })
+          .limit(5);
+
+        if (listsError) throw listsError;
+        if (!lists || lists.length === 0) return [] as any[];
+
+        const profileUserIds = [...new Set(lists.map((list) => list.user_id))];
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("user_id, username, profile_picture")
+          .in("user_id", profileUserIds);
+
+        if (profilesError) throw profilesError;
+
+        const profileMap = new Map((profiles || []).map((profile) => [profile.user_id, profile]));
+        return Promise.all(
+          lists.map(async (list) => {
+            const { count, error: countError } = await supabase
+              .from("list_items")
+              .select("*", { count: "exact", head: true })
+              .eq("list_id", list.id);
+
+            if (countError) throw countError;
+
+            const profile = profileMap.get(list.user_id);
+            return {
+              ...list,
+              item_count: count || 0,
+              username: profile?.username,
+              profile_picture: profile?.profile_picture,
+            };
+          })
+        );
+      };
+
+      const fetchPopularLists = async () => {
+        const { data: likeRows, error: likeRowsError } = await supabase
+          .from("list_likes")
+          .select("list_id");
+
+        if (likeRowsError) throw likeRowsError;
+
+        const counts = new Map<string, number>();
+        (likeRows || []).forEach((like) => {
+          counts.set(like.list_id, (counts.get(like.list_id) || 0) + 1);
+        });
+
+        const topListIds = [...counts.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 10)
+          .map((entry) => entry[0]);
+
+        let popularData: any[] = [];
+        if (topListIds.length > 0) {
+          const { data, error } = await supabase
+            .from("lists")
+            .select("*")
+            .in("id", topListIds);
+
+          if (error) throw error;
+          popularData = data || [];
+        }
+
+        if (popularData.length === 0) {
+          const { data, error } = await supabase
+            .from("lists")
+            .select("*")
+            .neq("user_id", requestContext.userId)
+            .order("created_at", { ascending: false })
+            .limit(10);
+
+          if (error) throw error;
+          popularData = data || [];
+        }
+
+        popularData = popularData.filter((list) => list.user_id !== requestContext.userId);
+        if (popularData.length === 0) return [] as any[];
+
+        const profileUserIds = [...new Set(popularData.map((list) => list.user_id))];
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("user_id, username, profile_picture, is_private")
+          .in("user_id", profileUserIds);
+
+        if (profilesError) throw profilesError;
+
+        const profileMap = new Map((profiles || []).map((profile) => [profile.user_id, profile]));
+        const allowedFollowing = new Set<string>(followingIds);
+        popularData = popularData.filter((list) => {
+          const profile: any = profileMap.get(list.user_id);
+          if (!profile?.is_private) return true;
+          return allowedFollowing.has(list.user_id);
+        });
+
+        const enriched = await Promise.all(
+          popularData.map(async (list) => {
+            const { count, error: countError } = await supabase
+              .from("list_items")
+              .select("*", { count: "exact", head: true })
+              .eq("list_id", list.id);
+
+            if (countError) throw countError;
+
+            const profile = profileMap.get(list.user_id);
+            return {
+              ...list,
+              item_count: count || 0,
+              like_count: counts.get(list.id) || 0,
+              username: profile?.username,
+              profile_picture: profile?.profile_picture,
+            };
+          })
+        );
+
+        enriched.sort((a, b) => b.like_count - a.like_count);
+        return enriched;
+      };
+
+      const [friendResult, popularResult] = await Promise.allSettled([
+        fetchFriendLists(),
+        fetchPopularLists(),
+      ]);
+
+      if (!isCurrentRequest()) return;
+
+      if (friendResult.status === "fulfilled") {
+        setFriendLists(friendResult.value);
+        listsBranchContextRef.current.friend = requestContext;
+      } else {
+        console.error("Failed to load Explore friend lists:", friendResult.reason);
+      }
+
+      if (popularResult.status === "fulfilled") {
+        setPopularLists(popularResult.value);
+        listsBranchContextRef.current.popular = requestContext;
+      } else {
+        console.error("Failed to load Explore popular lists:", popularResult.reason);
+      }
+    } catch (error) {
+      console.error("Unexpected Explore lists loading failure:", error);
+    } finally {
+      if (isCurrentRequest()) {
+        setVisibleExploreCacheKey(options.cacheKey);
+        setListsLoading(false);
+      }
     }
   };
 

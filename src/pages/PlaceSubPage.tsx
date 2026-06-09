@@ -34,6 +34,24 @@ type ReviewCardLikeSnapshotState = ReviewLikeSnapshot & {
   status: ReviewCardLikeSnapshotStatus;
 };
 
+type LoadResult<T> =
+  | { ok: true; data: T }
+  | { ok: false };
+
+type PlaceSubPageDataContext = {
+  requestId: number;
+  placeId: string;
+  section: string;
+  userId: string | null;
+};
+
+type PlaceSubPageSectionResult = {
+  data: any[];
+  reviewLikeCounts?: Map<string, number>;
+  friendIds?: string[];
+  reviewIds?: string[];
+};
+
 const chunkReviewIds = (reviewIds: string[]) => {
   const ids = [...new Set(reviewIds.filter(Boolean))];
   const chunks: string[][] = [];
@@ -87,6 +105,12 @@ export default function PlaceSubPage() {
   const [reviewCardLikeSnapshot, setReviewCardLikeSnapshot] = useState<ReviewCardLikeSnapshotState | null>(null);
   const [friendIds, setFriendIds] = useState<string[]>([]);
   const currentContextRef = useRef({ placeId: null as string | null, section: null as string | null, userId: null as string | null });
+  const dataRequestIdRef = useRef(0);
+  const lastAppliedDataContextRef = useRef<{
+    placeId: string;
+    section: string;
+    userId: string | null;
+  } | null>(null);
   const reviewCardLikeSnapshotRequestIdRef = useRef(0);
 
   currentContextRef.current = { placeId: id ?? null, section: section ?? null, userId: user?.id ?? null };
@@ -148,60 +172,124 @@ export default function PlaceSubPage() {
   };
 
   useEffect(() => {
-    if (id && section) fetchData();
-  }, [id, section]);
+    if (!id || !section) return;
 
-  const fetchData = async () => {
-    if (!id) return;
-    setLoading(true);
+    void fetchData();
+    return () => {
+      dataRequestIdRef.current += 1;
+    };
+  }, [id, section, user?.id]);
 
-    const { data: place } = await supabase.from("places").select("name").eq("id", id).maybeSingle();
-    setPlaceName(place?.name || "");
+  const isCurrentDataRequest = (context: PlaceSubPageDataContext) => (
+    dataRequestIdRef.current === context.requestId &&
+    currentContextRef.current.placeId === context.placeId &&
+    currentContextRef.current.section === context.section &&
+    currentContextRef.current.userId === context.userId
+  );
 
-    if (section === "visitors" || section === "friendvisitors") {
-      // For friendvisitors, we need the user's following list
-      let followingSet = new Set<string>();
-      if (section === "friendvisitors" && user) {
-        const { data: following } = await supabase.from("followers").select("following_id").eq("follower_id", user.id);
-        followingSet = new Set((following || []).map((f) => f.following_id));
-      }
+  const loadPlaceName = async (
+    context: PlaceSubPageDataContext
+  ): Promise<LoadResult<string>> => {
+    try {
+      const { data: place, error } = await supabase
+        .from("places")
+        .select("name")
+        .eq("id", context.placeId)
+        .maybeSingle();
 
-      const { data: reviews } = await supabase
-        .from("reviews")
-        .select("id, rating, user_id, review_text, liked, created_at")
-        .eq("place_id", id)
-        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return { ok: true, data: place?.name || "" };
+    } catch (error) {
+      console.error("Failed to load place name:", error);
+      return { ok: false };
+    }
+  };
+
+  const fetchSectionData = async (
+    context: PlaceSubPageDataContext
+  ): Promise<PlaceSubPageSectionResult> => {
+    if (context.section === "categories") {
+      return { data: [] };
+    }
+
+    if (context.section === "visitors" || context.section === "friendvisitors") {
+      const followingPromise = async () => {
+        if (context.section !== "friendvisitors" || !context.userId) {
+          return [] as { following_id: string }[];
+        }
+
+        const { data: following, error } = await supabase
+          .from("followers")
+          .select("following_id")
+          .eq("follower_id", context.userId);
+
+        if (error) throw error;
+        return following || [];
+      };
+
+      const reviewsPromise = async () => {
+        const { data: reviews, error } = await supabase
+          .from("reviews")
+          .select("id, rating, user_id, review_text, liked, created_at")
+          .eq("place_id", context.placeId)
+          .order("created_at", { ascending: false });
+
+        if (error) throw error;
+        return reviews || [];
+      };
+
+      const [following, reviews] = await Promise.all([
+        followingPromise(),
+        reviewsPromise(),
+      ]);
+      if (!isCurrentDataRequest(context)) return { data: [] };
+
+      const followingSet = new Set(following.map((entry) => entry.following_id));
 
       // Most recent per user
       const seen = new Set<string>();
-      let unique = (reviews || []).filter((r) => {
-        if (seen.has(r.user_id)) return false;
-        seen.add(r.user_id);
+      let unique = reviews.filter((review) => {
+        if (seen.has(review.user_id)) return false;
+        seen.add(review.user_id);
         return true;
       });
 
       // For friendvisitors, filter to only people the user follows
-      if (section === "friendvisitors") {
-        unique = unique.filter((r) => followingSet.has(r.user_id));
+      if (context.section === "friendvisitors") {
+        unique = unique.filter((review) => followingSet.has(review.user_id));
       }
 
-      const userIds = unique.map((r) => r.user_id);
-      const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds.length > 0 ? userIds : ["__none__"]);
+      const userIds = unique.map((review) => review.user_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("user_id, username, profile_picture")
+        .in("user_id", userIds.length > 0 ? userIds : ["__none__"]);
 
-      setData(
-        unique.map((r) => {
-          const p = (profiles || []).find((pr: any) => pr.user_id === r.user_id);
-          return { ...r, profile: p, has_review: !!(r.review_text && r.review_text.trim() !== "") };
-        })
+      if (profilesError) throw profilesError;
+
+      const profileMap = new Map(
+        (profiles || []).map((profile) => [profile.user_id, profile])
       );
-    } else if (section === "reviews") {
-      const { data: reviews } = await supabase
+
+      return {
+        data: unique.map((review) => ({
+          ...review,
+          profile: profileMap.get(review.user_id),
+          has_review: !!(review.review_text && review.review_text.trim() !== ""),
+        })),
+      };
+    }
+
+    if (context.section === "reviews") {
+      const { data: reviews, error: reviewsError } = await supabase
         .from("reviews")
         .select("id, rating, user_id, review_text, liked, created_at")
-        .eq("place_id", id)
+        .eq("place_id", context.placeId)
         .not("review_text", "is", null)
         .neq("review_text", "")
         .order("created_at", { ascending: false });
+
+      if (reviewsError) throw reviewsError;
 
       // Most recent written review per user
       const seen = new Set<string>();
@@ -212,65 +300,217 @@ export default function PlaceSubPage() {
       });
 
       const userIds = unique.map((r) => r.user_id);
-      const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
-
-      // Fetch like counts for all reviews
       const reviewIds = unique.map((r) => r.id);
-      const likeCounts = new Map<string, number>();
-      if (reviewIds.length > 0) {
-        const { data: likes } = await supabase
+
+      const profilesPromise = async () => {
+        const { data: profiles, error } = await supabase
+          .from("profiles")
+          .select("user_id, username, profile_picture")
+          .in("user_id", userIds);
+
+        if (error) throw error;
+        return profiles || [];
+      };
+
+      const likesPromise = async () => {
+        if (reviewIds.length === 0) {
+          return [] as { review_id: string }[];
+        }
+
+        const { data: likes, error } = await supabase
           .from("review_likes")
           .select("review_id")
           .in("review_id", reviewIds);
-        (likes || []).forEach((l) => {
-          likeCounts.set(l.review_id, (likeCounts.get(l.review_id) || 0) + 1);
-        });
-      }
-      setReviewLikeCounts(likeCounts);
-      startReviewCardLikeSnapshot(reviewIds);
 
-      // Fetch friend IDs
-      if (user) {
-        const { data: following } = await supabase.from("followers").select("following_id").eq("follower_id", user.id);
-        setFriendIds((following || []).map((f) => f.following_id));
-      }
+        if (error) throw error;
+        return likes || [];
+      };
 
-      setData(
-        unique.map((r) => {
-          const p = (profiles || []).find((pr: any) => pr.user_id === r.user_id);
-          return { ...r, profile: p };
-        })
+      const followingPromise = async () => {
+        if (!context.userId) {
+          return [] as { following_id: string }[];
+        }
+
+        const { data: following, error } = await supabase
+          .from("followers")
+          .select("following_id")
+          .eq("follower_id", context.userId);
+
+        if (error) throw error;
+        return following || [];
+      };
+
+      const [profiles, likes, following] = await Promise.all([
+        profilesPromise(),
+        likesPromise(),
+        followingPromise(),
+      ]);
+      if (!isCurrentDataRequest(context)) return { data: [] };
+
+      const likeCounts = new Map<string, number>();
+      likes.forEach((like) => {
+        likeCounts.set(like.review_id, (likeCounts.get(like.review_id) || 0) + 1);
+      });
+
+      const profileMap = new Map(
+        profiles.map((profile) => [profile.user_id, profile])
       );
-    } else if (section === "lists") {
-      const { data: listItems } = await supabase
+
+      return {
+        data: unique.map((review) => ({
+          ...review,
+          profile: profileMap.get(review.user_id),
+        })),
+        reviewLikeCounts: likeCounts,
+        friendIds: following.map((entry) => entry.following_id),
+        reviewIds,
+      };
+    }
+
+    if (context.section === "lists") {
+      const { data: listItems, error: listItemsError } = await supabase
         .from("list_items")
         .select("list_id, lists!inner(id, name, user_id)")
-        .eq("place_id", id);
+        .eq("place_id", context.placeId);
+
+      if (listItemsError) throw listItemsError;
 
       if (listItems && listItems.length > 0) {
         const listUserIds = [...new Set((listItems as any[]).map((li: any) => li.lists.user_id))];
-        const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", listUserIds);
-        setData(
-          (listItems as any[]).map((li: any) => {
-            const p = (profiles || []).find((pr: any) => pr.user_id === li.lists.user_id);
-            return { list_id: li.lists.id, list_name: li.lists.name, profile: p };
-          })
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("user_id, username, profile_picture")
+          .in("user_id", listUserIds);
+
+        if (profilesError) throw profilesError;
+
+        const profileMap = new Map(
+          (profiles || []).map((profile) => [profile.user_id, profile])
         );
+
+        return {
+          data: (listItems as any[]).map((listItem: any) => ({
+            list_id: listItem.lists.id,
+            list_name: listItem.lists.name,
+            profile: profileMap.get(listItem.lists.user_id),
+          })),
+        };
       }
-    } else if (section === "wanttovisit") {
-      const { data: wishlistData } = await supabase
+
+      return { data: [] };
+    }
+
+    if (context.section === "wanttovisit") {
+      const { data: wishlistData, error: wishlistError } = await supabase
         .from("wishlists")
         .select("user_id")
-        .eq("place_id", id);
+        .eq("place_id", context.placeId);
+
+      if (wishlistError) throw wishlistError;
 
       if (wishlistData && wishlistData.length > 0) {
         const userIds = wishlistData.map((w) => w.user_id);
-        const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
-        setData(profiles || []);
+        const { data: profiles, error: profilesError } = await supabase
+          .from("profiles")
+          .select("user_id, username, profile_picture")
+          .in("user_id", userIds);
+
+        if (profilesError) throw profilesError;
+        return { data: profiles || [] };
       }
+
+      return { data: [] };
     }
 
-    setLoading(false);
+    return { data: [] };
+  };
+
+  const loadSectionData = async (
+    context: PlaceSubPageDataContext
+  ): Promise<LoadResult<PlaceSubPageSectionResult>> => {
+    try {
+      return {
+        ok: true,
+        data: await fetchSectionData(context),
+      };
+    } catch (error) {
+      console.error("Failed to load place subsection:", error);
+      return { ok: false };
+    }
+  };
+
+  const fetchData = async () => {
+    if (!id || !section) return;
+
+    const requestContext: PlaceSubPageDataContext = {
+      requestId: dataRequestIdRef.current + 1,
+      placeId: id,
+      section,
+      userId: user?.id ?? null,
+    };
+    dataRequestIdRef.current = requestContext.requestId;
+
+    const previousContext = lastAppliedDataContextRef.current;
+    const sameContext = (
+      previousContext?.placeId === requestContext.placeId &&
+      previousContext.section === requestContext.section &&
+      previousContext.userId === requestContext.userId
+    );
+
+    setLoading(true);
+
+    if (!sameContext) {
+      setPlaceName("");
+      setData([]);
+      setReviewLikeCounts(new Map());
+      setFriendIds([]);
+      reviewCardLikeSnapshotRequestIdRef.current += 1;
+      setReviewCardLikeSnapshot(null);
+    }
+
+    try {
+      const [placeResult, sectionResult] = await Promise.all([
+        loadPlaceName(requestContext),
+        loadSectionData(requestContext),
+      ]);
+
+      if (!isCurrentDataRequest(requestContext)) return;
+
+      if (placeResult.ok) {
+        setPlaceName(placeResult.data);
+      }
+
+      if (sectionResult.ok) {
+        const nextSection = sectionResult.data;
+        setData(nextSection.data);
+
+        if (nextSection.reviewLikeCounts) {
+          setReviewLikeCounts(nextSection.reviewLikeCounts);
+        }
+
+        if (nextSection.friendIds) {
+          setFriendIds(nextSection.friendIds);
+        }
+
+        if (nextSection.reviewIds) {
+          startReviewCardLikeSnapshot(nextSection.reviewIds);
+        }
+      }
+
+      if (placeResult.ok || sectionResult.ok) {
+        lastAppliedDataContextRef.current = {
+          placeId: requestContext.placeId,
+          section: requestContext.section,
+          userId: requestContext.userId,
+        };
+      }
+    } catch (error) {
+      console.error("Unexpected place subsection loading failure:", error);
+    } finally {
+      if (isCurrentDataRequest(requestContext)) {
+        setLoading(false);
+      }
+    }
   };
 
   const title = section === "visitors" ? "Visitors" : section === "friendvisitors" ? "Visited by friends" : section === "reviews" ? "Reviews" : section === "wanttovisit" ? "Want to go" : section === "categories" ? "Category Ratings" : "Lists";
