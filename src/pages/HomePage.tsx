@@ -43,7 +43,14 @@ export default function HomePage() {
   const [mapWidth, setMapWidth] = useState(380);
   const [selectedActivity, setSelectedActivity] = useState<FriendActivity | null>(null);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadState, setUnreadState] = useState<{
+    userId: string | null;
+    count: number;
+  }>({ userId: null, count: 0 });
+  const unreadRequestSequenceRef = useRef(0);
+  const unreadPendingRequestRef = useRef<number | null>(null);
+  const unreadCount =
+    unreadState.userId === (user?.id ?? null) ? unreadState.count : 0;
   const [showAllActivities, setShowAllActivities] = useState(false);
   const [countriesCount, setCountriesCount] = useState(0);
   const [citiesCount, setCitiesCount] = useState(0);
@@ -81,37 +88,119 @@ export default function HomePage() {
 
   // Fetch unread notification count
   useEffect(() => {
-    if (!user) return;
-    const fetchUnreadCount = async () => {
-      const lastRead = localStorage.getItem(`notif_last_read_${user.id}`);
+    const userId = user?.id ?? null;
+    const requestId = ++unreadRequestSequenceRef.current;
+    let cancelled = false;
+
+    setUnreadState((current) =>
+      current.userId === userId ? current : { userId, count: 0 }
+    );
+
+    if (!userId) {
+      unreadPendingRequestRef.current = null;
+      return;
+    }
+
+    unreadPendingRequestRef.current = requestId;
+    const isCurrentRequest = () =>
+      !cancelled && unreadPendingRequestRef.current === requestId;
+
+    const fetchFollowerCount = async () => {
+      const { count, error } = await supabase
+        .from("followers")
+        .select("id", { count: "exact", head: true })
+        .eq("following_id", userId)
+        .gt("created_at", lastReadDate);
+      if (error) throw error;
+      return count ?? 0;
+    };
+
+    const fetchFollowRequestCount = async () => {
+      const { count, error } = await supabase
+        .from("follow_requests")
+        .select("id", { count: "exact", head: true })
+        .eq("target_id", userId)
+        .gt("created_at", lastReadDate);
+      if (error) throw error;
+      return count ?? 0;
+    };
+
+    const fetchReviewLikeCount = async () => {
+      const { data: myReviews, error: reviewsError } = await supabase
+        .from("reviews")
+        .select("id")
+        .eq("user_id", userId);
+      if (reviewsError) throw reviewsError;
+
+      const myReviewIds = (myReviews || []).map((review) => review.id);
+      if (myReviewIds.length === 0) return 0;
+
+      const { count, error } = await supabase
+        .from("review_likes")
+        .select("id", { count: "exact", head: true })
+        .in("review_id", myReviewIds)
+        .neq("user_id", userId)
+        .gt("created_at", lastReadDate);
+      if (error) throw error;
+      return count ?? 0;
+    };
+
+    const fetchListLikeCount = async () => {
+      const { data: myLists, error: listsError } = await supabase
+        .from("lists")
+        .select("id")
+        .eq("user_id", userId);
+      if (listsError) throw listsError;
+
+      const myListIds = (myLists || []).map((list) => list.id);
+      if (myListIds.length === 0) return 0;
+
+      const { count, error } = await supabase
+        .from("list_likes")
+        .select("id", { count: "exact", head: true })
+        .in("list_id", myListIds)
+        .neq("user_id", userId)
+        .gt("created_at", lastReadDate);
+      if (error) throw error;
+      return count ?? 0;
+    };
+
+    const lastRead = localStorage.getItem(`notif_last_read_${userId}`);
       const lastReadDate = lastRead || "1970-01-01T00:00:00Z";
 
-      const [followersRes, requestsRes] = await Promise.all([
-        supabase.from("followers").select("id", { count: "exact", head: true }).eq("following_id", user.id).gt("created_at", lastReadDate),
-        supabase.from("follow_requests").select("id", { count: "exact", head: true }).eq("target_id", user.id).gt("created_at", lastReadDate),
-      ]);
+    const fetchUnreadCount = async () => {
+      try {
+        const [followers, requests, reviewLikes, listLikes] = await Promise.all([
+          fetchFollowerCount(),
+          fetchFollowRequestCount(),
+          fetchReviewLikeCount(),
+          fetchListLikeCount(),
+        ]);
 
-      // Review likes
-      const { data: myReviews } = await supabase.from("reviews").select("id").eq("user_id", user.id);
-      const myReviewIds = (myReviews || []).map(r => r.id);
-      let rlCount = 0;
-      if (myReviewIds.length > 0) {
-        const { count } = await supabase.from("review_likes").select("id", { count: "exact", head: true }).in("review_id", myReviewIds).neq("user_id", user.id).gt("created_at", lastReadDate);
-        rlCount = count || 0;
+        if (!isCurrentRequest()) return;
+        setUnreadState({
+          userId,
+          count: followers + requests + reviewLikes + listLikes,
+        });
+      } catch {
+        if (isCurrentRequest()) {
+          console.error("Failed to refresh unread notification count");
+        }
+      } finally {
+        if (isCurrentRequest()) {
+          unreadPendingRequestRef.current = null;
+        }
       }
-
-      // List likes
-      const { data: myLists } = await supabase.from("lists").select("id").eq("user_id", user.id);
-      const myListIds = (myLists || []).map(l => l.id);
-      let llCount = 0;
-      if (myListIds.length > 0) {
-        const { count } = await supabase.from("list_likes").select("id", { count: "exact", head: true }).in("list_id", myListIds).neq("user_id", user.id).gt("created_at", lastReadDate);
-        llCount = count || 0;
-      }
-
-      setUnreadCount((followersRes.count || 0) + (requestsRes.count || 0) + rlCount + llCount);
     };
-    fetchUnreadCount();
+
+    void fetchUnreadCount();
+
+    return () => {
+      cancelled = true;
+      if (unreadPendingRequestRef.current === requestId) {
+        unreadPendingRequestRef.current = null;
+      }
+    };
   }, [user, notifOpen]);
 
   useEffect(() => {
@@ -254,7 +343,7 @@ export default function HomePage() {
               <button onClick={() => {
                 setNotifOpen(true);
                 if (user) localStorage.setItem(`notif_last_read_${user.id}`, new Date().toISOString());
-                setUnreadCount(0);
+                setUnreadState({ userId: user?.id ?? null, count: 0 });
               }} className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center relative">
                 <Bell className="w-5 h-5 text-foreground" />
                 {unreadCount > 0 && (

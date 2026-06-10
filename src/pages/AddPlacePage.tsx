@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, Search, X } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -58,6 +58,17 @@ export default function AddPlacePage() {
   const [tagQuery, setTagQuery] = useState("");
   const [tagResults, setTagResults] = useState<{ user_id: string; username: string; profile_picture: string | null }[]>([]);
   const [taggedUsers, setTaggedUsers] = useState<{ user_id: string; username: string; profile_picture: string | null }[]>([]);
+  const [followingLookup, setFollowingLookup] = useState<{
+    userId: string | null;
+    ids: Set<string> | null;
+    failed: boolean;
+  }>({ userId: null, ids: new Set(), failed: false });
+  const followingRequestIdRef = useRef(0);
+  const tagSearchRequestIdRef = useRef(0);
+  const placeSearchRequestIdRef = useRef(0);
+  const reviewCountsInflightRef = useRef<Promise<Map<string, number>> | null>(
+    null
+  );
 
   useEffect(() => {
     try {
@@ -67,54 +78,172 @@ export default function AddPlacePage() {
   }, []);
 
   useEffect(() => {
+    const viewerId = user?.id ?? null;
+    const requestId = ++followingRequestIdRef.current;
+    let cancelled = false;
+
+    setFollowingLookup({
+      userId: viewerId,
+      ids: viewerId ? null : new Set(),
+      failed: false,
+    });
+    setTagResults([]);
+
+    if (!viewerId) return;
+
+    const loadFollowingIds = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("followers")
+          .select("following_id")
+          .eq("follower_id", viewerId);
+        if (error) throw error;
+
+        if (cancelled || followingRequestIdRef.current !== requestId) return;
+        setFollowingLookup({
+          userId: viewerId,
+          ids: new Set((data || []).map((follow) => follow.following_id)),
+          failed: false,
+        });
+      } catch {
+        if (cancelled || followingRequestIdRef.current !== requestId) return;
+        setFollowingLookup({
+          userId: viewerId,
+          ids: null,
+          failed: true,
+        });
+        console.error("Failed to load Add Place following IDs");
+      }
+    };
+
+    void loadFollowingIds();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
+    const requestId = ++placeSearchRequestIdRef.current;
     const delay = query ? 200 : 0; // fetch immediately on mount
-    const timer = setTimeout(() => fetchPlaces(query), delay);
-    return () => clearTimeout(timer);
+    const timer = setTimeout(() => {
+      void fetchPlaces(query, requestId);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+      if (placeSearchRequestIdRef.current === requestId) {
+        placeSearchRequestIdRef.current += 1;
+      }
+    };
   }, [query]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!tagQuery.trim()) { setTagResults([]); return; }
+    const requestId = ++tagSearchRequestIdRef.current;
+    const search = tagQuery.trim();
+    const viewerId = user?.id ?? null;
+    const lookupMatchesViewer = followingLookup.userId === viewerId;
+    const followingIds = lookupMatchesViewer ? followingLookup.ids : null;
+
+    if (!search) {
+      setTagResults([]);
+      return;
+    }
+
+    if (viewerId && (!lookupMatchesViewer || followingLookup.failed || !followingIds)) {
+      return;
+    }
+
+    let cancelled = false;
     const timer = setTimeout(async () => {
-      // Search profiles
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, username, profile_picture, is_private")
-        .ilike("username", `%${tagQuery}%`)
-        .limit(20);
+      try {
+        const { data: profiles, error } = await supabase
+          .from("profiles")
+          .select("user_id, username, profile_picture, is_private")
+          .ilike("username", `%${search}%`)
+          .limit(20);
+        if (error) throw error;
 
-      // Get list of users I follow
-      const { data: following } = user?.id
-        ? await supabase.from("followers").select("following_id").eq("follower_id", user.id)
-        : { data: [] };
-      const followingIds = new Set((following || []).map(f => f.following_id));
+        if (cancelled || tagSearchRequestIdRef.current !== requestId) return;
 
-      const filtered = (profiles || []).filter(
-        p => p.user_id !== user?.id
-          && !taggedUsers.some(t => t.user_id === p.user_id)
-          && (!p.is_private || followingIds.has(p.user_id)) // only public or followed
-      );
-      setTagResults(filtered.slice(0, 10));
+        const taggedUserIds = new Set(taggedUsers.map((tagged) => tagged.user_id));
+        const visibleFollowingIds = followingIds || new Set<string>();
+        const filtered = (profiles || []).filter(
+          (profile) =>
+            profile.user_id !== viewerId &&
+            !taggedUserIds.has(profile.user_id) &&
+            (!profile.is_private || visibleFollowingIds.has(profile.user_id))
+        );
+        setTagResults(filtered.slice(0, 10));
+      } catch {
+        if (!cancelled && tagSearchRequestIdRef.current === requestId) {
+          console.error("Failed to search Add Place tags");
+        }
+      }
     }, 200);
-    return () => clearTimeout(timer);
-  }, [tagQuery, taggedUsers, user?.id]);
 
-  const fetchPlaces = async (search: string) => {
-    // Fetch review counts and places in parallel
-    const [countsRes, placesRes] = await Promise.all([
-      supabase.rpc("get_place_review_counts"),
-      (() => {
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [tagQuery, taggedUsers, user?.id, followingLookup]);
+
+  const fetchReviewCountMap = (): Promise<Map<string, number>> => {
+    if (reviewCountsInflightRef.current) {
+      return reviewCountsInflightRef.current;
+    }
+
+    const request = supabase.rpc("get_place_review_counts").then(({ data, error }) => {
+      if (error) throw error;
+      return new Map<string, number>(
+        (data || []).map((count: any) => [
+          count.place_id,
+          Number(count.review_count),
+        ])
+      );
+    });
+
+    reviewCountsInflightRef.current = request;
+    void request.then(
+      () => {
+        if (reviewCountsInflightRef.current === request) {
+          reviewCountsInflightRef.current = null;
+        }
+      },
+      () => {
+        if (reviewCountsInflightRef.current === request) {
+          reviewCountsInflightRef.current = null;
+        }
+      }
+    );
+    return request;
+  };
+
+  const fetchPlaces = async (search: string, requestId: number) => {
+    try {
+      const [countMap, placesRes] = await Promise.all([
+        fetchReviewCountMap(),
+        (() => {
         let q = supabase.from("places").select("id, name, country, type, image");
         if (isFavoriteFlow) q = q.eq("type", favoriteType);
         if (search) q = q.ilike("name", `%${search}%`);
         return q.limit(500);
       })(),
-    ]);
-    const countMap = new Map((countsRes.data || []).map((c: any) => [c.place_id, Number(c.review_count)]));
-    const sorted = (placesRes.data || []).sort((a, b) => {
-      const diff = (countMap.get(b.id) || 0) - (countMap.get(a.id) || 0);
-      return diff !== 0 ? diff : a.name.localeCompare(b.name);
-    }).slice(0, 30);
-    setResults(sorted);
+      ]);
+      if (placesRes.error) throw placesRes.error;
+      if (placeSearchRequestIdRef.current !== requestId) return;
+
+      const sorted = (placesRes.data || [])
+        .sort((a, b) => {
+          const diff = (countMap.get(b.id) || 0) - (countMap.get(a.id) || 0);
+          return diff !== 0 ? diff : a.name.localeCompare(b.name);
+        })
+        .slice(0, 30);
+      setResults(sorted);
+    } catch {
+      if (placeSearchRequestIdRef.current === requestId) {
+        console.error("Failed to search Add Place destinations");
+      }
+    }
   };
 
   const handleSelectPlace = (place: PlaceResult) => {
