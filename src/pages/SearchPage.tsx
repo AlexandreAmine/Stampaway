@@ -78,6 +78,9 @@ export default function SearchPage() {
     query: "",
     activeFilter: initialTab,
   });
+  const searchRequestIdRef = useRef(0);
+  const visiblePlaceSearchContextRef = useRef<string | null>(null);
+  const sortMetricRequestIdRef = useRef(0);
 
   useEffect(() => {
     if (!user) return;
@@ -107,27 +110,47 @@ export default function SearchPage() {
   useEffect(() => { setVisibleCount(250); }, [query, activeFilter, destSort, selectedCategory, grouped]);
 
   const search = async () => {
+    const requestId = ++searchRequestIdRef.current;
     setLoading(true);
     const q = query.trim();
-    const placeType = activeFilter === "Countries" ? "country" : activeFilter === "Cities" ? "city" : null;
+    const requestFilter = activeFilter;
+    const placeType = requestFilter === "Countries" ? "country" : requestFilter === "Cities" ? "city" : null;
 
     if (placeType) {
-      // Fetch ALL places and visitor counts using centralized helpers
-      const [countMap, allPlaces] = await Promise.all([
-        fetchAllTimeVisitorCountMap(),
-        fetchAllPlaces(),
-      ]);
+      const contextKey = `${requestFilter}\u0000${q}`;
+      const sameContext = visiblePlaceSearchContextRef.current === contextKey;
+      if (!sameContext) setPlaces([]);
 
-      let filtered = allPlaces.filter((p: any) => p.type === placeType);
-      if (q) filtered = filtered.filter((p: any) => p.name.toLowerCase().includes(q.toLowerCase()));
+      try {
+        // Fetch ALL places and visitor counts using centralized helpers
+        const [countMap, allPlaces] = await Promise.all([
+          fetchAllTimeVisitorCountMap(),
+          fetchAllPlaces(),
+        ]);
 
-      const withCounts = filtered.map((p: any) => ({ ...p, review_count: countMap.get(p.id) || 0 }));
-      withCounts.sort((a: any, b: any) => {
-        const diff = b.review_count - a.review_count;
-        return diff !== 0 ? diff : a.name.localeCompare(b.name);
-      });
-      setPlaces(withCounts);
-    } else if (activeFilter === "Lists") {
+        let filtered = allPlaces.filter((p: any) => p.type === placeType);
+        if (q) filtered = filtered.filter((p: any) => p.name.toLowerCase().includes(q.toLowerCase()));
+
+        const withCounts = filtered.map((p: any) => ({ ...p, review_count: countMap.get(p.id) || 0 }));
+        withCounts.sort((a: any, b: any) => {
+          const diff = b.review_count - a.review_count;
+          return diff !== 0 ? diff : a.name.localeCompare(b.name);
+        });
+
+        if (searchRequestIdRef.current !== requestId) return;
+        setPlaces(withCounts);
+        visiblePlaceSearchContextRef.current = contextKey;
+      } catch (error) {
+        if (searchRequestIdRef.current === requestId) {
+          console.error("Failed to load destination search rankings:", error);
+        }
+      } finally {
+        if (searchRequestIdRef.current === requestId) {
+          setLoading(false);
+        }
+      }
+      return;
+    } else if (requestFilter === "Lists") {
       let qb = supabase.from("lists").select("id, name, description, user_id");
       if (q) qb = qb.ilike("name", `%${q}%`);
       qb = qb.limit(100);
@@ -170,14 +193,16 @@ export default function SearchPage() {
       } else {
         setLists([]);
       }
-    } else if (activeFilter === "Users") {
+    } else if (requestFilter === "Users") {
       let qb = supabase.from("profiles").select("id, user_id, username, profile_picture");
       if (q) qb = qb.ilike("username", `%${q}%`);
       qb = qb.order("username").limit(30);
       const { data } = await qb;
       setUsers(data || []);
     }
-    setLoading(false);
+    if (searchRequestIdRef.current === requestId) {
+      setLoading(false);
+    }
   };
 
   const getSortedPlaces = () => {
@@ -201,27 +226,40 @@ export default function SearchPage() {
   const catMapCacheRef = useRef<Record<string, Map<string, number>>>({});
 
   useEffect(() => {
+    const requestId = ++sortMetricRequestIdRef.current;
     if ((activeFilter !== "Countries" && activeFilter !== "Cities") || places.length === 0) return;
     if (destSort === "most-popular") return;
 
+    let cancelled = false;
     (async () => {
-      if (destSort === "avg-highest") {
-        let avgMap = avgMapCacheRef.current;
-        if (!avgMap) {
-          avgMap = await fetchAverageRatingMap();
-          avgMapCacheRef.current = avgMap;
+      try {
+        if (destSort === "avg-highest") {
+          let avgMap = avgMapCacheRef.current;
+          if (!avgMap) {
+            avgMap = await fetchAverageRatingMap();
+            avgMapCacheRef.current = avgMap;
+          }
+          if (cancelled || sortMetricRequestIdRef.current !== requestId) return;
+          setPlaces((prev) => prev.map((p) => ({ ...p, _avg: avgMap!.get(p.id) || 0 })));
+        } else if (destSort === "category-avg") {
+          let catMap = catMapCacheRef.current[selectedCategory];
+          if (!catMap) {
+            catMap = await fetchCategoryAverageMap(selectedCategory);
+            catMapCacheRef.current[selectedCategory] = catMap;
+          }
+          if (cancelled || sortMetricRequestIdRef.current !== requestId) return;
+          setPlaces((prev) => prev.map((p) => ({ ...p, _catAvg: catMap!.get(p.id) || 0 })));
         }
-        // Apply immediately — no need to await if cached
-        setPlaces((prev) => prev.map((p) => ({ ...p, _avg: avgMap!.get(p.id) || 0 })));
-      } else if (destSort === "category-avg") {
-        let catMap = catMapCacheRef.current[selectedCategory];
-        if (!catMap) {
-          catMap = await fetchCategoryAverageMap(selectedCategory);
-          catMapCacheRef.current[selectedCategory] = catMap;
+      } catch (error) {
+        if (!cancelled && sortMetricRequestIdRef.current === requestId) {
+          console.error("Failed to load destination sort rankings:", error);
         }
-        setPlaces((prev) => prev.map((p) => ({ ...p, _catAvg: catMap!.get(p.id) || 0 })));
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [destSort, selectedCategory, places.length, activeFilter]);
 
   const sortedPlaces = getSortedPlaces();

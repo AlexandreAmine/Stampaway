@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { ChevronLeft, ChevronDown } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -36,72 +36,128 @@ export default function CountryCitiesPage() {
   const [destSort, setDestSort] = useState<DestSort>("most-popular");
   const [selectedCategory, setSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
   const [visibleCount, setVisibleCount] = useState(500);
+  const citiesFetchRequestIdRef = useRef(0);
+  const visibleCitiesContextRef = useRef<string | null>(null);
+  const sortMetricRequestIdRef = useRef(0);
 
   useEffect(() => {
-    if (countryName) fetchCities();
-  }, [countryName, mode]);
+    if (!countryName) return;
+
+    const requestId = ++citiesFetchRequestIdRef.current;
+    const context = {
+      requestId,
+      key: [countryName, mode, user?.id ?? "anonymous"].join("\u0000"),
+      countryName,
+      mode,
+      userId: user?.id ?? null,
+    };
+
+    if (visibleCitiesContextRef.current !== context.key) {
+      setCities([]);
+    }
+    setLoading(true);
+    void fetchCities(context);
+
+    return () => {
+      if (citiesFetchRequestIdRef.current === requestId) {
+        citiesFetchRequestIdRef.current += 1;
+      }
+    };
+  }, [countryName, mode, user?.id]);
 
   useEffect(() => {
     setVisibleCount(500);
   }, [destSort, selectedCategory]);
 
-  const fetchCities = async () => {
-    if (!countryName) return;
-    setLoading(true);
-    const decoded = decodeURIComponent(countryName);
+  const fetchCities = async (context: {
+    requestId: number;
+    key: string;
+    countryName: string;
+    mode: string;
+    userId: string | null;
+  }) => {
+    const isCurrent = () => citiesFetchRequestIdRef.current === context.requestId;
+    const decoded = decodeURIComponent(context.countryName);
 
-    let baseCities: any[] = [];
+    try {
+      let baseCities: any[] = [];
 
-    if (mode === "wishlist" && user) {
-      const { data: wishlistData } = await supabase
-        .from("wishlists")
-        .select("place_id, places!inner(id, name, country, type, image)")
-        .eq("user_id", user.id);
+      if (context.mode === "wishlist" && context.userId) {
+        const { data: wishlistData, error } = await supabase
+          .from("wishlists")
+          .select("place_id, places!inner(id, name, country, type, image)")
+          .eq("user_id", context.userId);
+        if (error) throw error;
 
-      baseCities = (wishlistData || [])
-        .filter((w: any) => w.places.type === "city" && w.places.country === decoded)
-        .map((w: any) => ({ ...w.places }));
-    } else {
-      const { data: placesData } = await supabase
-        .from("places")
-        .select("id, name, country, type, image")
-        .eq("type", "city")
-        .eq("country", decoded);
-      baseCities = placesData || [];
+        baseCities = (wishlistData || [])
+          .filter((w: any) => w.places.type === "city" && w.places.country === decoded)
+          .map((w: any) => ({ ...w.places }));
+      } else {
+        const { data: placesData, error } = await supabase
+          .from("places")
+          .select("id, name, country, type, image")
+          .eq("type", "city")
+          .eq("country", decoded);
+        if (error) throw error;
+        baseCities = placesData || [];
+      }
+
+      if (baseCities.length === 0) {
+        if (!isCurrent()) return;
+        setCities([]);
+        visibleCitiesContextRef.current = context.key;
+        return;
+      }
+
+      const countMap = await fetchAllTimeVisitorCountMap();
+      const withCounts = baseCities.map((c) => ({
+        ...c,
+        review_count: countMap.get(c.id) || 0,
+      }));
+
+      if (!isCurrent()) return;
+      setCities(withCounts);
+      visibleCitiesContextRef.current = context.key;
+    } catch (error) {
+      if (isCurrent()) {
+        console.error("Failed to load country cities:", error);
+      }
+    } finally {
+      if (isCurrent()) {
+        setLoading(false);
+      }
     }
-
-    if (baseCities.length === 0) {
-      setCities([]);
-      setLoading(false);
-      return;
-    }
-
-    // Attach review_count using the centralized visitor count map
-    const countMap = await fetchAllTimeVisitorCountMap();
-    const withCounts = baseCities.map((c) => ({
-      ...c,
-      review_count: countMap.get(c.id) || 0,
-    }));
-
-    setCities(withCounts);
-    setLoading(false);
   };
 
   // Fetch additional metrics when sort changes
   useEffect(() => {
+    const requestId = ++sortMetricRequestIdRef.current;
     if (cities.length === 0) return;
     if (destSort === "most-popular") return;
 
+    let cancelled = false;
     (async () => {
-      const placeIds = cities.map((c) => c.id);
-      if (destSort === "avg-highest") {
-        const avgMap = await fetchAverageRatingMap();
-        setCities((prev) => prev.map((c) => ({ ...c, _avg: avgMap.get(c.id) || 0 })));
-      } else if (destSort === "category-avg") {
-        const catMap = await fetchCategoryAverageMap(selectedCategory, placeIds);
-        setCities((prev) => prev.map((c) => ({ ...c, _catAvg: catMap.get(c.id) || 0 })));
+      try {
+        const placeIds = cities.map((c) => c.id);
+        if (destSort === "avg-highest") {
+          const avgMap = await fetchAverageRatingMap();
+          if (cancelled || sortMetricRequestIdRef.current !== requestId) return;
+          setCities((prev) => prev.map((c) => ({ ...c, _avg: avgMap.get(c.id) || 0 })));
+        } else if (destSort === "category-avg") {
+          const catMap = await fetchCategoryAverageMap(selectedCategory, placeIds);
+          if (cancelled || sortMetricRequestIdRef.current !== requestId) return;
+          setCities((prev) => prev.map((c) => ({ ...c, _catAvg: catMap.get(c.id) || 0 })));
+        }
+      } catch (error) {
+        if (!cancelled && sortMetricRequestIdRef.current === requestId) {
+          console.error("Failed to load country city ranking metric:", error);
+        }
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [destSort, selectedCategory, cities.length]);
 
   const sortedCities = useMemo(() => {

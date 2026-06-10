@@ -71,6 +71,17 @@ type ExploreFetchOptions = {
   silent: boolean;
 };
 
+type ApplyPlacesSnapshotOptions = {
+  clearFriendComments?: boolean;
+  finishLoading?: boolean;
+};
+
+type PlacesLoadingRequestContext = {
+  requestId: number;
+  cacheKey: string;
+  cacheVersion: number;
+};
+
 type ExploreBranchContext = {
   cacheKey: string;
   cacheVersion: number;
@@ -174,6 +185,9 @@ export default function ExplorePage() {
   const currentCacheKey = getExploreCacheKey(userId, activeTab);
   const [visibleExploreCacheKey, setVisibleExploreCacheKey] = useState<string | null>(null);
   const activeExploreRef = useRef({ cacheKey: currentCacheKey, userId });
+  const placesFetchRequestIdRef = useRef(0);
+  const placesLoadingRequestRef = useRef<PlacesLoadingRequestContext | null>(null);
+  const placesSectionsContextRef = useRef<string | null>(null);
   const reviewCardLikeSnapshotRequestIdRef = useRef(0);
   const reviewsFetchRequestIdRef = useRef(0);
   const listsFetchRequestIdRef = useRef(0);
@@ -194,6 +208,19 @@ export default function ExplorePage() {
       isExploreCacheVersion(options.cacheVersion)
     );
   }, []);
+
+  const requestOwnsPlacesLoading = useCallback(
+    (requestId: number, cacheKey: string, cacheVersion: number) => {
+      const owner = placesLoadingRequestRef.current;
+
+      return (
+        owner?.requestId === requestId &&
+        owner.cacheKey === cacheKey &&
+        owner.cacheVersion === cacheVersion
+      );
+    },
+    []
+  );
 
   const isCurrentReviewCardLikeContext = (
     snapshot: Pick<ReviewCardLikeSnapshotState, "requestId" | "cacheKey" | "cacheVersion" | "userId">
@@ -263,11 +290,26 @@ export default function ExplorePage() {
   };
 
   const applyPlacesPublicSnapshot = useCallback(
-    (snapshot: PlacesPublicSnapshot, cacheKey: string) => {
+    (
+      snapshot: PlacesPublicSnapshot,
+      cacheKey: string,
+      {
+        clearFriendComments = true,
+        finishLoading = true,
+      }: ApplyPlacesSnapshotOptions = {}
+    ) => {
       setSections(snapshot.sections);
-      setFriendComments(new Map());
-      setPlacesLoading(false);
+
+      if (clearFriendComments) {
+        setFriendComments(new Map());
+      }
+
+      if (finishLoading) {
+        setPlacesLoading(false);
+      }
+
       setVisibleExploreCacheKey(cacheKey);
+      placesSectionsContextRef.current = cacheKey;
     },
     []
   );
@@ -277,28 +319,51 @@ export default function ExplorePage() {
 
     const cacheKey = getExploreCacheKey(userId, activeTab);
     const cacheVersion = getExploreCacheVersion();
+    const placesRequestId = ++placesFetchRequestIdRef.current;
 
     if (activeTab === "Places") {
       const cached = getFreshExploreCache<PlacesPublicSnapshot>(userId, cacheKey);
 
       if (cached) {
-        applyPlacesPublicSnapshot(cached, cacheKey);
+        const hasCurrentNonSilentLoadingOwner = requestOwnsPlacesLoading(
+          placesRequestId,
+          cacheKey,
+          cacheVersion
+        );
+
+        applyPlacesPublicSnapshot(cached, cacheKey, {
+          clearFriendComments: placesSectionsContextRef.current !== cacheKey,
+          finishLoading: !hasCurrentNonSilentLoadingOwner,
+        });
       }
 
       fetchPlacesSections({
         cacheKey,
         cacheVersion,
         silent: Boolean(cached),
-      });
+      }, placesRequestId);
     }
 
     if (activeTab === "Reviews") fetchReviewsSections({ cacheKey, cacheVersion, silent: false });
     if (activeTab === "Lists") fetchListsSections({ cacheKey, cacheVersion, silent: false });
-  }, [activeTab, userId, applyPlacesPublicSnapshot]);
+  }, [activeTab, userId, applyPlacesPublicSnapshot, requestOwnsPlacesLoading]);
 
   // ── PLACES ──
-  const fetchPlacesSections = async (options: ExploreFetchOptions) => {
+  const fetchPlacesSections = async (
+    options: ExploreFetchOptions,
+    requestId: number
+  ) => {
+    const isCurrentDataRequest = () =>
+      placesFetchRequestIdRef.current === requestId &&
+      isCurrentExploreRequest(options);
+    const sameVisibleContext = placesSectionsContextRef.current === options.cacheKey;
+
     if (!options.silent) {
+      placesLoadingRequestRef.current = {
+        requestId,
+        cacheKey: options.cacheKey,
+        cacheVersion: options.cacheVersion,
+      };
       setPlacesLoading(true);
     }
 
@@ -418,10 +483,24 @@ export default function ExplorePage() {
 
       const snapshot: PlacesPublicSnapshot = { sections: nextSections };
 
-      if (!isCurrentExploreRequest(options)) return;
+      if (!isCurrentDataRequest()) return;
 
-      applyPlacesPublicSnapshot(snapshot, options.cacheKey);
+      applyPlacesPublicSnapshot(snapshot, options.cacheKey, {
+        clearFriendComments: true,
+        finishLoading: false,
+      });
       setExploreCache(userId, options.cacheKey, snapshot);
+
+      if (
+        requestOwnsPlacesLoading(
+          requestId,
+          options.cacheKey,
+          options.cacheVersion
+        )
+      ) {
+        placesLoadingRequestRef.current = null;
+        setPlacesLoading(false);
+      }
 
       const commentMap = new Map<string, { profile_picture: string | null; text: string; review_id: string }>();
       const displayedPlaceIds = [
@@ -461,10 +540,29 @@ export default function ExplorePage() {
         console.error("Error fetching friend comments:", commentError);
       }
 
-      if (!isCurrentExploreRequest(options)) return;
+      if (!isCurrentDataRequest()) return;
       setFriendComments(commentMap);
     } catch (error) {
       console.error("Error fetching places sections:", error);
+      if (isCurrentDataRequest() && !options.silent) {
+        if (!sameVisibleContext) {
+          setSections([]);
+          setFriendComments(new Map());
+          placesSectionsContextRef.current = null;
+        }
+        setVisibleExploreCacheKey(options.cacheKey);
+      }
+    } finally {
+      if (
+        requestOwnsPlacesLoading(
+          requestId,
+          options.cacheKey,
+          options.cacheVersion
+        )
+      ) {
+        placesLoadingRequestRef.current = null;
+        setPlacesLoading(false);
+      }
     }
   };
 

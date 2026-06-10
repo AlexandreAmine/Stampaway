@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronLeft } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -48,6 +48,8 @@ export default function ExploreListPage() {
 
   const [places, setPlaces] = useState<PlaceWithStat[]>([]);
   const [loading, setLoading] = useState(true);
+  const fetchRequestIdRef = useRef(0);
+  const visibleContextRef = useRef<string | null>(null);
 
   const getTitle = () => {
     if (mode === "trending") {
@@ -63,8 +65,29 @@ export default function ExploreListPage() {
   };
 
   useEffect(() => {
-    fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const requestId = ++fetchRequestIdRef.current;
+    const context = {
+      requestId,
+      key: [mode, placeType, continent, region, limit, category].join("\u0000"),
+      mode,
+      placeType,
+      continent,
+      region,
+      limit,
+      category,
+    };
+
+    if (visibleContextRef.current !== context.key) {
+      setPlaces([]);
+    }
+    setLoading(true);
+    void fetchData(context);
+
+    return () => {
+      if (fetchRequestIdRef.current === requestId) {
+        fetchRequestIdRef.current += 1;
+      }
+    };
   }, [mode, placeType, continent, region, limit, category]);
 
   const getContinentCountries = (c: string): string[] | null => {
@@ -78,63 +101,81 @@ export default function ExploreListPage() {
     }
   };
 
-  const fetchData = async () => {
-    setLoading(true);
-    const allPlaces = await fetchAllPlaces();
+  const fetchData = async (context: {
+    requestId: number;
+    key: string;
+    mode: string;
+    placeType: string;
+    continent: string;
+    region: string;
+    limit: number;
+    category: string;
+  }) => {
+    const isCurrent = () => fetchRequestIdRef.current === context.requestId;
 
-    if (mode === "trending") {
-      let countMap = await fetchMonthlyVisitorCountMap();
-      if (countMap.size === 0) {
-        countMap = await fetchAllTimeVisitorCountMap();
+    try {
+      const allPlaces = await fetchAllPlaces();
+      let nextPlaces: PlaceWithStat[];
+
+      if (context.mode === "trending") {
+        let countMap = await fetchMonthlyVisitorCountMap();
+        if (countMap.size === 0) {
+          countMap = await fetchAllTimeVisitorCountMap();
+        }
+
+        nextPlaces = allPlaces
+          .filter((p) => p.type === context.placeType && countMap.has(p.id))
+          .map((p) => ({ ...p, stat: countMap.get(p.id) || 0 }))
+          .sort((a, b) => b.stat - a.stat || a.name.localeCompare(b.name));
+      } else if (context.mode === "by-category" && context.category) {
+        const catMap = await fetchCategoryAverageMap(context.category);
+        const regionCountries = context.region ? NAMED_REGIONS[context.region] : null;
+        nextPlaces = allPlaces
+          .filter((p) => {
+            if (p.type !== context.placeType || !catMap.has(p.id)) return false;
+            if (!regionCountries) return true;
+            return context.placeType === "country"
+              ? regionCountries.includes(p.name)
+              : regionCountries.includes(p.country);
+          })
+          .map((p) => ({ ...p, stat: catMap.get(p.id) || 0 }))
+          .sort((a, b) => {
+            if (b.stat !== a.stat) return b.stat - a.stat;
+            return a.name.localeCompare(b.name);
+          })
+          .slice(0, context.limit);
+      } else {
+        const avgMap = await fetchAverageRatingMap();
+        const continentCountries = getContinentCountries(context.continent);
+
+        nextPlaces = allPlaces
+          .filter((p) => {
+            if (p.type !== context.placeType) return false;
+            if (!continentCountries) return true;
+            return context.placeType === "country"
+              ? continentCountries.includes(p.name)
+              : continentCountries.includes(p.country);
+          })
+          .map((p) => ({ ...p, stat: avgMap.get(p.id) || 0 }))
+          .sort((a, b) => {
+            if (b.stat !== a.stat) return b.stat - a.stat;
+            return a.name.localeCompare(b.name);
+          })
+          .slice(0, context.limit);
       }
 
-      const filtered = allPlaces
-        .filter((p) => p.type === placeType && countMap.has(p.id))
-        .map((p) => ({ ...p, stat: countMap.get(p.id) || 0 }))
-        .sort((a, b) => b.stat - a.stat || a.name.localeCompare(b.name));
-
-      setPlaces(filtered);
-    } else if (mode === "by-category" && category) {
-      const catMap = await fetchCategoryAverageMap(category);
-      const regionCountries = region ? NAMED_REGIONS[region] : null;
-      const filtered = allPlaces
-        .filter((p) => {
-          if (p.type !== placeType || !catMap.has(p.id)) return false;
-          if (!regionCountries) return true;
-          return placeType === "country"
-            ? regionCountries.includes(p.name)
-            : regionCountries.includes(p.country);
-        })
-        .map((p) => ({ ...p, stat: catMap.get(p.id) || 0 }))
-        .sort((a, b) => {
-          if (b.stat !== a.stat) return b.stat - a.stat;
-          return a.name.localeCompare(b.name);
-        })
-        .slice(0, limit);
-      setPlaces(filtered);
-    } else {
-      // Top rated — use all-time average ratings
-      const avgMap = await fetchAverageRatingMap();
-      const continentCountries = getContinentCountries(continent);
-
-      const filtered = allPlaces
-        .filter((p) => {
-          if (p.type !== placeType) return false;
-          if (!continentCountries) return true;
-          return placeType === "country"
-            ? continentCountries.includes(p.name)
-            : continentCountries.includes(p.country);
-        })
-        .map((p) => ({ ...p, stat: avgMap.get(p.id) || 0 }))
-        .sort((a, b) => {
-          if (b.stat !== a.stat) return b.stat - a.stat;
-          return a.name.localeCompare(b.name);
-        })
-        .slice(0, limit);
-
-      setPlaces(filtered);
+      if (!isCurrent()) return;
+      setPlaces(nextPlaces);
+      visibleContextRef.current = context.key;
+    } catch (error) {
+      if (isCurrent()) {
+        console.error("Failed to load Explore ranking list:", error);
+      }
+    } finally {
+      if (isCurrent()) {
+        setLoading(false);
+      }
     }
-    setLoading(false);
   };
 
   return (
