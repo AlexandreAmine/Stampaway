@@ -113,6 +113,7 @@ export function DestinationPoster({
         <img
           src={imageUrl}
           alt={localizedName}
+          decoding="async"
           className="w-full h-full object-cover animate-in fade-in duration-500"
         />
       ) : (
@@ -135,6 +136,7 @@ export function DestinationPoster({
             <img
               src={flagUrl}
               alt={flagCountry}
+              decoding="async"
               className="absolute top-2 right-2 w-7 h-5 rounded-sm shadow-lg object-cover border border-white/20"
             />
           )}
