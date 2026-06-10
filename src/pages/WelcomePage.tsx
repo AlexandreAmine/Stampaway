@@ -6,7 +6,11 @@ import { WelcomeGlobe } from "@/components/WelcomeGlobe";
 import { AppleLogo } from "@/components/AppleLogo";
 import { lovable } from "@/integrations/lovable";
 import { toast } from "sonner";
-import { canUseNativeAppleSignIn, nativeAppleSignIn } from "@/lib/native/appleSignIn";
+import {
+  canUseNativeAppleSignIn,
+  isNativeAppleSignInCanceled,
+  nativeAppleSignIn,
+} from "@/lib/native/appleSignIn";
 import logoImage from "@/assets/stampaway-logo.jpeg";
 
 export default function WelcomePage() {
@@ -74,8 +78,7 @@ export default function WelcomePage() {
                   if (result.error) toast.error(result.error.message);
                 }
               } catch (e: any) {
-                // 1001 = user canceled the native Apple sheet — stay silent.
-                if (e?.code !== "1001" && e?.error !== "1001") {
+                if (!isNativeAppleSignInCanceled(e)) {
                   toast.error(e?.message ?? "Apple sign-in failed");
                 }
               }

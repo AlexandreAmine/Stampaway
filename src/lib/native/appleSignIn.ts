@@ -1,4 +1,8 @@
-import { SignInWithApple, type SignInWithAppleResponse } from "@capacitor-community/apple-sign-in";
+import {
+  AppleSignIn,
+  ErrorCode,
+  SignInScope,
+} from "@capawesome/capacitor-apple-sign-in";
 import { supabase } from "@/integrations/supabase/client";
 import { isIOS, isNative } from "./platform";
 
@@ -16,24 +20,33 @@ import { isIOS, isNative } from "./platform";
  */
 export const canUseNativeAppleSignIn = (): boolean => isNative() && isIOS();
 
+export function isNativeAppleSignInCanceled(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+
+  const nativeError = error as {
+    code?: unknown;
+    error?: unknown;
+  };
+
+  return (
+    nativeError.code === ErrorCode.SignInCanceled ||
+    nativeError.code === "1001" ||
+    nativeError.code === 1001 ||
+    nativeError.error === "1001" ||
+    nativeError.error === 1001
+  );
+}
+
 export async function nativeAppleSignIn() {
-  const res: SignInWithAppleResponse = await SignInWithApple.authorize({
-    // iOS bundle id — used by Apple as the audience (`aud`) claim of the JWT.
-    // Supabase's Apple provider must list this id as an allowed audience.
-    clientId: "com.alexandreamine.stampaway",
-    // Required field on the plugin, but ignored on device — the native sheet
-    // does not perform a redirect. We use the web callback URL for consistency.
-    redirectURI: "https://account.stampaway-app.com/auth/callback",
-    scopes: "email name",
-    state: crypto.randomUUID(),
+  const result = await AppleSignIn.signIn({
+    scopes: [SignInScope.Email, SignInScope.FullName],
   });
 
-  const idToken = res.response.identityToken;
-  if (!idToken) throw new Error("Apple did not return an identity token");
+  if (!result.idToken) throw new Error("Apple did not return an identity token");
 
   const { data, error } = await supabase.auth.signInWithIdToken({
     provider: "apple",
-    token: idToken,
+    token: result.idToken,
   });
   if (error) throw error;
   return data;
