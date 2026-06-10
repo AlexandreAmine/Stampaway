@@ -145,6 +145,55 @@ export default function AuthPage() {
     }
   };
 
+  const handleOtpChange = (
+    index: number,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const inputEvent = e.nativeEvent as InputEvent;
+    const rawDigits = e.currentTarget.value.replace(/\D/g, "");
+    const insertedDigits = inputEvent.data?.replace(/\D/g, "") ?? "";
+
+    if (
+      inputEvent.inputType === "insertText" &&
+      inputEvent.data &&
+      insertedDigits.length === 0
+    ) {
+      return;
+    }
+
+    const isSingleDigitTyping =
+      inputEvent.inputType === "insertText" &&
+      insertedDigits.length === 1;
+
+    const autoFillDigits =
+      insertedDigits.length > 1 ? insertedDigits : rawDigits;
+
+    if (autoFillDigits.length > 1 && !isSingleDigitTyping) {
+      const fullCode = autoFillDigits.slice(0, 6);
+      setOtpCode(fullCode);
+
+      const inputs =
+        e.currentTarget.parentElement?.querySelectorAll("input");
+      const focusIndex = Math.min(fullCode.length, 5);
+      (inputs?.[focusIndex] as HTMLInputElement | undefined)?.focus();
+      return;
+    }
+
+    const digit = isSingleDigitTyping
+      ? insertedDigits
+      : rawDigits.slice(-1);
+
+    setOtpCode((current) => {
+      const nextCode = current.split("");
+      nextCode[index] = digit;
+      return nextCode.join("").slice(0, 6);
+    });
+
+    if (digit && e.currentTarget.nextElementSibling) {
+      (e.currentTarget.nextElementSibling as HTMLInputElement).focus();
+    }
+  };
+
   const handleVerifyOtp = async () => {
     if (otpCode.length !== 6) return;
     setSubmitting(true);
@@ -228,17 +277,10 @@ export default function AuthPage() {
                     key={i}
                     type="text"
                     inputMode="numeric"
-                    maxLength={1}
+                    autoComplete="one-time-code"
+                    maxLength={6}
                     value={otpCode[i] || ""}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, "");
-                      const newCode = otpCode.split("");
-                      newCode[i] = val;
-                      setOtpCode(newCode.join("").slice(0, 6));
-                      if (val && e.target.nextElementSibling) {
-                        (e.target.nextElementSibling as HTMLInputElement).focus();
-                      }
-                    }}
+                    onChange={(e) => handleOtpChange(i, e)}
                     onPaste={handleOtpPaste}
                     onKeyDown={(e) => {
                       if (e.key === "Backspace" && !otpCode[i] && e.currentTarget.previousElementSibling) {
@@ -284,17 +326,10 @@ export default function AuthPage() {
                     key={i}
                     type="text"
                     inputMode="numeric"
-                    maxLength={1}
+                    autoComplete="one-time-code"
+                    maxLength={6}
                     value={otpCode[i] || ""}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, "");
-                      const newCode = otpCode.split("");
-                      newCode[i] = val;
-                      setOtpCode(newCode.join("").slice(0, 6));
-                      if (val && e.target.nextElementSibling) {
-                        (e.target.nextElementSibling as HTMLInputElement).focus();
-                      }
-                    }}
+                    onChange={(e) => handleOtpChange(i, e)}
                     onPaste={handleOtpPaste}
                     onKeyDown={(e) => {
                       if (e.key === "Backspace" && !otpCode[i] && e.currentTarget.previousElementSibling) {
