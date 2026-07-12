@@ -60,7 +60,7 @@ export function ReviewsTab({ userId }: { userId?: string }) {
     return (
       <div className="space-y-3 pt-2">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="h-32 bg-muted/40 rounded-xl animate-pulse" />
+          <div key={i} className="h-32 bg-muted/40 rounded-xl skeleton-shimmer" />
         ))}
       </div>
     );

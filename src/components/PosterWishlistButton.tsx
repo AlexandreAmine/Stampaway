@@ -12,6 +12,7 @@ import {
   syncWishlistCacheUser,
 } from "@/lib/wishlistCache";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
+import { hapticLight } from "@/lib/haptics";
 
 interface PosterWishlistButtonProps {
   placeId: string;
@@ -53,23 +54,27 @@ export function PosterWishlistButton({ placeId, placeName }: PosterWishlistButto
     e.preventDefault();
     if (!userId || toggling) return;
     setToggling(true);
+    const wasInWishlist = inWishlist;
+
+    // Optimistic: flip the bookmark immediately, revert if the write fails.
+    hapticLight();
+    setInWishlist(!wasInWishlist);
+    setCachedWishlistStatus(userId, placeId, !wasInWishlist);
+    if (!wasInWishlist) {
+      toast.success(`${placeName} added to wishlist`, { duration: 2000 });
+    }
+
     try {
-      if (inWishlist) {
-        const { error } = await supabase.from("wishlists").delete().eq("user_id", userId).eq("place_id", placeId);
-        if (error) throw error;
-        setInWishlist(false);
-        setCachedWishlistStatus(userId, placeId, false);
-        invalidateOwnProfileContentCache(userId);
-      } else {
-        const { error } = await supabase.from("wishlists").insert({ user_id: userId, place_id: placeId });
-        if (error) throw error;
-        setInWishlist(true);
-        setCachedWishlistStatus(userId, placeId, true);
-        invalidateOwnProfileContentCache(userId);
-        toast.success(`${placeName} added to wishlist`, { duration: 2000 });
-      }
+      const { error } = wasInWishlist
+        ? await supabase.from("wishlists").delete().eq("user_id", userId).eq("place_id", placeId)
+        : await supabase.from("wishlists").insert({ user_id: userId, place_id: placeId });
+      if (error) throw error;
+      invalidateOwnProfileContentCache(userId);
     } catch (error) {
       console.error("Wishlist toggle failed:", error);
+      // Revert the optimistic flip
+      setInWishlist(wasInWishlist);
+      setCachedWishlistStatus(userId, placeId, wasInWishlist);
     } finally {
       setToggling(false);
     }

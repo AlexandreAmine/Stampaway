@@ -1,6 +1,8 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { SplashScreen } from "@capacitor/splash-screen";
+import { isNative } from "@/lib/native/platform";
 
 const PASSWORD_RESET_LOCK_KEY = "traveld.password-reset-lock";
 
@@ -28,7 +30,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return window.localStorage.getItem(PASSWORD_RESET_LOCK_KEY) === "true";
   });
 
-  const fetchProfile = async (userId: string) => {
+  // Both onAuthStateChange and getSession fire at startup; this ref makes
+  // sure we only fetch the profile once per user unless a refresh is forced.
+  const profileFetchedForRef = useRef<string | null>(null);
+
+  const fetchProfile = async (userId: string, options?: { force?: boolean }) => {
+    if (!options?.force && profileFetchedForRef.current === userId) return;
+    profileFetchedForRef.current = userId;
     const { data } = await supabase
       .from("profiles")
       .select("username, profile_picture, needs_username")
@@ -38,7 +46,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshProfile = async () => {
-    if (user) await fetchProfile(user.id);
+    if (user) await fetchProfile(user.id, { force: true });
+  };
+
+  // Native splash stays up (launchAutoHide: false) until auth state is
+  // resolved, so users never see a blank screen between splash and app.
+  const splashHiddenRef = useRef(false);
+  const hideSplash = () => {
+    if (splashHiddenRef.current || !isNative()) return;
+    splashHiddenRef.current = true;
+    // Smooth dissolve into the app instead of a hard cut
+    SplashScreen.hide({ fadeOutDuration: 300 }).catch(() => {});
   };
 
   const setPasswordResetLock = (locked: boolean) => {
@@ -55,16 +73,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // Safety net: never leave the native splash stuck if auth resolution hangs.
+    const splashTimeout = window.setTimeout(hideSplash, 6000);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
         setTimeout(() => fetchProfile(session.user.id), 0);
       } else {
+        profileFetchedForRef.current = null;
         setProfile(null);
         setPasswordResetLock(false);
       }
       setLoading(false);
+      hideSplash();
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -73,10 +96,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (session?.user) {
         fetchProfile(session.user.id);
       } else {
+        profileFetchedForRef.current = null;
         setProfile(null);
         setPasswordResetLock(false);
       }
       setLoading(false);
+      hideSplash();
     });
 
     const handleStorage = (event: StorageEvent) => {
@@ -90,11 +115,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     return () => {
+      window.clearTimeout(splashTimeout);
       subscription.unsubscribe();
       if (typeof window !== "undefined") {
         window.removeEventListener("storage", handleStorage);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const beginPasswordReset = () => {
@@ -110,8 +137,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const value = useMemo(
+    () => ({ session, user, profile, loading, mustCompletePasswordReset, beginPasswordReset, completePasswordReset, refreshProfile, signOut }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [session, user, profile, loading, mustCompletePasswordReset]
+  );
+
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, mustCompletePasswordReset, beginPasswordReset, completePasswordReset, refreshProfile, signOut }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

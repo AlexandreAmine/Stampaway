@@ -3,6 +3,7 @@ import { Search, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { DestinationPoster } from "@/components/DestinationPoster";
+import { useSheetTransition } from "@/hooks/useSheetTransition";
 
 interface FavoritePickerProps {
   open: boolean;
@@ -22,6 +23,7 @@ export function FavoritePicker({ open, onClose, type, onSelect }: FavoritePicker
   const [query, setQuery] = useState("");
   const [places, setPlaces] = useState<PlaceOption[]>([]);
   const [loading, setLoading] = useState(false);
+  const { closing, requestClose } = useSheetTransition(open, onClose);
 
   useEffect(() => {
     if (!open) {
@@ -55,8 +57,8 @@ export function FavoritePicker({ open, onClose, type, onSelect }: FavoritePicker
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
+        animate={{ opacity: closing ? 0 : 1 }}
+        transition={{ duration: 0.2 }}
         className="fixed inset-0 z-50 bg-background/95 flex flex-col"
       >
         <div className="max-w-lg mx-auto w-full flex flex-col h-full">
@@ -64,7 +66,7 @@ export function FavoritePicker({ open, onClose, type, onSelect }: FavoritePicker
             <h2 className="text-lg font-bold text-foreground">
               Select a {type === "city" ? "City" : "Country"}
             </h2>
-            <button onClick={onClose} className="p-2">
+            <button onClick={requestClose} className="p-2">
               <X className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
@@ -75,6 +77,8 @@ export function FavoritePicker({ open, onClose, type, onSelect }: FavoritePicker
               <input
                 autoFocus
                 type="text"
+                enterKeyHint="search"
+                autoCorrect="off"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={`Search ${type === "city" ? "cities" : "countries"}...`}
@@ -90,7 +94,7 @@ export function FavoritePicker({ open, onClose, type, onSelect }: FavoritePicker
                   key={place.id}
                   onClick={() => {
                     onSelect(place.id, place.name, place.image, place.country);
-                    onClose();
+                    requestClose();
                   }}
                   className="aspect-[3/4] w-full"
                 >

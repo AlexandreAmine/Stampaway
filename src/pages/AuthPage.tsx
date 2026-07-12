@@ -310,7 +310,7 @@ export default function AuthPage() {
               <p className="text-xs text-muted-foreground mb-4">{t("auth.forgotDesc")}</p>
 
               <form onSubmit={handleForgotPassword} className="space-y-4">
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth.email")} required className={inputClass} />
+                <input type="email" autoComplete="email" enterKeyHint="send" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth.email")} required className={inputClass} />
                 <button type="submit" disabled={submitting} className={btnClass}>
                   {submitting ? "..." : t("auth.sendCode")}
                 </button>
@@ -354,8 +354,8 @@ export default function AuthPage() {
             <motion.div key="resetPw" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <p className="text-sm font-medium text-foreground mb-4">{t("auth.setNewPassword")}</p>
               <form onSubmit={handleSetNewPassword} className="space-y-4">
-                <PasswordInput value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={t("settings.newPassword")} required minLength={6} className={`${inputClass} pr-10`} />
-                <PasswordInput value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} placeholder={t("settings.confirmPassword")} required minLength={6} className={`${inputClass} pr-10`} />
+                <PasswordInput autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder={t("settings.newPassword")} required minLength={6} className={`${inputClass} pr-10`} />
+                <PasswordInput autoComplete="new-password" enterKeyHint="done" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} placeholder={t("settings.confirmPassword")} required minLength={6} className={`${inputClass} pr-10`} />
                 <button type="submit" disabled={submitting} className={btnClass}>
                   {submitting ? "..." : t("settings.updatePassword")}
                 </button>
@@ -367,12 +367,12 @@ export default function AuthPage() {
             <motion.div key="form" initial={{ opacity: 0, x: 0 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
               <form onSubmit={mode === "login" ? handleSignIn : handleSignUp} className="space-y-4">
                 {mode === "signup" && (
-                  <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t("auth.username")} className={inputClass} />
+                  <input type="text" autoComplete="username" autoCapitalize="none" value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t("auth.username")} className={inputClass} />
                 )}
 
-                <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth.email")} required className={inputClass} />
+                <input type="email" autoComplete="email" enterKeyHint="next" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t("auth.email")} required className={inputClass} />
 
-                <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t("auth.password")} required minLength={6} className={`${inputClass} pr-10`} />
+                <PasswordInput autoComplete={mode === "login" ? "current-password" : "new-password"} enterKeyHint="done" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t("auth.password")} required minLength={6} className={`${inputClass} pr-10`} />
 
 
                 {mode === "login" && (

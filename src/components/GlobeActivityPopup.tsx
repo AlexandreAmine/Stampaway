@@ -1,3 +1,4 @@
+import { fallbackAvatarUrl } from "@/lib/avatarFallback";
 import { useState, useEffect } from "react";
 import { Star, Calendar, Clock, MessageSquare, X, Users } from "lucide-react";
 import { getFlagEmoji } from "@/lib/countryFlags";
@@ -47,50 +48,62 @@ export function GlobeActivityPopup({ activity, onClose, onNavigate, onProfileNav
 
   useEffect(() => {
     if (!activity) { setTaggedPeople([]); setComments([]); return; }
+    let cancelled = false;
 
-    // Fetch tagged people
+    // Tags and comments in parallel, then one combined profiles lookup
     (async () => {
-      const { data: tags } = await supabase
-        .from("review_tags")
-        .select("tagged_user_id")
-        .eq("review_id", activity.id);
-      if (tags && tags.length > 0) {
-        const { data: profiles } = await supabase
+      const [{ data: tags }, { data: cmts }] = await Promise.all([
+        supabase
+          .from("review_tags")
+          .select("tagged_user_id")
+          .eq("review_id", activity.id),
+        supabase
+          .from("review_comments")
+          .select("id, comment_text, user_id")
+          .eq("review_id", activity.id)
+          .order("created_at", { ascending: true })
+          .limit(3),
+      ]);
+
+      const userIds = [
+        ...new Set([
+          ...(tags || []).map(t => t.tagged_user_id),
+          ...(cmts || []).map(c => c.user_id),
+        ]),
+      ];
+      let profiles: { user_id: string; username: string; profile_picture: string | null }[] = [];
+      if (userIds.length > 0) {
+        const { data } = await supabase
           .from("profiles")
           .select("user_id, username, profile_picture")
-          .in("user_id", tags.map(t => t.tagged_user_id));
-        setTaggedPeople((profiles || []).map(p => ({ username: p.username, profile_picture: p.profile_picture })));
-      } else {
-        setTaggedPeople([]);
+          .in("user_id", userIds);
+        profiles = data || [];
       }
+      if (cancelled) return;
+
+      const pMap = new Map(profiles.map(p => [p.user_id, p]));
+      setTaggedPeople(
+        (tags || [])
+          .map(t => pMap.get(t.tagged_user_id))
+          .filter((p): p is NonNullable<typeof p> => !!p)
+          .map(p => ({ username: p.username, profile_picture: p.profile_picture }))
+      );
+      setComments(
+        (cmts || []).map(c => ({
+          id: c.id,
+          comment_text: c.comment_text,
+          username: pMap.get(c.user_id)?.username || "User",
+        }))
+      );
     })();
 
-    // Fetch comments
-    (async () => {
-      const { data: cmts } = await supabase
-        .from("review_comments")
-        .select("id, comment_text, user_id")
-        .eq("review_id", activity.id)
-        .order("created_at", { ascending: true })
-        .limit(3);
-      if (cmts && cmts.length > 0) {
-        const userIds = [...new Set(cmts.map(c => c.user_id))];
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("user_id, username")
-          .in("user_id", userIds);
-        const pMap = new Map((profiles || []).map(p => [p.user_id, p.username]));
-        setComments(cmts.map(c => ({ id: c.id, comment_text: c.comment_text, username: pMap.get(c.user_id) || "User" })));
-      } else {
-        setComments([]);
-      }
-    })();
+    return () => { cancelled = true; };
   }, [activity?.id]);
 
   if (!activity) return null;
 
   const flag = getFlagEmoji(activity.place_country);
-  const avatarUrl = activity.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(activity.username)}&background=3B82F6&color=fff&size=40`;
+  const avatarUrl = activity.profile_picture || fallbackAvatarUrl(activity.username);
 
   return (
     <AnimatePresence mode="wait">

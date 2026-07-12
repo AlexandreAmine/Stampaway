@@ -1,4 +1,6 @@
+import { fallbackAvatarUrl } from "@/lib/avatarFallback";
 import { useState, useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Users, List, MessageSquare, Bookmark, Plus, BarChart3, Pencil } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -10,6 +12,7 @@ import { StarRating } from "@/components/StarRating";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getFlagUrl } from "@/lib/countryFlags";
 import { getDestinationPosterOverride } from "@/lib/countryPosterOverrides";
+import { sizedPosterUrl } from "@/lib/imageSizing";
 import { CountryFacts } from "@/components/CountryFacts";
 import { CityFacts } from "@/components/CityFacts";
 import { toast } from "sonner";
@@ -18,7 +21,9 @@ import { dedupeByNewest } from "@/lib/reviewDedup";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
 import { setCachedWishlistStatus } from "@/lib/wishlistCache";
+import { placePrimaryQueryKey, fetchPlacePrimary } from "@/lib/placePrimaryQuery";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
+import { hapticLight } from "@/lib/haptics";
 
 interface PlaceData {
   id: string;
@@ -40,6 +45,7 @@ export default function PlacePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { t, language } = useLanguage();
+  const queryClient = useQueryClient();
 
   const [place, setPlace] = useState<PlaceData | null>(null);
   const [description, setDescription] = useState("");
@@ -76,25 +82,17 @@ export default function PlacePage() {
     currentFetchContextRef.current.language === context.language
   );
 
-  useEffect(() => {
-    if (id) fetchAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id, user, language]);
+  // Tracks which (placeData, stats, language) combination the expensive
+  // follow-up work (description + secondary fetches) already ran for, so
+  // light cache updates (e.g. wishlist toggle) don't re-trigger it.
+  const lastAppliedRef = useRef<{ placeData: any; stats: any; language: string } | null>(null);
 
-  const fetchAll = async () => {
-    if (!id) return;
-    const requestContext: PlaceFetchContext = {
-      requestId: placeFetchRequestIdRef.current + 1,
-      placeId: id,
-      userId: user?.id ?? null,
-      language,
-    };
-    placeFetchRequestIdRef.current = requestContext.requestId;
+  // Reset all per-place state when navigating to a different place so data
+  // from a previously viewed place (e.g. country) doesn't leak into the new
+  // page (e.g. one of its cities). Runs before the apply-effect below.
+  useEffect(() => {
     setLoading(true);
     setSecondaryLoaded(false);
-
-    // Reset all per-place state so data from a previously viewed place
-    // (e.g. country) doesn't leak into the new page (e.g. one of its cities)
     setPlace(null);
     setDescription("");
     setAvgRating(0);
@@ -109,82 +107,81 @@ export default function PlacePage() {
     setCountryCities([]);
     setWishlistCities([]);
     setInWishlist(false);
+    lastAppliedRef.current = null;
+  }, [id, user?.id]);
 
-    // Fetch place
-    const { data: placeData } = await supabase.from("places").select("*").eq("id", requestContext.placeId).maybeSingle();
-    if (!isCurrentPlaceFetch(requestContext)) return;
+  // Primary place data, cached by React Query: navigating back to a place
+  // renders instantly from cache while a background refetch keeps it fresh.
+  // The fetch lives in lib/placePrimaryQuery so cards can prefetch it on
+  // touchstart before navigation even starts.
+  const primaryQuery = useQuery({
+    queryKey: placePrimaryQueryKey(id ?? null, user?.id ?? null),
+    enabled: !!id,
+    queryFn: () => fetchPlacePrimary(id!, user?.id ?? null),
+  });
+
+  useEffect(() => {
+    const data = primaryQuery.data;
+    if (!data) return;
+
+    const placeData = data.placeData;
     if (!placeData) { setLoading(false); return; }
     setPlace(placeData);
+    setInWishlist(data.nextInWishlist);
 
-    // Fetch description - use DB description first, fallback to Wikipedia
-    void fetchDescription(placeData.name, placeData.type, placeData.country, (placeData as any).description, requestContext);
-
-    const fetchWishlistStatus = async () => {
-      if (!requestContext.userId) return false;
-      const { data } = await supabase
-        .from("wishlists")
-        .select("id")
-        .eq("user_id", requestContext.userId)
-        .eq("place_id", requestContext.placeId)
-        .maybeSingle();
-      return !!data;
-    };
-
-    const [nextInWishlist, reviewsResult, listItemsResult] = await Promise.all([
-      fetchWishlistStatus(),
-      supabase
-        .from("reviews")
-        .select("id, rating, user_id, review_text, liked, created_at, visit_year, visit_month, duration_days")
-        .eq("place_id", requestContext.placeId),
-      supabase
-        .from("list_items")
-        .select("list_id, lists!inner(id)")
-        .eq("place_id", requestContext.placeId),
-    ]);
-    if (!isCurrentPlaceFetch(requestContext)) return;
-
-    setInWishlist(nextInWishlist);
-    const reviews = reviewsResult.data || [];
-
-    // Written reviews with profiles
-    const written = reviews.filter((r) => r.review_text && r.review_text.trim() !== "");
-    setWrittenReviewsCount(written.length);
-
-    // Unique visitors (newest visit date per user, fallback to most recent created_at)
-    const uniqueReviews = dedupeByNewest(reviews, (r) => r.user_id);
-    const uniqueVisitorIds = uniqueReviews.map((r) => r.user_id);
-    setVisitorsCount(uniqueVisitorIds.length);
-    // ratingsCount set below after filtering
+    // Server-aggregated stats (same dedup semantics as reviewDedup.ts)
+    const stats = data.stats;
+    setWrittenReviewsCount(Number(stats?.written_reviews_count ?? 0));
+    setVisitorsCount(Number(stats?.visitors_count ?? 0));
+    setRatingsCount(Number(stats?.ratings_count ?? 0));
+    if (stats?.avg_rating != null) {
+      setAvgRating(Math.round(Number(stats.avg_rating) * 10) / 10);
+    } else {
+      setAvgRating(0);
+    }
+    setDistribution(
+      Array.isArray(stats?.distribution) && stats.distribution.length === 10
+        ? stats.distribution.map(Number)
+        : Array(10).fill(0)
+    );
 
     // My review (newest visit date)
-    if (requestContext.userId) {
-      const myReviews = reviews.filter((r) => r.user_id === requestContext.userId);
-      const newest = dedupeByNewest(myReviews, (r) => r.user_id);
+    if (user?.id) {
+      const newest = dedupeByNewest(data.myReviews, (r) => r.user_id);
       setMyReview(newest[0] || null);
+    } else {
+      setMyReview(null);
     }
 
-    // Average & distribution - use one review per user (newest date)
-    const ratedReviews = uniqueReviews.filter((r) => r.rating !== null && r.rating !== undefined);
-    if (ratedReviews.length > 0) {
-      const sum = ratedReviews.reduce((a, r) => a + Number(r.rating), 0);
-      setAvgRating(Math.round((sum / ratedReviews.length) * 10) / 10);
-
-      const dist = Array(10).fill(0);
-      ratedReviews.forEach((r) => {
-        const idx = Math.round(Number(r.rating) * 2) - 1;
-        if (idx >= 0 && idx < 10) dist[idx]++;
-      });
-      setDistribution(dist);
-    }
-    setRatingsCount(ratedReviews.length);
-
-    setListsCount(listItemsResult.data?.length || 0);
-
+    setListsCount(data.listItemsCount);
     setLoading(false);
-    void fetchSecondaryPlaceData(placeData, reviews, requestContext);
-  };
 
-  const fetchSecondaryPlaceData = async (placeData: PlaceData, reviews: any[], requestContext: PlaceFetchContext) => {
+    // Description + secondary data only when the underlying place/stats
+    // (or language) actually changed — not on light cache updates.
+    const last = lastAppliedRef.current;
+    const heavyChanged =
+      !last ||
+      last.placeData !== placeData ||
+      last.stats !== stats ||
+      last.language !== language;
+    lastAppliedRef.current = { placeData, stats, language };
+
+    if (heavyChanged) {
+      const requestContext: PlaceFetchContext = {
+        requestId: ++placeFetchRequestIdRef.current,
+        placeId: placeData.id,
+        userId: user?.id ?? null,
+        language,
+      };
+      setSecondaryLoaded(false);
+      // Fetch description - use DB description first, fallback to Wikipedia
+      void fetchDescription(placeData.name, placeData.type, placeData.country, (placeData as any).description, requestContext);
+      void fetchSecondaryPlaceData(placeData, requestContext);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [primaryQuery.data, user?.id, language]);
+
+  const fetchSecondaryPlaceData = async (placeData: PlaceData, requestContext: PlaceFetchContext) => {
     try {
       const fetchFriendSocialData = async () => {
         if (!requestContext.userId) {
@@ -202,10 +199,17 @@ export default function PlacePage() {
           return { friendVisitors: [] as any[], friendWishlist: [] as any[] };
         }
 
-        const followingIdSet = new Set(followingIds);
+        // Fetch only the friends' reviews of this place (the primary fetch
+        // no longer downloads every review row of the place).
+        const { data: friendRevs } = await supabase
+          .from("reviews")
+          .select("id, rating, user_id, review_text, liked, created_at, visit_year, visit_month, duration_days")
+          .eq("place_id", requestContext.placeId)
+          .in("user_id", followingIds);
+        if (!isCurrentPlaceFetch(requestContext)) return null;
+
         const friendReviewsByUser = new Map<string, any>();
-        reviews.forEach((r) => {
-          if (!followingIdSet.has(r.user_id)) return;
+        (friendRevs || []).forEach((r) => {
           const existing = friendReviewsByUser.get(r.user_id);
           if (!existing || new Date(r.created_at) > new Date(existing.created_at)) {
             friendReviewsByUser.set(r.user_id, r);
@@ -388,25 +392,31 @@ export default function PlacePage() {
   const toggleWishlist = async () => {
     if (!user || !id || togglingWishlist) return;
     setTogglingWishlist(true);
-    if (inWishlist) {
-      const { error } = await supabase.from("wishlists").delete().eq("user_id", user.id).eq("place_id", id);
-      if (error) {
-        setTogglingWishlist(false);
-        return;
-      }
-      setInWishlist(false);
-      setCachedWishlistStatus(user.id, id, false);
-      invalidateOwnProfileContentCache(user.id);
-    } else {
-      const { error } = await supabase.from("wishlists").insert({ user_id: user.id, place_id: id });
-      if (error) {
-        setTogglingWishlist(false);
-        return;
-      }
-      setInWishlist(true);
-      setCachedWishlistStatus(user.id, id, true);
-      invalidateOwnProfileContentCache(user.id);
+    const wasInWishlist = inWishlist;
+    const next = !wasInWishlist;
+
+    // Optimistic: flip the button immediately, revert if the write fails.
+    hapticLight();
+    const applyWishlistState = (value: boolean) => {
+      setInWishlist(value);
+      setCachedWishlistStatus(user.id, id, value);
+      queryClient.setQueryData(["place-primary", id, user.id], (old: any) =>
+        old ? { ...old, nextInWishlist: value } : old
+      );
+    };
+    applyWishlistState(next);
+    if (next) {
       toast.success(`${place?.name} added to wishlist`, { duration: 2000 });
+    }
+
+    const { error } = wasInWishlist
+      ? await supabase.from("wishlists").delete().eq("user_id", user.id).eq("place_id", id)
+      : await supabase.from("wishlists").insert({ user_id: user.id, place_id: id });
+
+    if (error) {
+      applyWishlistState(wasInWishlist);
+    } else {
+      invalidateOwnProfileContentCache(user.id);
     }
     setTogglingWishlist(false);
   };
@@ -418,12 +428,12 @@ export default function PlacePage() {
     return (
       <div className="min-h-screen bg-background pt-12 px-5 max-w-lg mx-auto">
         <div className="space-y-4">
-          <div className="aspect-[3/4] w-full max-w-[240px] mx-auto bg-muted/40 rounded-xl animate-pulse" />
-          <div className="h-7 w-2/3 mx-auto bg-muted/40 rounded animate-pulse" />
-          <div className="h-4 w-1/3 mx-auto bg-muted/40 rounded animate-pulse" />
+          <div className="aspect-[3/4] w-full max-w-[240px] mx-auto bg-muted/40 rounded-xl skeleton-shimmer" />
+          <div className="h-7 w-2/3 mx-auto bg-muted/40 rounded skeleton-shimmer" />
+          <div className="h-4 w-1/3 mx-auto bg-muted/40 rounded skeleton-shimmer" />
           <div className="grid grid-cols-3 gap-3 mt-6">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-16 bg-muted/40 rounded-xl animate-pulse" />
+              <div key={i} className="h-16 bg-muted/40 rounded-xl skeleton-shimmer" />
             ))}
           </div>
         </div>
@@ -440,7 +450,9 @@ export default function PlacePage() {
       {/* Background poster — blurred & faded, matches hero */}
       {placePosterImage && (
         <div className="fixed inset-0 pointer-events-none z-0">
-          <img src={placePosterImage} alt="" aria-hidden className="w-full h-full object-cover opacity-20 blur-2xl scale-110" />
+          {/* Tiny rendition: under blur-2xl + opacity-20 a 100px image is
+              indistinguishable from the full 900x1200 poster */}
+          <img src={sizedPosterUrl(placePosterImage, 100) || placePosterImage} alt="" aria-hidden className="w-full h-full object-cover opacity-20 blur-2xl scale-110" />
           <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/80 to-background" />
         </div>
       )}
@@ -455,6 +467,7 @@ export default function PlacePage() {
           image={placePosterImage}
           autoGenerate
           bare
+          renderWidth={900}
           className="w-full h-full rounded-none"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
@@ -518,7 +531,7 @@ export default function PlacePage() {
         {/* Description */}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>
           {loadingDesc ? (
-            <div className="h-12 bg-card rounded-lg animate-pulse mb-5" />
+            <div className="h-12 bg-card rounded-lg skeleton-shimmer mb-5" />
           ) : description ? (
             <p className="text-xs text-muted-foreground leading-relaxed mb-5">{description}</p>
           ) : null}
@@ -583,7 +596,7 @@ export default function PlacePage() {
                   className="flex-shrink-0 flex items-center gap-1.5 bg-card border border-border rounded-full pl-1 pr-3 py-1"
                 >
                   <Avatar className="w-8 h-8" onClick={(e) => { e.stopPropagation(); navigate(fv.user_id === user?.id ? "/profile" : `/profile/${fv.user_id}`); }}>
-                    <AvatarImage src={fv.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fv.profile?.username || "?")}&background=3B82F6&color=fff`} />
+                    <AvatarImage src={fv.profile?.profile_picture || fallbackAvatarUrl(fv.profile?.username || "?")} />
                     <AvatarFallback>{fv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className="flex items-center gap-0.5">
@@ -612,7 +625,7 @@ export default function PlacePage() {
               {friendWishlist.map((fw: any) => (
                 <button key={fw.user_id} onClick={() => navigate(fw.user_id === user?.id ? "/profile" : `/profile/${fw.user_id}`)}>
                   <Avatar className="w-9 h-9 border-2 border-border">
-                    <AvatarImage src={fw.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(fw.username || "?")}&background=3B82F6&color=fff`} />
+                    <AvatarImage src={fw.profile_picture || fallbackAvatarUrl(fw.username || "?")} />
                     <AvatarFallback>{fw.username?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                 </button>
@@ -729,7 +742,7 @@ export default function PlacePage() {
           }}
           open={editSheetOpen}
           onClose={() => setEditSheetOpen(false)}
-          onSaved={() => fetchAll()}
+          onSaved={() => queryClient.invalidateQueries({ queryKey: ["place-primary", id] })}
         />
       )}
       </div>

@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { X, UserPlus, Heart, Check, XIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,7 +7,9 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { hapticSuccess, hapticMedium, hapticLight } from "@/lib/haptics";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
+import { useSheetTransition } from "@/hooks/useSheetTransition";
 import { formatDistanceToNow } from "date-fns";
 
 interface NotificationsSheetProps {
@@ -28,89 +31,94 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
   const { user } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const [items, setItems] = useState<NotifItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { closing, requestClose } = useSheetTransition(open, onClose);
 
-  useEffect(() => {
-    if (!open || !user) return;
-    fetchAll();
-  }, [open, user]);
+  // Cached by React Query (and persisted): reopening the sheet renders the
+  // last known notifications instantly while a background refetch updates
+  // them in place. isPending is only true on the very first open.
+  const notificationsQuery = useQuery({
+    queryKey: ["notifications", user?.id ?? null],
+    enabled: open && !!user,
+    queryFn: () => fetchAllNotifications(user!.id),
+  });
+  const items = notificationsQuery.data ?? [];
+  const loading = notificationsQuery.isPending;
 
-  const fetchAll = async () => {
-    if (!user) return;
-    setLoading(true);
+  const fetchAllNotifications = async (userId: string): Promise<NotifItem[]> => {
     const allItems: NotifItem[] = [];
 
-    // Recent followers
-    const { data: followers } = await supabase
-      .from("followers")
-      .select("id, follower_id, created_at")
-      .eq("following_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(20);
+    // Stage 1 — independent lookups, all in parallel:
+    // recent followers, follow requests, my review ids, my lists
+    const [{ data: followers }, { data: requests }, { data: myReviews }, { data: myLists }] =
+      await Promise.all([
+        supabase
+          .from("followers")
+          .select("id, follower_id, created_at")
+          .eq("following_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(20),
+        supabase
+          .from("follow_requests")
+          .select("id, requester_id, created_at")
+          .eq("target_id", userId)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("reviews")
+          .select("id, place_id")
+          .eq("user_id", userId),
+        supabase
+          .from("lists")
+          .select("id, name")
+          .eq("user_id", userId),
+      ]);
 
-    // Follow requests
-    const { data: requests } = await supabase
-      .from("follow_requests")
-      .select("id, requester_id, created_at")
-      .eq("target_id", user.id)
-      .order("created_at", { ascending: false });
-
-    // Review likes & comments (on my reviews)
-    const { data: myReviews } = await supabase
-      .from("reviews")
-      .select("id, place_id")
-      .eq("user_id", user.id);
     const myReviewIds = (myReviews || []).map(r => r.id);
     const reviewPlaceMap = new Map((myReviews || []).map(r => [r.id, r.place_id]));
     const placeIds = [...new Set((myReviews || []).map(r => r.place_id))];
-    let placeNameMap = new Map<string, string>();
-    if (placeIds.length > 0) {
-      const { data: pls } = await supabase.from("places").select("id, name").in("id", placeIds);
-      (pls || []).forEach(p => placeNameMap.set(p.id, p.name));
-    }
-
-    let reviewLikes: any[] = [];
-    let reviewComments: any[] = [];
-    if (myReviewIds.length > 0) {
-      const { data } = await supabase
-        .from("review_likes")
-        .select("id, user_id, review_id, created_at")
-        .in("review_id", myReviewIds)
-        .neq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      reviewLikes = data || [];
-
-      const { data: cmts } = await supabase
-        .from("review_comments")
-        .select("id, user_id, review_id, created_at")
-        .in("review_id", myReviewIds)
-        .neq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      reviewComments = cmts || [];
-    }
-
-    // List likes
-    const { data: myLists } = await supabase
-      .from("lists")
-      .select("id, name")
-      .eq("user_id", user.id);
     const myListMap = new Map((myLists || []).map(l => [l.id, l.name]));
     const myListIds = [...myListMap.keys()];
 
-    let listLikes: any[] = [];
-    if (myListIds.length > 0) {
-      const { data } = await supabase
-        .from("list_likes")
-        .select("id, user_id, list_id, created_at")
-        .in("list_id", myListIds)
-        .neq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      listLikes = data || [];
-    }
+    // Stage 2 — everything that depends on stage 1, all in parallel:
+    // place names, likes/comments on my reviews, likes on my lists
+    const [placesRes, reviewLikesRes, reviewCommentsRes, listLikesRes] = await Promise.all([
+      placeIds.length > 0
+        ? supabase.from("places").select("id, name").in("id", placeIds)
+        : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+      myReviewIds.length > 0
+        ? supabase
+            .from("review_likes")
+            .select("id, user_id, review_id, created_at")
+            .in("review_id", myReviewIds)
+            .neq("user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(20)
+        : Promise.resolve({ data: [] as any[] }),
+      myReviewIds.length > 0
+        ? supabase
+            .from("review_comments")
+            .select("id, user_id, review_id, created_at")
+            .in("review_id", myReviewIds)
+            .neq("user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(20)
+        : Promise.resolve({ data: [] as any[] }),
+      myListIds.length > 0
+        ? supabase
+            .from("list_likes")
+            .select("id, user_id, list_id, created_at")
+            .in("list_id", myListIds)
+            .neq("user_id", userId)
+            .order("created_at", { ascending: false })
+            .limit(20)
+        : Promise.resolve({ data: [] as any[] }),
+    ]);
+
+    const placeNameMap = new Map<string, string>();
+    (placesRes.data || []).forEach(p => placeNameMap.set(p.id, p.name));
+    const reviewLikes: any[] = reviewLikesRes.data || [];
+    const reviewComments: any[] = reviewCommentsRes.data || [];
+    const listLikes: any[] = listLikesRes.data || [];
 
     // Collect all user IDs for profiles
     const allUserIds = new Set<string>();
@@ -162,12 +170,12 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });
 
-    setItems(allItems);
-    setLoading(false);
+    return allItems;
   };
 
   const acceptRequest = async (requestId: string, requesterId: string) => {
     if (!user) return;
+    hapticMedium();
     // Add to followers
     const { error } = await supabase.from("followers").insert({ follower_id: requesterId, following_id: user.id });
     if (!error) invalidateOwnProfileContentCache(user.id);
@@ -175,27 +183,31 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
     await supabase.from("follow_requests").delete().eq("id", requestId);
     const profile = items.find(i => i.id === requestId);
     toast.success(`${profile?.username || "User"} started following you`);
-    fetchAll();
+    void queryClient.invalidateQueries({ queryKey: ["notifications"] });
   };
 
   const declineRequest = async (requestId: string) => {
+    hapticLight();
     await supabase.from("follow_requests").delete().eq("id", requestId);
     toast.success("Follow request declined");
-    fetchAll();
+    void queryClient.invalidateQueries({ queryKey: ["notifications"] });
   };
 
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div
-        className="relative bg-card w-full max-w-lg rounded-t-2xl border border-border flex flex-col animate-in slide-in-from-bottom"
+        className={`absolute inset-0 bg-black/60 ${closing ? "animate-out fade-out fill-mode-forwards duration-200" : "animate-in fade-in duration-200"}`}
+        onClick={requestClose}
+      />
+      <div
+        className={`relative bg-card w-full max-w-lg rounded-t-2xl border border-border flex flex-col ${closing ? "animate-out slide-out-to-bottom fill-mode-forwards duration-200" : "animate-in slide-in-from-bottom duration-200"}`}
         style={{ height: "85vh", maxHeight: "85vh" }}
       >
         <div className="bg-card flex items-center justify-between p-4 border-b border-border rounded-t-2xl shrink-0">
           <h2 className="text-lg font-bold text-foreground">Notifications</h2>
-          <button onClick={onClose}><X className="w-5 h-5 text-muted-foreground" /></button>
+          <button onClick={requestClose}><X className="w-5 h-5 text-muted-foreground" /></button>
         </div>
         <div
           className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4"
@@ -204,7 +216,7 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
           {loading ? (
             <div className="space-y-3">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-12 bg-muted/40 rounded-xl animate-pulse" />
+                <div key={i} className="h-12 bg-muted/40 rounded-xl skeleton-shimmer" />
               ))}
             </div>
           ) : items.length === 0 ? (
@@ -215,7 +227,7 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
                 <div key={`${item.type}-${item.id}`} className="flex items-center gap-3">
                   <button onClick={() => { onClose(); navigate(item.userId === user?.id ? "/profile" : `/profile/${item.userId}`); }}>
                     <Avatar className="w-9 h-9">
-                      <AvatarImage src={item.profilePicture || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.username)}&background=3B82F6&color=fff`} />
+                      <AvatarImage src={item.profilePicture || fallbackAvatarUrl(item.username)} />
                       <AvatarFallback>{item.username[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                   </button>

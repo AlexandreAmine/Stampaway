@@ -5,9 +5,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { StarRating } from "@/components/StarRating";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { hapticSuccess, hapticMedium, hapticLight } from "@/lib/haptics";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import { invalidateExploreCache } from "@/lib/exploreCache";
 import { clearRankingsCache } from "@/lib/placeRankings";
+import { useSheetTransition } from "@/hooks/useSheetTransition";
 
 const SUB_CATEGORIES = [
   "Affordability", "Natural Beauty", "Culture & Heritage", "Safety & Security",
@@ -46,6 +48,7 @@ interface DiaryEditSheetProps {
 
 export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheetProps) {
   const { user } = useAuth();
+  const { closing, requestClose } = useSheetTransition(open, onClose);
   const [rating, setRating] = useState(entry.rating ? Number(entry.rating) : 0);
   const [liked, setLiked] = useState(entry.liked);
   const [reviewText, setReviewText] = useState(entry.review_text || "");
@@ -151,37 +154,45 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
       .eq("id", entry.id);
 
     if (!error) {
-      // Update tags: delete all existing, re-insert current
-      await supabase.from("review_tags").delete().eq("review_id", entry.id);
-      if (taggedUsers.length > 0) {
-        await supabase.from("review_tags").insert(
-          taggedUsers.map(t => ({
-            review_id: entry.id,
-            tagged_user_id: t.user_id,
-            tagged_by_user_id: user.id,
-          }))
-        );
-      }
+      // Tags and sub-ratings sync (delete-then-reinsert each) are independent
+      // of each other — run both chains in parallel instead of 4 sequential
+      // round-trips.
+      const syncTags = async () => {
+        await supabase.from("review_tags").delete().eq("review_id", entry.id);
+        if (taggedUsers.length > 0) {
+          await supabase.from("review_tags").insert(
+            taggedUsers.map(t => ({
+              review_id: entry.id,
+              tagged_user_id: t.user_id,
+              tagged_by_user_id: user.id,
+            }))
+          );
+        }
+      };
 
-      // Update sub-ratings: delete all existing, re-insert
-      await supabase.from("review_sub_ratings").delete().eq("review_id", entry.id);
-      const subEntries = Object.entries(subRatings).filter(([, v]) => v > 0);
-      if (subEntries.length > 0) {
-        await supabase.from("review_sub_ratings").insert(
-          subEntries.map(([category, rating]) => ({
-            review_id: entry.id,
-            category,
-            rating,
-          }))
-        );
-      }
+      const syncSubRatings = async () => {
+        await supabase.from("review_sub_ratings").delete().eq("review_id", entry.id);
+        const subEntries = Object.entries(subRatings).filter(([, v]) => v > 0);
+        if (subEntries.length > 0) {
+          await supabase.from("review_sub_ratings").insert(
+            subEntries.map(([category, rating]) => ({
+              review_id: entry.id,
+              category,
+              rating,
+            }))
+          );
+        }
+      };
 
+      await Promise.all([syncTags(), syncSubRatings()]);
+
+      hapticSuccess();
       toast.success("Entry updated");
       invalidateOwnProfileContentCache(user.id);
       clearRankingsCache();
       invalidateExploreCache(user.id);
       onSaved();
-      onClose();
+      requestClose();
     } else {
       toast.error("Failed to update entry");
     }
@@ -192,8 +203,11 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative bg-card w-full max-w-lg rounded-t-2xl border border-border max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom pb-40">
+      <div
+        className={`absolute inset-0 bg-black/60 ${closing ? "animate-out fade-out fill-mode-forwards duration-200" : "animate-in fade-in duration-200"}`}
+        onClick={requestClose}
+      />
+      <div className={`relative bg-card w-full max-w-lg rounded-t-2xl border border-border max-h-[85vh] overflow-y-auto pb-40 ${closing ? "animate-out slide-out-to-bottom fill-mode-forwards duration-200" : "animate-in slide-in-from-bottom duration-200"}`}>
         <div className="sticky top-0 bg-card z-10 flex items-center justify-between p-4 border-b border-border">
           <h2 className="text-lg font-bold text-foreground">Edit Entry</h2>
           <div className="flex items-center gap-3">
@@ -204,7 +218,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
             >
               {saving ? "Saving..." : "Save"}
             </button>
-            <button onClick={onClose}>
+            <button onClick={requestClose}>
               <X className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
@@ -297,6 +311,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
                 <label className="text-xs text-muted-foreground mb-1 block">Duration</label>
                 <input
                   type="number"
+                  inputMode="numeric"
                   value={durationDays}
                   onChange={(e) => setDurationDays(e.target.value ? Number(e.target.value) : "")}
                   placeholder="Days"

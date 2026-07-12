@@ -845,11 +845,66 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_place_avg_ratings: {
+        Args: never
+        Returns: {
+          place_id: string
+          avg_rating: number
+        }[]
+      }
+      get_place_category_averages: {
+        Args: { _categories: string[] }
+        Returns: {
+          place_id: string
+          category: string
+          avg_rating: number
+        }[]
+      }
+      get_place_monthly_visitor_counts: {
+        Args: { _since: string }
+        Returns: {
+          place_id: string
+          visitor_count: number
+        }[]
+      }
       get_place_review_counts: {
         Args: never
         Returns: {
           place_id: string
           review_count: number
+        }[]
+      }
+      get_place_stats: {
+        Args: { _place_id: string }
+        Returns: {
+          visitors_count: number
+          written_reviews_count: number
+          ratings_count: number
+          avg_rating: number
+          distribution: number[]
+        }[]
+      }
+      get_top_liked_lists: {
+        Args: { _limit: number }
+        Returns: {
+          list_id: string
+          like_count: number
+        }[]
+      }
+      get_top_liked_reviews: {
+        Args: { _limit: number }
+        Returns: {
+          review_id: string
+          like_count: number
+        }[]
+      }
+      get_unread_notification_counts: {
+        Args: { _since: string }
+        Returns: {
+          followers_count: number
+          requests_count: number
+          review_likes_count: number
+          list_likes_count: number
         }[]
       }
       get_place_visitor_counts: {

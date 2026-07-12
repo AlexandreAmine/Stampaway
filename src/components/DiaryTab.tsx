@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Trash2, Pencil } from "lucide-react";
@@ -35,30 +36,27 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 export function DiaryTab({ userId }: { userId?: string }) {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [entries, setEntries] = useState<DiaryEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [section, setSection] = useState<"country" | "city">("country");
   const [editingEntry, setEditingEntry] = useState<DiaryEntry | null>(null);
   const targetUserId = userId || user?.id;
   const isOwnProfile = !userId || userId === user?.id;
 
-  useEffect(() => {
-    if (!targetUserId) return;
-    fetchDiary();
-  }, [targetUserId]);
+  // Cached by React Query: reopening this tab renders instantly from the
+  // last known data while a background refetch keeps it fresh.
+  const diaryQuery = useQuery({
+    queryKey: ["diary", targetUserId ?? null],
+    enabled: !!targetUserId,
+    queryFn: async (): Promise<DiaryEntry[]> => {
+      const { data } = await supabase
+        .from("reviews")
+        .select("id, rating, liked, review_text, visit_year, visit_month, duration_days, created_at, places!inner(id, name, country, type, image)")
+        .eq("user_id", targetUserId!)
+        .order("visit_year", { ascending: false, nullsFirst: false })
+        .order("visit_month", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false });
 
-  const fetchDiary = async () => {
-    if (!targetUserId) return;
-    const { data } = await supabase
-      .from("reviews")
-      .select("id, rating, liked, review_text, visit_year, visit_month, duration_days, created_at, places!inner(id, name, country, type, image)")
-      .eq("user_id", targetUserId)
-      .order("visit_year", { ascending: false, nullsFirst: false })
-      .order("visit_month", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false });
-
-    if (data) {
-      const mapped: DiaryEntry[] = data.map((r: any) => ({
+      return (data || []).map((r: any) => ({
         id: r.id,
         rating: r.rating,
         liked: r.liked || false,
@@ -75,10 +73,13 @@ export function DiaryTab({ userId }: { userId?: string }) {
           image: r.places.image,
         },
       }));
-      setEntries(mapped);
-    }
-    setLoading(false);
-  };
+    },
+  });
+  const entries = diaryQuery.data ?? [];
+  const loading = diaryQuery.isPending;
+
+  const refreshDiary = () =>
+    queryClient.invalidateQueries({ queryKey: ["diary", targetUserId ?? null] });
 
   const handleDelete = async (entryId: string) => {
     const { error } = await supabase.from("reviews").delete().eq("id", entryId);
@@ -92,14 +93,16 @@ export function DiaryTab({ userId }: { userId?: string }) {
       clearRankingsCache();
       invalidateExploreCache(user.id);
     }
-    setEntries((prev) => prev.filter((e) => e.id !== entryId));
+    queryClient.setQueryData(["diary", targetUserId ?? null], (old?: DiaryEntry[]) =>
+      (old ?? []).filter((e) => e.id !== entryId)
+    );
   };
 
   if (loading) {
     return (
       <div className="space-y-3 pt-2">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-24 bg-muted/40 rounded-xl animate-pulse" />
+          <div key={i} className="h-24 bg-muted/40 rounded-xl skeleton-shimmer" />
         ))}
       </div>
     );
@@ -228,7 +231,7 @@ export function DiaryTab({ userId }: { userId?: string }) {
           entry={editingEntry}
           open={!!editingEntry}
           onClose={() => setEditingEntry(null)}
-          onSaved={() => fetchDiary()}
+          onSaved={() => void refreshDiary()}
         />
       )}
     </motion.div>

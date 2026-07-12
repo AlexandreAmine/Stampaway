@@ -1,4 +1,6 @@
+import { fallbackAvatarUrl } from "@/lib/avatarFallback";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, ChevronLeft, Settings, Plus, X, UserPlus, UserMinus, Pencil, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
@@ -34,6 +36,8 @@ import { Camera } from "lucide-react";
 import { toast } from "sonner";
 import { ProfilePicturePreview } from "@/components/ProfilePicturePreview";
 import { isNative, Camera as CapCamera, CameraResultType, CameraSource } from "@/lib/native";
+import { hapticMedium } from "@/lib/haptics";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import {
   getFreshOwnProfileContentCache,
   getOwnProfileContentCacheVersion,
@@ -258,10 +262,17 @@ export default function ProfilePage() {
     if (!user || !viewingUserId || togglingFollow) return;
     setTogglingFollow(true);
     if (isFollowing) {
-      const { error } = await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", viewingUserId);
-      if (!error) invalidateOwnProfileContentCache(user.id);
+      // Optimistic: unfollow immediately, revert if the write fails.
+      hapticMedium();
       setIsFollowing(false);
       setFollowersCount((c) => Math.max(0, c - 1));
+      const { error } = await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", viewingUserId);
+      if (error) {
+        setIsFollowing(true);
+        setFollowersCount((c) => c + 1);
+      } else {
+        invalidateOwnProfileContentCache(user.id);
+      }
     } else if (hasPendingRequest) {
       // Cancel request
       await supabase.from("follow_requests").delete().eq("requester_id", user.id).eq("target_id", viewingUserId);
@@ -273,10 +284,17 @@ export default function ProfilePage() {
         await supabase.from("follow_requests").insert({ requester_id: user.id, target_id: viewingUserId });
         setHasPendingRequest(true);
       } else {
-        const { error } = await supabase.from("followers").insert({ follower_id: user.id, following_id: viewingUserId });
-        if (!error) invalidateOwnProfileContentCache(user.id);
+        // Optimistic: follow immediately, revert if the write fails.
+        hapticMedium();
         setIsFollowing(true);
         setFollowersCount((c) => c + 1);
+        const { error } = await supabase.from("followers").insert({ follower_id: user.id, following_id: viewingUserId });
+        if (error) {
+          setIsFollowing(false);
+          setFollowersCount((c) => Math.max(0, c - 1));
+        } else {
+          invalidateOwnProfileContentCache(user.id);
+        }
       }
     }
     setTogglingFollow(false);
@@ -284,7 +302,7 @@ export default function ProfilePage() {
 
   const currentProfile = isOwnProfile ? (ownProfileFull || profile) : viewedProfile;
   const displayName = currentProfile?.username || "User";
-  const avatarUrl = currentProfile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=3B82F6&color=fff`;
+  const avatarUrl = currentProfile?.profile_picture || fallbackAvatarUrl(displayName);
   const profileBio = (currentProfile as any)?.bio as string | null;
   const profileCountry = (currentProfile as any)?.country as string | null;
   const countryList = profileCountry ? profileCountry.split(",").map((s: string) => s.trim()).filter(Boolean) : [];
@@ -297,8 +315,68 @@ export default function ProfilePage() {
     }
   };
 
+  // Other users' profiles: cached by React Query so revisiting a profile
+  // renders instantly while a background refetch keeps it fresh. The own
+  // profile keeps its existing localStorage snapshot cache (fetchData below).
+  const otherProfileQuery = useQuery({
+    queryKey: ["profile-content", viewingUserId ?? null, viewerUserId],
+    enabled: !!viewingUserId && !isOwnProfile,
+    queryFn: async () => {
+      const uid = viewingUserId!;
+      const [favRes, reviewRes, listRes, wishRes, followingRes, followersRes, totalCountriesRes, likedDestRes, reviewLikesRes, listLikesRes, writtenReviewsRes] = await Promise.all([
+        supabase.from("favorite_places").select("slot_index, place_id, type, places!inner(name, image, country, type)").eq("user_id", uid),
+        supabase.from("reviews").select("rating, place_id, places!inner(type)").eq("user_id", uid),
+        supabase.from("lists").select("id", { count: "exact", head: true }).eq("user_id", uid),
+        supabase.from("wishlists").select("id", { count: "exact", head: true }).eq("user_id", uid),
+        supabase.from("followers").select("id", { count: "exact", head: true }).eq("follower_id", uid),
+        supabase.from("followers").select("id", { count: "exact", head: true }).eq("following_id", uid),
+        supabase.from("places").select("id", { count: "exact", head: true }).eq("type", "country"),
+        supabase.from("reviews").select("place_id, places!inner(type)").eq("user_id", uid).eq("liked", true),
+        supabase.from("review_likes").select("id", { count: "exact", head: true }).eq("user_id", uid),
+        supabase.from("list_likes").select("id", { count: "exact", head: true }).eq("user_id", uid),
+        supabase.from("reviews").select("id", { count: "exact", head: true }).eq("user_id", uid).not("review_text", "is", null).neq("review_text", ""),
+      ]);
+
+      const core = buildProfileCoreSnapshot(
+        favRes.data || [],
+        reviewRes.data || [],
+        {
+          lists: listRes.count || 0,
+          wishlist: wishRes.count || 0,
+          following: followingRes.count || 0,
+          followers: followersRes.count || 0,
+          totalCountries: totalCountriesRes.count || 0,
+          reviewLikes: reviewLikesRes.count || 0,
+          listLikes: listLikesRes.count || 0,
+          writtenReviews: writtenReviewsRes.count || 0,
+        },
+        likedDestRes.data || [],
+      );
+
+      if (viewerUserId) {
+        const [mine, theirs] = await Promise.all([
+          fetchUserMapData(viewerUserId),
+          fetchUserMapData(uid),
+        ]);
+        return { core, mapMine: mine, mapTheirs: theirs };
+      }
+      const theirs = await fetchUserMapData(uid);
+      return { core, mapMine: theirs, mapTheirs: null as UserMapData | null };
+    },
+  });
+
+  useEffect(() => {
+    const snap = otherProfileQuery.data;
+    if (!snap || isOwnProfile) return;
+    applyProfileCoreSnapshot(snap.core);
+    setMapMyData(snap.mapMine);
+    setMapTheirData(snap.mapTheirs);
+  }, [otherProfileQuery.data, isOwnProfile, applyProfileCoreSnapshot]);
+
   const fetchData = useCallback(async () => {
     if (!viewingUserId) return;
+    // Other users' profiles are handled by otherProfileQuery above.
+    if (!isOwnProfile) return;
     const uid = viewingUserId;
     const canUseOwnProfileCache = isOwnProfile && viewerUserId === uid;
     const requestViewerUserId = viewerUserId;
@@ -596,7 +674,7 @@ export default function ProfilePage() {
             onDrop={() => handleDrop(type, i)}
           >
             <button onClick={() => navigate(`/place/${fav.place_id}`)} className="w-full h-full">
-              <DestinationPoster placeId={fav.place_id} name={fav.place_name} country={fav.place_country} type={type} image={fav.place_image} autoGenerate className="w-full h-full" />
+              <DestinationPoster placeId={fav.place_id} name={fav.place_name} country={fav.place_country} type={type} image={fav.place_image} autoGenerate priority className="w-full h-full" />
             </button>
             {isOwnProfile && (
               <button
@@ -677,6 +755,16 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
+      <PullToRefresh
+        onRefresh={async () => {
+          if (isOwnProfile && user?.id) {
+            invalidateOwnProfileContentCache(user.id);
+            await fetchData();
+          } else {
+            await otherProfileQuery.refetch();
+          }
+        }}
+      />
       <div className="pt-14 px-5">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">

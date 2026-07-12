@@ -18,6 +18,11 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Strip console.log from production builds (keeps console.error/warn for
+  // diagnostics). Push/debug logging alone emits dozens of lines per launch.
+  esbuild: {
+    pure: mode === "production" ? ["console.log"] : [],
+  },
   build: {
     // Route-level code splitting (via React.lazy in App.tsx) already keeps
     // the entry small. We intentionally do NOT split vendor libraries into

@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { X, Search } from "lucide-react";
@@ -28,52 +30,53 @@ export function FollowersTab({ userId }: { userId?: string }) {
   const navigate = useNavigate();
   const targetUserId = userId || user?.id;
   const isOwnProfile = !userId || userId === user?.id;
-  const [followers, setFollowers] = useState<FollowerUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [filterQuery, setFilterQuery] = useState("");
   const [pendingRemove, setPendingRemove] = useState<FollowerUser | null>(null);
 
-  useEffect(() => {
-    if (!targetUserId) return;
-    (async () => {
+  // Cached by React Query: reopening this tab renders instantly from the
+  // last known data while a background refetch keeps it fresh.
+  const followersQuery = useQuery({
+    queryKey: ["followers", targetUserId ?? null],
+    enabled: !!targetUserId,
+    queryFn: async (): Promise<FollowerUser[]> => {
       const { data } = await supabase
         .from("followers")
         .select("follower_id")
-        .eq("following_id", targetUserId);
+        .eq("following_id", targetUserId!);
 
-      if (data && data.length > 0) {
-        const ids = data.map((f) => f.follower_id);
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("user_id, username, profile_picture")
-          .in("user_id", ids);
+      if (!data || data.length === 0) return [];
 
-        if (profiles) {
-          setFollowers(profiles.map((p) => ({ id: p.user_id, username: p.username, profile_picture: p.profile_picture })));
-        }
-      } else {
-        setFollowers([]);
-      }
-      setLoading(false);
-    })();
-  }, [targetUserId]);
+      const ids = data.map((f) => f.follower_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, username, profile_picture")
+        .in("user_id", ids);
+
+      return (profiles || []).map((p) => ({ id: p.user_id, username: p.username, profile_picture: p.profile_picture }));
+    },
+  });
+  const followers = followersQuery.data ?? [];
+  const loading = followersQuery.isPending;
 
   const removeFollower = async (followerId: string, username: string) => {
     if (!user) return;
     const { error } = await supabase.from("followers").delete().eq("follower_id", followerId).eq("following_id", user.id);
     if (!error) invalidateOwnProfileContentCache(user.id);
-    setFollowers((prev) => prev.filter((f) => f.id !== followerId));
+    queryClient.setQueryData(["followers", targetUserId ?? null], (old?: FollowerUser[]) =>
+      (old ?? []).filter((f) => f.id !== followerId)
+    );
     toast.success(`${username} removed from followers`);
   };
 
   if (loading) {
     return (
       <div className="space-y-3 pt-2">
-        <div className="h-10 bg-muted/40 rounded-xl animate-pulse" />
+        <div className="h-10 bg-muted/40 rounded-xl skeleton-shimmer" />
         {[...Array(5)].map((_, i) => (
           <div key={i} className="flex items-center gap-3 py-2">
-            <div className="w-8 h-8 rounded-full bg-muted/40 animate-pulse" />
-            <div className="h-3 w-32 bg-muted/40 rounded animate-pulse" />
+            <div className="w-8 h-8 rounded-full bg-muted/40 skeleton-shimmer" />
+            <div className="h-3 w-32 bg-muted/40 rounded skeleton-shimmer" />
           </div>
         ))}
       </div>
@@ -107,7 +110,7 @@ export function FollowersTab({ userId }: { userId?: string }) {
             <div key={f.id} className="flex items-center gap-3 py-2.5 w-full">
               <button onClick={() => navigate(`/profile/${f.id}`)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
                 <img
-                  src={f.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.username)}&background=3B82F6&color=fff&size=32`}
+                  src={f.profile_picture || fallbackAvatarUrl(f.username)}
                   alt={f.username}
                   loading="lazy"
                   decoding="async"

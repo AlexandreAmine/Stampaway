@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { dedupeByNewest } from "@/lib/reviewDedup";
+import { fetchAverageRatingMap, fetchCategoryAverageMap } from "@/lib/placeRankings";
 import { useAuth } from "@/contexts/AuthContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { PosterWishlistButton } from "@/components/PosterWishlistButton";
@@ -65,59 +67,51 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
   const [cities, setCities] = useState<LikedEntry[]>([]);
   const [likedReviews, setLikedReviews] = useState<any[]>([]);
   const [likedLists, setLikedLists] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [destSort, setDestSort] = useState<DestSort>("your-highest");
   const [selectedCategory, setSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
   const [avgSelectedCategory, setAvgSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
   const [grouped, setGrouped] = useState(false);
   const targetUserId = userId || user?.id;
   const isOtherUser = !!userId && userId !== user?.id;
-  const likesFetchRequestIdRef = useRef(0);
-  const currentLikesContextRef = useRef({
-    targetUserId: targetUserId ?? null,
-    viewerUserId: user?.id ?? null,
-  });
-  const lastAppliedLikesContextRef = useRef<{
-    targetUserId: string;
-    viewerUserId: string | null;
-  } | null>(null);
 
-  currentLikesContextRef.current = {
-    targetUserId: targetUserId ?? null,
-    viewerUserId: user?.id ?? null,
-  };
+  // Cached by React Query (per target+viewer key, which replaces the old
+  // manual request-context guards): reopening this tab renders instantly.
+  // Sections stay in local state, synced from the query below, because the
+  // category-sort effects merge extra fields into them.
+  const likesQuery = useQuery({
+    queryKey: ["profile-likes", targetUserId ?? null, user?.id ?? null],
+    enabled: !!targetUserId,
+    queryFn: () => fetchAllLikes(targetUserId!),
+  });
+  const loading = likesQuery.isPending;
 
   useEffect(() => {
-    if (!targetUserId) return;
-    void fetchAll();
-    return () => {
-      likesFetchRequestIdRef.current += 1;
+    const data = likesQuery.data;
+    if (!data) return;
+    // Preserve category ratings merged in by the sort effects below, so a
+    // silent background refetch doesn't reset an active category sort.
+    const mergeCategoryFields = (fresh: LikedEntry[], prev: LikedEntry[]) => {
+      const prevById = new Map(prev.map((e) => [e.id, e]));
+      return fresh.map((entry) => {
+        const old = prevById.get(entry.id);
+        return old
+          ? { ...entry, _catRating: old._catRating, _avgCatRating: old._avgCatRating }
+          : entry;
+      });
     };
-  }, [targetUserId, user?.id]);
+    setCountries((prev) => mergeCategoryFields(data.countries, prev));
+    setCities((prev) => mergeCategoryFields(data.cities, prev));
+    setLikedReviews(data.likedReviews);
+    setLikedLists(data.likedLists);
+  }, [likesQuery.data]);
 
-  const fetchAll = async () => {
-    if (!targetUserId) return;
-    const requestContext = {
-      requestId: likesFetchRequestIdRef.current + 1,
-      targetUserId,
-      viewerUserId: user?.id ?? null,
-    };
-    likesFetchRequestIdRef.current = requestContext.requestId;
-
-    const isCurrentRequest = () => (
-      likesFetchRequestIdRef.current === requestContext.requestId &&
-      currentLikesContextRef.current.targetUserId === requestContext.targetUserId &&
-      currentLikesContextRef.current.viewerUserId === requestContext.viewerUserId
-    );
-
-    setLoading(true);
-
-    try {
+  const fetchAllLikes = async (targetId: string) => {
+    {
       const fetchLikedDestinations = async () => {
         const { data: destData } = await supabase
           .from("reviews")
           .select("id, rating, visit_year, visit_month, duration_days, created_at, places!inner(id, name, country, type, image)")
-          .eq("user_id", requestContext.targetUserId)
+          .eq("user_id", targetId)
           .eq("liked", true)
           .order("created_at", { ascending: false });
         if (!destData) return null;
@@ -134,22 +128,16 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
         // Deduplicate per place - keep newest visit date
         const mapped: LikedEntry[] = dedupeByNewest(allMapped, (m) => m.place.id);
 
-        // Fetch avg ratings
+        // Fetch avg ratings (server-aggregated via RPC, shared cache)
         const placeIds = [...new Set(mapped.map((m) => m.place.id))];
         if (placeIds.length > 0) {
-          const { data: allReviews } = await supabase.from("reviews").select("place_id, rating").in("place_id", placeIds);
-          if (allReviews) {
-            const avgMap: Record<string, { sum: number; count: number }> = {};
-            allReviews.forEach((r: any) => {
-              if (r.rating == null) return;
-              if (!avgMap[r.place_id]) avgMap[r.place_id] = { sum: 0, count: 0 };
-              avgMap[r.place_id].sum += Number(r.rating);
-              avgMap[r.place_id].count++;
-            });
+          try {
+            const avgMap = await fetchAverageRatingMap();
             mapped.forEach((m) => {
-              const a = avgMap[m.place.id];
-              m.avg_rating = a ? a.sum / a.count : undefined;
+              m.avg_rating = avgMap.get(m.place.id);
             });
+          } catch {
+            // Leave avg_rating undefined, matching previous behavior on failure
           }
         }
 
@@ -163,7 +151,7 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
         const { data: reviewLikes } = await supabase
           .from("review_likes")
           .select("id, review_id")
-          .eq("user_id", requestContext.targetUserId)
+          .eq("user_id", targetId)
           .order("created_at", { ascending: false });
         if (!reviewLikes) return null;
         if (reviewLikes.length === 0) return [] as any[];
@@ -204,7 +192,7 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
         const { data: listLikes } = await supabase
           .from("list_likes")
           .select("id, list_id")
-          .eq("user_id", requestContext.targetUserId)
+          .eq("user_id", targetId)
           .order("created_at", { ascending: false });
         if (!listLikes) return null;
         if (listLikes.length === 0) return [] as any[];
@@ -251,58 +239,12 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
         fetchLikedLists(),
       ]);
 
-      if (!isCurrentRequest()) return;
-
-      const previousContext = lastAppliedLikesContextRef.current;
-      const previousContextMatches = (
-        previousContext?.targetUserId === requestContext.targetUserId &&
-        previousContext.viewerUserId === requestContext.viewerUserId
-      );
-
-      if (destinationResult) {
-        setCountries(destinationResult.countries);
-        setCities(destinationResult.cities);
-      } else if (!previousContextMatches) {
-        setCountries([]);
-        setCities([]);
-      }
-
-      if (reviewResult) {
-        setLikedReviews(reviewResult);
-      } else if (!previousContextMatches) {
-        setLikedReviews([]);
-      }
-
-      if (listResult) {
-        setLikedLists(listResult);
-      } else if (!previousContextMatches) {
-        setLikedLists([]);
-      }
-
-      lastAppliedLikesContextRef.current = {
-        targetUserId: requestContext.targetUserId,
-        viewerUserId: requestContext.viewerUserId,
+      return {
+        countries: destinationResult?.countries ?? [],
+        cities: destinationResult?.cities ?? [],
+        likedReviews: reviewResult ?? [],
+        likedLists: listResult ?? [],
       };
-    } catch (error) {
-      console.error("Failed to load Likes tab:", error);
-      if (!isCurrentRequest()) return;
-
-      const previousContext = lastAppliedLikesContextRef.current;
-      const previousContextMatches = (
-        previousContext?.targetUserId === requestContext.targetUserId &&
-        previousContext.viewerUserId === requestContext.viewerUserId
-      );
-
-      if (!previousContextMatches) {
-        setCountries([]);
-        setCities([]);
-        setLikedReviews([]);
-        setLikedLists([]);
-      }
-    } finally {
-      if (isCurrentRequest()) {
-        setLoading(false);
-      }
     }
   };
 
@@ -336,32 +278,21 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
     })();
   }, [destSort, selectedCategory, currentDestItems.length, targetUserId, activeSection]);
 
-  // Fetch average category ratings for liked destinations (all users)
+  // Fetch average category ratings for liked destinations (all users) —
+  // server-aggregated via RPC, shared cache
   useEffect(() => {
     if (destSort !== "avg-category-highest" || currentDestItems.length === 0) return;
     (async () => {
       const placeIds = currentDestItems.map((p) => p.place.id);
-      const { data: allReviews } = await supabase.from("reviews").select("id, place_id").in("place_id", placeIds);
-      if (!allReviews || allReviews.length === 0) return;
-      const reviewIds = allReviews.map((r) => r.id);
-      const reviewPlaceMap = new Map(allReviews.map((r) => [r.id, r.place_id]));
-      const { data: subRatings } = await supabase
-        .from("review_sub_ratings")
-        .select("review_id, category, rating")
-        .in("review_id", reviewIds)
-        .eq("category", avgSelectedCategory);
-      const catMap: Record<string, { sum: number; count: number }> = {};
-      (subRatings || []).forEach((sr: any) => {
-        const pid = reviewPlaceMap.get(sr.review_id);
-        if (!pid) return;
-        if (!catMap[pid]) catMap[pid] = { sum: 0, count: 0 };
-        catMap[pid].sum += Number(sr.rating);
-        catMap[pid].count++;
-      });
-      setCurrentDestItems((prev) => prev.map((p) => {
-        const a = catMap[p.place.id];
-        return { ...p, _avgCatRating: a ? a.sum / a.count : 0 };
-      }));
+      try {
+        const catMap = await fetchCategoryAverageMap(avgSelectedCategory, placeIds);
+        setCurrentDestItems((prev) => prev.map((p) => ({
+          ...p,
+          _avgCatRating: catMap.get(p.place.id) ?? 0,
+        })));
+      } catch {
+        // Leave existing values, matching previous behavior on failure
+      }
     })();
   }, [destSort, avgSelectedCategory, currentDestItems.length, activeSection]);
 
@@ -399,10 +330,10 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
   if (loading) {
     return (
       <div className="space-y-3 pt-2">
-        <div className="h-9 bg-muted/40 rounded-xl animate-pulse" />
+        <div className="h-9 bg-muted/40 rounded-xl skeleton-shimmer" />
         <div className="grid grid-cols-3 gap-3">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="aspect-[3/4] bg-muted/40 rounded-xl animate-pulse" />
+            <div key={i} className="aspect-[3/4] bg-muted/40 rounded-xl skeleton-shimmer" />
           ))}
         </div>
       </div>

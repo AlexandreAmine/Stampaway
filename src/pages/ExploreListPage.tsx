@@ -191,7 +191,7 @@ export default function ExploreListPage() {
         {loading ? (
           <div className="grid grid-cols-3 gap-3">
             {[...Array(9)].map((_, i) => (
-              <div key={i} className="aspect-[3/4] bg-muted/40 rounded-xl animate-pulse" />
+              <div key={i} className="aspect-[3/4] bg-muted/40 rounded-xl skeleton-shimmer" />
             ))}
           </div>
         ) : places.length === 0 ? (

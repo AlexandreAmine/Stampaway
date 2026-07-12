@@ -1,4 +1,6 @@
+import { fallbackAvatarUrl } from "@/lib/avatarFallback";
 import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, X, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,8 +30,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
   const { user } = useAuth();
   const navigate = useNavigate();
   const targetUserId = userId || user?.id;
-  const [following, setFollowing] = useState<FollowUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [showSearch, setShowSearch] = useState(false);
   const [query, setQuery] = useState("");
   const [searchResults, setSearchResults] = useState<{ user_id: string; username: string; profile_picture: string | null }[]>([]);
@@ -37,40 +38,41 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
   const [pendingUnfollow, setPendingUnfollow] = useState<FollowUser | null>(null);
 
   useEffect(() => {
-    if (targetUserId) fetchFollowing();
-  }, [targetUserId]);
-
-  useEffect(() => {
     if (!query.trim()) { setSearchResults([]); return; }
     const t = setTimeout(() => searchUsers(query), 300);
     return () => clearTimeout(t);
   }, [query]);
 
-  const fetchFollowing = async () => {
-    if (!targetUserId) return;
-    const { data } = await supabase
-      .from("followers")
-      .select("id, following_id")
-      .eq("follower_id", targetUserId);
+  // Cached by React Query: reopening this tab renders instantly from the
+  // last known data while a background refetch keeps it fresh.
+  const followingQuery = useQuery({
+    queryKey: ["following", targetUserId ?? null],
+    enabled: !!targetUserId,
+    queryFn: async (): Promise<FollowUser[]> => {
+      const { data } = await supabase
+        .from("followers")
+        .select("id, following_id")
+        .eq("follower_id", targetUserId!);
 
-    if (data && data.length > 0) {
+      if (!data || data.length === 0) return [];
+
       const ids = data.map((f) => f.following_id);
       const { data: profiles } = await supabase
         .from("profiles")
         .select("user_id, username, profile_picture")
         .in("user_id", ids);
 
-      if (profiles) {
-        setFollowing(profiles.map((p) => {
-          const follow = data.find((f) => f.following_id === p.user_id);
-          return { id: p.user_id, followId: follow!.id, username: p.username, profile_picture: p.profile_picture };
-        }));
-      }
-    } else {
-      setFollowing([]);
-    }
-    setLoading(false);
-  };
+      return (profiles || []).map((p) => {
+        const follow = data.find((f) => f.following_id === p.user_id);
+        return { id: p.user_id, followId: follow!.id, username: p.username, profile_picture: p.profile_picture };
+      });
+    },
+  });
+  const following = followingQuery.data ?? [];
+  const loading = followingQuery.isPending;
+
+  const refreshFollowing = () =>
+    queryClient.invalidateQueries({ queryKey: ["following", targetUserId ?? null] });
 
   const searchUsers = async (search: string) => {
     if (!user) return;
@@ -93,24 +95,24 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
     toast.success("Following!");
     setShowSearch(false);
     setQuery("");
-    fetchFollowing();
+    void refreshFollowing();
   };
 
   const handleUnfollow = async (followId: string, username: string) => {
     const { error } = await supabase.from("followers").delete().eq("id", followId);
     if (!error && user?.id) invalidateOwnProfileContentCache(user.id);
     toast.success(`Unfollowed ${username}`);
-    fetchFollowing();
+    void refreshFollowing();
   };
 
   if (loading) {
     return (
       <div className="space-y-3 pt-2">
-        <div className="h-10 bg-muted/40 rounded-xl animate-pulse" />
+        <div className="h-10 bg-muted/40 rounded-xl skeleton-shimmer" />
         {[...Array(5)].map((_, i) => (
           <div key={i} className="flex items-center gap-3 py-2">
-            <div className="w-8 h-8 rounded-full bg-muted/40 animate-pulse" />
-            <div className="h-3 w-32 bg-muted/40 rounded animate-pulse" />
+            <div className="w-8 h-8 rounded-full bg-muted/40 skeleton-shimmer" />
+            <div className="h-3 w-32 bg-muted/40 rounded skeleton-shimmer" />
           </div>
         ))}
       </div>
@@ -164,7 +166,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
                 <div key={u.user_id} className="flex items-center justify-between py-2">
                   <button onClick={() => navigate(`/profile/${u.user_id}`)} className="flex items-center gap-3">
                     <img
-                      src={u.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=3B82F6&color=fff&size=32`}
+                      src={u.profile_picture || fallbackAvatarUrl(u.username)}
                       alt={u.username}
                       loading="lazy"
                       decoding="async"
@@ -196,7 +198,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
             <div key={f.id} className="flex items-center justify-between py-2.5">
               <button onClick={() => navigate(`/profile/${f.id}`)} className="flex items-center gap-3">
                 <img
-                  src={f.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(f.username)}&background=3B82F6&color=fff&size=32`}
+                  src={f.profile_picture || fallbackAvatarUrl(f.username)}
                   alt={f.username}
                   loading="lazy"
                   decoding="async"

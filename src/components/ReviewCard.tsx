@@ -4,6 +4,9 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
+import { sizedPosterUrl } from "@/lib/imageSizing";
+import { hapticLight } from "@/lib/haptics";
+import { FadeInImage } from "@/components/FadeInImage";
 
 interface ReviewCardProps {
   review: {
@@ -75,7 +78,8 @@ export function ReviewCard({
   const userName = review.userName || review.profile_username || "User";
   const userAvatar = review.userAvatar || review.profile_picture || "";
   const placeName = review.placeName || review.place_name || "";
-  const placeImage = review.placeImage || review.place_image || "";
+  // 48px thumbnail — request a 150px rendition instead of the 900×1200 poster
+  const placeImage = sizedPosterUrl(review.placeImage || review.place_image || "", 150) || "";
   const rating = review.rating;
   const reviewText = review.reviewText || review.review_text || "";
   const createdAt = review.createdAt || (review.created_at ? new Date(review.created_at).toLocaleDateString() : "");
@@ -169,28 +173,38 @@ export function ReviewCard({
     e.stopPropagation();
     if (!user || toggling) return;
     setToggling(true);
-    if (liked) {
-      const { error } = await supabase
-        .from("review_likes")
-        .delete()
-        .eq("review_id", reviewId)
-        .eq("user_id", user.id);
-      if (!error) invalidateOwnProfileContentCache(user.id);
-      localMutationReviewIdRef.current = reviewId;
+    const wasLiked = liked;
+
+    // Optimistic: flip the heart immediately, revert below if the write fails.
+    hapticLight();
+    localMutationReviewIdRef.current = reviewId;
+    setLikeState((prev) => {
+      const base = prev.reviewId === reviewId ? prev : getInitialLikeState(reviewId, likeCount, wasLiked);
+      return wasLiked
+        ? { ...base, reviewId, liked: false, likeCount: Math.max(0, base.likeCount - 1) }
+        : { ...base, reviewId, liked: true, likeCount: base.likeCount + 1 };
+    });
+
+    const { error } = wasLiked
+      ? await supabase
+          .from("review_likes")
+          .delete()
+          .eq("review_id", reviewId)
+          .eq("user_id", user.id)
+      : await supabase
+          .from("review_likes")
+          .insert({ review_id: reviewId, user_id: user.id });
+
+    if (error) {
+      // Revert the optimistic flip
       setLikeState((prev) => {
-        const base = prev.reviewId === reviewId ? prev : getInitialLikeState(reviewId, likeCount, liked);
-        return { ...base, reviewId, liked: false, likeCount: Math.max(0, base.likeCount - 1) };
+        const base = prev.reviewId === reviewId ? prev : getInitialLikeState(reviewId, likeCount, !wasLiked);
+        return wasLiked
+          ? { ...base, reviewId, liked: true, likeCount: base.likeCount + 1 }
+          : { ...base, reviewId, liked: false, likeCount: Math.max(0, base.likeCount - 1) };
       });
     } else {
-      const { error } = await supabase
-        .from("review_likes")
-        .insert({ review_id: reviewId, user_id: user.id });
-      if (!error) invalidateOwnProfileContentCache(user.id);
-      localMutationReviewIdRef.current = reviewId;
-      setLikeState((prev) => {
-        const base = prev.reviewId === reviewId ? prev : getInitialLikeState(reviewId, likeCount, liked);
-        return { ...base, reviewId, liked: true, likeCount: base.likeCount + 1 };
-      });
+      invalidateOwnProfileContentCache(user.id);
     }
     setToggling(false);
   };
@@ -200,12 +214,12 @@ export function ReviewCard({
 
   return (
     <div
-      className="bg-card rounded-xl p-3 border border-border cursor-pointer"
+      className="bg-card rounded-xl p-3 border border-border cursor-pointer active:scale-[0.98] transition-transform"
       onClick={() => reviewId && navigate(`/review/${reviewId}`)}
     >
       <div className="flex items-start gap-3">
         {showImage && placeImage && (
-          <img src={placeImage} alt={placeName} loading="lazy" decoding="async" width={48} height={48} className="w-12 h-12 rounded-lg object-cover shrink-0" />
+          <FadeInImage src={placeImage} alt={placeName} loading="lazy" decoding="async" width={48} height={48} className="w-12 h-12 rounded-lg object-cover shrink-0" />
         )}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">

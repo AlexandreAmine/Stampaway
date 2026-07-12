@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, X, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { fetchAverageRatingMap, fetchCategoryAverageMap } from "@/lib/placeRankings";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { PosterWishlistButton } from "@/components/PosterWishlistButton";
 import { FavoritePicker } from "@/components/FavoritePicker";
@@ -53,28 +55,28 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
   const navigate = useNavigate();
   const { user } = useAuth();
   const [items, setItems] = useState<WishlistItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [subTab, setSubTab] = useState<"country" | "city">("country");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [sort, setSort] = useState<WishSort>("recent");
   const [selectedCategory, setSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
   const [grouped, setGrouped] = useState(false);
   const targetUserId = userId || user?.id;
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (targetUserId) fetchWishlist();
-  }, [targetUserId]);
+  // Cached by React Query for instant tab reopening; items stay in local
+  // state (synced from the query below) because the category-average sort
+  // merges extra fields into them after the fact.
+  const wishlistQuery = useQuery({
+    queryKey: ["wishlist", targetUserId ?? null],
+    enabled: !!targetUserId,
+    queryFn: async (): Promise<WishlistItem[]> => {
+      const { data } = await supabase
+        .from("wishlists")
+        .select("id, created_at, places!inner(id, name, country, type, image)")
+        .eq("user_id", targetUserId!)
+        .order("created_at", { ascending: false });
 
-  const fetchWishlist = async () => {
-    if (!targetUserId) return;
-    const { data } = await supabase
-      .from("wishlists")
-      .select("id, created_at, places!inner(id, name, country, type, image)")
-      .eq("user_id", targetUserId)
-      .order("created_at", { ascending: false });
-
-    if (data) {
-      const mapped: WishlistItem[] = data.map((w: any) => ({
+      const mapped: WishlistItem[] = (data || []).map((w: any) => ({
         id: w.id,
         created_at: w.created_at,
         place: { id: w.places.id, name: w.places.name, country: w.places.country, type: w.places.type, image: w.places.image },
@@ -82,29 +84,37 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
 
       const placeIds = [...new Set(mapped.map((m) => m.place.id))];
       if (placeIds.length > 0) {
-        const { data: reviews } = await supabase
-          .from("reviews")
-          .select("place_id, rating")
-          .in("place_id", placeIds);
-        if (reviews) {
-          const avgMap: Record<string, { sum: number; count: number }> = {};
-          reviews.forEach((r: any) => {
-            if (r.rating == null) return;
-            if (!avgMap[r.place_id]) avgMap[r.place_id] = { sum: 0, count: 0 };
-            avgMap[r.place_id].sum += Number(r.rating);
-            avgMap[r.place_id].count++;
-          });
+        try {
+          // Server-aggregated via RPC, shared cache
+          const avgMap = await fetchAverageRatingMap();
           mapped.forEach((m) => {
-            const a = avgMap[m.place.id];
-            m.avg_rating = a ? a.sum / a.count : undefined;
+            m.avg_rating = avgMap.get(m.place.id);
           });
+        } catch {
+          // Leave avg_rating undefined, matching previous behavior on failure
         }
       }
 
-      setItems(mapped);
-    }
-    setLoading(false);
-  };
+      return mapped;
+    },
+  });
+  const loading = wishlistQuery.isPending;
+
+  useEffect(() => {
+    if (!wishlistQuery.data) return;
+    // Preserve category averages merged in by the sort effect below, so a
+    // silent background refetch doesn't reset an active category sort.
+    setItems((prev) => {
+      const prevById = new Map(prev.map((i) => [i.id, i]));
+      return wishlistQuery.data!.map((item) => {
+        const old = prevById.get(item.id);
+        return old ? { ...item, _catAvg: old._catAvg } : item;
+      });
+    });
+  }, [wishlistQuery.data]);
+
+  const refreshWishlist = () =>
+    queryClient.invalidateQueries({ queryKey: ["wishlist", targetUserId ?? null] });
 
   // Fetch category avg when sort is category-avg
   useEffect(() => {
@@ -114,29 +124,16 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
     if (placeIds.length === 0) return;
 
     (async () => {
-      const { data: reviews } = await supabase.from("reviews").select("id, place_id").in("place_id", placeIds);
-      if (!reviews || reviews.length === 0) return;
-      const reviewIds = reviews.map((r) => r.id);
-      const reviewPlaceMap = new Map(reviews.map((r) => [r.id, r.place_id]));
-
-      const { data: subRatings } = await supabase
-        .from("review_sub_ratings")
-        .select("review_id, category, rating")
-        .in("review_id", reviewIds)
-        .eq("category", selectedCategory);
-
-      const catMap: Record<string, { sum: number; count: number }> = {};
-      (subRatings || []).forEach((sr: any) => {
-        const pid = reviewPlaceMap.get(sr.review_id);
-        if (!pid) return;
-        if (!catMap[pid]) catMap[pid] = { sum: 0, count: 0 };
-        catMap[pid].sum += Number(sr.rating);
-        catMap[pid].count++;
-      });
-      setItems((prev) => prev.map((item) => {
-        const a = catMap[item.place.id];
-        return { ...item, _catAvg: a ? a.sum / a.count : 0 };
-      }));
+      try {
+        // Server-aggregated via RPC, shared cache
+        const catMap = await fetchCategoryAverageMap(selectedCategory, placeIds);
+        setItems((prev) => prev.map((item) => ({
+          ...item,
+          _catAvg: catMap.get(item.place.id) ?? 0,
+        })));
+      } catch {
+        // Leave existing values, matching previous behavior on failure
+      }
     })();
   }, [sort, selectedCategory, items.length, subTab]);
 
@@ -149,7 +146,7 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
     setCachedWishlistStatus(user.id, placeId, true);
     invalidateOwnProfileContentCache(user.id);
     toast.success("Added to wishlist!");
-    fetchWishlist();
+    void refreshWishlist();
   };
 
   const handleRemove = async (wishlistId: string) => {
@@ -160,7 +157,7 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
       invalidateOwnProfileContentCache(user.id);
     }
     toast.success("Removed from wishlist");
-    fetchWishlist();
+    void refreshWishlist();
   };
 
   const filtered = items.filter((i) => i.place.type === subTab);
@@ -205,7 +202,7 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
     return (
       <div className="grid grid-cols-3 gap-3 pt-2">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="aspect-[3/4] bg-muted/40 rounded-xl animate-pulse" />
+          <div key={i} className="aspect-[3/4] bg-muted/40 rounded-xl skeleton-shimmer" />
         ))}
       </div>
     );

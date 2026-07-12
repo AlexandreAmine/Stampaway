@@ -124,7 +124,7 @@ export function CountryFacts({ countryName, placeId }: CountryFactsProps) {
         <h3 className="text-lg font-bold text-foreground">{t("facts.keyFacts")}</h3>
         <div className="space-y-2">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-12 bg-card rounded-lg animate-pulse" />
+            <div key={i} className="h-12 bg-card rounded-lg skeleton-shimmer" />
           ))}
         </div>
       </div>

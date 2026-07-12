@@ -12,12 +12,14 @@ import {
   nativeAppleSignIn,
 } from "@/lib/native/appleSignIn";
 import logoImage from "@/assets/stampaway-logo.jpeg";
+import { useAfterFirstPaint } from "@/hooks/useAfterFirstPaint";
 
 export default function WelcomePage() {
   const { user, loading, mustCompletePasswordReset } = useAuth();
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 380, h: 380 });
+  const globeReady = useAfterFirstPaint();
 
   useEffect(() => {
     const update = () => {
@@ -49,9 +51,15 @@ export default function WelcomePage() {
           <p className="text-sm text-muted-foreground mt-1">Your travel social diary</p>
         </div>
 
-        {/* Globe */}
+        {/* Globe — mounted one frame after the page shell paints, so the
+            logo/buttons appear instantly instead of waiting on WebGL setup.
+            The placeholder reserves the exact same space (no layout shift). */}
         <div ref={containerRef} className="w-full relative my-2">
-          <WelcomeGlobe width={size.w} height={size.h} />
+          {globeReady ? (
+            <WelcomeGlobe width={size.w} height={size.h} />
+          ) : (
+            <div style={{ width: size.w, height: size.h }} />
+          )}
         </div>
 
         {/* Buttons */}

@@ -1,3 +1,4 @@
+import { fallbackAvatarUrl } from "@/lib/avatarFallback";
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, Heart, MessageSquare, Calendar, Clock, History } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -117,9 +118,9 @@ export default function ReviewDetailPage() {
     return (
       <div className="min-h-screen bg-background pt-12 px-5 max-w-lg mx-auto">
         <div className="space-y-4">
-          <div className="h-6 w-2/3 bg-muted/40 rounded animate-pulse" />
-          <div className="h-4 w-1/3 bg-muted/40 rounded animate-pulse" />
-          <div className="h-32 bg-muted/40 rounded-xl animate-pulse" />
+          <div className="h-6 w-2/3 bg-muted/40 rounded skeleton-shimmer" />
+          <div className="h-4 w-1/3 bg-muted/40 rounded skeleton-shimmer" />
+          <div className="h-32 bg-muted/40 rounded-xl skeleton-shimmer" />
         </div>
       </div>
     );
@@ -146,6 +147,7 @@ export default function ReviewDetailPage() {
           type={place.type as "city" | "country"}
           image={place.image}
           autoGenerate
+          renderWidth={900}
           className="w-full h-full rounded-none"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
@@ -169,7 +171,7 @@ export default function ReviewDetailPage() {
             <button onClick={() => setPreviewOpen(true)}>
               <Avatar className="w-12 h-12 border-2 border-background">
                 <AvatarImage
-                  src={profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.username || "?")}&background=3B82F6&color=fff`}
+                  src={profile?.profile_picture || fallbackAvatarUrl(profile?.username || "?")}
                   draggable={false}
                   onContextMenu={(e: any) => e.preventDefault()}
                   style={{ WebkitTouchCallout: "none" }}
@@ -287,7 +289,7 @@ export default function ReviewDetailPage() {
         </motion.div>
       </div>
       <ProfilePicturePreview
-        src={profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile?.username || "?")}&background=3B82F6&color=fff`}
+        src={profile?.profile_picture || fallbackAvatarUrl(profile?.username || "?")}
         alt={profile?.username || "User"}
         isOpen={previewOpen}
         onClose={() => setPreviewOpen(false)}

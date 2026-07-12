@@ -1,3 +1,4 @@
+import { fallbackAvatarUrl } from "@/lib/avatarFallback";
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, MessageSquare, SlidersHorizontal } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -551,7 +552,7 @@ export default function PlaceSubPage() {
         {loading && section !== "categories" ? (
           <div className="space-y-3 pt-2">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-20 bg-muted/40 rounded-xl animate-pulse" />
+              <div key={i} className="h-20 bg-muted/40 rounded-xl skeleton-shimmer" />
             ))}
           </div>
         ) : section === "categories" ? (
@@ -565,7 +566,7 @@ export default function PlaceSubPage() {
                 <div key={v.user_id} className="flex items-center gap-3 w-full">
                   <button onClick={() => navigate(v.user_id === user?.id ? "/profile" : `/profile/${v.user_id}`)} className="flex items-center gap-3 min-w-0 w-1/2 text-left">
                     <Avatar className="w-9 h-9">
-                      <AvatarImage src={v.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(v.profile?.username || "?")}&background=3B82F6&color=fff`} />
+                      <AvatarImage src={v.profile?.profile_picture || fallbackAvatarUrl(v.profile?.username || "?")} />
                       <AvatarFallback>{v.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <p className="text-sm text-foreground flex-1">{v.profile?.username || "User"}</p>
@@ -633,7 +634,7 @@ export default function PlaceSubPage() {
               data.map((l: any, i: number) => (
                 <button key={i} onClick={() => navigate(`/list/${l.list_id}`)} className="flex items-center gap-3 w-full text-left">
                   <Avatar className="w-9 h-9">
-                    <AvatarImage src={l.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(l.profile?.username || "?")}&background=3B82F6&color=fff`} />
+                    <AvatarImage src={l.profile?.profile_picture || fallbackAvatarUrl(l.profile?.username || "?")} />
                     <AvatarFallback>{l.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
@@ -647,7 +648,7 @@ export default function PlaceSubPage() {
               data.map((w: any) => (
                 <button key={w.user_id} onClick={() => navigate(w.user_id === user?.id ? "/profile" : `/profile/${w.user_id}`)} className="flex items-center gap-3 w-full text-left">
                   <Avatar className="w-9 h-9">
-                    <AvatarImage src={w.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(w.username || "?")}&background=3B82F6&color=fff`} />
+                    <AvatarImage src={w.profile_picture || fallbackAvatarUrl(w.username || "?")} />
                     <AvatarFallback>{w.username?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <p className="text-sm text-foreground flex-1" data-no-translate>{w.username || "User"}</p>

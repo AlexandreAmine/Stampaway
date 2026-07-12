@@ -1,6 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
 
-export const LIST_PREVIEW_POSTERS_CACHE_TTL_MS = 60_000;
+// 10 minutes: local edits invalidate explicitly (invalidateListPreviewPostersCache),
+// so the TTL only bounds staleness from *other* devices. The previous 60s TTL
+// caused constant refetching while browsing lists in one session.
+export const LIST_PREVIEW_POSTERS_CACHE_TTL_MS = 10 * 60 * 1000;
 
 export type ListPreviewPosterPlace = {
   id: string;

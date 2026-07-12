@@ -9,6 +9,7 @@ import { StarRating } from "@/components/StarRating";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { hapticSuccess, hapticMedium, hapticLight } from "@/lib/haptics";
 import { setCachedWishlistStatus } from "@/lib/wishlistCache";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import { invalidateExploreCache } from "@/lib/exploreCache";
@@ -271,80 +272,89 @@ export default function AddPlacePage() {
       liked,
     }).select("id");
 
-    // Auto-remove from wishlist if present
+    // Everything after the review insert only needs the returned review id,
+    // so all follow-up writes/lookups run in ONE parallel batch instead of
+    // the previous ~8 sequential round-trips. Same writes, same toasts.
     if (!error) {
       invalidateOwnProfileContentCache(user.id);
       clearRankingsCache();
       invalidateExploreCache(user.id);
-      const { error: wishlistError } = await supabase.from("wishlists").delete().eq("user_id", user.id).eq("place_id", selectedPlace.id);
-      if (!wishlistError) {
-        setCachedWishlistStatus(user.id, selectedPlace.id, false);
-        invalidateOwnProfileContentCache(user.id);
-      }
+
+      const reviewId = insertedReviews?.[0]?.id;
+      const currentYear = new Date().getFullYear();
+
+      // Auto-remove from wishlist if present
+      const removeFromWishlist = async () => {
+        const { error: wishlistError } = await supabase.from("wishlists").delete().eq("user_id", user.id).eq("place_id", selectedPlace.id);
+        if (!wishlistError) {
+          setCachedWishlistStatus(user.id, selectedPlace.id, false);
+          invalidateOwnProfileContentCache(user.id);
+        }
+      };
 
       // Auto-tick must-visit goal places
-      const currentYear = new Date().getFullYear();
-      await supabase.from("yearly_goal_places")
-        .update({ completed: true })
-        .eq("user_id", user.id)
-        .eq("place_id", selectedPlace.id)
-        .eq("year", currentYear)
-        .eq("completed", false);
+      const tickGoalPlace = async () => {
+        await supabase.from("yearly_goal_places")
+          .update({ completed: true })
+          .eq("user_id", user.id)
+          .eq("place_id", selectedPlace.id)
+          .eq("year", currentYear)
+          .eq("completed", false);
+      };
 
       // Check if this is a first-time visit (new destination) and user has yearly goals
-      const { data: previousReviews } = await supabase
-        .from("reviews")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("place_id", selectedPlace.id)
-        .neq("id", insertedReviews?.[0]?.id || "")
-        .limit(1);
+      const showGoalProgress = async () => {
+        const { data: previousReviews } = await supabase
+          .from("reviews")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("place_id", selectedPlace.id)
+          .neq("id", reviewId || "")
+          .limit(1);
 
-      const isNewDestination = !previousReviews || previousReviews.length === 0;
+        const isNewDestination = !previousReviews || previousReviews.length === 0;
+        if (!isNewDestination) return;
 
-      if (isNewDestination) {
         const { data: yearlyGoals } = await supabase
           .from("yearly_goals")
           .select("continent, country_goal, city_goal")
           .eq("user_id", user.id)
           .eq("year", currentYear);
 
-        if (yearlyGoals && yearlyGoals.length > 0) {
-          const totalGoal = yearlyGoals.find(g => g.continent === "total");
-          const placeType = selectedPlace.type === "country" ? "country" : "city";
-          const goalKey = placeType === "country" ? "country_goal" : "city_goal";
-          const totalTarget = totalGoal?.[goalKey] || 0;
+        if (!yearlyGoals || yearlyGoals.length === 0) return;
 
-          if (totalTarget > 0) {
-            // Count new destinations this year
-            const { data: allReviews } = await supabase
-              .from("reviews")
-              .select("place_id, visit_year, places!inner(type)")
-              .eq("user_id", user.id);
+        const totalGoal = yearlyGoals.find(g => g.continent === "total");
+        const placeType = selectedPlace.type === "country" ? "country" : "city";
+        const goalKey = placeType === "country" ? "country_goal" : "city_goal";
+        const totalTarget = totalGoal?.[goalKey] || 0;
+        if (totalTarget <= 0) return;
 
-            if (allReviews) {
-              const firstYear: Record<string, number | null> = {};
-              allReviews.forEach((r: any) => {
-                if (!(r.place_id in firstYear)) firstYear[r.place_id] = r.visit_year;
-                else if (r.visit_year && (firstYear[r.place_id] === null || r.visit_year < firstYear[r.place_id]!))
-                  firstYear[r.place_id] = r.visit_year;
-              });
-              const newCount = Object.entries(firstYear).filter(([pid, yr]) => {
-                if (yr !== currentYear) return false;
-                const rev = allReviews.find(r => r.place_id === pid);
-                return rev && (rev as any).places?.type === (placeType === "country" ? "country" : "city");
-              }).length;
+        // Count new destinations this year
+        const { data: allReviews } = await supabase
+          .from("reviews")
+          .select("place_id, visit_year, places!inner(type)")
+          .eq("user_id", user.id);
+        if (!allReviews) return;
 
-              const label = placeType === "country" ? "countries" : "cities";
-              toast.success(`🎉 New ${placeType}! ${newCount}/${totalTarget} new ${label} this year`, { duration: 2000 });
-            }
-          }
-        }
-      }
+        const firstYear: Record<string, number | null> = {};
+        allReviews.forEach((r: any) => {
+          if (!(r.place_id in firstYear)) firstYear[r.place_id] = r.visit_year;
+          else if (r.visit_year && (firstYear[r.place_id] === null || r.visit_year < firstYear[r.place_id]!))
+            firstYear[r.place_id] = r.visit_year;
+        });
+        const newCount = Object.entries(firstYear).filter(([pid, yr]) => {
+          if (yr !== currentYear) return false;
+          const rev = allReviews.find(r => r.place_id === pid);
+          return rev && (rev as any).places?.type === (placeType === "country" ? "country" : "city");
+        }).length;
+
+        const label = placeType === "country" ? "countries" : "cities";
+        toast.success(`🎉 New ${placeType}! ${newCount}/${totalTarget} new ${label} this year`, { duration: 2000 });
+      };
 
       // Save tags
-      if (taggedUsers.length > 0 && insertedReviews && insertedReviews[0]) {
-        const reviewId = insertedReviews[0].id;
+      const saveTags = async () => {
+        if (taggedUsers.length === 0 || !reviewId) return;
         await supabase.from("review_tags").insert(
           taggedUsers.map(t => ({
             review_id: reviewId,
@@ -352,12 +362,12 @@ export default function AddPlacePage() {
             tagged_by_user_id: user.id,
           }))
         );
-      }
+      };
 
       // Save sub-ratings
-      const subEntries = Object.entries(subRatings).filter(([, v]) => v > 0);
-      if (subEntries.length > 0 && insertedReviews && insertedReviews[0]) {
-        const reviewId = insertedReviews[0].id;
+      const saveSubRatings = async () => {
+        const subEntries = Object.entries(subRatings).filter(([, v]) => v > 0);
+        if (subEntries.length === 0 || !reviewId) return;
         await supabase.from("review_sub_ratings").insert(
           subEntries.map(([category, rating]) => ({
             review_id: reviewId,
@@ -365,33 +375,43 @@ export default function AddPlacePage() {
             rating,
           }))
         );
-      }
-    }
+      };
 
-    // If this is a favorite flow, also save as favorite
-    if (!error && isFavoriteFlow) {
-      const slotIdx = Number(favoriteSlot);
-      // Check if slot already has a favorite
-      const { data: existing } = await supabase
-        .from("favorite_places")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("slot_index", slotIdx)
-        .eq("type", favoriteType)
-        .maybeSingle();
+      // If this is a favorite flow, also save as favorite
+      const saveFavorite = async () => {
+        if (!isFavoriteFlow) return;
+        const slotIdx = Number(favoriteSlot);
+        // Check if slot already has a favorite
+        const { data: existing } = await supabase
+          .from("favorite_places")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("slot_index", slotIdx)
+          .eq("type", favoriteType)
+          .maybeSingle();
 
-      if (existing) {
-        const { error: favError } = await supabase.from("favorite_places").update({ place_id: selectedPlace.id }).eq("id", existing.id);
-        if (!favError) invalidateOwnProfileContentCache(user.id);
-      } else {
-        const { error: favError } = await supabase.from("favorite_places").insert({
-          user_id: user.id,
-          place_id: selectedPlace.id,
-          slot_index: slotIdx,
-          type: favoriteType,
-        });
-        if (!favError) invalidateOwnProfileContentCache(user.id);
-      }
+        if (existing) {
+          const { error: favError } = await supabase.from("favorite_places").update({ place_id: selectedPlace.id }).eq("id", existing.id);
+          if (!favError) invalidateOwnProfileContentCache(user.id);
+        } else {
+          const { error: favError } = await supabase.from("favorite_places").insert({
+            user_id: user.id,
+            place_id: selectedPlace.id,
+            slot_index: slotIdx,
+            type: favoriteType,
+          });
+          if (!favError) invalidateOwnProfileContentCache(user.id);
+        }
+      };
+
+      await Promise.all([
+        removeFromWishlist(),
+        tickGoalPlace(),
+        showGoalProgress(),
+        saveTags(),
+        saveSubRatings(),
+        saveFavorite(),
+      ]);
     }
 
     setSaving(false);
@@ -399,6 +419,7 @@ export default function AddPlacePage() {
     if (error) {
       toast.error("Failed to save review");
     } else {
+      hapticSuccess();
       toast.success("Review saved!");
 
       // If user logged a city and hasn't logged the corresponding country, show a prompt
@@ -541,6 +562,7 @@ export default function AddPlacePage() {
                   <label className="text-xs text-muted-foreground mb-1 block">Duration</label>
                   <input
                     type="number"
+                    inputMode="numeric"
                     value={durationDays}
                     onChange={(e) => setDurationDays(e.target.value ? Number(e.target.value) : "")}
                     placeholder="Days"
@@ -572,6 +594,9 @@ export default function AddPlacePage() {
               <div className="relative">
                 <input
                   type="text"
+                  enterKeyHint="search"
+                  autoCapitalize="none"
+                  autoCorrect="off"
                   value={tagQuery}
                   onChange={(e) => setTagQuery(e.target.value)}
                   placeholder="Search by username..."
@@ -622,6 +647,8 @@ export default function AddPlacePage() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
+            enterKeyHint="search"
+            autoCorrect="off"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={isFavoriteFlow ? `Search ${favoriteType === "city" ? "cities" : "countries"}...` : "Name of destination"}

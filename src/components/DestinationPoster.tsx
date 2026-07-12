@@ -3,6 +3,8 @@ import { Loader2 } from "lucide-react";
 import { getFlagUrl } from "@/lib/countryFlags";
 import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
 import { getDestinationPosterOverride } from "@/lib/countryPosterOverrides";
+import { sizedPosterUrl } from "@/lib/imageSizing";
+import { FadeInImage } from "@/components/FadeInImage";
 import {
   fetchDestinationPosterUrl,
   getCachedDestinationPosterUrl,
@@ -24,6 +26,17 @@ interface DestinationPosterProps {
   onImageGenerated?: (url: string) => void;
   provider?: DestinationPosterProvider;
   bare?: boolean;
+  /**
+   * CSS-pixel budget for the rendered image (a ~3x retina rendition is
+   * requested from the CDN). Defaults to card size; heroes pass a larger
+   * value. Only affects the CDN URL params — never the layout.
+   */
+  renderWidth?: number;
+  /**
+   * Above-the-fold posters: load eagerly with high fetch priority so the
+   * first visible row appears as fast as possible on a cold cache.
+   */
+  priority?: boolean;
 }
 
 export function DestinationPoster({
@@ -37,6 +50,8 @@ export function DestinationPoster({
   onImageGenerated,
   provider = "unsplash",
   bare = false,
+  renderWidth = 400,
+  priority = false,
 }: DestinationPosterProps) {
   const overrideImage = getDestinationPosterOverride(name, type);
   const resolvedImage = overrideImage || image || null;
@@ -110,12 +125,22 @@ export function DestinationPoster({
       className={`relative rounded-2xl overflow-hidden bg-card ${className}`}
     >
       {imageUrl ? (
-        <img
-          src={imageUrl}
-          alt={localizedName}
-          decoding="async"
-          className="w-full h-full object-cover animate-in fade-in duration-500"
-        />
+        <>
+          {/* Gradient placeholder stays visible until the file has actually
+              loaded; FadeInImage then fades the photo in on load (the old
+              mount-timed fade finished before slow first-launch downloads
+              arrived, so images popped in raw). */}
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-muted" />
+          <FadeInImage
+            key={imageUrl}
+            src={sizedPosterUrl(imageUrl, renderWidth) || imageUrl}
+            alt={localizedName}
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
+            {...(priority ? ({ fetchpriority: "high" } as Record<string, string>) : {})}
+            className="relative w-full h-full object-cover"
+          />
+        </>
       ) : (
         <div className="w-full h-full bg-gradient-to-br from-primary/20 via-primary/10 to-muted flex items-center justify-center">
           {loading ? (
@@ -136,6 +161,7 @@ export function DestinationPoster({
             <img
               src={flagUrl}
               alt={flagCountry}
+              loading="lazy"
               decoding="async"
               className="absolute top-2 right-2 w-7 h-5 rounded-sm shadow-lg object-cover border border-white/20"
             />

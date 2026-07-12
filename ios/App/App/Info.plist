@@ -26,6 +26,12 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>Stampaway uses the camera so you can take a profile picture.</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Stampaway uses your contact to help you find and invite friends</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Stampaway uses your location while you use the app to help you discover and add nearby places to your travel diary</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Stampaway uses your location while you use the app to help you discover and add nearby places to our travel diary</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Stampaway saves photos to your library if you choose to save them.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

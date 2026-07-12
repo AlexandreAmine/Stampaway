@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,23 +71,44 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
     countriesThisYear: [], citiesThisYear: [],
   });
 
-  const fetchGoals = useCallback(async () => {
-    const [goalsRes, placesRes] = await Promise.all([
-      supabase.from("yearly_goals").select("*").eq("user_id", userId).eq("year", currentYear),
-      supabase.from("yearly_goal_places").select("id, place_id, completed, places!inner(name, country, type, id)").eq("user_id", userId).eq("year", currentYear),
-    ]);
-    if (goalsRes.data) setGoals(goalsRes.data as any);
-    if (placesRes.data) setGoalPlaces(placesRes.data.map((p: any) => ({ ...p, place: p.places })));
-  }, [userId, currentYear]);
+  const queryClient = useQueryClient();
 
-  const fetchProgress = useCallback(async () => {
-    const { data: allReviews } = await supabase
-      .from("reviews")
-      .select("place_id, visit_year, created_at, places!inner(name, country, type)")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: true });
+  // Cached by React Query (synced into the existing state below) so
+  // reopening this tab renders instantly with silent background refresh.
+  const goalsQuery = useQuery({
+    queryKey: ["yearly-goals", userId, currentYear],
+    queryFn: async () => {
+      const [goalsRes, placesRes] = await Promise.all([
+        supabase.from("yearly_goals").select("*").eq("user_id", userId).eq("year", currentYear),
+        supabase.from("yearly_goal_places").select("id, place_id, completed, places!inner(name, country, type, id)").eq("user_id", userId).eq("year", currentYear),
+      ]);
+      return {
+        goals: (goalsRes.data as any) ?? [],
+        goalPlaces: (placesRes.data || []).map((p: any) => ({ ...p, place: p.places })),
+      };
+    },
+  });
 
-    if (!allReviews) return;
+  useEffect(() => {
+    if (!goalsQuery.data) return;
+    setGoals(goalsQuery.data.goals);
+    setGoalPlaces(goalsQuery.data.goalPlaces);
+  }, [goalsQuery.data]);
+
+  const fetchGoals = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ["yearly-goals", userId, currentYear] });
+  }, [queryClient, userId, currentYear]);
+
+  const progressQuery = useQuery({
+    queryKey: ["yearly-progress", userId, currentYear],
+    queryFn: async () => {
+      const { data: allReviews } = await supabase
+        .from("reviews")
+        .select("place_id, visit_year, created_at, places!inner(name, country, type)")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true });
+
+      if (!allReviews) return null;
 
     const firstVisitYear: Record<string, number | null> = {};
     allReviews.forEach((r: any) => {
@@ -132,20 +154,23 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
       }
     });
 
-    const byContNum: Record<string, { countries: number; cities: number }> = {};
-    Object.entries(byCont).forEach(([k, v]) => {
-      byContNum[k] = { countries: v.countries.size, cities: v.cities.size };
-    });
+      const byContNum: Record<string, { countries: number; cities: number }> = {};
+      Object.entries(byCont).forEach(([k, v]) => {
+        byContNum[k] = { countries: v.countries.size, cities: v.cities.size };
+      });
 
-    setProgress({
-      countriesVisited: uniqueCountries.size, citiesVisited: uniqueCities.size,
-      byContinent: byContNum,
-      totalCountriesEver: allCountriesEver.size, totalCitiesEver: allCitiesEver.size,
-      countriesThisYear, citiesThisYear,
-    });
-  }, [userId, currentYear]);
+      return {
+        countriesVisited: uniqueCountries.size, citiesVisited: uniqueCities.size,
+        byContinent: byContNum,
+        totalCountriesEver: allCountriesEver.size, totalCitiesEver: allCitiesEver.size,
+        countriesThisYear, citiesThisYear,
+      };
+    },
+  });
 
-  useEffect(() => { fetchGoals(); fetchProgress(); }, [fetchGoals, fetchProgress]);
+  useEffect(() => {
+    if (progressQuery.data) setProgress(progressQuery.data);
+  }, [progressQuery.data]);
 
   const handleSaveGoals = async () => {
     if (!user) return;

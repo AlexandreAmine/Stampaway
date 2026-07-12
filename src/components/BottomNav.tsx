@@ -85,6 +85,9 @@ export function BottomNav() {
 
     if (location.pathname !== tabPath) {
       navigate(tabPath);
+    } else {
+      // Platform convention: re-tapping the active tab scrolls to top
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 

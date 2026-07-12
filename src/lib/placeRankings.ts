@@ -1,9 +1,13 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // ============= Module-level caches =============
-// These caches persist for the lifetime of the page session, so navigating
-// between Search / Explore / Profile tabs reuses results instead of refetching.
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+// These caches persist for the lifetime of the page session AND are mirrored
+// to localStorage, so a cold app start renders Explore/Search instantly from
+// the last known rankings (stale-while-revalidate: anything older than the
+// fresh TTL is served immediately and refreshed in the background).
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes ("fresh" — no refetch at all)
+const STALE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // persisted data older than this is discarded
+const STORAGE_KEY = "stampaway_rankings_cache_v1";
 
 interface CacheEntry<T> {
   data: T;
@@ -15,6 +19,63 @@ const monthlyVisitorCountCache: { current: CacheEntry<Map<string, number>> | nul
 const avgRatingCache: { current: CacheEntry<Map<string, number>> | null } = { current: null };
 const placesCache: { current: CacheEntry<any[]> | null } = { current: null };
 const categoryCache = new Map<string, CacheEntry<Map<string, number>>>();
+
+// ---- localStorage persistence -------------------------------------------
+type PersistedMapEntry = { data: [string, number][]; ts: number };
+type PersistedShape = {
+  visitorCount?: PersistedMapEntry;
+  monthlyVisitor?: PersistedMapEntry;
+  avgRating?: PersistedMapEntry;
+  places?: { data: any[]; ts: number };
+  categories?: Record<string, PersistedMapEntry>;
+};
+
+try {
+  const stored: PersistedShape = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+  const now = Date.now();
+  const usable = (e?: { ts: number }) => !!e && now - e.ts <= STALE_MAX_AGE_MS;
+  const toMapEntry = (e: PersistedMapEntry): CacheEntry<Map<string, number>> => ({
+    data: new Map(e.data),
+    ts: e.ts,
+  });
+  if (usable(stored.visitorCount)) visitorCountCache.current = toMapEntry(stored.visitorCount!);
+  if (usable(stored.monthlyVisitor)) monthlyVisitorCountCache.current = toMapEntry(stored.monthlyVisitor!);
+  if (usable(stored.avgRating)) avgRatingCache.current = toMapEntry(stored.avgRating!);
+  if (usable(stored.places) && Array.isArray(stored.places!.data)) {
+    placesCache.current = { data: stored.places!.data, ts: stored.places!.ts };
+  }
+  Object.entries(stored.categories || {}).forEach(([category, entry]) => {
+    if (usable(entry)) categoryCache.set(category, toMapEntry(entry));
+  });
+} catch {}
+
+let persistTimer: number | null = null;
+function schedulePersist() {
+  if (typeof window === "undefined" || persistTimer !== null) return;
+  persistTimer = window.setTimeout(() => {
+    persistTimer = null;
+    try {
+      const fromMapEntry = (e: CacheEntry<Map<string, number>> | null): PersistedMapEntry | undefined =>
+        e ? { data: [...e.data.entries()], ts: e.ts } : undefined;
+      const shape: PersistedShape = {
+        visitorCount: fromMapEntry(visitorCountCache.current),
+        monthlyVisitor: fromMapEntry(monthlyVisitorCountCache.current),
+        avgRating: fromMapEntry(avgRatingCache.current),
+        places: placesCache.current
+          ? { data: placesCache.current.data, ts: placesCache.current.ts }
+          : undefined,
+        categories: Object.fromEntries(
+          [...categoryCache.entries()].map(([category, entry]) => [
+            category,
+            { data: [...entry.data.entries()], ts: entry.ts },
+          ])
+        ),
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(shape));
+    } catch {}
+  }, 1000);
+}
+// --------------------------------------------------------------------------
 
 // In-flight promise dedup so concurrent callers share one network request.
 const inflight = new Map<string, Promise<any>>();
@@ -45,6 +106,33 @@ async function refreshWithStaleFallback<T>(
   }
 }
 
+/**
+ * Fresh entry: return it. Stale entry: return it immediately and refresh in
+ * the background (stale-while-revalidate). No entry: fetch and wait.
+ */
+async function cachedFetch<T>(
+  key: string,
+  cacheRef: { current: CacheEntry<T> | null },
+  refresh: () => Promise<T>
+): Promise<T> {
+  const entry = cacheRef.current;
+  if (entry && isFresh(entry)) return entry.data;
+
+  const doRefresh = () =>
+    refreshWithStaleFallback(() => cacheRef.current, async () => {
+      const data = await refresh();
+      cacheRef.current = { data, ts: Date.now() };
+      schedulePersist();
+      return data;
+    });
+
+  if (entry) {
+    void dedup(key, doRefresh).catch(() => {});
+    return entry.data;
+  }
+  return dedup(key, doRefresh);
+}
+
 /** Clear all rankings caches (call after logging a new review etc.) */
 export function clearRankingsCache() {
   visitorCountCache.current = null;
@@ -52,135 +140,77 @@ export function clearRankingsCache() {
   avgRatingCache.current = null;
   placesCache.current = null;
   categoryCache.clear();
-}
-
-/**
- * Fetch ALL reviews in paginated batches to bypass Supabase's 1000-row default limit.
- */
-async function fetchAllReviews(columns: string): Promise<any[]> {
-  const PAGE = 1000;
-  let all: any[] = [];
-  let offset = 0;
-
-  while (true) {
-    const { data, error } = await supabase
-      .from("reviews")
-      .select(columns)
-      .range(offset, offset + PAGE - 1);
-
-    if (error) throw error;
-    if (!data || data.length === 0) break;
-
-    all = all.concat(data);
-    if (data.length < PAGE) break;
-    offset += PAGE;
-  }
-
-  return all;
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {}
 }
 
 /** Map<place_id, distinct_visitor_count> — all time */
 export async function fetchAllTimeVisitorCountMap(): Promise<Map<string, number>> {
-  if (isFresh(visitorCountCache.current)) return visitorCountCache.current!.data;
-  return dedup("visitorCount", () =>
-    refreshWithStaleFallback(() => visitorCountCache.current, async () => {
-      const { data, error } = await supabase.rpc("get_place_visitor_counts");
-      if (error) throw error;
+  return cachedFetch("visitorCount", visitorCountCache, async () => {
+    const { data, error } = await supabase.rpc("get_place_visitor_counts");
+    if (error) throw error;
 
-      const map = new Map<string, number>(
-        (data || []).map((c: any) => [c.place_id, Number(c.visitor_count)])
-      );
-      visitorCountCache.current = { data: map, ts: Date.now() };
-      return map;
-    })
-  );
+    return new Map<string, number>(
+      (data || []).map((c: any) => [c.place_id, Number(c.visitor_count)])
+    );
+  });
 }
 
 /** Map<place_id, distinct_visitor_count> — current month only */
 export async function fetchMonthlyVisitorCountMap(): Promise<Map<string, number>> {
-  if (isFresh(monthlyVisitorCountCache.current)) return monthlyVisitorCountCache.current!.data;
-  return dedup("monthlyVisitor", () =>
-    refreshWithStaleFallback(() => monthlyVisitorCountCache.current, async () => {
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  return cachedFetch("monthlyVisitor", monthlyVisitorCountCache, async () => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-      const PAGE = 1000;
-      let allMonthReviews: any[] = [];
-      let offset = 0;
-      while (true) {
-        const { data, error } = await supabase
-          .from("reviews")
-          .select("place_id, user_id")
-          .gte("created_at", startOfMonth)
-          .range(offset, offset + PAGE - 1);
+    // Aggregated server-side; previously this downloaded every review row
+    // created this month and counted distinct users on the device.
+    const { data, error } = await supabase.rpc("get_place_monthly_visitor_counts", {
+      _since: startOfMonth,
+    });
+    if (error) throw error;
 
-        if (error) throw error;
-        if (!data || data.length === 0) break;
-
-        allMonthReviews = allMonthReviews.concat(data);
-        if (data.length < PAGE) break;
-        offset += PAGE;
-      }
-
-      const placeUsers = new Map<string, Set<string>>();
-      allMonthReviews.forEach((r) => {
-        if (!placeUsers.has(r.place_id)) placeUsers.set(r.place_id, new Set());
-        placeUsers.get(r.place_id)!.add(r.user_id);
-      });
-
-      const result = new Map<string, number>();
-      placeUsers.forEach((users, placeId) => result.set(placeId, users.size));
-      monthlyVisitorCountCache.current = { data: result, ts: Date.now() };
-      return result;
-    })
-  );
+    return new Map<string, number>(
+      (data || []).map((c: any) => [c.place_id, Number(c.visitor_count)])
+    );
+  });
 }
 
-/** Map<place_id, average_rating> — all time, using paginated fetch */
+/** Map<place_id, average_rating> — all time (server-aggregated) */
 export async function fetchAverageRatingMap(): Promise<Map<string, number>> {
-  if (isFresh(avgRatingCache.current)) return avgRatingCache.current!.data;
-  return dedup("avgRating", () =>
-    refreshWithStaleFallback(() => avgRatingCache.current, async () => {
-      const allRatings = await fetchAllReviews("place_id, rating");
-      const agg = new Map<string, { total: number; count: number }>();
-      allRatings.forEach((r: any) => {
-        if (r.rating == null) return;
-        const cur = agg.get(r.place_id) || { total: 0, count: 0 };
-        cur.total += Number(r.rating);
-        cur.count += 1;
-        agg.set(r.place_id, cur);
-      });
+  return cachedFetch("avgRating", avgRatingCache, async () => {
+    const { data, error } = await supabase.rpc("get_place_avg_ratings");
+    if (error) throw error;
 
-      const result = new Map<string, number>();
-      agg.forEach((v, k) => result.set(k, v.total / v.count));
-      avgRatingCache.current = { data: result, ts: Date.now() };
-      return result;
-    })
-  );
+    const result = new Map<string, number>();
+    (data || []).forEach((row: any) => {
+      if (row.avg_rating == null) return;
+      result.set(row.place_id, Number(row.avg_rating));
+    });
+    return result;
+  });
 }
 
 /**
  * Map<place_id, category_average_rating> for a given sub-rating category.
- * Optionally restricted to a list of place IDs. Paginated to avoid Supabase's
- * 1000-row limit on `.in()` filters and result sets.
+ * Optionally restricted to a list of place IDs. The per-place average is
+ * independent of the scoping, so the scoped variant just filters the full
+ * (cached) map.
  */
 export async function fetchCategoryAverageMap(
   category: string,
   placeIds?: string[]
 ): Promise<Map<string, number>> {
-  // Cache only the unscoped (full) category map; scoped variants are cheap and rare.
-  if (!placeIds) {
-    const cached = categoryCache.get(category);
-    if (isFresh(cached || null)) return cached!.data;
-    return dedup(`cat:${category}`, () =>
-      refreshWithStaleFallback(() => categoryCache.get(category), async () => {
-        const result = await computeCategoryAverageMap(category, undefined);
-        categoryCache.set(category, { data: result, ts: Date.now() });
-        return result;
-      })
-    );
-  }
-  return computeCategoryAverageMap(category, placeIds);
+  const maps = await fetchCategoryAverageMaps([category]);
+  const full = maps.get(category) ?? new Map<string, number>();
+  if (!placeIds) return full;
+
+  const scoped = new Map<string, number>();
+  placeIds.forEach((id) => {
+    const value = full.get(id);
+    if (value !== undefined) scoped.set(id, value);
+  });
+  return scoped;
 }
 
 export async function fetchCategoryAverageMaps(
@@ -188,6 +218,7 @@ export async function fetchCategoryAverageMaps(
 ): Promise<Map<string, Map<string, number>>> {
   const result = new Map<string, Map<string, number>>();
   const missingCategories: string[] = [];
+  const staleCategories: string[] = [];
 
   categories.forEach((category) => {
     const cached = categoryCache.get(category);
@@ -196,10 +227,39 @@ export async function fetchCategoryAverageMaps(
       return;
     }
 
+    if (cached) {
+      // Stale-while-revalidate: serve the (possibly persisted) stale map now;
+      // it is refreshed in the background below.
+      result.set(category, cached.data);
+      if (!staleCategories.includes(category)) staleCategories.push(category);
+      return;
+    }
+
     if (!missingCategories.includes(category)) {
       missingCategories.push(category);
     }
   });
+
+  if (staleCategories.length > 0) {
+    const staleKey = `cats:${[...staleCategories].sort().join("|")}`;
+    void dedup(staleKey, async () => {
+      const { data, error } = await supabase.rpc("get_place_category_averages", {
+        _categories: staleCategories,
+      });
+      if (error) throw error;
+
+      const maps = new Map<string, Map<string, number>>();
+      staleCategories.forEach((category) => maps.set(category, new Map<string, number>()));
+      (data || []).forEach((row: any) => {
+        if (row.avg_rating == null) return;
+        maps.get(row.category)?.set(row.place_id, Number(row.avg_rating));
+      });
+      maps.forEach((map, category) => {
+        categoryCache.set(category, { data: map, ts: Date.now() });
+      });
+      schedulePersist();
+    }).catch(() => {});
+  }
 
   if (missingCategories.length === 0) return result;
 
@@ -210,69 +270,23 @@ export async function fetchCategoryAverageMaps(
   let fetchedMaps: Map<string, Map<string, number>>;
   try {
     fetchedMaps = await dedup(cacheKey, async () => {
-    const maps = new Map<string, Map<string, number>>();
-    missingCategories.forEach((category) => maps.set(category, new Map<string, number>()));
+      const maps = new Map<string, Map<string, number>>();
+      missingCategories.forEach((category) => maps.set(category, new Map<string, number>()));
 
-    const allReviews = await fetchAllReviews("id, place_id");
-    if (allReviews.length === 0) return maps;
-
-    const reviewPlaceMap = new Map<string, string>(
-      allReviews.map((r: any) => [r.id, r.place_id])
-    );
-    const reviewIds = allReviews.map((r: any) => r.id);
-    const categorySet = new Set(missingCategories);
-    const aggregateByCategory = new Map<string, Map<string, { sum: number; count: number }>>();
-    missingCategories.forEach((category) => {
-      aggregateByCategory.set(category, new Map());
-    });
-
-    const ID_CHUNK = 500;
-    const PAGE = 1000;
-    for (let i = 0; i < reviewIds.length; i += ID_CHUNK) {
-      const slice = reviewIds.slice(i, i + ID_CHUNK);
-      let offset = 0;
-
-      while (true) {
-        const { data, error } = await supabase
-          .from("review_sub_ratings")
-          .select("review_id, category, rating")
-          .in("review_id", slice)
-          .in("category", missingCategories)
-          .range(offset, offset + PAGE - 1);
-
-        if (error) throw error;
-        if (!data || data.length === 0) break;
-
-        data.forEach((sr: any) => {
-          if (!categorySet.has(sr.category)) return;
-
-          const placeId = reviewPlaceMap.get(sr.review_id);
-          if (!placeId) return;
-
-          const categoryAgg = aggregateByCategory.get(sr.category);
-          if (!categoryAgg) return;
-
-          const current = categoryAgg.get(placeId) || { sum: 0, count: 0 };
-          current.sum += Number(sr.rating);
-          current.count += 1;
-          categoryAgg.set(placeId, current);
-        });
-
-        if (data.length < PAGE) break;
-        offset += PAGE;
-      }
-    }
-
-    aggregateByCategory.forEach((placeAgg, category) => {
-      const map = new Map<string, number>();
-      placeAgg.forEach((value, placeId) => {
-        map.set(placeId, value.sum / value.count);
+      // Aggregated server-side; previously this downloaded every review id
+      // plus all matching sub-ratings in sequential 500-id chunks.
+      const { data, error } = await supabase.rpc("get_place_category_averages", {
+        _categories: missingCategories,
       });
-      maps.set(category, map);
-    });
+      if (error) throw error;
 
-    return maps;
-  });
+      (data || []).forEach((row: any) => {
+        if (row.avg_rating == null) return;
+        maps.get(row.category)?.set(row.place_id, Number(row.avg_rating));
+      });
+
+      return maps;
+    });
   } catch (error) {
     const hasCompleteFallback = missingCategories.every(
       (category) => staleEntries.get(category) !== undefined
@@ -292,105 +306,31 @@ export async function fetchCategoryAverageMaps(
     categoryCache.set(category, { data: map, ts: Date.now() });
     result.set(category, map);
   });
+  schedulePersist();
 
-  return result;
-}
-
-async function computeCategoryAverageMap(
-  category: string,
-  placeIds?: string[]
-): Promise<Map<string, number>> {
-  // 1. Fetch reviews (id, place_id), optionally filtered to placeIds in chunks of 500
-  const allReviews: { id: string; place_id: string }[] = [];
-  if (placeIds && placeIds.length > 0) {
-    const CHUNK = 500;
-    for (let i = 0; i < placeIds.length; i += CHUNK) {
-      const slice = placeIds.slice(i, i + CHUNK);
-      // Paginate within each chunk
-      let offset = 0;
-      const PAGE = 1000;
-      while (true) {
-        const { data, error } = await supabase
-          .from("reviews")
-          .select("id, place_id")
-          .in("place_id", slice)
-          .range(offset, offset + PAGE - 1);
-
-        if (error) throw error;
-        if (!data || data.length === 0) break;
-        allReviews.push(...(data as any));
-        if (data.length < PAGE) break;
-        offset += PAGE;
-      }
-    }
-  } else {
-    const reviews = await fetchAllReviews("id, place_id");
-    allReviews.push(...(reviews as any));
-  }
-
-  if (allReviews.length === 0) return new Map();
-
-  const reviewPlaceMap = new Map(allReviews.map((r) => [r.id, r.place_id]));
-  const reviewIds = allReviews.map((r) => r.id);
-
-  // 2. Fetch matching sub-ratings for the chosen category — chunk reviewIds
-  const catMap: Record<string, { sum: number; count: number }> = {};
-  const ID_CHUNK = 500;
-  for (let i = 0; i < reviewIds.length; i += ID_CHUNK) {
-    const slice = reviewIds.slice(i, i + ID_CHUNK);
-    let offset = 0;
-    const PAGE = 1000;
-    while (true) {
-      const { data, error } = await supabase
-        .from("review_sub_ratings")
-        .select("review_id, rating")
-        .eq("category", category)
-        .in("review_id", slice)
-        .range(offset, offset + PAGE - 1);
-
-      if (error) throw error;
-      if (!data || data.length === 0) break;
-      data.forEach((sr: any) => {
-        const pid = reviewPlaceMap.get(sr.review_id);
-        if (!pid) return;
-        if (!catMap[pid]) catMap[pid] = { sum: 0, count: 0 };
-        catMap[pid].sum += Number(sr.rating);
-        catMap[pid].count += 1;
-      });
-      if (data.length < PAGE) break;
-      offset += PAGE;
-    }
-  }
-
-  const result = new Map<string, number>();
-  Object.entries(catMap).forEach(([pid, v]) => result.set(pid, v.sum / v.count));
   return result;
 }
 
 /** Fetch ALL places (paginated) */
 export async function fetchAllPlaces(): Promise<any[]> {
-  if (isFresh(placesCache.current)) return placesCache.current!.data;
-  return dedup("allPlaces", () =>
-    refreshWithStaleFallback(() => placesCache.current, async () => {
-      const PAGE = 1000;
-      let all: any[] = [];
-      let offset = 0;
-      while (true) {
-        const { data, error } = await supabase
-          .from("places")
-          .select("id, name, country, type, image")
-          .range(offset, offset + PAGE - 1);
+  return cachedFetch("allPlaces", placesCache, async () => {
+    const PAGE = 1000;
+    let all: any[] = [];
+    let offset = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from("places")
+        .select("id, name, country, type, image")
+        .range(offset, offset + PAGE - 1);
 
-        if (error) throw error;
-        if (!data || data.length === 0) break;
+      if (error) throw error;
+      if (!data || data.length === 0) break;
 
-        all = all.concat(data);
-        if (data.length < PAGE) break;
-        offset += PAGE;
-      }
+      all = all.concat(data);
+      if (data.length < PAGE) break;
+      offset += PAGE;
+    }
 
-      placesCache.current = { data: all, ts: Date.now() };
-      return all;
-    })
-  );
+    return all;
+  });
 }

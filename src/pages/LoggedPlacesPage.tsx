@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -24,25 +24,21 @@ export default function LoggedPlacesPage() {
   const [searchParams] = useSearchParams();
   const type = searchParams.get("type") || "city";
   const { user } = useAuth();
-  const [places, setPlaces] = useState<LoggedPlace[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (!user) return;
-    fetchLoggedPlaces();
-  }, [user, type]);
+  // Cached by React Query: reopening this page renders instantly from the
+  // last known data while a background refetch keeps it fresh.
+  const placesQuery = useQuery({
+    queryKey: ["logged-places", user?.id ?? null, type],
+    enabled: !!user,
+    queryFn: async (): Promise<LoggedPlace[]> => {
+      const { data } = await supabase
+        .from("reviews")
+        .select("place_id, rating, review_text, created_at, visit_year, visit_month, places!inner(name, country, type, image)")
+        .eq("user_id", user!.id)
+        .eq("places.type", type)
+        .order("created_at", { ascending: false });
 
-  const fetchLoggedPlaces = async () => {
-    setLoading(true);
-    const { data } = await supabase
-      .from("reviews")
-      .select("place_id, rating, review_text, created_at, visit_year, visit_month, places!inner(name, country, type, image)")
-      .eq("user_id", user!.id)
-      .eq("places.type", type)
-      .order("created_at", { ascending: false });
-
-    if (data) {
-      const all = data.map((r: any) => ({
+      const all = (data || []).map((r: any) => ({
         place_id: r.place_id,
         place_name: r.places.name,
         place_country: r.places.country,
@@ -54,10 +50,11 @@ export default function LoggedPlacesPage() {
         visit_year: r.visit_year,
         visit_month: r.visit_month,
       }));
-      setPlaces(dedupeByNewest(all, (r) => r.place_id));
-    }
-    setLoading(false);
-  };
+      return dedupeByNewest(all, (r) => r.place_id);
+    },
+  });
+  const places = placesQuery.data ?? [];
+  const loading = placesQuery.isPending;
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -88,7 +85,7 @@ export default function LoggedPlacesPage() {
                 key={place.place_id}
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.03 }}
+                transition={{ delay: Math.min(i, 12) * 0.03 }}
                 className="relative"
               >
                 <div className="aspect-[3/4] w-full">

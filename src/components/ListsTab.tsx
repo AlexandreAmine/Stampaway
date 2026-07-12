@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, X, ChevronRight, Trash2, GripVertical } from "lucide-react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,9 +30,9 @@ interface ListWithItems {
 export function ListsTab({ userId, readOnly = false }: { userId?: string; readOnly?: boolean }) {
   const { user } = useAuth();
   const [lists, setLists] = useState<ListWithItems[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const targetUserId = userId || user?.id;
+  const queryClient = useQueryClient();
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [creating, setCreating] = useState(false);
@@ -39,38 +40,46 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerType, setPickerType] = useState<"city" | "country">("city");
 
-  useEffect(() => {
-    if (targetUserId) fetchLists();
-  }, [targetUserId]);
+  // Cached by React Query for instant tab reopening; lists stay in local
+  // state (synced from the query below) because drag-reorder mutates them
+  // optimistically.
+  const listsQuery = useQuery({
+    queryKey: ["profile-lists", targetUserId ?? null],
+    enabled: !!targetUserId,
+    queryFn: async (): Promise<ListWithItems[]> => {
+      const { data: listsData } = await supabase
+        .from("lists")
+        .select("id, name, description")
+        .eq("user_id", targetUserId!)
+        .order("created_at", { ascending: false });
 
-  const fetchLists = async () => {
-    if (!targetUserId) return;
-    const { data: listsData } = await supabase
-      .from("lists")
-      .select("id, name, description")
-      .eq("user_id", targetUserId)
-      .order("created_at", { ascending: false });
+      if (!listsData) return [];
 
-    if (!listsData) { setLoading(false); return; }
-
-    const listIds = listsData.map((list) => list.id);
-    let itemsByListId = new Map<string, ListItem[]>();
-    if (listIds.length > 0) {
-      try {
-        itemsByListId = await fetchListItemsByListId(listIds);
-      } catch (error) {
-        console.error("Failed to fetch batched list items:", error);
-        itemsByListId = await fetchListItemsByListIdIndividually(listIds);
+      const listIds = listsData.map((list) => list.id);
+      let itemsByListId = new Map<string, ListItem[]>();
+      if (listIds.length > 0) {
+        try {
+          itemsByListId = await fetchListItemsByListId(listIds);
+        } catch (error) {
+          console.error("Failed to fetch batched list items:", error);
+          itemsByListId = await fetchListItemsByListIdIndividually(listIds);
+        }
       }
-    }
 
-    const enriched: ListWithItems[] = listsData.map((list) => ({
-      ...list,
-      items: itemsByListId.get(list.id) || [],
-    }));
-    setLists(enriched);
-    setLoading(false);
-  };
+      return listsData.map((list) => ({
+        ...list,
+        items: itemsByListId.get(list.id) || [],
+      }));
+    },
+  });
+  const loading = listsQuery.isPending;
+
+  useEffect(() => {
+    if (listsQuery.data) setLists(listsQuery.data);
+  }, [listsQuery.data]);
+
+  const fetchLists = () =>
+    queryClient.invalidateQueries({ queryKey: ["profile-lists", targetUserId ?? null] });
 
   const handleCreate = async () => {
     if (!user || !newName.trim()) return;
@@ -128,15 +137,19 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
     if (!openList) return;
     const updated = { ...openList, items: newItems };
     setOpenList(updated);
-    // Update positions in DB
-    let updatedAnyPosition = false;
-    for (let i = 0; i < newItems.length; i++) {
-      if (newItems[i].position !== i) {
-        const { error } = await supabase.from("list_items").update({ position: i }).eq("id", newItems[i].id);
-        if (!error) updatedAnyPosition = true;
-      }
-    }
-    if (updatedAnyPosition) {
+    // Update positions in DB — all changed rows in parallel instead of one
+    // sequential round-trip per item (a 30-item reorder was ~30 round-trips)
+    const changed = newItems
+      .map((item, i) => ({ item, position: i }))
+      .filter(({ item, position }) => item.position !== position);
+    if (changed.length === 0) return;
+
+    const results = await Promise.all(
+      changed.map(({ item, position }) =>
+        supabase.from("list_items").update({ position }).eq("id", item.id)
+      )
+    );
+    if (results.some((r) => !r.error)) {
       invalidateListPreviewPostersCache(openList.id);
     }
   };
@@ -153,7 +166,7 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
     return (
       <div className="space-y-3 pt-2">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className="h-20 bg-muted/40 rounded-xl animate-pulse" />
+          <div key={i} className="h-20 bg-muted/40 rounded-xl skeleton-shimmer" />
         ))}
       </div>
     );

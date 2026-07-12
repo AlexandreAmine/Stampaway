@@ -11,7 +11,9 @@ import {
   SOUTH_AMERICA_COUNTRIES, AFRICA_COUNTRIES, OCEANIA_COUNTRIES,
 } from "@/lib/continents";
 
-const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
+// Bundled locally (public/countries-110m.json) so the profile map never
+// depends on a third-party CDN request at runtime.
+const GEO_URL = "/countries-110m.json";
 const ANTARCTICA_ID = "010";
 
 const numericToAlpha2: Record<string, string> = {
@@ -311,10 +313,10 @@ export function MapTab({ userId }: { userId?: string }) {
   if (loading || !myData) {
     return (
       <div className="space-y-3 pt-2">
-        <div className="h-64 bg-muted/40 rounded-xl animate-pulse" />
+        <div className="h-64 bg-muted/40 rounded-xl skeleton-shimmer" />
         <div className="grid grid-cols-2 gap-3">
-          <div className="h-16 bg-muted/40 rounded-xl animate-pulse" />
-          <div className="h-16 bg-muted/40 rounded-xl animate-pulse" />
+          <div className="h-16 bg-muted/40 rounded-xl skeleton-shimmer" />
+          <div className="h-16 bg-muted/40 rounded-xl skeleton-shimmer" />
         </div>
       </div>
     );

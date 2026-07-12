@@ -1,3 +1,4 @@
+import { fallbackAvatarUrl } from "@/lib/avatarFallback";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ChevronRight, Heart } from "lucide-react";
 import { motion } from "framer-motion";
@@ -15,7 +16,11 @@ import {
   fetchAllPlaces,
   fetchCategoryAverageMaps,
   fetchAllTimeVisitorCountMap,
+  clearRankingsCache,
 } from "@/lib/placeRankings";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { useQueryClient } from "@tanstack/react-query";
+import { prefetchPlacePrimary } from "@/lib/placePrimaryQuery";
 import {
   getExploreCacheVersion,
   getFreshExploreCache,
@@ -164,6 +169,7 @@ const getExploreCacheKey = (userId: string | null, tab: ExploreTab) =>
 export default function ExplorePage() {
   const [activeTab, setActiveTab] = useState<ExploreTab>("Places");
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const userId = user?.id ?? null;
 
@@ -513,18 +519,24 @@ export default function ExplorePage() {
           const { data: following } = await supabase.from("followers").select("following_id").eq("follower_id", user.id);
           const followingIds = (following || []).map((f) => f.following_id);
           if (followingIds.length > 0) {
-            const { data: friendRevs } = await supabase
-              .from("reviews")
-              .select("id, place_id, review_text, user_id, created_at")
-              .in("user_id", followingIds)
-              .in("place_id", displayedPlaceIds)
-              .not("review_text", "is", null)
-              .neq("review_text", "")
-              .order("created_at", { ascending: false });
+            // Friend profiles are a subset of followingIds, so both queries
+            // can run in parallel instead of profiles waiting on reviews.
+            const [{ data: friendRevs }, { data: profiles }] = await Promise.all([
+              supabase
+                .from("reviews")
+                .select("id, place_id, review_text, user_id, created_at")
+                .in("user_id", followingIds)
+                .in("place_id", displayedPlaceIds)
+                .not("review_text", "is", null)
+                .neq("review_text", "")
+                .order("created_at", { ascending: false }),
+              supabase
+                .from("profiles")
+                .select("user_id, username, profile_picture")
+                .in("user_id", followingIds),
+            ]);
 
             if (friendRevs && friendRevs.length > 0) {
-              const userIds = [...new Set(friendRevs.map((r) => r.user_id))];
-              const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds);
               const profileMap = new Map((profiles || []).map((p) => [p.user_id, p]));
 
               friendRevs.forEach((r) => {
@@ -623,23 +635,28 @@ export default function ExplorePage() {
       const fetchFriendReviews = async () => {
         if (followingIds.length === 0) return [] as any[];
 
-        const { data: reviews, error: reviewsError } = await supabase
-          .from("reviews")
-          .select("*, places!inner(name, image)")
-          .in("user_id", followingIds)
-          .not("review_text", "is", null)
-          .neq("review_text", "")
-          .order("created_at", { ascending: false })
-          .limit(5);
+        // Review authors are a subset of followingIds, so the profiles query
+        // can run in parallel with the reviews query.
+        const [
+          { data: reviews, error: reviewsError },
+          { data: profiles, error: profilesError },
+        ] = await Promise.all([
+          supabase
+            .from("reviews")
+            .select("*, places!inner(name, image)")
+            .in("user_id", followingIds)
+            .not("review_text", "is", null)
+            .neq("review_text", "")
+            .order("created_at", { ascending: false })
+            .limit(5),
+          supabase
+            .from("profiles")
+            .select("user_id, username, profile_picture")
+            .in("user_id", followingIds),
+        ]);
 
         if (reviewsError) throw reviewsError;
         if (!reviews || reviews.length === 0) return [] as any[];
-
-        const profileUserIds = [...new Set(reviews.map((review) => review.user_id))];
-        const { data: profiles, error: profilesError } = await supabase
-          .from("profiles")
-          .select("user_id, username, profile_picture")
-          .in("user_id", profileUserIds);
 
         if (profilesError) throw profilesError;
 
@@ -657,21 +674,17 @@ export default function ExplorePage() {
       };
 
       const fetchPopularReviews = async () => {
-        const { data: likeRows, error: likeRowsError } = await supabase
-          .from("review_likes")
-          .select("review_id");
+        // Server-side top-10 by like count; previously downloaded the entire
+        // review_likes table to count client-side.
+        const { data: topRows, error: likeRowsError } = await supabase
+          .rpc("get_top_liked_reviews", { _limit: 10 });
 
         if (likeRowsError) throw likeRowsError;
 
-        const counts = new Map<string, number>();
-        (likeRows || []).forEach((like) => {
-          counts.set(like.review_id, (counts.get(like.review_id) || 0) + 1);
-        });
-
-        const topReviewIds = [...counts.entries()]
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 10)
-          .map((entry) => entry[0]);
+        const counts = new Map<string, number>(
+          (topRows || []).map((row: any) => [row.review_id, Number(row.like_count)])
+        );
+        const topReviewIds = (topRows || []).map((row: any) => row.review_id);
 
         if (topReviewIds.length > 0) {
           const { data: reviews, error: reviewsError } = await supabase
@@ -855,51 +868,54 @@ export default function ExplorePage() {
         if (listsError) throw listsError;
         if (!lists || lists.length === 0) return [] as any[];
 
+        // Profiles and item counts both depend only on the lists — fetch them
+        // in parallel, with one batched list_items query instead of one count
+        // request per list.
         const profileUserIds = [...new Set(lists.map((list) => list.user_id))];
-        const { data: profiles, error: profilesError } = await supabase
-          .from("profiles")
-          .select("user_id, username, profile_picture")
-          .in("user_id", profileUserIds);
+        const [{ data: profiles, error: profilesError }, { data: itemRows, error: itemsError }] =
+          await Promise.all([
+            supabase
+              .from("profiles")
+              .select("user_id, username, profile_picture")
+              .in("user_id", profileUserIds),
+            supabase
+              .from("list_items")
+              .select("list_id")
+              .in("list_id", lists.map((list) => list.id)),
+          ]);
 
         if (profilesError) throw profilesError;
+        if (itemsError) throw itemsError;
 
         const profileMap = new Map((profiles || []).map((profile) => [profile.user_id, profile]));
-        return Promise.all(
-          lists.map(async (list) => {
-            const { count, error: countError } = await supabase
-              .from("list_items")
-              .select("*", { count: "exact", head: true })
-              .eq("list_id", list.id);
+        const itemCounts = new Map<string, number>();
+        (itemRows || []).forEach((row) => {
+          itemCounts.set(row.list_id, (itemCounts.get(row.list_id) || 0) + 1);
+        });
 
-            if (countError) throw countError;
-
-            const profile = profileMap.get(list.user_id);
-            return {
-              ...list,
-              item_count: count || 0,
-              username: profile?.username,
-              profile_picture: profile?.profile_picture,
-            };
-          })
-        );
+        return lists.map((list) => {
+          const profile = profileMap.get(list.user_id);
+          return {
+            ...list,
+            item_count: itemCounts.get(list.id) || 0,
+            username: profile?.username,
+            profile_picture: profile?.profile_picture,
+          };
+        });
       };
 
       const fetchPopularLists = async () => {
-        const { data: likeRows, error: likeRowsError } = await supabase
-          .from("list_likes")
-          .select("list_id");
+        // Server-side top-10 by like count; previously downloaded the entire
+        // list_likes table to count client-side.
+        const { data: topRows, error: likeRowsError } = await supabase
+          .rpc("get_top_liked_lists", { _limit: 10 });
 
         if (likeRowsError) throw likeRowsError;
 
-        const counts = new Map<string, number>();
-        (likeRows || []).forEach((like) => {
-          counts.set(like.list_id, (counts.get(like.list_id) || 0) + 1);
-        });
-
-        const topListIds = [...counts.entries()]
-          .sort((a, b) => b[1] - a[1])
-          .slice(0, 10)
-          .map((entry) => entry[0]);
+        const counts = new Map<string, number>(
+          (topRows || []).map((row: any) => [row.list_id, Number(row.like_count)])
+        );
+        const topListIds = (topRows || []).map((row: any) => row.list_id);
 
         let popularData: any[] = [];
         if (topListIds.length > 0) {
@@ -927,13 +943,24 @@ export default function ExplorePage() {
         popularData = popularData.filter((list) => list.user_id !== requestContext.userId);
         if (popularData.length === 0) return [] as any[];
 
+        // Profiles (needed for the privacy filter) and item counts both depend
+        // only on popularData — fetch them in parallel, with one batched
+        // list_items query instead of one count request per list.
         const profileUserIds = [...new Set(popularData.map((list) => list.user_id))];
-        const { data: profiles, error: profilesError } = await supabase
-          .from("profiles")
-          .select("user_id, username, profile_picture, is_private")
-          .in("user_id", profileUserIds);
+        const [{ data: profiles, error: profilesError }, { data: itemRows, error: itemsError }] =
+          await Promise.all([
+            supabase
+              .from("profiles")
+              .select("user_id, username, profile_picture, is_private")
+              .in("user_id", profileUserIds),
+            supabase
+              .from("list_items")
+              .select("list_id")
+              .in("list_id", popularData.map((list) => list.id)),
+          ]);
 
         if (profilesError) throw profilesError;
+        if (itemsError) throw itemsError;
 
         const profileMap = new Map((profiles || []).map((profile) => [profile.user_id, profile]));
         const allowedFollowing = new Set<string>(followingIds);
@@ -943,25 +970,21 @@ export default function ExplorePage() {
           return allowedFollowing.has(list.user_id);
         });
 
-        const enriched = await Promise.all(
-          popularData.map(async (list) => {
-            const { count, error: countError } = await supabase
-              .from("list_items")
-              .select("*", { count: "exact", head: true })
-              .eq("list_id", list.id);
+        const itemCounts = new Map<string, number>();
+        (itemRows || []).forEach((row) => {
+          itemCounts.set(row.list_id, (itemCounts.get(row.list_id) || 0) + 1);
+        });
 
-            if (countError) throw countError;
-
-            const profile = profileMap.get(list.user_id);
-            return {
-              ...list,
-              item_count: count || 0,
-              like_count: counts.get(list.id) || 0,
-              username: profile?.username,
-              profile_picture: profile?.profile_picture,
-            };
-          })
-        );
+        const enriched = popularData.map((list) => {
+          const profile = profileMap.get(list.user_id);
+          return {
+            ...list,
+            item_count: itemCounts.get(list.id) || 0,
+            like_count: counts.get(list.id) || 0,
+            username: profile?.username,
+            profile_picture: profile?.profile_picture,
+          };
+        });
 
         enriched.sort((a, b) => b.like_count - a.like_count);
         return enriched;
@@ -997,8 +1020,28 @@ export default function ExplorePage() {
     }
   };
 
+  // Pull-to-refresh: force the rankings layer back to the network, then
+  // re-run the active tab's fetch silently so visible content updates in
+  // place (no skeletons) while the pull spinner runs.
+  const handleRefresh = async () => {
+    clearRankingsCache();
+    const cacheKey = getExploreCacheKey(userId, activeTab);
+    const cacheVersion = getExploreCacheVersion();
+    if (activeTab === "Places") {
+      await fetchPlacesSections(
+        { cacheKey, cacheVersion, silent: true },
+        ++placesFetchRequestIdRef.current
+      );
+    } else if (activeTab === "Reviews") {
+      await fetchReviewsSections({ cacheKey, cacheVersion, silent: true });
+    } else if (activeTab === "Lists") {
+      await fetchListsSections({ cacheKey, cacheVersion, silent: true });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background pb-24">
+      <PullToRefresh onRefresh={handleRefresh} />
       <div className="pt-14 px-5">
         {/* Tabs */}
         <div className="flex items-center gap-6 mb-6">
@@ -1032,10 +1075,10 @@ export default function ExplorePage() {
               <div className="space-y-6">
                 {[...Array(3)].map((_, s) => (
                   <div key={s}>
-                    <div className="h-6 w-48 bg-muted/40 rounded animate-pulse mb-3" />
+                    <div className="h-6 w-48 bg-muted/40 rounded skeleton-shimmer mb-3" />
                     <div className="flex gap-2.5 overflow-hidden -mx-5 px-5">
                       {[...Array(4)].map((_, i) => (
-                        <div key={i} className="flex-shrink-0 w-[130px] aspect-[3/4] bg-muted/40 rounded-xl animate-pulse" />
+                        <div key={i} className="flex-shrink-0 w-[130px] aspect-[3/4] bg-muted/40 rounded-xl skeleton-shimmer" />
                       ))}
                     </div>
                   </div>
@@ -1043,8 +1086,15 @@ export default function ExplorePage() {
               </div>
             ) : (
               <div className="space-y-6">
-                {sections.map((section) => (
-                  <div key={section.key}>
+                {sections.map((section, sectionIndex) => (
+                  // content-visibility skips render work for sections that are
+                  // off-screen (~10 sections x 8 posters mounted at once);
+                  // intrinsic size reserves space so scrollbar/scroll restore
+                  // stay stable. No-op on iOS < 18.
+                  <div
+                    key={section.key}
+                    style={{ contentVisibility: "auto", containIntrinsicSize: "auto 300px" }}
+                  >
                     <button
                       onClick={() => navigate(`/explore/list?${section.linkParams}`)}
                       className="flex items-center gap-1 mb-3"
@@ -1056,11 +1106,12 @@ export default function ExplorePage() {
                       <p className="text-sm text-muted-foreground">No data yet</p>
                     ) : (
                     <div className="flex items-start gap-2.5 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
-                        {section.places.map((place) => (
+                        {section.places.map((place, placeIndex) => (
                           <button
                             key={place.id}
+                            onTouchStart={() => prefetchPlacePrimary(queryClient, place.id, userId)}
                             onClick={() => navigate(`/place/${place.id}`)}
-                            className="flex-shrink-0 w-[130px] flex flex-col items-stretch text-left"
+                            className="flex-shrink-0 w-[130px] flex flex-col items-stretch text-left active:scale-[0.97] transition-transform"
                           >
                             <div className="aspect-[3/4] w-full relative">
                               <PosterWishlistButton placeId={place.id} placeName={place.name} />
@@ -1071,6 +1122,7 @@ export default function ExplorePage() {
                                 type={place.type as "city" | "country"}
                                 image={place.image}
                                 autoGenerate
+                                priority={sectionIndex === 0 && placeIndex < 4}
                                 className="w-full h-full"
                               />
                             </div>
@@ -1082,7 +1134,7 @@ export default function ExplorePage() {
                                   className="flex items-start gap-1.5 mt-1.5 px-0.5 w-full text-left"
                                 >
                                   <img
-                                    src={comment.profile_picture || `https://ui-avatars.com/api/?name=U&background=3B82F6&color=fff&size=20`}
+                                    src={comment.profile_picture || fallbackAvatarUrl("U")}
                                     className="w-4 h-4 rounded-full shrink-0 mt-0.5"
                                     loading="lazy"
                                     decoding="async"
@@ -1111,7 +1163,7 @@ export default function ExplorePage() {
             {reviewsLoading || visibleExploreCacheKey !== currentCacheKey ? (
               <div className="space-y-3">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-32 bg-muted/40 rounded-xl animate-pulse" />
+                  <div key={i} className="h-32 bg-muted/40 rounded-xl skeleton-shimmer" />
                 ))}
               </div>
             ) : (
@@ -1185,7 +1237,7 @@ export default function ExplorePage() {
             {listsLoading || visibleExploreCacheKey !== currentCacheKey ? (
               <div className="space-y-3">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="h-24 bg-muted/40 rounded-xl animate-pulse" />
+                  <div key={i} className="h-24 bg-muted/40 rounded-xl skeleton-shimmer" />
                 ))}
               </div>
             ) : (

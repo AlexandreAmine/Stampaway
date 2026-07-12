@@ -1,9 +1,12 @@
+import { fallbackAvatarUrl } from "@/lib/avatarFallback";
 import { useState, useEffect, useRef } from "react";
 import { Search, ChevronDown } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { prefetchPlacePrimary } from "@/lib/placePrimaryQuery";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { TranslationKey } from "@/i18n/translations";
 import { DestinationPoster } from "@/components/DestinationPoster";
@@ -51,6 +54,7 @@ export default function SearchPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const { t } = useLanguage();
   const filterTabLabels: Record<FilterTab, string> = {
     Countries: t("search.countries"),
@@ -294,11 +298,13 @@ export default function SearchPage() {
 
     const renderPlaceGrid = (items: any[]) => (
       <div className="grid grid-cols-3 gap-3">
-        {items.map((p: any) => (
+        {items.map((p: any, itemIndex: number) => (
           <motion.button
             key={p.id}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
+            whileTap={{ scale: 0.97 }}
+            onTouchStart={() => prefetchPlacePrimary(queryClient, p.id, user?.id ?? null)}
             onClick={() => {
               try {
                 const saved = JSON.parse(localStorage.getItem("recentSearches") || "[]");
@@ -311,7 +317,7 @@ export default function SearchPage() {
             className="aspect-[3/4] w-full relative"
           >
             <PosterWishlistButton placeId={p.id} placeName={p.name} />
-            <DestinationPoster placeId={p.id} name={p.name} country={p.country} type={p.type as "city" | "country"} image={p.image} className="w-full h-full" />
+            <DestinationPoster placeId={p.id} name={p.name} country={p.country} type={p.type as "city" | "country"} image={p.image} priority={itemIndex < 6} className="w-full h-full" />
           </motion.button>
         ))}
       </div>
@@ -398,7 +404,7 @@ export default function SearchPage() {
               <div className="flex items-center gap-3">
                 {l.profiles && (
                   <Avatar className="w-8 h-8 shrink-0">
-                    <AvatarImage src={l.profiles.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(l.profiles.username || "?")}&background=3B82F6&color=fff`} />
+                    <AvatarImage src={l.profiles.profile_picture || fallbackAvatarUrl(l.profiles.username || "?")} />
                     <AvatarFallback>{l.profiles.username?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                 )}
@@ -429,7 +435,7 @@ export default function SearchPage() {
               <motion.div key={u.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between py-3">
                 <button onClick={() => navigate(isMe ? "/profile" : `/profile/${u.user_id}`)} className="flex items-center gap-3">
                   <Avatar className="w-10 h-10">
-                    <AvatarImage src={u.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.username)}&background=3B82F6&color=fff`} />
+                    <AvatarImage src={u.profile_picture || fallbackAvatarUrl(u.username)} />
                     <AvatarFallback>{u.username?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
                   <div>
@@ -475,6 +481,8 @@ export default function SearchPage() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
+            enterKeyHint="search"
+            autoCorrect="off"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("search.placeholder")}
@@ -524,10 +532,10 @@ function LoadingSpinner() {
     <div className="space-y-3 pt-2">
       {[...Array(5)].map((_, i) => (
         <div key={i} className="flex items-center gap-3 py-2">
-          <div className="w-12 h-12 rounded-lg bg-muted/40 animate-pulse" />
+          <div className="w-12 h-12 rounded-lg bg-muted/40 skeleton-shimmer" />
           <div className="flex-1 space-y-2">
-            <div className="h-3 w-32 bg-muted/40 rounded animate-pulse" />
-            <div className="h-2 w-20 bg-muted/40 rounded animate-pulse" />
+            <div className="h-3 w-32 bg-muted/40 rounded skeleton-shimmer" />
+            <div className="h-2 w-20 bg-muted/40 rounded skeleton-shimmer" />
           </div>
         </div>
       ))}

@@ -59,6 +59,7 @@ export function WelcomeGlobe({ width, height }: { width: number; height: number 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
     let cancelled = false;
+    let removeVisibilityListener: (() => void) | null = null;
 
     (async () => {
       const token = await getToken();
@@ -79,13 +80,30 @@ export function WelcomeGlobe({ width, height }: { width: number; height: number 
       });
 
       const SECONDS_PER_REV = 180;
+      let spinPaused = false;
       const spin = () => {
-        if (!mapRef.current) return;
+        if (!mapRef.current || spinPaused) return;
         const center = map.getCenter();
         center.lng -= 360 / SECONDS_PER_REV;
         map.easeTo({ center, duration: 1000, easing: (n) => n });
       };
       map.on("moveend", spin);
+
+      // Performance: stop rendering while the app/tab is hidden (battery);
+      // resume seamlessly when it becomes visible again.
+      const onVisibilityChange = () => {
+        if (document.hidden) {
+          spinPaused = true;
+          try { map.stop(); } catch { /* map may be mid-teardown */ }
+        } else {
+          spinPaused = false;
+          spin();
+        }
+      };
+      document.addEventListener("visibilitychange", onVisibilityChange);
+      removeVisibilityListener = () => {
+        document.removeEventListener("visibilitychange", onVisibilityChange);
+      };
 
       map.on("style.load", () => {
         map.setFog({
@@ -125,6 +143,7 @@ export function WelcomeGlobe({ width, height }: { width: number; height: number 
 
     return () => {
       cancelled = true;
+      removeVisibilityListener?.();
       mapRef.current?.remove();
       mapRef.current = null;
     };

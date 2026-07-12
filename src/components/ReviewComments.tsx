@@ -1,3 +1,4 @@
+import { fallbackAvatarUrl } from "@/lib/avatarFallback";
 import { useState, useEffect } from "react";
 import { Send, Reply, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -109,7 +110,7 @@ export function ReviewComments({ reviewId }: { reviewId: string }) {
       <div className="flex items-start gap-2.5 py-2">
         <button onClick={() => navigate(comment.user_id === user?.id ? "/profile" : `/profile/${comment.user_id}`)}>
           <Avatar className="w-7 h-7">
-            <AvatarImage src={comment.profile?.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(comment.profile?.username || "?")}&background=3B82F6&color=fff`} />
+            <AvatarImage src={comment.profile?.profile_picture || fallbackAvatarUrl(comment.profile?.username || "?")} />
             <AvatarFallback>{comment.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
           </Avatar>
         </button>

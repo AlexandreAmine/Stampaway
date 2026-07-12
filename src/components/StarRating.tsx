@@ -1,4 +1,5 @@
 import { Star, Heart } from "lucide-react";
+import { hapticLight } from "@/lib/haptics";
 
 interface StarRatingProps {
   rating: number | null;
@@ -18,6 +19,7 @@ export function StarRating({ rating, size = 16, interactive = false, onChange, l
     const clickX = e.clientX - rect.left;
     const isLeftHalf = clickX < rect.width / 2;
     const newRating = isLeftHalf ? star - 0.5 : star;
+    hapticLight();
     onChange(displayRating === newRating ? 0 : newRating);
   };
 

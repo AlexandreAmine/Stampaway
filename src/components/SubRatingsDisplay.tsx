@@ -149,7 +149,7 @@ export function PlaceCategoryRatings({ placeId, userId }: PlaceCategoryRatingsPr
   if (loading) return (
     <div className="space-y-2 py-2">
       {[...Array(4)].map((_, i) => (
-        <div key={i} className="h-8 bg-muted/40 rounded-lg animate-pulse" />
+        <div key={i} className="h-8 bg-muted/40 rounded-lg skeleton-shimmer" />
       ))}
     </div>
   );

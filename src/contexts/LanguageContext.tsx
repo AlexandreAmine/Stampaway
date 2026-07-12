@@ -11,6 +11,29 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+// Seed all known place names (English + localized variants) into the
+// do-not-translate registry so DeepL never mistranslates "Riga" -> "chemise".
+// Runs at most once, and only when the translator is actually needed.
+let noTranslateSeeded = false;
+function seedNoTranslateRegistry() {
+  if (noTranslateSeeded) return;
+  noTranslateSeeded = true;
+  const seed: string[] = [];
+  (["en","fr","es","it","pt","nl"] as Language[]).forEach((l) => {
+    seed.push(...getAllLocalizedPlaceNames(l));
+  });
+  addNoTranslateStrings(seed);
+}
+
+// The translator's MutationObserver scans every DOM addition — pure overhead
+// while the app is in English (translations are no-ops). Start it only when a
+// non-English language is active; once started it stays on so language
+// toggles keep working (known nodes are tracked across switches).
+function ensureTranslatorStarted(lang: Language) {
+  seedNoTranslateRegistry();
+  startDomTranslator(lang);
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>(() => {
     return (localStorage.getItem("app_language") as Language) || "en";
@@ -19,19 +42,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem("app_language", lang);
+    if (lang !== "en") ensureTranslatorStarted(lang);
     setDomTranslatorLanguage(lang);
   };
 
   useEffect(() => {
-    // Seed all known place names (English + localized variants) into the
-    // do-not-translate registry so DeepL never mistranslates "Riga" -> "chemise".
-    const seed: string[] = [];
-    (["en","fr","es","it","pt","nl"] as Language[]).forEach((l) => {
-      seed.push(...getAllLocalizedPlaceNames(l));
-    });
-    addNoTranslateStrings(seed);
-    // Start the DOM-level auto-translator once mounted
-    startDomTranslator(language);
+    if (language !== "en") ensureTranslatorStarted(language);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

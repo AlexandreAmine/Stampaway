@@ -2,6 +2,8 @@ import { Star } from "lucide-react";
 import type { Place } from "@/data/mockData";
 import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
 import { getDestinationPosterOverride } from "@/lib/countryPosterOverrides";
+import { sizedPosterUrl } from "@/lib/imageSizing";
+import { FadeInImage } from "@/components/FadeInImage";
 
 interface PlaceCardProps {
   place: Place;
@@ -11,12 +13,17 @@ interface PlaceCardProps {
 export function PlaceCard({ place, variant = "small" }: PlaceCardProps) {
   const localizedName = useLocalizedPlaceName(place.name, false);
   const localizedCountry = useLocalizedPlaceName(place.country, true);
-  const posterImage = getDestinationPosterOverride(place.name, place.type) || place.image;
+  // Cards render at 130–180 CSS px; request a 400px rendition (covers 2–3x
+  // retina) instead of decoding the stored 900×1200 poster.
+  const posterImage = sizedPosterUrl(
+    getDestinationPosterOverride(place.name, place.type) || place.image,
+    400
+  );
 
   if (variant === "small") {
     return (
       <div className="relative w-[130px] h-[170px] rounded-2xl overflow-hidden flex-shrink-0">
-        <img src={posterImage} alt={localizedName} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+        <FadeInImage src={posterImage} alt={localizedName} loading="lazy" decoding="async" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
         <div className="absolute bottom-3 left-3">
           <p className="text-sm font-semibold text-foreground">{localizedName}</p>
@@ -27,7 +34,7 @@ export function PlaceCard({ place, variant = "small" }: PlaceCardProps) {
 
   return (
     <div className="relative w-[180px] h-[240px] rounded-2xl overflow-hidden flex-shrink-0">
-      <img src={posterImage} alt={localizedName} loading="lazy" decoding="async" className="w-full h-full object-cover" />
+      <FadeInImage src={posterImage} alt={localizedName} loading="lazy" decoding="async" className="w-full h-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-transparent to-transparent" />
       <div className="absolute bottom-3 left-3 right-3">
 

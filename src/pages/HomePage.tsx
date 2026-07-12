@@ -1,4 +1,6 @@
+import { fallbackAvatarUrl } from "@/lib/avatarFallback";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Star, UserPlus, Bell } from "lucide-react";
 import { getFlagEmoji } from "@/lib/countryFlags";
 import { motion } from "framer-motion";
@@ -10,6 +12,10 @@ import { getPlaceCoordinates } from "@/lib/cityCoordinates";
 import { GlobeActivityPopup } from "@/components/GlobeActivityPopup";
 import { NotificationsSheet } from "@/components/NotificationsSheet";
 import { MapboxFriendsMap, type MapPin } from "@/components/MapboxFriendsMap";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { useAfterFirstPaint } from "@/hooks/useAfterFirstPaint";
+import { warmTrendingPosters } from "@/lib/posterWarmup";
+import { prefetchPlacePrimary } from "@/lib/placePrimaryQuery";
 
 interface FriendActivity {
   id: string;
@@ -36,10 +42,16 @@ export default function HomePage() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const globeReady = useAfterFirstPaint();
+
+  const handleRefresh = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["home-feed"] }),
+      queryClient.invalidateQueries({ queryKey: ["home-stats"] }),
+    ]);
+  }, [queryClient]);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [activities, setActivities] = useState<FriendActivity[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [hasFollowing, setHasFollowing] = useState(true);
   const [mapWidth, setMapWidth] = useState(380);
   const [selectedActivity, setSelectedActivity] = useState<FriendActivity | null>(null);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -52,27 +64,28 @@ export default function HomePage() {
   const unreadCount =
     unreadState.userId === (user?.id ?? null) ? unreadState.count : 0;
   const [showAllActivities, setShowAllActivities] = useState(false);
-  const [countriesCount, setCountriesCount] = useState(0);
-  const [citiesCount, setCitiesCount] = useState(0);
 
-  // Stats: unique countries & cities reviewed (matches Profile page logic)
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
+  // Stats: unique countries & cities reviewed (matches Profile page logic).
+  // Cached by React Query: renders instantly on revisit, refreshes silently.
+  const statsQuery = useQuery({
+    queryKey: ["home-stats", user?.id ?? null],
+    enabled: !!user,
+    queryFn: async () => {
       const { data } = await supabase
         .from("reviews")
         .select("place_id, places!inner(type)")
-        .eq("user_id", user.id);
+        .eq("user_id", user!.id);
       const countries = new Set<string>();
       const cities = new Set<string>();
       (data || []).forEach((r: any) => {
         if (r.places?.type === "city") cities.add(r.place_id);
         else if (r.places?.type === "country") countries.add(r.place_id);
       });
-      setCountriesCount(countries.size);
-      setCitiesCount(cities.size);
-    })();
-  }, [user]);
+      return { countriesCount: countries.size, citiesCount: cities.size };
+    },
+  });
+  const countriesCount = statsQuery.data?.countriesCount ?? 0;
+  const citiesCount = statsQuery.data?.citiesCount ?? 0;
 
   useEffect(() => {
     const update = () => {
@@ -84,6 +97,12 @@ export default function HomePage() {
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
   }, []);
+
+  // Pre-warm Explore/Search hero posters into the HTTP cache during idle
+  // (first-launch smoothness; no-op after the first run this session)
+  useEffect(() => {
+    if (user) warmTrendingPosters();
+  }, [user]);
 
 
   // Fetch unread notification count
@@ -105,83 +124,28 @@ export default function HomePage() {
     const isCurrentRequest = () =>
       !cancelled && unreadPendingRequestRef.current === requestId;
 
-    const fetchFollowerCount = async () => {
-      const { count, error } = await supabase
-        .from("followers")
-        .select("id", { count: "exact", head: true })
-        .eq("following_id", userId)
-        .gt("created_at", lastReadDate);
-      if (error) throw error;
-      return count ?? 0;
-    };
-
-    const fetchFollowRequestCount = async () => {
-      const { count, error } = await supabase
-        .from("follow_requests")
-        .select("id", { count: "exact", head: true })
-        .eq("target_id", userId)
-        .gt("created_at", lastReadDate);
-      if (error) throw error;
-      return count ?? 0;
-    };
-
-    const fetchReviewLikeCount = async () => {
-      const { data: myReviews, error: reviewsError } = await supabase
-        .from("reviews")
-        .select("id")
-        .eq("user_id", userId);
-      if (reviewsError) throw reviewsError;
-
-      const myReviewIds = (myReviews || []).map((review) => review.id);
-      if (myReviewIds.length === 0) return 0;
-
-      const { count, error } = await supabase
-        .from("review_likes")
-        .select("id", { count: "exact", head: true })
-        .in("review_id", myReviewIds)
-        .neq("user_id", userId)
-        .gt("created_at", lastReadDate);
-      if (error) throw error;
-      return count ?? 0;
-    };
-
-    const fetchListLikeCount = async () => {
-      const { data: myLists, error: listsError } = await supabase
-        .from("lists")
-        .select("id")
-        .eq("user_id", userId);
-      if (listsError) throw listsError;
-
-      const myListIds = (myLists || []).map((list) => list.id);
-      if (myListIds.length === 0) return 0;
-
-      const { count, error } = await supabase
-        .from("list_likes")
-        .select("id", { count: "exact", head: true })
-        .in("list_id", myListIds)
-        .neq("user_id", userId)
-        .gt("created_at", lastReadDate);
-      if (error) throw error;
-      return count ?? 0;
-    };
-
     const lastRead = localStorage.getItem(`notif_last_read_${userId}`);
-      const lastReadDate = lastRead || "1970-01-01T00:00:00Z";
+    const lastReadDate = lastRead || "1970-01-01T00:00:00Z";
 
     const fetchUnreadCount = async () => {
       try {
-        const [followers, requests, reviewLikes, listLikes] = await Promise.all([
-          fetchFollowerCount(),
-          fetchFollowRequestCount(),
-          fetchReviewLikeCount(),
-          fetchListLikeCount(),
-        ]);
+        // One server-side RPC; previously this downloaded all of the user's
+        // review ids and list ids to count likes with .in() filters.
+        const { data, error } = await supabase.rpc("get_unread_notification_counts", {
+          _since: lastReadDate,
+        });
+        if (error) throw error;
+
+        const row = data?.[0];
+        const count = row
+          ? Number(row.followers_count) +
+            Number(row.requests_count) +
+            Number(row.review_likes_count) +
+            Number(row.list_likes_count)
+          : 0;
 
         if (!isCurrentRequest()) return;
-        setUnreadState({
-          userId,
-          count: followers + requests + reviewLikes + listLikes,
-        });
+        setUnreadState({ userId, count });
       } catch {
         if (isCurrentRequest()) {
           console.error("Failed to refresh unread notification count");
@@ -201,23 +165,25 @@ export default function HomePage() {
         unreadPendingRequestRef.current = null;
       }
     };
-  }, [user, notifOpen]);
+    // Note: intentionally not keyed on notifOpen — opening the sheet zeroes
+    // the badge optimistically and stores the read timestamp, so refetching
+    // on open/close was redundant network traffic.
+  }, [user]);
 
-  useEffect(() => {
-    if (!user) return;
-
-    (async () => {
+  // Friend activity feed. Cached by React Query so switching back to Home
+  // renders the map pins and list instantly while refreshing in background.
+  const feedQuery = useQuery({
+    queryKey: ["home-feed", user?.id ?? null],
+    enabled: !!user,
+    queryFn: async (): Promise<{ hasFollowing: boolean; activities: FriendActivity[] }> => {
       const { data: following } = await supabase
         .from("followers")
         .select("following_id")
-        .eq("follower_id", user.id);
+        .eq("follower_id", user!.id);
 
       const followingIds = following?.map((f) => f.following_id) || [];
-      setHasFollowing(followingIds.length > 0);
       if (followingIds.length === 0) {
-        setActivities([]);
-        setLoading(false);
-        return;
+        return { hasFollowing: false, activities: [] };
       }
 
       const now = new Date();
@@ -229,29 +195,24 @@ export default function HomePage() {
       const prevYear = prev.getFullYear();
       const prevMonth = prev.getMonth() + 1;
 
-      const { data: reviews } = await supabase
-        .from("reviews")
-        .select("id, user_id, place_id, rating, created_at, visit_year, visit_month, duration_days, review_text, places!inner(name, country, type)")
-        .in("user_id", followingIds)
-        .not("visit_year", "is", null)
-        .not("visit_month", "is", null)
-        .or(`and(visit_year.eq.${currentYear},visit_month.eq.${currentMonth}),and(visit_year.eq.${prevYear},visit_month.eq.${prevMonth})`)
-        .order("created_at", { ascending: false });
+      // The profiles we may need are exactly the followed users, so both
+      // queries can run in parallel instead of profiles waiting on reviews.
+      const [{ data: reviews }, { data: profiles }] = await Promise.all([
+        supabase
+          .from("reviews")
+          .select("id, user_id, place_id, rating, created_at, visit_year, visit_month, duration_days, review_text, places!inner(name, country, type)")
+          .in("user_id", followingIds)
+          .not("visit_year", "is", null)
+          .not("visit_month", "is", null)
+          .or(`and(visit_year.eq.${currentYear},visit_month.eq.${currentMonth}),and(visit_year.eq.${prevYear},visit_month.eq.${prevMonth})`)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("profiles")
+          .select("user_id, username, profile_picture")
+          .in("user_id", followingIds),
+      ]);
 
       const filtered = reviews || [];
-
-      if (filtered.length === 0) {
-        setActivities([]);
-        setLoading(false);
-        return;
-      }
-
-      const userIds = [...new Set(filtered.map((r: any) => r.user_id))];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, username, profile_picture")
-        .in("user_id", userIds);
-
       const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
 
       const mapped: FriendActivity[] = [];
@@ -279,13 +240,15 @@ export default function HomePage() {
         });
       });
 
-      setActivities(mapped);
-      setLoading(false);
-    })();
-  }, [user]);
+      return { hasFollowing: true, activities: mapped };
+    },
+  });
+  const activities = feedQuery.data?.activities ?? [];
+  const hasFollowing = feedQuery.data?.hasFollowing ?? true;
+  const loading = feedQuery.isPending;
 
   const getAvatarUrl = (a: FriendActivity) =>
-    a.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(a.username)}&background=3B82F6&color=fff&size=40`;
+    a.profile_picture || fallbackAvatarUrl(a.username);
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -326,6 +289,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen pb-24 relative bg-background">
+      <PullToRefresh onRefresh={handleRefresh} />
       {/* Fixed map background — stays visible while the activity list scrolls over it */}
       <div className="fixed top-0 left-0 right-0 z-0 pointer-events-none">
         <div className="mx-auto max-w-lg pointer-events-auto">
@@ -356,15 +320,20 @@ export default function HomePage() {
           </div>
 
           <div ref={containerRef} className="relative w-full overflow-hidden" style={{ height: mapHeight }}>
-            <MapboxFriendsMap
-              pins={activities as MapPin[]}
-              loading={loading}
-              width={mapWidth}
-              height={mapHeight}
-              onPinClick={(p) => handlePinClick(p as FriendActivity)}
-              onLabelClick={handleLabelClick}
-              selectedPinId={selectedActivity?.id ?? null}
-            />
+            {/* Map mounts one frame after the page shell paints so the header,
+                stats and activity list appear instantly (container height is
+                fixed, so nothing shifts) */}
+            {globeReady && (
+              <MapboxFriendsMap
+                pins={activities as MapPin[]}
+                loading={loading}
+                width={mapWidth}
+                height={mapHeight}
+                onPinClick={(p) => handlePinClick(p as FriendActivity)}
+                onLabelClick={handleLabelClick}
+                selectedPinId={selectedActivity?.id ?? null}
+              />
+            )}
 
             {/* Activity popup overlay */}
             <GlobeActivityPopup
@@ -410,7 +379,9 @@ export default function HomePage() {
                 key={a.id}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04 }}
+                whileTap={{ scale: 0.97 }}
+                transition={{ delay: Math.min(i, 12) * 0.04 }}
+                onTouchStart={() => prefetchPlacePrimary(queryClient, a.place_id, user?.id ?? null)}
                 onClick={() => handlePinClick(a)}
                 className="flex items-center gap-3 py-2.5 w-full text-left"
               >

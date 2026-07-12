@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef } from "react";
+import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { ChevronLeft, Heart } from "lucide-react";
 import { motion } from "framer-motion";
@@ -12,143 +14,81 @@ export default function ListDetailPage() {
   const { listId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [list, setList] = useState<any>(null);
-  const [items, setItems] = useState<any[]>([]);
-  const [owner, setOwner] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
   const [likeCount, setLikeCount] = useState(0);
   const [liked, setLiked] = useState(false);
   const [toggling, setToggling] = useState(false);
-  const fetchRequestIdRef = useRef(0);
-  const currentContextRef = useRef({
-    listId: listId ?? null,
-    viewerUserId: user?.id ?? null,
-  });
-  const lastAppliedContextRef = useRef<{
-    listId: string;
-    viewerUserId: string | null;
-  } | null>(null);
 
-  currentContextRef.current = {
-    listId: listId ?? null,
-    viewerUserId: user?.id ?? null,
-  };
+  // Cached by React Query (per list/viewer key, which replaces the old manual
+  // request guards): revisiting a list renders instantly with silent refresh.
+  // Like state stays local because the heart toggles it optimistically.
+  const listQuery = useQuery({
+    queryKey: ["list-detail", listId ?? null, user?.id ?? null],
+    enabled: !!listId,
+    queryFn: async () => {
+      const viewerUserId = user?.id ?? null;
+      const { data: listData, error: listError } = await supabase
+        .from("lists")
+        .select("id, name, description, user_id")
+        .eq("id", listId!)
+        .single();
 
-  useEffect(() => {
-    if (!listId) return;
+      if (listError || !listData) return null;
 
-    const requestContext = {
-      requestId: fetchRequestIdRef.current + 1,
-      listId,
-      viewerUserId: user?.id ?? null,
-    };
-    fetchRequestIdRef.current = requestContext.requestId;
-
-    const isCurrentRequest = () => (
-      fetchRequestIdRef.current === requestContext.requestId &&
-      currentContextRef.current.listId === requestContext.listId &&
-      currentContextRef.current.viewerUserId === requestContext.viewerUserId
-    );
-
-    const fetchData = async () => {
-      const previousContext = lastAppliedContextRef.current;
-      const previousContextMatches = (
-        previousContext?.listId === requestContext.listId &&
-        previousContext.viewerUserId === requestContext.viewerUserId
-      );
-
-      setLoading(true);
-      if (!previousContextMatches) {
-        setList(null);
-        setOwner(null);
-        setItems([]);
-        setLikeCount(0);
-        setLiked(false);
-      }
-
-      try {
-        const { data: listData, error: listError } = await supabase
-          .from("lists")
-          .select("id, name, description, user_id")
-          .eq("id", requestContext.listId)
-          .single();
-
-        if (!isCurrentRequest()) return;
-        if (listError || !listData) return;
-
-        const viewerLikePromise = requestContext.viewerUserId
-          ? supabase
-              .from("list_likes")
-              .select("id")
-              .eq("list_id", requestContext.listId)
-              .eq("user_id", requestContext.viewerUserId)
-              .maybeSingle()
-          : Promise.resolve({ data: null, error: null });
-
-        const [profileResult, itemsResult, countResult, viewerLikeResult] = await Promise.all([
-          supabase
-            .from("profiles")
-            .select("user_id, username, profile_picture")
-            .eq("user_id", listData.user_id)
-            .single(),
-          supabase
-            .from("list_items")
-            .select("id, places!inner(id, name, country, type, image)")
-            .eq("list_id", requestContext.listId),
-          supabase
+      const viewerLikePromise = viewerUserId
+        ? supabase
             .from("list_likes")
-            .select("*", { count: "exact", head: true })
-            .eq("list_id", requestContext.listId),
-          viewerLikePromise,
-        ]);
+            .select("id")
+            .eq("list_id", listId!)
+            .eq("user_id", viewerUserId)
+            .maybeSingle()
+        : Promise.resolve({ data: null, error: null });
 
-        if (!isCurrentRequest()) return;
+      const [profileResult, itemsResult, countResult, viewerLikeResult] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("user_id, username, profile_picture")
+          .eq("user_id", listData.user_id)
+          .single(),
+        supabase
+          .from("list_items")
+          .select("id, places!inner(id, name, country, type, image)")
+          .eq("list_id", listId!),
+        supabase
+          .from("list_likes")
+          .select("*", { count: "exact", head: true })
+          .eq("list_id", listId!),
+        viewerLikePromise,
+      ]);
 
-        setList(listData);
-
-        if (!profileResult.error) {
-          setOwner(profileResult.data);
-        }
-
-        if (!itemsResult.error) {
-          setItems((itemsResult.data || []).map((item: any) => ({
-            id: item.id,
-            place: item.places,
-          })));
-        }
-
-        if (!countResult.error) {
-          setLikeCount(countResult.count || 0);
-        }
-
+      return {
+        list: listData,
+        owner: profileResult.error ? null : profileResult.data,
+        items: itemsResult.error
+          ? []
+          : (itemsResult.data || []).map((item: any) => ({
+              id: item.id,
+              place: item.places,
+            })),
+        likeCount: countResult.error ? 0 : countResult.count || 0,
         // Preserve the existing rule: only apply viewer-heart data when
         // the list owner profile was successfully resolved.
-        if (
-          requestContext.viewerUserId &&
-          profileResult.data &&
-          !viewerLikeResult.error
-        ) {
-          setLiked(!!viewerLikeResult.data);
-        }
+        liked:
+          !!viewerUserId && !!profileResult.data && !viewerLikeResult.error
+            ? !!viewerLikeResult.data
+            : false,
+      };
+    },
+  });
+  const loading = listQuery.isPending;
+  const list = listQuery.data?.list ?? null;
+  const owner = listQuery.data?.owner ?? null;
+  const items = listQuery.data?.items ?? [];
 
-        lastAppliedContextRef.current = {
-          listId: requestContext.listId,
-          viewerUserId: requestContext.viewerUserId,
-        };
-      } catch (error) {
-        console.error("Failed to load list details:", error);
-      } finally {
-        if (isCurrentRequest()) {
-          setLoading(false);
-        }
-      }
-    };
-
-    void fetchData();
-    return () => {
-      fetchRequestIdRef.current += 1;
-    };
-  }, [listId, user?.id]);
+  useEffect(() => {
+    if (!listQuery.data) return;
+    setLikeCount(listQuery.data.likeCount);
+    setLiked(listQuery.data.liked);
+  }, [listQuery.data]);
 
   const toggleLike = async () => {
     if (!user || !listId || toggling) return;
@@ -171,11 +111,11 @@ export default function ListDetailPage() {
     return (
       <div className="min-h-screen bg-background pt-12 px-5 max-w-lg mx-auto">
         <div className="space-y-3">
-          <div className="h-7 w-48 bg-muted/40 rounded animate-pulse" />
-          <div className="h-4 w-32 bg-muted/40 rounded animate-pulse" />
+          <div className="h-7 w-48 bg-muted/40 rounded skeleton-shimmer" />
+          <div className="h-4 w-32 bg-muted/40 rounded skeleton-shimmer" />
           <div className="grid grid-cols-3 gap-3 mt-6">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="aspect-[3/4] bg-muted/40 rounded-xl animate-pulse" />
+              <div key={i} className="aspect-[3/4] bg-muted/40 rounded-xl skeleton-shimmer" />
             ))}
           </div>
         </div>
@@ -211,7 +151,7 @@ export default function ListDetailPage() {
         {owner && (
           <button onClick={() => navigate(`/profile/${owner.user_id}`)} className="flex items-center gap-2 mb-4">
             <Avatar className="w-7 h-7">
-              <AvatarImage src={owner.profile_picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(owner.username)}&background=3B82F6&color=fff`} />
+              <AvatarImage src={owner.profile_picture || fallbackAvatarUrl(owner.username)} />
               <AvatarFallback>{owner.username?.[0]?.toUpperCase()}</AvatarFallback>
             </Avatar>
             <span className="text-sm text-muted-foreground" data-no-translate>{owner.username}</span>

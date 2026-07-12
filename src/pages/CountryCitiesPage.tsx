@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronDown } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -32,61 +33,30 @@ export default function CountryCitiesPage() {
   const { t } = useLanguage();
 
   const [cities, setCities] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [destSort, setDestSort] = useState<DestSort>("most-popular");
   const [selectedCategory, setSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
   const [visibleCount, setVisibleCount] = useState(500);
-  const citiesFetchRequestIdRef = useRef(0);
-  const visibleCitiesContextRef = useRef<string | null>(null);
   const sortMetricRequestIdRef = useRef(0);
-
-  useEffect(() => {
-    if (!countryName) return;
-
-    const requestId = ++citiesFetchRequestIdRef.current;
-    const context = {
-      requestId,
-      key: [countryName, mode, user?.id ?? "anonymous"].join("\u0000"),
-      countryName,
-      mode,
-      userId: user?.id ?? null,
-    };
-
-    if (visibleCitiesContextRef.current !== context.key) {
-      setCities([]);
-    }
-    setLoading(true);
-    void fetchCities(context);
-
-    return () => {
-      if (citiesFetchRequestIdRef.current === requestId) {
-        citiesFetchRequestIdRef.current += 1;
-      }
-    };
-  }, [countryName, mode, user?.id]);
 
   useEffect(() => {
     setVisibleCount(500);
   }, [destSort, selectedCategory]);
 
-  const fetchCities = async (context: {
-    requestId: number;
-    key: string;
-    countryName: string;
-    mode: string;
-    userId: string | null;
-  }) => {
-    const isCurrent = () => citiesFetchRequestIdRef.current === context.requestId;
-    const decoded = decodeURIComponent(context.countryName);
-
-    try {
+  // Cached by React Query (per country/mode/user key, which replaces the old
+  // manual request guards): revisiting renders instantly with silent refresh.
+  // Cities stay in local state because the sort effects merge metrics in.
+  const citiesQuery = useQuery({
+    queryKey: ["country-cities", countryName ?? null, mode, user?.id ?? null],
+    enabled: !!countryName,
+    queryFn: async (): Promise<any[]> => {
+      const decoded = decodeURIComponent(countryName!);
       let baseCities: any[] = [];
 
-      if (context.mode === "wishlist" && context.userId) {
+      if (mode === "wishlist" && user?.id) {
         const { data: wishlistData, error } = await supabase
           .from("wishlists")
           .select("place_id, places!inner(id, name, country, type, image)")
-          .eq("user_id", context.userId);
+          .eq("user_id", user.id);
         if (error) throw error;
 
         baseCities = (wishlistData || [])
@@ -102,32 +72,29 @@ export default function CountryCitiesPage() {
         baseCities = placesData || [];
       }
 
-      if (baseCities.length === 0) {
-        if (!isCurrent()) return;
-        setCities([]);
-        visibleCitiesContextRef.current = context.key;
-        return;
-      }
+      if (baseCities.length === 0) return [];
 
       const countMap = await fetchAllTimeVisitorCountMap();
-      const withCounts = baseCities.map((c) => ({
+      return baseCities.map((c) => ({
         ...c,
         review_count: countMap.get(c.id) || 0,
       }));
+    },
+  });
+  const loading = citiesQuery.isPending;
 
-      if (!isCurrent()) return;
-      setCities(withCounts);
-      visibleCitiesContextRef.current = context.key;
-    } catch (error) {
-      if (isCurrent()) {
-        console.error("Failed to load country cities:", error);
-      }
-    } finally {
-      if (isCurrent()) {
-        setLoading(false);
-      }
-    }
-  };
+  useEffect(() => {
+    if (!citiesQuery.data) return;
+    // Preserve sort metrics merged in by the effect below, so a silent
+    // background refetch doesn't reset an active avg/category sort.
+    setCities((prev) => {
+      const prevById = new Map(prev.map((c) => [c.id, c]));
+      return citiesQuery.data!.map((c) => {
+        const old = prevById.get(c.id);
+        return old ? { ...c, _avg: old._avg, _catAvg: old._catAvg } : c;
+      });
+    });
+  }, [citiesQuery.data]);
 
   // Fetch additional metrics when sort changes
   useEffect(() => {
@@ -234,7 +201,7 @@ export default function CountryCitiesPage() {
         {loading ? (
           <div className="grid grid-cols-3 gap-3">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="aspect-[3/4] bg-muted/40 rounded-xl animate-pulse" />
+              <div key={i} className="aspect-[3/4] bg-muted/40 rounded-xl skeleton-shimmer" />
             ))}
           </div>
         ) : sortedCities.length === 0 ? (
