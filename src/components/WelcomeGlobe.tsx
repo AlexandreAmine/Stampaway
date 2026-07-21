@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import type mapboxgl from "mapbox-gl";
+import { loadMapboxGl } from "@/lib/mapboxLoader";
 import { supabase } from "@/integrations/supabase/client";
 import a1 from "@/assets/avatars/a1.webp";
 import a2 from "@/assets/avatars/a2.webp";
@@ -62,7 +62,9 @@ export function WelcomeGlobe({ width, height }: { width: number; height: number 
     let removeVisibilityListener: (() => void) | null = null;
 
     (async () => {
-      const token = await getToken();
+      // Token fetch and the mapbox-gl chunk load in parallel; the chunk is
+      // usually already warm from the idle preload in mapboxLoader.
+      const [token, mapboxgl] = await Promise.all([getToken(), loadMapboxGl()]);
       if (cancelled) return;
       if (!token) { setTokenMissing(true); return; }
       mapboxgl.accessToken = token;

@@ -1,8 +1,14 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
 import { useEffect, useRef, useState } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
+import type mapboxgl from "mapbox-gl";
+import { loadMapboxGl } from "@/lib/mapboxLoader";
 import { supabase } from "@/integrations/supabase/client";
+
+type MapboxModule = typeof mapboxgl;
+
+// Set once the dynamic module is loaded; the pins effect only runs after
+// mapReady, which is only set after loading, so this is always present there.
+let loadedMapbox: MapboxModule | null = null;
 
 export interface MapPin {
   id: string;
@@ -93,7 +99,7 @@ type PersistentGlobe = {
 
 let persistentGlobe: PersistentGlobe | null = null;
 
-function createPersistentGlobe(): PersistentGlobe {
+function createPersistentGlobe(mapboxgl: MapboxModule): PersistentGlobe {
   const hostEl = document.createElement("div");
   hostEl.style.position = "absolute";
   hostEl.style.inset = "0";
@@ -305,14 +311,17 @@ export function MapboxFriendsMap({
 
     (async () => {
       if (!persistentGlobe) {
-        const token = await getMapboxToken();
+        // Token fetch and the ~1.75 MB mapbox-gl chunk load in parallel;
+        // the chunk is usually already warm from the idle preload.
+        const [token, mapboxgl] = await Promise.all([getMapboxToken(), loadMapboxGl()]);
         if (cancelled) return;
         if (!token) {
           setTokenMissing(true);
           return;
         }
+        loadedMapbox = mapboxgl;
         mapboxgl.accessToken = token;
-        persistentGlobe = createPersistentGlobe();
+        persistentGlobe = createPersistentGlobe(mapboxgl);
       }
       if (cancelled) return;
 
@@ -342,6 +351,8 @@ export function MapboxFriendsMap({
   // Render pins
   useEffect(() => {
     if (!mapRef.current || !mapReady) return;
+    const mapboxgl = loadedMapbox;
+    if (!mapboxgl) return;
     const map = mapRef.current;
     const seen = new Set<string>();
 
