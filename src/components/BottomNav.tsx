@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { TranslationKey } from "@/i18n/translations";
+import { invokePageBackHandler } from "@/lib/pageBackStack";
 
 const tabDefs = [
   { path: "/", labelKey: "nav.home" as TranslationKey, icon: Globe },
@@ -85,10 +86,15 @@ export function BottomNav() {
 
     if (location.pathname !== tabPath) {
       navigate(tabPath);
-    } else {
-      // Platform convention: re-tapping the active tab scrolls to top
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
     }
+
+    // Re-tapping the active tab: if it has an open internal drill-down view
+    // (e.g. Profile's Countries/Map/etc. tabs), pop it to the root first —
+    // matching how a native tab bar resets that tab's stack — then scroll
+    // to top either way.
+    const closedSubView = invokePageBackHandler();
+    window.scrollTo({ top: 0, behavior: closedSubView ? "auto" : "smooth" });
   };
 
   return (

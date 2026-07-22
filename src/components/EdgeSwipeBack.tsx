@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { hasPageBackHandler, invokePageBackHandler } from "@/lib/pageBackStack";
 
 // Root tabs where swipe-back should do nothing
 const ROOT_PATHS = new Set([
@@ -68,7 +69,10 @@ export default function EdgeSwipeBack() {
       el.style.transition = `transform ${COMPLETE_MS}ms ease-out`;
       el.style.transform = `translateX(${window.innerWidth}px)`;
       window.setTimeout(() => {
-        navigate(-1);
+        // Pages with an internal drill-down view (e.g. Profile's tabs, which
+        // are local state rather than a route) close that view instead of
+        // navigating the router — same slide-off feel either way.
+        if (!invokePageBackHandler()) navigate(-1);
         // Clear on the next frame so the incoming page never renders
         // translated (one background-colored frame at most)
         requestAnimationFrame(() => {
@@ -87,7 +91,9 @@ export default function EdgeSwipeBack() {
       if (animating || e.touches.length !== 1) return;
       const t = e.touches[0];
       if (t.clientX > EDGE_PX) return;
-      if (ROOT_PATHS.has(location.pathname)) return;
+      // Root tabs have nowhere to swipe back to UNLESS they have an open
+      // internal drill-down view (e.g. Profile's Countries/Map/etc. tabs).
+      if (ROOT_PATHS.has(location.pathname) && !hasPageBackHandler()) return;
       startX = t.clientX;
       startY = t.clientY;
       tracking = true;

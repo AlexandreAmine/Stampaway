@@ -36,7 +36,8 @@ import { Camera } from "lucide-react";
 import { toast } from "sonner";
 import { ProfilePicturePreview } from "@/components/ProfilePicturePreview";
 import { isNative, Camera as CapCamera, CameraResultType, CameraSource } from "@/lib/native";
-import { hapticMedium } from "@/lib/haptics";
+import { hapticLight, hapticMedium } from "@/lib/haptics";
+import { usePageBackHandler } from "@/lib/pageBackStack";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import {
   getFreshOwnProfileContentCache,
@@ -189,6 +190,37 @@ export default function ProfilePage() {
 
   const [subPage, setSubPage] = useState<SubPage>(null);
   const [ratingFilter, setRatingFilter] = useState<number | undefined>(undefined);
+
+  const closeSubPage = () => {
+    setSubPage(null);
+    setRatingFilter(undefined);
+  };
+  // Profile's tabs (Countries, Map, Diary, etc.) are local state rather than
+  // routes — this registers them with the same swipe-back / tab-re-tap
+  // conventions used everywhere else in the app (EdgeSwipeBack, BottomNav).
+  usePageBackHandler(!!subPage, closeSubPage);
+
+  const openSubPage = (target: SubPage) => {
+    if (!target) return;
+    hapticLight();
+    setSubPage(target);
+  };
+
+  // Slide the sub-page view in from the right on open, mirroring the same
+  // push transition used for routed pages (RouteTransition) — opening and
+  // closing a Profile tab now feel symmetric with the rest of the app.
+  const subPageWrapperRef = useRef<HTMLDivElement>(null);
+  const prevSubPageRef = useRef<SubPage>(null);
+  useEffect(() => {
+    const openedFromRoot = !prevSubPageRef.current && !!subPage;
+    prevSubPageRef.current = subPage;
+    if (!openedFromRoot) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    subPageWrapperRef.current?.animate(
+      [{ transform: "translateX(100%)" }, { transform: "translateX(0px)" }],
+      { duration: 240, easing: "cubic-bezier(0.32, 0.72, 0, 1)" }
+    );
+  }, [subPage]);
 
   const applyProfileCoreSnapshot = useCallback((snapshot: ProfileCoreSnapshot) => {
     setFavoriteCities(snapshot.favoriteCities);
@@ -611,7 +643,7 @@ export default function ProfilePage() {
       toast("Follow this account to see their list");
       return;
     }
-    setSubPage(target);
+    openSubPage(target);
   };
 
   const handleRemoveFavorite = async (type: "city" | "country", slotIndex: number) => {
@@ -737,10 +769,10 @@ export default function ProfilePage() {
   // Sub-page view
   if (subPage) {
     return (
-      <div className="min-h-screen bg-background pb-24">
+      <div ref={subPageWrapperRef} className="min-h-screen bg-background pb-24">
         <div className="pt-14 px-5">
           <div className="flex items-center gap-3 mb-6">
-            <button onClick={() => { setSubPage(null); setRatingFilter(undefined); }}>
+            <button onClick={closeSubPage}>
               <ChevronLeft className="w-6 h-6 text-foreground" />
             </button>
             <h1 className="text-xl font-bold text-foreground">
@@ -966,45 +998,49 @@ export default function ProfilePage() {
           <h2 className="text-lg font-bold text-foreground mb-3">Favorite Countries</h2>
           {renderFavoriteSlots("country", favoriteCountries)}
         </div>
-        <div className="mb-6"><RatingHistogram distribution={countryDistribution} onBarClick={(r) => { setRatingFilter(r); setSubPage("CountriesByRating"); }} /></div>
+        <div className="mb-6"><RatingHistogram distribution={countryDistribution} onBarClick={(r) => { setRatingFilter(r); openSubPage("CountriesByRating"); }} /></div>
 
         {/* Favorite Cities */}
         <div className="mb-4">
           <h2 className="text-lg font-bold text-foreground mb-3">Favorite Cities</h2>
           {renderFavoriteSlots("city", favoriteCities)}
         </div>
-        <div className="mb-6"><RatingHistogram distribution={cityDistribution} onBarClick={(r) => { setRatingFilter(r); setSubPage("CitiesByRating"); }} /></div>
+        <div className="mb-6"><RatingHistogram distribution={cityDistribution} onBarClick={(r) => { setRatingFilter(r); openSubPage("CitiesByRating"); }} /></div>
 
         {/* Map Preview */}
         {mapMyData && (
           <div className="mb-6">
             <button
-              onClick={() => setSubPage("Map")}
+              onClick={() => openSubPage("Map")}
               className="flex items-center justify-between w-full mb-3"
             >
               <h2 className="text-lg font-bold text-foreground">{t("profile.map")}</h2>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </button>
-            <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ height: 220 }}>
+            <div className="relative bg-card rounded-xl border border-border overflow-hidden" style={{ height: 220 }}>
               {!isOwnProfile && mapTheirData ? (
                 <CompareMapChart
                   myData={mapMyData}
                   theirData={mapTheirData}
-                  onCountryClick={(alpha2) => {
-                    const placeId = mapMyData?.countryPlaceMap[alpha2] || mapTheirData?.countryPlaceMap[alpha2];
-                    if (placeId) navigate(`/place/${placeId}`);
-                  }}
+                  onCountryClick={() => openSubPage("Map")}
                 />
               ) : (
                 <SoloMapChart
                   data={mapMyData}
-                  onCountryClick={(alpha2) => {
-                    const placeId = mapMyData?.countryPlaceMap[alpha2];
-                    if (placeId) navigate(`/place/${placeId}`);
-                  }}
-                  onCityClick={(placeId) => navigate(`/place/${placeId}`)}
+                  onCountryClick={() => openSubPage("Map")}
+                  onCityClick={() => openSubPage("Map")}
                 />
               )}
+              {/* This is a static preview, not the interactive map (that's
+                  the Map tab) — an invisible overlay blocks pan/zoom/drag
+                  on the chart underneath and turns any tap into "open the
+                  Map tab", exactly like tapping the header above. */}
+              <button
+                type="button"
+                aria-label={t("profile.map")}
+                onClick={() => openSubPage("Map")}
+                className="absolute inset-0 cursor-pointer"
+              />
             </div>
             {/* Legend */}
             <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
@@ -1033,7 +1069,7 @@ export default function ProfilePage() {
           {stats.map((stat) => (
             <button
               key={stat.label}
-              onClick={() => setSubPage(stat.subPage)}
+              onClick={() => openSubPage(stat.subPage)}
               className="flex items-center justify-between py-3 border-b border-border w-full text-left"
             >
               <span className="text-sm font-semibold text-foreground">{stat.label}</span>
