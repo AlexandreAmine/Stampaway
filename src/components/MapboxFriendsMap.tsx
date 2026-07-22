@@ -3,6 +3,96 @@ import { useEffect, useRef, useState } from "react";
 import type mapboxgl from "mapbox-gl";
 import { loadMapboxGl } from "@/lib/mapboxLoader";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { Language } from "@/i18n/translations";
+
+// Layers used for label CLICK-to-navigate (tap a country/city name to open
+// its place page). Deliberately narrow and unrelated to translation scope
+// below — an ocean or continent isn't a "place" in the app's data model, so
+// this list is unchanged from before.
+const CLICKABLE_LABEL_LAYERS = [
+  "settlement-major-label",
+  "settlement-minor-label",
+  "settlement-subdivision-label",
+  "country-label",
+  "state-label",
+  "place-city-lg-n",
+  "place-city-md-n",
+  "place-city-sm",
+  "place-town",
+  "place-village",
+];
+
+// Recursively checks whether a text-field expression is driven by the
+// tileset's standard name/name_en fields (used by Mapbox for essentially
+// every geographic label: settlements, countries, oceans, seas, continents,
+// mountain ranges, etc.).
+function exprReferencesName(expr: unknown): boolean {
+  if (!Array.isArray(expr)) return false;
+  if (expr[0] === "get" && (expr[1] === "name_en" || expr[1] === "name")) return true;
+  return expr.some(exprReferencesName);
+}
+
+// Recursively swap every ["get","name_en"] / ["get","name"] leaf inside a
+// text-field expression for a coalesce that prefers the localized field,
+// preserving any surrounding format/case/font-scale structure untouched.
+// If the tileset has no name_<code> value for a given feature (e.g. a
+// language Mapbox doesn't cover for that layer), coalesce falls through to
+// name_en/name automatically — same label as today, no visual regression.
+function localizeTextFieldExpr(expr: unknown, code: string): unknown {
+  if (Array.isArray(expr)) {
+    if (expr[0] === "get" && (expr[1] === "name_en" || expr[1] === "name")) {
+      return ["coalesce", ["get", `name_${code}`], ["get", "name_en"], ["get", "name"]];
+    }
+    return expr.map((item) => localizeTextFieldExpr(item, code));
+  }
+  return expr;
+}
+
+// Every symbol layer in the loaded style whose label is name-driven —
+// covers settlements/countries plus water bodies, continents, and any other
+// physical-feature labels the satellite-streets style renders, without
+// hand-maintaining an exact layer-id list. Computed once per style load
+// (layers don't change afterward) and cached by the caller.
+function findTranslatableLayers(map: mapboxgl.Map): string[] {
+  const layers = map.getStyle()?.layers ?? [];
+  return layers
+    .filter((layer) => layer.type === "symbol")
+    .filter((layer) => {
+      try {
+        return exprReferencesName(map.getLayoutProperty(layer.id, "text-field"));
+      } catch {
+        return false;
+      }
+    })
+    .map((layer) => layer.id);
+}
+
+function applyLabelLanguage(
+  map: mapboxgl.Map,
+  language: Language,
+  originalTextFields: Map<string, unknown>,
+  translatableLayerIds: string[]
+) {
+  translatableLayerIds.forEach((layerId) => {
+    if (!map.getLayer(layerId)) return;
+    try {
+      if (!originalTextFields.has(layerId)) {
+        originalTextFields.set(layerId, map.getLayoutProperty(layerId, "text-field"));
+      }
+      const original = originalTextFields.get(layerId);
+      if (original === undefined) return;
+
+      map.setLayoutProperty(
+        layerId,
+        "text-field",
+        (language !== "en" ? localizeTextFieldExpr(original, language) : original) as never
+      );
+    } catch {
+      // Defensive: never let a label-language switch break the map
+    }
+  });
+}
 
 type MapboxModule = typeof mapboxgl;
 
@@ -95,11 +185,12 @@ type PersistentGlobe = {
   attach: (container: HTMLDivElement) => void;
   detach: () => void;
   setLabelClickHandler: (fn: ((text: string, type: "city" | "country") => void) | null) => void;
+  setLanguage: (language: Language) => void;
 };
 
 let persistentGlobe: PersistentGlobe | null = null;
 
-function createPersistentGlobe(mapboxgl: MapboxModule): PersistentGlobe {
+function createPersistentGlobe(mapboxgl: MapboxModule, initialLanguage: Language): PersistentGlobe {
   const hostEl = document.createElement("div");
   hostEl.style.position = "absolute";
   hostEl.style.inset = "0";
@@ -117,6 +208,15 @@ function createPersistentGlobe(mapboxgl: MapboxModule): PersistentGlobe {
 
   let labelClickHandler: ((text: string, type: "city" | "country") => void) | null = null;
   let detached = false;
+  let currentLanguage = initialLanguage;
+  let styleLoaded = false;
+  // Captures each label layer's original text-field the first time it's
+  // touched, so every language switch (including back to English) applies
+  // cleanly from the pristine expression instead of compounding edits.
+  const originalTextFields = new Map<string, unknown>();
+  // All name-driven symbol layers (settlements, countries, oceans, seas,
+  // continents, etc.), discovered once from the loaded style.
+  let translatableLayerIds: string[] = [];
 
   // Auto-rotate the globe until the user interacts (any zoom/drag stops it
   // for the current Home visit; it restarts on the next visit, exactly like
@@ -205,28 +305,17 @@ function createPersistentGlobe(mapboxgl: MapboxModule): PersistentGlobe {
         map.setPaintProperty("water", "fill-color", "#7ec5ee");
       }
     } catch {}
+    styleLoaded = true;
+    translatableLayerIds = findTranslatableLayers(map);
+    applyLabelLanguage(map, currentLanguage, originalTextFields, translatableLayerIds);
     spinGlobe();
   });
-
-  // Layers in the satellite-streets style that carry place labels we can click
-  const LABEL_LAYERS = [
-    "settlement-major-label",
-    "settlement-minor-label",
-    "settlement-subdivision-label",
-    "country-label",
-    "state-label",
-    "place-city-lg-n",
-    "place-city-md-n",
-    "place-city-sm",
-    "place-town",
-    "place-village",
-  ];
 
   // Click on city/country labels rendered by Mapbox (reads the current
   // mount's handler through the holder, so closures never go stale)
   map.on("click", (e) => {
     if (!labelClickHandler) return;
-    const available = LABEL_LAYERS.filter((id) => map.getLayer(id));
+    const available = CLICKABLE_LABEL_LAYERS.filter((id) => map.getLayer(id));
     const features = map.queryRenderedFeatures(e.point, { layers: available });
     if (features && features.length > 0) {
       const f = features[0];
@@ -241,7 +330,7 @@ function createPersistentGlobe(mapboxgl: MapboxModule): PersistentGlobe {
   const setHoverCursor = () => (map.getCanvas().style.cursor = "pointer");
   const resetCursor = () => (map.getCanvas().style.cursor = "");
   map.on("idle", () => {
-    LABEL_LAYERS.forEach((id) => {
+    CLICKABLE_LABEL_LAYERS.forEach((id) => {
       if (!map.getLayer(id)) return;
       map.off("mouseenter", id, setHoverCursor);
       map.off("mouseleave", id, resetCursor);
@@ -278,11 +367,21 @@ function createPersistentGlobe(mapboxgl: MapboxModule): PersistentGlobe {
     hostEl.remove();
   };
 
+  const setLanguage = (language: Language) => {
+    if (currentLanguage === language) return;
+    currentLanguage = language;
+    // Country/city labels only change with the app language, which is a
+    // deliberate user action — applying immediately (no design/behavior
+    // change to the map itself, just which language its labels render in).
+    if (styleLoaded) applyLabelLanguage(map, language, originalTextFields, translatableLayerIds);
+  };
+
   return {
     map,
     attach,
     detach,
     setLabelClickHandler: (fn) => { labelClickHandler = fn; },
+    setLanguage,
   };
 }
 
@@ -302,6 +401,9 @@ export function MapboxFriendsMap({
   const [tokenMissing, setTokenMissing] = useState(false);
   const onLabelClickRef = useRef(onLabelClick);
   onLabelClickRef.current = onLabelClick;
+  const { language } = useLanguage();
+  const languageRef = useRef(language);
+  languageRef.current = language;
 
   // Attach the persistent map (creating it on the first Home visit only)
   useEffect(() => {
@@ -321,11 +423,14 @@ export function MapboxFriendsMap({
         }
         loadedMapbox = mapboxgl;
         mapboxgl.accessToken = token;
-        persistentGlobe = createPersistentGlobe(mapboxgl);
+        persistentGlobe = createPersistentGlobe(mapboxgl, languageRef.current);
       }
       if (cancelled) return;
 
       persistentGlobe.setLabelClickHandler((text, type) => onLabelClickRef.current(text, type));
+      // Covers the case where the app language changed while this component
+      // was unmounted (map detached) — labels catch up on the next attach.
+      persistentGlobe.setLanguage(languageRef.current);
       persistentGlobe.attach(container);
       mapRef.current = persistentGlobe.map;
       setMapReady(true);
@@ -342,6 +447,13 @@ export function MapboxFriendsMap({
       mapRef.current = null;
     };
   }, []);
+
+  // Live language switch while the globe is mounted and visible (Settings
+  // is reachable from Profile, not from Home, but this keeps the map correct
+  // if that ever changes, and covers any other future entry point).
+  useEffect(() => {
+    if (mapReady) persistentGlobe?.setLanguage(language);
+  }, [language, mapReady]);
 
   // Resize when container size changes
   useEffect(() => {

@@ -13,7 +13,8 @@ import { hapticSuccess, hapticMedium, hapticLight } from "@/lib/haptics";
 import { setCachedWishlistStatus } from "@/lib/wishlistCache";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import { invalidateExploreCache } from "@/lib/exploreCache";
-import { clearRankingsCache } from "@/lib/placeRankings";
+import { clearRankingsCache, fetchAllPlaces } from "@/lib/placeRankings";
+import { matchesPlaceName, normalizeSearchText } from "@/lib/placeSearch";
 
 type Step = "search" | "review";
 
@@ -37,7 +38,7 @@ export default function AddPlacePage() {
   const preSelectedPlaceImage = searchParams.get("placeImage");
 
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [step, setStep] = useState<Step>(preSelectedPlaceId ? "review" : "search");
   const [query, setQuery] = useState("");
   const [selectedPlace, setSelectedPlace] = useState<PlaceResult | null>(
@@ -221,19 +222,24 @@ export default function AddPlacePage() {
 
   const fetchPlaces = async (search: string, requestId: number) => {
     try {
-      const [countMap, placesRes] = await Promise.all([
+      // Filter the cached places catalog client-side: matches the English DB
+      // name OR the localized name for the active language (FR "espag" finds
+      // "Spain" via "Espagne"), accent-insensitive — and search-as-you-type
+      // no longer needs a network round-trip per keystroke.
+      const [countMap, allPlaces] = await Promise.all([
         fetchReviewCountMap(),
-        (() => {
-        let q = supabase.from("places").select("id, name, country, type, image");
-        if (isFavoriteFlow) q = q.eq("type", favoriteType);
-        if (search) q = q.ilike("name", `%${search}%`);
-        return q.limit(500);
-      })(),
+        fetchAllPlaces(),
       ]);
-      if (placesRes.error) throw placesRes.error;
       if (placeSearchRequestIdRef.current !== requestId) return;
 
-      const sorted = (placesRes.data || [])
+      let candidates = allPlaces as PlaceResult[];
+      if (isFavoriteFlow) candidates = candidates.filter((p) => p.type === favoriteType);
+      if (search) {
+        const normalizedQuery = normalizeSearchText(search);
+        candidates = candidates.filter((p) => matchesPlaceName(p, normalizedQuery, language));
+      }
+
+      const sorted = [...candidates]
         .sort((a, b) => {
           const diff = (countMap.get(b.id) || 0) - (countMap.get(a.id) || 0);
           return diff !== 0 ? diff : a.name.localeCompare(b.name);
@@ -651,7 +657,7 @@ export default function AddPlacePage() {
             autoCorrect="off"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={isFavoriteFlow ? `Search ${favoriteType === "city" ? "cities" : "countries"}...` : "Name of destination"}
+            placeholder={isFavoriteFlow ? `Search ${favoriteType === "city" ? "cities" : "countries"}...` : t("add.namePlaceholder")}
             className="w-full bg-card rounded-xl py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>

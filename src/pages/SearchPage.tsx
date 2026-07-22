@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
+import { matchesPlaceName, normalizeSearchText } from "@/lib/placeSearch";
 import { prefetchPlacePrimary } from "@/lib/placePrimaryQuery";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { TranslationKey } from "@/i18n/translations";
@@ -55,7 +56,7 @@ export default function SearchPage() {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const filterTabLabels: Record<FilterTab, string> = {
     Countries: t("search.countries"),
     Cities: t("search.cities"),
@@ -133,7 +134,13 @@ export default function SearchPage() {
         ]);
 
         let filtered = allPlaces.filter((p: any) => p.type === placeType);
-        if (q) filtered = filtered.filter((p: any) => p.name.toLowerCase().includes(q.toLowerCase()));
+        if (q) {
+          // Matches the English DB name OR the localized name for the active
+          // language (e.g. FR "espag" finds "Spain" via "Espagne"),
+          // accent-insensitive both ways.
+          const normalizedQuery = normalizeSearchText(q);
+          filtered = filtered.filter((p: any) => matchesPlaceName(p, normalizedQuery, language));
+        }
 
         const withCounts = filtered.map((p: any) => ({ ...p, review_count: countMap.get(p.id) || 0 }));
         withCounts.sort((a: any, b: any) => {

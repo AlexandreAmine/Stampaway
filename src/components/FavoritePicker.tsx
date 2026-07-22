@@ -4,6 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { useSheetTransition } from "@/hooks/useSheetTransition";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { fetchAllPlaces } from "@/lib/placeRankings";
+import { matchesPlaceName, normalizeSearchText } from "@/lib/placeSearch";
 
 interface FavoritePickerProps {
   open: boolean;
@@ -24,6 +27,7 @@ export function FavoritePicker({ open, onClose, type, onSelect }: FavoritePicker
   const [places, setPlaces] = useState<PlaceOption[]>([]);
   const [loading, setLoading] = useState(false);
   const { closing, requestClose } = useSheetTransition(open, onClose);
+  const { language } = useLanguage();
 
   useEffect(() => {
     if (!open) {
@@ -41,13 +45,22 @@ export function FavoritePicker({ open, onClose, type, onSelect }: FavoritePicker
 
   const fetchPlaces = async (search: string) => {
     setLoading(true);
-    let q = supabase.from("places").select("id, name, country, image").eq("type", type);
-    if (search) {
-      q = q.ilike("name", `%${search}%`);
+    try {
+      // Filter the cached places catalog client-side: matches the English DB
+      // name OR the localized name for the active language (FR "espag" finds
+      // "Spain" via "Espagne"), accent-insensitive. Same ordering and limit
+      // as the previous server query (name A→Z, 50 results).
+      const all = await fetchAllPlaces();
+      let candidates = all.filter((p: any) => p.type === type);
+      if (search) {
+        const normalizedQuery = normalizeSearchText(search);
+        candidates = candidates.filter((p: any) => matchesPlaceName(p, normalizedQuery, language));
+      }
+      candidates = [...candidates].sort((a: any, b: any) => a.name.localeCompare(b.name)).slice(0, 50);
+      setPlaces(candidates.map((p: any) => ({ id: p.id, name: p.name, country: p.country, image: p.image })));
+    } catch {
+      setPlaces([]);
     }
-    q = q.order("name").limit(50);
-    const { data } = await q;
-    setPlaces(data || []);
     setLoading(false);
   };
 
