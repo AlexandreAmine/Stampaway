@@ -22,3 +22,19 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Note: android/.gitignore and ios/.gitignore already cover their own build output
+# (.gradle/, build/, *.aab, local.properties, App/Pods, App/App/public). The android
+# artifacts currently tracked were committed before those rules applied — untracking
+# them is what removes them from `git status`, not a rule here.
+
+# Release bundles, wherever they land
+android/app/release/
+
+# Local backups & scratch
+*.backup
+android-backup-*/
+android-broken-*/
+
+# Claude Code — keep shared config (settings.json, launch.json), ignore personal overrides
+.claude/settings.local.json
