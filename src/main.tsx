@@ -4,6 +4,10 @@ import "./index.css";
 import { initLiveUpdates } from "./lib/native/liveUpdates";
 import { isNative } from "./lib/native/platform";
 import { initScrollKeyboardDismiss } from "./lib/keyboardDismiss";
+import { initMonitoring } from "./lib/monitoring";
+
+// First, so a crash during the rest of startup is still reported.
+initMonitoring();
 
 // Mark Capgo OTA bundle as ready (native production builds only).
 initLiveUpdates();

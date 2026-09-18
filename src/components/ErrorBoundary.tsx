@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { reportError } from "@/lib/monitoring";
 
 /**
  * Last-resort crash screen. Without this, any render-time exception unmounts
@@ -71,9 +72,8 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    // There is no crash reporting yet, so this console entry and the message
-    // shown on screen are the only record of what happened.
     console.error("Unhandled render error:", error, info.componentStack);
+    reportError(error, { componentStack: info.componentStack });
   }
 
   render() {
