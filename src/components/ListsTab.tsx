@@ -104,7 +104,8 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
     if (!itemsError) invalidateListPreviewPostersCache(listId);
 
     const { error } = await supabase.from("lists").delete().eq("id", listId);
-    if (!error && user?.id) {
+    if (error) { toast.error("Failed to delete list"); return; }
+    if (user?.id) {
       invalidateOwnProfileContentCache(user.id);
       invalidateListPreviewPostersCache(listId);
     }
@@ -128,13 +129,15 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
   const handleRemoveItem = async (itemId: string) => {
     const listId = openList?.id;
     const { error } = await supabase.from("list_items").delete().eq("id", itemId);
-    if (!error) invalidateListPreviewPostersCache(listId);
+    if (error) { toast.error("Failed to remove"); return; }
+    invalidateListPreviewPostersCache(listId);
     toast.success("Removed from list");
     fetchLists();
   };
 
   const handleReorder = async (newItems: ListItem[]) => {
     if (!openList) return;
+    const previous = openList;
     const updated = { ...openList, items: newItems };
     setOpenList(updated);
     // Update positions in DB — all changed rows in parallel instead of one
@@ -149,9 +152,16 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
         supabase.from("list_items").update({ position }).eq("id", item.id)
       )
     );
-    if (results.some((r) => !r.error)) {
-      invalidateListPreviewPostersCache(openList.id);
+    if (results.some((r) => r.error)) {
+      // Some writes may have landed, so the DB order is now unknown — revert the
+      // optimistic state and re-read rather than leaving the UI showing an order
+      // that was never saved.
+      setOpenList(previous);
+      toast.error("Couldn't save the new order");
+      fetchLists();
+      return;
     }
+    invalidateListPreviewPostersCache(previous.id);
   };
 
   // Sync openList with refreshed data

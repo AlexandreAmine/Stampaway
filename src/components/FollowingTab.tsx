@@ -100,7 +100,8 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
 
   const handleUnfollow = async (followId: string, username: string) => {
     const { error } = await supabase.from("followers").delete().eq("id", followId);
-    if (!error && user?.id) invalidateOwnProfileContentCache(user.id);
+    if (error) { toast.error("Failed to unfollow"); return; }
+    if (user?.id) invalidateOwnProfileContentCache(user.id);
     toast.success(`Unfollowed ${username}`);
     void refreshFollowing();
   };
