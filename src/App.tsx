@@ -6,6 +6,7 @@ import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persist
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { BottomNav } from "@/components/BottomNav";
 import ScrollRestoration from "@/components/ScrollRestoration";
 import EdgeSwipeBack from "@/components/EdgeSwipeBack";
@@ -169,26 +170,28 @@ const queryPersister = createSyncStoragePersister({
 });
 
 const App = () => (
-  <PersistQueryClientProvider
-    client={queryClient}
-    persistOptions={{
-      persister: queryPersister,
-      maxAge: 24 * 60 * 60 * 1000,
-      buster: "v1",
-    }}
-  >
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <LanguageProvider>
-            <AppRoutes />
-          </LanguageProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </PersistQueryClientProvider>
+  <ErrorBoundary>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister: queryPersister,
+        maxAge: 24 * 60 * 60 * 1000,
+        buster: "v1",
+      }}
+    >
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <LanguageProvider>
+              <AppRoutes />
+            </LanguageProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </PersistQueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;
