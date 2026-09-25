@@ -15,6 +15,7 @@ import RouteTransition from "@/components/RouteTransition";
 import DeepLinkHandler from "@/components/DeepLinkHandler";
 import { PushNotificationsHandler } from "@/components/PushNotificationsHandler";
 import UsernameSetupGate from "@/components/UsernameSetupGate";
+import OnboardingGate from "@/components/onboarding/OnboardingGate";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import HomePage from "./pages/HomePage";
@@ -103,6 +104,7 @@ function AppRoutes() {
       </div>
       {user && !mustCompletePasswordReset && <BottomNav />}
       <UsernameSetupGate />
+      <OnboardingGate />
     </div>
   );
 }

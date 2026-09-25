@@ -349,6 +349,17 @@ const en = {
   "profile.firstPlaceTitle": "Start your travel diary",
   "profile.firstPlaceBody": "Log your first destination to start filling your map.",
   "profile.firstPlaceCta": "Log a destination",
+  "onboarding.skip": "Skip",
+  "onboarding.next": "Next",
+  "onboarding.start": "Start exploring",
+  "onboarding.rate.title": "Been somewhere? Stamp it.",
+  "onboarding.rate.body": "Add the places you've visited and rate them from 0.5 to 5 stars.",
+  "onboarding.profile.title": "Your travel identity.",
+  "onboarding.profile.body": "See everywhere you've been and the places you love most.",
+  "onboarding.friends.title": "See where your friends are going.",
+  "onboarding.friends.body": "Follow friends and discover their latest trips, ratings and recommendations.",
+  "onboarding.discover.title": "Where to next?",
+  "onboarding.discover.body": "Discover destinations through friends, rankings, lists and the Stampaway community.",
 };
 
 export type TranslationKey = keyof typeof en;
@@ -633,6 +644,17 @@ const fr: Record<TranslationKey, string> = {
   "profile.firstPlaceTitle": "Commencez votre carnet de voyage",
   "profile.firstPlaceBody": "Enregistrez votre première destination pour commencer à remplir votre carte.",
   "profile.firstPlaceCta": "Enregistrer une destination",
+  "onboarding.skip": "Passer",
+  "onboarding.next": "Suivant",
+  "onboarding.start": "Commencer l'exploration",
+  "onboarding.rate.title": "Vous y êtes allé ? Tamponnez.",
+  "onboarding.rate.body": "Ajoutez les lieux que vous avez visités et notez-les de 0,5 à 5 étoiles.",
+  "onboarding.profile.title": "Votre identité de voyageur.",
+  "onboarding.profile.body": "Retrouvez tous les endroits où vous êtes allé et ceux que vous préférez.",
+  "onboarding.friends.title": "Voyez où vont vos amis.",
+  "onboarding.friends.body": "Suivez vos amis et découvrez leurs derniers voyages, notes et recommandations.",
+  "onboarding.discover.title": "Prochaine destination ?",
+  "onboarding.discover.body": "Découvrez des destinations grâce à vos amis, aux classements, aux listes et à la communauté Stampaway.",
 };
 
 const es: Record<TranslationKey, string> = {
@@ -915,6 +937,17 @@ const es: Record<TranslationKey, string> = {
   "profile.firstPlaceTitle": "Empieza tu diario de viajes",
   "profile.firstPlaceBody": "Registra tu primer destino para empezar a llenar tu mapa.",
   "profile.firstPlaceCta": "Registrar un destino",
+  "onboarding.skip": "Saltar",
+  "onboarding.next": "Siguiente",
+  "onboarding.start": "Empezar a explorar",
+  "onboarding.rate.title": "¿Has estado allí? Séllalo.",
+  "onboarding.rate.body": "Añade los lugares que has visitado y puntúalos de 0,5 a 5 estrellas.",
+  "onboarding.profile.title": "Tu identidad viajera.",
+  "onboarding.profile.body": "Descubre todos los sitios donde has estado y los que más te gustan.",
+  "onboarding.friends.title": "Mira adónde van tus amigos.",
+  "onboarding.friends.body": "Sigue a tus amigos y descubre sus últimos viajes, valoraciones y recomendaciones.",
+  "onboarding.discover.title": "¿Adónde vamos ahora?",
+  "onboarding.discover.body": "Descubre destinos a través de amigos, rankings, listas y la comunidad de Stampaway.",
 };
 
 const it: Record<TranslationKey, string> = {
@@ -1197,6 +1230,17 @@ const it: Record<TranslationKey, string> = {
   "profile.firstPlaceTitle": "Inizia il tuo diario di viaggio",
   "profile.firstPlaceBody": "Registra la tua prima destinazione per iniziare a riempire la tua mappa.",
   "profile.firstPlaceCta": "Registra una destinazione",
+  "onboarding.skip": "Salta",
+  "onboarding.next": "Avanti",
+  "onboarding.start": "Inizia a esplorare",
+  "onboarding.rate.title": "Ci sei stato? Timbralo.",
+  "onboarding.rate.body": "Aggiungi i luoghi che hai visitato e votali da 0,5 a 5 stelle.",
+  "onboarding.profile.title": "La tua identità di viaggiatore.",
+  "onboarding.profile.body": "Rivedi tutti i posti in cui sei stato e quelli che ami di più.",
+  "onboarding.friends.title": "Guarda dove vanno i tuoi amici.",
+  "onboarding.friends.body": "Segui i tuoi amici e scopri i loro ultimi viaggi, voti e consigli.",
+  "onboarding.discover.title": "Dove andiamo adesso?",
+  "onboarding.discover.body": "Scopri destinazioni tramite amici, classifiche, liste e la community di Stampaway.",
 };
 
 const pt: Record<TranslationKey, string> = {
@@ -1479,6 +1523,17 @@ const pt: Record<TranslationKey, string> = {
   "profile.firstPlaceTitle": "Comece seu diário de viagem",
   "profile.firstPlaceBody": "Registre seu primeiro destino para começar a preencher seu mapa.",
   "profile.firstPlaceCta": "Registrar um destino",
+  "onboarding.skip": "Pular",
+  "onboarding.next": "Avançar",
+  "onboarding.start": "Começar a explorar",
+  "onboarding.rate.title": "Já esteve lá? Carimbe.",
+  "onboarding.rate.body": "Adicione os lugares que você visitou e avalie de 0,5 a 5 estrelas.",
+  "onboarding.profile.title": "Sua identidade de viajante.",
+  "onboarding.profile.body": "Veja todos os lugares onde você esteve e os que você mais ama.",
+  "onboarding.friends.title": "Veja para onde seus amigos estão indo.",
+  "onboarding.friends.body": "Siga amigos e descubra as viagens, avaliações e recomendações mais recentes.",
+  "onboarding.discover.title": "Para onde agora?",
+  "onboarding.discover.body": "Descubra destinos por meio de amigos, rankings, listas e da comunidade Stampaway.",
 };
 
 const nl: Record<TranslationKey, string> = {
@@ -1761,6 +1816,17 @@ const nl: Record<TranslationKey, string> = {
   "profile.firstPlaceTitle": "Begin je reisdagboek",
   "profile.firstPlaceBody": "Leg je eerste bestemming vast en begin je kaart te vullen.",
   "profile.firstPlaceCta": "Bestemming vastleggen",
+  "onboarding.skip": "Overslaan",
+  "onboarding.next": "Volgende",
+  "onboarding.start": "Begin met verkennen",
+  "onboarding.rate.title": "Ergens geweest? Stempel het.",
+  "onboarding.rate.body": "Voeg de plekken toe die je hebt bezocht en geef ze 0,5 tot 5 sterren.",
+  "onboarding.profile.title": "Jouw reisidentiteit.",
+  "onboarding.profile.body": "Zie overal waar je bent geweest en de plekken waar je het meest van houdt.",
+  "onboarding.friends.title": "Zie waar je vrienden heen gaan.",
+  "onboarding.friends.body": "Volg vrienden en ontdek hun nieuwste reizen, beoordelingen en aanbevelingen.",
+  "onboarding.discover.title": "Waarheen nu?",
+  "onboarding.discover.body": "Ontdek bestemmingen via vrienden, ranglijsten, lijsten en de Stampaway-community.",
 };
 
 export const translations: Record<Language, Record<TranslationKey, string>> = {
