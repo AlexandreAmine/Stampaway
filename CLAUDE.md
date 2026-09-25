@@ -13,16 +13,27 @@ Supabase for all backend (Postgres, Auth, Edge Functions, Storage). No custom se
 ## Validation — required before calling any change done
 
 ```bash
-npx tsc --noEmit
+npx tsc --noEmit -p tsconfig.app.json
 npm run test
 npm run build
 ```
 
+**The `-p tsconfig.app.json` is required.** The root `tsconfig.json` has `"files": []` and only
+lists project references, so a bare `npx tsc --noEmit` checks nothing and always exits 0. And
+`npm run build` does not type-check either (Vite strips types with esbuild). The type check has
+**7 known pre-existing errors** (App.tsx, lib/mapboxLoader.ts, lib/posterWarmup.ts, AddPlacePage
+×2, PlacePage ×2) — a change must not add to that count.
+
 For anything touching native code or plugins, then run `npx cap sync ios`.
 
-The final gate is always a device test via TestFlight. The browser preview cannot exercise
-authenticated screens, native gestures, haptics, push, or the Mapbox globes — when a change
-depends on those, say the verification is incomplete rather than claiming it works.
+The iOS Simulator works for most visual verification: build with the simulator build tool
+(`ios/App/App.xcodeproj`, scheme `App`, omit `device`), boot with
+`xcrun simctl boot "iPhone 17 Pro"`, then attach and launch. The Mapbox globes render there.
+It is a WKWebView, so there is no accessibility tree — verification is by screenshot.
+
+The final gate is still a device test via TestFlight for haptics, real push, Apple Sign-In,
+gesture feel and real-device performance — when a change depends on those, say the
+verification is incomplete rather than claiming it works.
 
 ## Git discipline
 

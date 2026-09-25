@@ -5,7 +5,7 @@
       "Read",
       "Glob",
       "Grep",
-      "Bash(npx tsc --noEmit)",
+      "Bash(npx tsc --noEmit -p tsconfig.app.json)",
       "Bash(npm run build)",
       "Bash(npm run test)",
       "Bash(npm run lint)",
