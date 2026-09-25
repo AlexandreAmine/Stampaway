@@ -7,6 +7,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import OfflineBanner from "@/components/OfflineBanner";
 import { BottomNav } from "@/components/BottomNav";
 import ScrollRestoration from "@/components/ScrollRestoration";
 import EdgeSwipeBack from "@/components/EdgeSwipeBack";
@@ -57,6 +58,7 @@ function AppRoutes() {
       <EdgeSwipeBack />
       <RouteTransition />
       <DeepLinkHandler />
+      <OfflineBanner />
       {user && <PushNotificationsHandler />}
       {/* Status-bar scrim: subtle fade under the clock/Dynamic Island so
           content scrolling beneath never collides with the system text.

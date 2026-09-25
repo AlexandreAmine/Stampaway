@@ -343,6 +343,12 @@ const en = {
   "facts.airline": "Airline",
   "facts.officialWebsite": "Official Website",
   "facts.famousCelebrities": "Famous Celebrities",
+  "error.loadFailed": "Couldn't load this",
+  "error.retry": "Try again",
+  "offline.banner": "You're offline",
+  "profile.firstPlaceTitle": "Start your travel diary",
+  "profile.firstPlaceBody": "Log your first destination to start filling your map.",
+  "profile.firstPlaceCta": "Log a destination",
 };
 
 export type TranslationKey = keyof typeof en;
@@ -621,6 +627,12 @@ const fr: Record<TranslationKey, string> = {
   "facts.airline": "Compagnie aérienne",
   "facts.officialWebsite": "Site officiel",
   "facts.famousCelebrities": "Célébrités",
+  "error.loadFailed": "Impossible de charger",
+  "error.retry": "Réessayer",
+  "offline.banner": "Vous êtes hors ligne",
+  "profile.firstPlaceTitle": "Commencez votre carnet de voyage",
+  "profile.firstPlaceBody": "Enregistrez votre première destination pour commencer à remplir votre carte.",
+  "profile.firstPlaceCta": "Enregistrer une destination",
 };
 
 const es: Record<TranslationKey, string> = {
@@ -897,6 +909,12 @@ const es: Record<TranslationKey, string> = {
   "facts.airline": "Aerolínea",
   "facts.officialWebsite": "Sitio oficial",
   "facts.famousCelebrities": "Celebridades",
+  "error.loadFailed": "No se pudo cargar",
+  "error.retry": "Reintentar",
+  "offline.banner": "Estás sin conexión",
+  "profile.firstPlaceTitle": "Empieza tu diario de viajes",
+  "profile.firstPlaceBody": "Registra tu primer destino para empezar a llenar tu mapa.",
+  "profile.firstPlaceCta": "Registrar un destino",
 };
 
 const it: Record<TranslationKey, string> = {
@@ -1173,6 +1191,12 @@ const it: Record<TranslationKey, string> = {
   "facts.airline": "Compagnia aerea",
   "facts.officialWebsite": "Sito ufficiale",
   "facts.famousCelebrities": "Celebrità",
+  "error.loadFailed": "Impossibile caricare",
+  "error.retry": "Riprova",
+  "offline.banner": "Sei offline",
+  "profile.firstPlaceTitle": "Inizia il tuo diario di viaggio",
+  "profile.firstPlaceBody": "Registra la tua prima destinazione per iniziare a riempire la tua mappa.",
+  "profile.firstPlaceCta": "Registra una destinazione",
 };
 
 const pt: Record<TranslationKey, string> = {
@@ -1449,6 +1473,12 @@ const pt: Record<TranslationKey, string> = {
   "facts.airline": "Companhia aérea",
   "facts.officialWebsite": "Site oficial",
   "facts.famousCelebrities": "Celebridades",
+  "error.loadFailed": "Não foi possível carregar",
+  "error.retry": "Tentar novamente",
+  "offline.banner": "Você está offline",
+  "profile.firstPlaceTitle": "Comece seu diário de viagem",
+  "profile.firstPlaceBody": "Registre seu primeiro destino para começar a preencher seu mapa.",
+  "profile.firstPlaceCta": "Registrar um destino",
 };
 
 const nl: Record<TranslationKey, string> = {
@@ -1725,6 +1755,12 @@ const nl: Record<TranslationKey, string> = {
   "facts.airline": "Luchtvaartmaatschappij",
   "facts.officialWebsite": "Officiële website",
   "facts.famousCelebrities": "Beroemdheden",
+  "error.loadFailed": "Kon dit niet laden",
+  "error.retry": "Opnieuw proberen",
+  "offline.banner": "Je bent offline",
+  "profile.firstPlaceTitle": "Begin je reisdagboek",
+  "profile.firstPlaceBody": "Leg je eerste bestemming vast en begin je kaart te vullen.",
+  "profile.firstPlaceCta": "Bestemming vastleggen",
 };
 
 export const translations: Record<Language, Record<TranslationKey, string>> = {

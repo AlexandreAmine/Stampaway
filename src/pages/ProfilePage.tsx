@@ -993,6 +993,31 @@ export default function ProfilePage() {
         {/* Admin Stats */}
         {isOwnProfile && user && <AdminStats userId={user.id} />}
 
+        {/* Nothing logged yet: every section below is empty, so point the way
+            to the one action that fills them. Gated on the loaded map data —
+            it carries its own visited counts, so this never flashes before the
+            real numbers arrive. */}
+        {isOwnProfile &&
+          mapMyData &&
+          mapMyData.visitedCountries.size === 0 &&
+          mapMyData.visitedCitiesCount === 0 && (
+            <div className="mb-8 flex flex-col items-center justify-center gap-3 rounded-xl border border-border bg-card px-6 py-8">
+              <p className="text-base font-semibold text-foreground text-center">
+                {t("profile.firstPlaceTitle")}
+              </p>
+              <p className="max-w-xs text-sm text-muted-foreground text-center">
+                {t("profile.firstPlaceBody")}
+              </p>
+              <button
+                onClick={() => navigate("/add")}
+                className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-transform active:scale-[0.98]"
+              >
+                <Plus className="w-4 h-4" />
+                {t("profile.firstPlaceCta")}
+              </button>
+            </div>
+          )}
+
         {/* Favorite Countries */}
         <div className="mb-4">
           <h2 className="text-lg font-bold text-foreground mb-3">Favorite Countries</h2>

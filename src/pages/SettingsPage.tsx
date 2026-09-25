@@ -140,7 +140,20 @@ export default function SettingsPage() {
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-background" />;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <div className="pt-12 px-5 space-y-6">
+          <div className="h-7 w-32 bg-muted/40 rounded skeleton-shimmer" />
+          <div className="space-y-3">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-12 bg-muted/40 rounded-xl skeleton-shimmer" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (section === "personal") {
     return (

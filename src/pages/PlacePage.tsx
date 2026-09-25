@@ -424,6 +424,24 @@ export default function PlacePage() {
   const localizedName = useLocalizedPlaceName(place?.name, place?.type === "country");
   const localizedCountry = useLocalizedPlaceName(place?.country, true);
 
+  // Without this the skeleton below spins forever on a failed fetch, since
+  // `loading` only clears once data arrives.
+  if (primaryQuery.isError && !place) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-8 text-center">
+        <p className="text-sm text-muted-foreground">{t("error.loadFailed")}</p>
+        <button
+          type="button"
+          onClick={() => primaryQuery.refetch()}
+          disabled={primaryQuery.isFetching}
+          className="mt-5 rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-transform active:scale-[0.98] disabled:opacity-60"
+        >
+          {primaryQuery.isFetching ? t("loading") : t("error.retry")}
+        </button>
+      </div>
+    );
+  }
+
   if (loading || !place) {
     return (
       <div className="min-h-screen bg-background pt-12 px-5 max-w-lg mx-auto">

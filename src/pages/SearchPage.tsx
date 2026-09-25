@@ -69,6 +69,19 @@ export default function SearchPage() {
   })();
   const [activeFilter, setActiveFilter] = useState<FilterTab>(initialTab);
   const [query, setQuery] = useState("");
+  // Written on every result tap below, but never read back until now.
+  const [recentSearches, setRecentSearches] = useState<
+    { id: string; name: string }[]
+  >([]);
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("recentSearches") || "[]");
+      if (Array.isArray(saved)) setRecentSearches(saved.slice(0, 8));
+    } catch {
+      // Corrupt or blocked storage just means no recents to show.
+    }
+  }, []);
   const [places, setPlaces] = useState<any[]>([]);
   const [lists, setLists] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -519,6 +532,28 @@ export default function SearchPage() {
             </button>
           ))}
         </div>
+
+        {!query &&
+          recentSearches.length > 0 &&
+          (activeFilter === "Countries" || activeFilter === "Cities") && (
+            <div className="mb-6">
+              <p className="text-xs text-muted-foreground mb-3">
+                {t("search.recentSearches")}
+              </p>
+              {recentSearches.map((p) => (
+                <button
+                  key={p.id}
+                  onTouchStart={() =>
+                    prefetchPlacePrimary(queryClient, p.id, user?.id ?? null)
+                  }
+                  onClick={() => navigate(`/place/${p.id}`)}
+                  className="w-full text-left py-2.5 active:opacity-60"
+                >
+                  <p className="text-base font-bold text-foreground">{p.name}</p>
+                </button>
+              ))}
+            </div>
+          )}
 
         {renderResults()}
       </div>
