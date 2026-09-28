@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect } from "react";
 import { useLocation, useNavigationType } from "react-router-dom";
+import { PERF_ENABLED, perfMark, perfNavStart } from "@/lib/perfMarks";
 
 // Per-path scroll memory. Restores scroll when returning to a previously
 // visited path (via tab switch or back/forward); resets to top for new paths.
@@ -25,12 +26,21 @@ export default function ScrollRestoration() {
   // Restore (or reset) on route change, before paint to avoid flash
   useLayoutEffect(() => {
     const saved = scrollPositions.get(key);
+    perfNavStart(key, navType);
     if (navType === "POP" && saved != null) {
       window.scrollTo(0, saved);
     } else if (saved != null) {
       window.scrollTo(0, saved);
     } else {
       window.scrollTo(0, 0);
+    }
+    // Measurement only: did the restore actually land where we left off?
+    if (PERF_ENABLED && saved != null && saved > 0) {
+      const report = (when: string) =>
+        perfMark("scroll-restore", `${key} wanted ${Math.round(saved)} got ${Math.round(window.scrollY)} (${when})`);
+      report("immediately");
+      const timer = window.setTimeout(() => report("after 600ms"), 600);
+      return () => window.clearTimeout(timer);
     }
   }, [key, navType]);
 

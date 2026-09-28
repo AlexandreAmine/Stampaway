@@ -5,6 +5,9 @@ import { initLiveUpdates } from "./lib/native/liveUpdates";
 import { isNative } from "./lib/native/platform";
 import { initScrollKeyboardDismiss } from "./lib/keyboardDismiss";
 import { initMonitoring } from "./lib/monitoring";
+import { perfMark } from "./lib/perfMarks";
+
+perfMark("js-start");
 
 // First, so a crash during the rest of startup is still reported.
 initMonitoring();

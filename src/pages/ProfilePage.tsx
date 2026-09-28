@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePerfReady } from "@/lib/perfMarks";
 import type { TranslationKey } from "@/i18n/translations";
 import { RatingHistogram } from "@/components/RatingHistogram";
 import { FavoritePicker } from "@/components/FavoritePicker";
@@ -333,6 +334,8 @@ export default function ProfilePage() {
   };
 
   const currentProfile = isOwnProfile ? (ownProfileFull || profile) : viewedProfile;
+  usePerfReady("profile:header", !!currentProfile?.username, isOwnProfile ? "own" : "other");
+  usePerfReady("profile", totalCountries > 0, isOwnProfile ? "own" : "other");
   const displayName = currentProfile?.username || "User";
   const avatarUrl = currentProfile?.profile_picture || fallbackAvatarUrl(displayName);
   const profileBio = (currentProfile as any)?.bio as string | null;

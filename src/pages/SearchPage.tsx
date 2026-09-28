@@ -10,6 +10,7 @@ import { matchesPlaceName, normalizeSearchText } from "@/lib/placeSearch";
 import { getCachedPlaceName } from "@/lib/placeNames";
 import { prefetchPlacePrimary } from "@/lib/placePrimaryQuery";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePerfReady } from "@/lib/perfMarks";
 import { continentLabel } from "@/lib/continentLabels";
 import { subCategoryLabel } from "@/lib/subCategories";
 import type { TranslationKey } from "@/i18n/translations";
@@ -87,6 +88,8 @@ export default function SearchPage() {
   const [selectedCategory, setSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
   const [grouped, setGrouped] = useState(false);
   const [visibleCount, setVisibleCount] = useState(250);
+  usePerfReady("search:skeleton", loading);
+  usePerfReady("search", !loading && places.length > 0, `${places.length} places`);
   const searchStateRef = useRef<{ initialized: boolean; query: string; activeFilter: FilterTab }>({
     initialized: false,
     query: "",

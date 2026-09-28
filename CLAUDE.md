@@ -35,6 +35,12 @@ The final gate is still a device test via TestFlight for haptics, real push, App
 gesture feel and real-device performance — when a change depends on those, say the
 verification is incomplete rather than claiming it works.
 
+**Measuring perceived speed:** `src/lib/perfMarks.ts` logs `[perf]` timings (launch, auth,
+splash, every navigation, when each screen's content is on screen, scroll restore). They are
+compiled out of normal builds. Build with `VITE_PERF_MARKS=1 npm run build`, sync and install,
+then run `scripts/measure-perf.sh [seconds]` and tap around in the Simulator while it records.
+Rebuild without the variable before anything ships.
+
 ## Git discipline
 
 - Never `git add .` — stage explicit paths only.

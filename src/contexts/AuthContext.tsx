@@ -3,6 +3,7 @@ import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { isNative } from "@/lib/native/platform";
+import { perfMark } from "@/lib/perfMarks";
 
 const PASSWORD_RESET_LOCK_KEY = "traveld.password-reset-lock";
 
@@ -55,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const hideSplash = () => {
     if (splashHiddenRef.current || !isNative()) return;
     splashHiddenRef.current = true;
+    perfMark("splash-hide");
     // Smooth dissolve into the app instead of a hard cut
     SplashScreen.hide({ fadeOutDuration: 300 }).catch(() => {});
   };
@@ -77,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const splashTimeout = window.setTimeout(hideSplash, 6000);
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      perfMark("auth-event", `${_event} ${session ? "signed-in" : "signed-out"}`);
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -91,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
+      perfMark("auth-getSession", session ? "signed-in" : "signed-out");
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {

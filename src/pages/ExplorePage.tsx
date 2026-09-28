@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePerfReady } from "@/lib/perfMarks";
 import type { TranslationKey } from "@/i18n/translations";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { PosterWishlistButton } from "@/components/PosterWishlistButton";
@@ -234,6 +235,9 @@ export default function ExplorePage() {
   }>({ friend: null, popular: null });
 
   activeExploreRef.current = { cacheKey: currentCacheKey, userId };
+  const showPlacesSkeleton = activeTab === "Places" && (placesLoading || visibleExploreCacheKey !== currentCacheKey);
+  usePerfReady("explore:skeleton", showPlacesSkeleton);
+  usePerfReady("explore", activeTab === "Places" && !showPlacesSkeleton && sections.length > 0);
 
   const isCurrentExploreRequest = useCallback((options: ExploreFetchOptions) => {
     return (

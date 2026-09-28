@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { DiaryEditSheet } from "@/components/DiaryEditSheet";
 import { dedupeByNewest } from "@/lib/reviewDedup";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePerfReady } from "@/lib/perfMarks";
 import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
 import { getCachedPlaceName } from "@/lib/placeNames";
 import { setCachedWishlistStatus } from "@/lib/wishlistCache";
@@ -423,6 +424,8 @@ export default function PlacePage() {
   };
 
   const localizedName = useLocalizedPlaceName(place?.name, place?.type === "country");
+  usePerfReady("place:skeleton", loading || !place);
+  usePerfReady("place", !loading && !!place);
   const localizedCountry = useLocalizedPlaceName(place?.country, true);
 
   // Without this the skeleton below spins forever on a failed fetch, since

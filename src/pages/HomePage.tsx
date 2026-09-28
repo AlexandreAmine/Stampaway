@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { usePerfReady } from "@/lib/perfMarks";
 import { relativeDays } from "@/lib/localeFormat";
 import { getPlaceCoordinates } from "@/lib/cityCoordinates";
 import { GlobeActivityPopup } from "@/components/GlobeActivityPopup";
@@ -247,6 +248,7 @@ export default function HomePage() {
   const activities = feedQuery.data?.activities ?? [];
   const hasFollowing = feedQuery.data?.hasFollowing ?? true;
   const loading = feedQuery.isPending;
+  usePerfReady("home", !!feedQuery.data, feedQuery.isFetchedAfterMount ? "network" : "cache");
 
   const getAvatarUrl = (a: FriendActivity) =>
     a.profile_picture || fallbackAvatarUrl(a.username);
