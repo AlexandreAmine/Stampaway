@@ -38,3 +38,27 @@ export function matchesPlaceName(
   const localized = getCachedPlaceName(place.name, language, place.type === "country");
   return localized !== place.name && normalizeSearchText(localized).includes(normalizedQuery);
 }
+
+/**
+ * Country picker search (Edit Profile). Countries are stored under their
+ * English name but matched in the app language too, so "Allemagne" finds
+ * Germany, accent-insensitively. Names that start with the query come
+ * first, then alphabetical by the name the user sees. Returns English names.
+ */
+export function searchCountryNames(
+  countries: readonly string[],
+  query: string,
+  exclude: readonly string[],
+  language: Language,
+  limit = 8,
+): string[] {
+  const normalizedQuery = normalizeSearchText(query.trim());
+  if (!normalizedQuery) return [];
+  const rank = (label: string) => (normalizeSearchText(label).startsWith(normalizedQuery) ? 0 : 1);
+  return countries
+    .filter((c) => !exclude.includes(c) && matchesPlaceName({ name: c, type: "country" }, normalizedQuery, language))
+    .map((c) => ({ c, label: getCachedPlaceName(c, language, true) }))
+    .sort((a, b) => rank(a.label) - rank(b.label) || a.label.localeCompare(b.label, language))
+    .slice(0, limit)
+    .map(({ c }) => c);
+}

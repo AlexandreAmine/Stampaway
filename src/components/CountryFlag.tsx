@@ -2,9 +2,9 @@ import { useState } from "react";
 import { getFlagUrl } from "@/lib/countryFlags";
 
 /**
- * Flags come from flagcdn.com. Until one arrives (cold cache, slow network)
- * a bordered <img> renders as an empty outlined box, which read as a broken
- * flag; keep it invisible until it has loaded, and drop it if it fails.
+ * Flags are bundled with the app (see getFlagUrl), so they normally load at
+ * once; still, a bordered <img> that hasn't decoded yet renders as an empty
+ * outlined box, so keep it invisible until loaded and drop it on error.
  */
 export function FlagImage({ src, alt, className }: { src: string; alt: string; className: string }) {
   // Keyed by URL (not reset in an effect): cached flags fire `load` before

@@ -40,3 +40,28 @@ describe("localized place search", () => {
     expect(matchesPlaceName(spain, q(""), "fr")).toBe(true);
   });
 });
+
+describe("searchCountryNames", () => {
+  const ALL = ["Albania", "Algeria", "Germany", "Spain", "United States", "Portugal"];
+
+  it("finds countries by their name in the app language and returns English names", async () => {
+    const { searchCountryNames } = await import("@/lib/placeSearch");
+    expect(searchCountryNames(ALL, "Allemagne", [], "fr")).toEqual(["Germany"]);
+    expect(searchCountryNames(ALL, "espagne", [], "fr")).toEqual(["Spain"]);
+  });
+
+  it("still matches English names in any language, ignoring accents", async () => {
+    const { searchCountryNames } = await import("@/lib/placeSearch");
+    expect(searchCountryNames(ALL, "germ", [], "fr")).toEqual(["Germany"]);
+    expect(searchCountryNames(ALL, "ÉTATS", [], "fr")).toEqual(["United States"]);
+  });
+
+  it("puts names starting with the query first, sorted as shown, and skips chosen ones", async () => {
+    const { searchCountryNames } = await import("@/lib/placeSearch");
+    expect(searchCountryNames(ALL, "al", [], "fr")).toEqual(["Albanie", "Algérie", "Allemagne", "Portugal"].map(
+      (fr) => ({ Albanie: "Albania", "Algérie": "Algeria", Allemagne: "Germany", Portugal: "Portugal" } as Record<string, string>)[fr],
+    ));
+    expect(searchCountryNames(ALL, "al", ["Albania"], "en")).toEqual(["Algeria", "Portugal"]);
+    expect(searchCountryNames(ALL, "  ", [], "en")).toEqual([]);
+  });
+});

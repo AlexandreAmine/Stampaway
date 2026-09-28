@@ -17,7 +17,7 @@ const wrap = (ui: React.ReactNode) => render(<LanguageProvider>{ui}</LanguagePro
 const photo = (container: HTMLElement) =>
   [...container.querySelectorAll("img")].find((img) => img.src.includes("example.com"))!;
 const flagImgs = (container: HTMLElement) =>
-  [...container.querySelectorAll("img")].filter((img) => img.src.includes("flagcdn.com"));
+  [...container.querySelectorAll("img")].filter((img) => img.src.includes("/flags/"));
 
 beforeEach(() => localStorage.setItem("app_language", "en"));
 
@@ -29,7 +29,7 @@ describe("DestinationPoster", () => {
     const flags = flagImgs(container);
     // Only the large fallback flag, not the small corner one as well.
     expect(flags).toHaveLength(1);
-    expect(flags[0].src).toContain("/w160/de.png");
+    expect(flags[0].src).toContain("/flags/w160/de.png");
     expect(screen.getByText("Germany")).toBeTruthy();
   });
 
@@ -37,9 +37,9 @@ describe("DestinationPoster", () => {
     const { container } = wrap(
       <DestinationPoster placeId="p2" name="Germany" country="Germany" type="country" image="https://example.com/broken.jpg" />,
     );
-    expect(flagImgs(container)[0].src).toContain("/w40/de.png");
+    expect(flagImgs(container)[0].src).toContain("/flags/w80/de.png");
     fireEvent.error(photo(container));
-    expect(flagImgs(container)[0].src).toContain("/w160/de.png");
+    expect(flagImgs(container)[0].src).toContain("/flags/w160/de.png");
   });
 
   it("shimmers until the photo loads, then stops", () => {
@@ -96,7 +96,7 @@ describe("CountryFlag", () => {
   it("renders the same flag image as the posters, or nothing for an unknown country", async () => {
     const { CountryFlag } = await import("@/components/CountryFlag");
     const { container, rerender } = render(<CountryFlag country="Japan" />);
-    expect(flagImgs(container)[0].src).toContain("/w40/jp.png");
+    expect(flagImgs(container)[0].src).toContain("/flags/w80/jp.png");
     rerender(<CountryFlag country="Atlantis" />);
     expect(flagImgs(container)).toHaveLength(0);
   });

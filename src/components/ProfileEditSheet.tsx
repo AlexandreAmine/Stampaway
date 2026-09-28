@@ -9,6 +9,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { ALL_COUNTRIES } from "@/lib/countryFlags";
+import { getCachedPlaceName } from "@/lib/placeNames";
+import { searchCountryNames } from "@/lib/placeSearch";
 import { CountryFlag } from "@/components/CountryFlag";
 import { X, Plus } from "lucide-react";
 import { SOCIAL_PLATFORMS, sanitizeSocialLinks, type SocialLinksMap, type SocialPlatform } from "@/lib/socialLinks";
@@ -30,7 +32,7 @@ const parseCountries = (raw: string | null): string[] =>
 
 export function ProfileEditSheet({ open, onClose, onSaved, currentData }: ProfileEditSheetProps) {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [username, setUsername] = useState(currentData.username);
   const [bio, setBio] = useState(currentData.bio || "");
   const [countries, setCountries] = useState<string[]>(parseCountries(currentData.country));
@@ -64,13 +66,9 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const filteredCountries = countryQuery.trim()
-    ? ALL_COUNTRIES.filter(
-        (c) =>
-          c.toLowerCase().includes(countryQuery.toLowerCase()) &&
-          !countries.includes(c),
-      ).slice(0, 8)
-    : [];
+  // Stored under English names, but searched and shown in the app language.
+  const countryLabel = (c: string) => getCachedPlaceName(c, language, true);
+  const filteredCountries = searchCountryNames(ALL_COUNTRIES, countryQuery, countries, language);
 
   const handleSelectCountry = (c: string) => {
     if (!countries.includes(c)) setCountries([...countries, c]);
@@ -159,11 +157,11 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
                     className="inline-flex items-center gap-1.5 bg-card border border-border rounded-full pl-2 pr-1 py-1"
                   >
                     <CountryFlag country={c} />
-                    <span className="text-xs text-foreground">{c}</span>
+                    <span className="text-xs text-foreground" data-no-translate>{countryLabel(c)}</span>
                     <button
                       onClick={() => handleRemoveCountry(c)}
                       className="w-4 h-4 rounded-full hover:bg-muted/50 flex items-center justify-center"
-                      aria-label={t("editProfile.removeCountry", { country: c })}
+                      aria-label={t("editProfile.removeCountry", { country: countryLabel(c) })}
                     >
                       <X className="w-3 h-3 text-muted-foreground" />
                     </button>
@@ -194,7 +192,7 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
                         className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/50 text-left"
                       >
                         <CountryFlag country={c} />
-                        <span className="text-sm text-foreground">{c}</span>
+                        <span className="text-sm text-foreground" data-no-translate>{countryLabel(c)}</span>
                       </button>
                     ))}
                   </div>

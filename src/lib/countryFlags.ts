@@ -68,10 +68,15 @@ export function getCountryCode(countryName: string): string | null {
   return countryCodeMap[countryName] || null;
 }
 
+// Flags ship with the app (public/flags, fetched once from flagcdn.com) so
+// they show instantly, offline included, with no third-party request per
+// flag. Two sizes: w80 for small flags (sharp at ~28px on 3x screens) and
+// w160 for the large no-photo poster card.
 export function getFlagUrl(countryName: string, width: number = 40): string | null {
   const code = getCountryCode(countryName);
   if (!code) return null;
-  return `https://flagcdn.com/w${width}/${code.toLowerCase()}.png`;
+  const size = width <= 80 ? "w80" : "w160";
+  return `${import.meta.env.BASE_URL}flags/${size}/${code.toLowerCase()}.png`;
 }
 
 export function getFlagEmoji(countryName: string): string | null {
