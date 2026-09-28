@@ -1,7 +1,7 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
 import { useState, useEffect } from "react";
 import { Star, Calendar, Clock, MessageSquare, X, Users } from "lucide-react";
-import { getFlagEmoji } from "@/lib/countryFlags";
+import { CountryFlag } from "@/components/CountryFlag";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -105,7 +105,6 @@ export function GlobeActivityPopup({ activity, onClose, onNavigate, onProfileNav
 
   if (!activity) return null;
 
-  const flag = getFlagEmoji(activity.place_country);
   const avatarUrl = activity.profile_picture || fallbackAvatarUrl(activity.username);
 
   return (
@@ -154,7 +153,7 @@ export function GlobeActivityPopup({ activity, onClose, onNavigate, onProfileNav
             {/* Destination */}
             <button onClick={onNavigate} className="w-full text-left">
               <div className="flex items-center gap-2 mb-2">
-                {flag && <span className="text-lg">{flag}</span>}
+                <CountryFlag country={activity.place_country} className="w-6 h-[17px]" />
                 <h3 className="text-lg font-bold text-foreground">{activity.place_name}</h3>
               </div>
               {activity.place_type === "city" && (

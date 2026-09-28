@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { continentLabel } from "@/lib/continentLabels";
 import { getCachedPlaceName } from "@/lib/placeNames";
+import { CountryFlag } from "@/components/CountryFlag";
 import { getCountryCode } from "@/lib/countryFlags";
 import { getCityCoordinates } from "@/lib/cityCoordinates";
 import {
@@ -531,13 +532,12 @@ function TopCountriesByCities({ userId }: { userId: string }) {
     <div className="mt-4 space-y-1">
       <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-2">{t("map.topCountriesByCities")}</p>
       {top.map((item) => {
-        const code = getCountryCode(item.country);
-        const flag = code
-          ? String.fromCodePoint(...code.split("").map((c) => 0x1f1e6 + c.charCodeAt(0) - 65))
-          : "";
         return (
           <div key={item.country} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-1.5">
-            <span className="text-sm">{flag} {getCachedPlaceName(item.country, language, true)}</span>
+            <span className="text-sm inline-flex items-center gap-1.5">
+              <CountryFlag country={item.country} />
+              {getCachedPlaceName(item.country, language, true)}
+            </span>
             <span className="text-xs font-medium text-primary">{tn("count.city", item.count)}</span>
           </div>
         );
@@ -615,17 +615,13 @@ function VisitedTogether({ myUserId, theirUserId, theirUsername }: { myUserId: s
             </p>
             <div className="space-y-1">
               {countries.map(c => {
-                const code = getCountryCode(c.name);
-                const flag = code
-                  ? String.fromCodePoint(...code.split("").map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65))
-                  : "";
                 return (
                   <button
                     key={c.placeId}
                     onClick={() => navigate(`/place/${c.placeId}`)}
                     className="w-full flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left"
                   >
-                    <span className="text-sm">{flag}</span>
+                    <CountryFlag country={c.name} />
                     <span className="text-xs text-foreground">{getCachedPlaceName(c.name, language, true)}</span>
                   </button>
                 );
@@ -728,8 +724,6 @@ function RatingComparison({ myUserId, theirUserId, theirUsername }: { myUserId: 
   if (countries.length === 0 && cities.length === 0) return null;
 
   const renderRow = (item: { name: string; country?: string; placeId: string; myRating: number | null; theirRating: number | null }, showCountry = false) => {
-    const code = !showCountry ? getCountryCode(item.name) : null;
-    const flag = code ? String.fromCodePoint(...code.split("").map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65)) : "";
     return (
       <button
         key={item.placeId}
@@ -737,7 +731,7 @@ function RatingComparison({ myUserId, theirUserId, theirUsername }: { myUserId: 
         className="w-full flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2 hover:bg-muted/50 transition-colors"
       >
         <div className="flex items-center gap-2 min-w-0">
-          {flag && <span className="text-sm">{flag}</span>}
+          {!showCountry && <CountryFlag country={item.name} />}
           <span className="text-xs text-foreground truncate">{getCachedPlaceName(item.name, language, !showCountry)}</span>
           {showCountry && <span className="text-[10px] text-muted-foreground">({getCachedPlaceName(item.country ?? "", language, true)})</span>}
         </div>
@@ -846,11 +840,9 @@ function SharedWishlist({ myUserId, theirUserId, theirUsername }: { myUserId: st
       ) : (
         <div className="space-y-1">
           {activeList.map((c) => {
-            const code = wishTab === "country" ? getCountryCode(c.name) : null;
-            const flag = code ? String.fromCodePoint(...code.split("").map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65)) : "";
             return (
               <button key={c.placeId} onClick={() => navigate(`/place/${c.placeId}`)} className="w-full flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left">
-                {flag && <span className="text-sm">{flag}</span>}
+                {wishTab === "country" && <CountryFlag country={c.name} />}
                 <span className="text-xs text-foreground">{getCachedPlaceName(c.name, language, wishTab === "country")}</span>
                 {"country" in c && wishTab === "city" && <span className="text-[10px] text-muted-foreground">({getCachedPlaceName((c as any).country, language, true)})</span>}
               </button>

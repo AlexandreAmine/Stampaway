@@ -30,7 +30,7 @@ export function LegalDocument({ title, lastUpdated, children }: LegalDocumentPro
           >
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
-          <h1 className="text-xl font-bold text-foreground">{title}</h1>
+          <h1 className="page-title">{title}</h1>
         </div>
 
         <p className="text-xs text-muted-foreground mb-8">

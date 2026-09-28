@@ -670,6 +670,7 @@ const en = {
   "photo.header": "Profile photo",
   "photo.library": "Choose from Library",
   "photo.take": "Take Photo",
+  "welcome.signInLink": "Sign in",
 };
 
 export type TranslationKey = keyof typeof en;
@@ -1275,6 +1276,7 @@ const fr: Record<TranslationKey, string> = {
   "photo.header": "Photo de profil",
   "photo.library": "Choisir dans la photothèque",
   "photo.take": "Prendre une photo",
+  "welcome.signInLink": "Se connecter",
 };
 
 const es: Record<TranslationKey, string> = {
@@ -1878,6 +1880,7 @@ const es: Record<TranslationKey, string> = {
   "photo.header": "Foto de perfil",
   "photo.library": "Elegir de la fototeca",
   "photo.take": "Hacer foto",
+  "welcome.signInLink": "Inicia sesión",
 };
 
 const it: Record<TranslationKey, string> = {
@@ -2481,6 +2484,7 @@ const it: Record<TranslationKey, string> = {
   "photo.header": "Foto profilo",
   "photo.library": "Scegli dalla libreria",
   "photo.take": "Scatta foto",
+  "welcome.signInLink": "Accedi",
 };
 
 const pt: Record<TranslationKey, string> = {
@@ -3084,6 +3088,7 @@ const pt: Record<TranslationKey, string> = {
   "photo.header": "Foto do perfil",
   "photo.library": "Escolher da biblioteca",
   "photo.take": "Tirar foto",
+  "welcome.signInLink": "Entrar",
 };
 
 const nl: Record<TranslationKey, string> = {
@@ -3687,6 +3692,7 @@ const nl: Record<TranslationKey, string> = {
   "photo.header": "Profielfoto",
   "photo.library": "Kiezen uit bibliotheek",
   "photo.take": "Foto maken",
+  "welcome.signInLink": "Inloggen",
 };
 
 export const translations: Record<Language, Record<TranslationKey, string>> = {

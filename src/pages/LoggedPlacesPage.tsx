@@ -65,7 +65,7 @@ export default function LoggedPlacesPage() {
           <button onClick={() => navigate(-1)}>
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
-          <h1 className="text-xl font-bold text-foreground">
+          <h1 className="page-title">
             {t(type === "city" ? "logged.myCities" : "logged.myCountries")}
           </h1>
         </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, Search, X } from "lucide-react";
+import { ChevronLeft, Heart, Search, X } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -527,8 +527,14 @@ export default function AddPlacePage() {
               <p className="text-sm font-semibold text-foreground mb-3">{t("review.yourRating")}</p>
               <div className="flex items-center justify-between">
                 <StarRating rating={rating} size={40} interactive onChange={setRating} />
-                <button type="button" onClick={() => setLiked(!liked)} className="text-2xl transition-transform active:scale-90">
-                  {liked ? "❤️" : "🤍"}
+                <button
+                  type="button"
+                  onClick={() => setLiked(!liked)}
+                  aria-pressed={liked}
+                  aria-label={t("reviewDetail.liked")}
+                  className="p-1 -m-1 transition-transform active:scale-90"
+                >
+                  <Heart className={`w-7 h-7 transition-colors ${liked ? "text-red-500 fill-red-500" : "text-muted-foreground"}`} />
                 </button>
               </div>
             </div>
@@ -657,7 +663,7 @@ export default function AddPlacePage() {
     <div className="min-h-screen bg-[hsl(0,0%,4%)] pb-24">
       <div className="pt-14 px-5">
         <div className="flex items-center gap-3 mb-6">
-          <h1 className="text-xl font-bold text-foreground">
+          <h1 className="page-title">
             {isFavoriteFlow
               ? t(favoriteType === "city" ? "add.favoriteCityTitle" : "add.favoriteCountryTitle")
               : t("add.title")}

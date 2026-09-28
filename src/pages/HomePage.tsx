@@ -2,7 +2,7 @@ import { fallbackAvatarUrl } from "@/lib/avatarFallback";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Star, UserPlus, Bell } from "lucide-react";
-import { getFlagEmoji } from "@/lib/countryFlags";
+import { CountryFlag } from "@/components/CountryFlag";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -392,9 +392,7 @@ export default function HomePage() {
                     <span className="text-xs text-muted-foreground">• {formatDate(a.created_at)}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    {getFlagEmoji(a.place_country) && (
-                      <span className="text-sm shrink-0">{getFlagEmoji(a.place_country)}</span>
-                    )}
+                    <CountryFlag country={a.place_country} />
                     <span className="text-sm font-bold text-foreground truncate">{a.place_name}</span>
                     {a.rating != null && (
                       <>

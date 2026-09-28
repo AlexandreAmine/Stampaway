@@ -15,7 +15,7 @@ import {
 import { toast } from "sonner";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNativeFeatures } from "@/hooks/useNativeFeatures";
-import { getFlagEmoji } from "@/lib/countryFlags";
+import { CountryFlag } from "@/components/CountryFlag";
 
 interface ShareProfileSheetProps {
   open: boolean;
@@ -139,7 +139,7 @@ export function ShareProfileSheet({ open, onClose, profile, stats }: ShareProfil
               <div className="mt-3 flex items-center gap-1.5">
                 <span className="text-base font-semibold text-foreground" data-no-translate>@{profile.username}</span>
                 {firstCountry && (
-                  <span className="text-base leading-none">{getFlagEmoji(firstCountry)}</span>
+                  <CountryFlag country={firstCountry} className="w-5 h-[14px]" />
                 )}
               </div>
               {profile.bio && (

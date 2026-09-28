@@ -162,7 +162,7 @@ export default function CountryCitiesPage() {
           <button onClick={() => navigate(-1)}>
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
-          <h1 className="text-xl font-bold text-foreground">{title}</h1>
+          <h1 className="page-title">{title}</h1>
         </div>
 
         {!loading && cities.length > 0 && (

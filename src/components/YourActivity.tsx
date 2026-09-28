@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
-import { ChevronLeft } from "lucide-react";
+import {
+  Ban, Bookmark, ChevronLeft, Circle, Heart, ListPlus, MapPin, MapPinned,
+  MessageCircle, Pencil, Star, Target, UserPlus, type LucideIcon,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -16,6 +19,32 @@ interface ActivityParams {
   list?: string;
   year?: string;
   continent?: string;
+}
+
+// Line icons, matching the rest of the app (these used to be emoji).
+const ACTIVITY_ICONS: Record<string, LucideIcon> = {
+  log: MapPin,
+  edit: Pencil,
+  review_like: Heart,
+  comment: MessageCircle,
+  list_like: Heart,
+  follow: UserPlus,
+  block: Ban,
+  wishlist: Bookmark,
+  list_create: ListPlus,
+  favorite: Star,
+  goal_set: Target,
+  goal_edit: Target,
+  goal_place: MapPinned,
+};
+
+function ActivityIcon({ type }: { type: string }) {
+  const Icon = ACTIVITY_ICONS[type] ?? Circle;
+  return (
+    <span className="w-8 h-8 shrink-0 rounded-full bg-muted/50 flex items-center justify-center">
+      <Icon className="w-4 h-4 text-muted-foreground" />
+    </span>
+  );
 }
 
 interface ActivityItem {
@@ -194,31 +223,13 @@ export function YourActivity({ onBack }: { onBack: () => void }) {
     });
   };
 
-  const getIcon = (type: string) => {
-    switch (type) {
-      case "log": return "📍";
-      case "edit": return "✏️";
-      case "review_like": return "❤️";
-      case "comment": return "💬";
-      case "list_like": return "❤️";
-      case "follow": return "👤";
-      case "block": return "🚫";
-      case "wishlist": return "🔖";
-      case "list_create": return "📋";
-      case "favorite": return "⭐";
-      case "goal_set": return "🎯";
-      case "goal_edit": return "🎯";
-      case "goal_place": return "📌";
-      default: return "•";
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
       <div className="pt-12 px-5">
         <div className="flex items-center gap-3 mb-6">
           <button onClick={onBack}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
-          <h1 className="text-xl font-bold text-foreground">{t("activity.title")}</h1>
+          <h1 className="page-title">{t("activity.title")}</h1>
         </div>
 
         {loading ? (
@@ -233,7 +244,7 @@ export function YourActivity({ onBack }: { onBack: () => void }) {
           <div className="space-y-0">
             {activities.map(a => (
               <div key={a.id} className="flex items-start gap-3 py-3 border-b border-border last:border-0">
-                <span className="text-base mt-0.5">{getIcon(a.type)}</span>
+                <ActivityIcon type={a.type} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-foreground">{describe(a)}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">

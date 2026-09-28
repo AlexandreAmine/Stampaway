@@ -1,7 +1,7 @@
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { getCachedPlaceName } from "@/lib/placeNames";
-import { getFlagEmoji } from "@/lib/countryFlags";
+import { CountryFlag } from "@/components/CountryFlag";
 
 /** Shape saved in localStorage "recentSearches"; older entries may only have id + name. */
 export interface RecentPlace {
@@ -30,7 +30,6 @@ export function RecentSearches({ places, onSelect, onPressStart }: Props) {
           const isCountry = place.type === "country";
           const isCity = place.type === "city";
           const flagCountry = isCountry ? place.name : place.country;
-          const flag = flagCountry ? getFlagEmoji(flagCountry) : null;
           const subtitle = isCity && place.country
             ? getCachedPlaceName(place.country, language, true)
             : isCountry
@@ -61,8 +60,8 @@ export function RecentSearches({ places, onSelect, onPressStart }: Props) {
                   {getCachedPlaceName(place.name, language, isCountry)}
                 </p>
                 {subtitle && (
-                  <p className="text-xs text-muted-foreground truncate">
-                    {flag && <span className="mr-1">{flag}</span>}
+                  <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5">
+                    <CountryFlag country={flagCountry} className="w-4 h-3" />
                     {subtitle}
                   </p>
                 )}

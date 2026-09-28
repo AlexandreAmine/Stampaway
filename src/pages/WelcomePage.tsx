@@ -64,40 +64,46 @@ export default function WelcomePage() {
           )}
         </div>
 
-        {/* Buttons */}
-        <div className="space-y-3 pb-10 mt-auto pt-4">
-          <button
-            onClick={() => navigate("/auth?mode=login")}
-            className="w-full bg-primary text-primary-foreground rounded-xl py-3.5 text-sm font-semibold hover:bg-primary/90 transition-colors"
-          >
-            {t("auth.signIn")}
-          </button>
-          <button
-            onClick={() => navigate("/auth?mode=signup")}
-            className="w-full bg-card text-foreground border border-border rounded-xl py-3.5 text-sm font-semibold hover:bg-card/80 transition-colors"
-          >
-            {t("auth.createAccount")}
-          </button>
-          <button
-            onClick={async () => {
-              try {
-                if (canUseNativeAppleSignIn()) {
-                  await nativeAppleSignIn();
-                } else {
-                  const result = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin });
-                  if (result.error) toast.error(result.error.message);
+        {/* Actions: Apple first and most prominent, account creation second,
+            and sign-in for returning users as a quieter link underneath. */}
+        <div className="pb-10 mt-auto pt-4">
+          <div className="space-y-3">
+            <button
+              onClick={async () => {
+                try {
+                  if (canUseNativeAppleSignIn()) {
+                    await nativeAppleSignIn();
+                  } else {
+                    const result = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin });
+                    if (result.error) toast.error(result.error.message);
+                  }
+                } catch (e: any) {
+                  if (!isNativeAppleSignInCanceled(e)) {
+                    toast.error(e?.message ?? t("auth.appleFailed"));
+                  }
                 }
-              } catch (e: any) {
-                if (!isNativeAppleSignInCanceled(e)) {
-                  toast.error(e?.message ?? t("auth.appleFailed"));
-                }
-              }
-            }}
-            className="w-full bg-white text-black rounded-xl py-3.5 text-sm font-semibold hover:bg-white/90 transition-colors flex items-center justify-center gap-2"
-          >
-            <AppleLogo className="w-4 h-4" />
-            {t("auth.continueWithApple")}
-          </button>
+              }}
+              className="w-full bg-white text-black rounded-xl py-3.5 text-[15px] font-semibold hover:bg-white/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+            >
+              <AppleLogo className="w-[18px] h-[18px]" />
+              {t("auth.continueWithApple")}
+            </button>
+            <button
+              onClick={() => navigate("/auth?mode=signup")}
+              className="w-full bg-card text-foreground border border-border rounded-xl py-3.5 text-[15px] font-semibold hover:bg-card/80 active:scale-[0.98] transition-all"
+            >
+              {t("auth.createAccount")}
+            </button>
+          </div>
+          <p className="mt-5 text-center text-sm text-muted-foreground">
+            {t("auth.haveAccount")}{" "}
+            <button
+              onClick={() => navigate("/auth?mode=login")}
+              className="font-semibold text-primary py-2 -my-2"
+            >
+              {t("welcome.signInLink")}
+            </button>
+          </p>
         </div>
       </motion.div>
     </div>

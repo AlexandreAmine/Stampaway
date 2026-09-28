@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { ChevronRight, TrendingUp } from "lucide-react";
+import { ChevronRight, Heart, TrendingUp } from "lucide-react";
 import { PlaceCard } from "@/components/PlaceCard";
 import { StarRating } from "@/components/StarRating";
 import { DestinationPoster } from "@/components/DestinationPoster";
@@ -135,9 +135,8 @@ function ScreenRate({ active }: { active: boolean }) {
             initial={{ scale: 0.6 }}
             animate={{ scale: 1 }}
             transition={{ type: "spring", damping: 12, stiffness: 320 }}
-            className="text-xl"
           >
-            {rating >= 5 ? "❤️" : "🤍"}
+            <Heart className={`w-6 h-6 ${rating >= 5 ? "text-red-500 fill-red-500" : "text-muted-foreground"}`} />
           </motion.span>
         </div>
 

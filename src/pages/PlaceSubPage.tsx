@@ -544,7 +544,7 @@ export default function PlaceSubPage() {
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
           <div>
-            <h1 className="text-xl font-bold text-foreground">{title}</h1>
+            <h1 className="page-title">{title}</h1>
             <p className="text-xs text-muted-foreground">{placeName}</p>
           </div>
           {section === "reviews" && (

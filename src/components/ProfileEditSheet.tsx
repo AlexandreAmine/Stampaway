@@ -8,7 +8,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
-import { ALL_COUNTRIES, getFlagEmoji } from "@/lib/countryFlags";
+import { ALL_COUNTRIES } from "@/lib/countryFlags";
+import { CountryFlag } from "@/components/CountryFlag";
 import { X, Plus } from "lucide-react";
 import { SOCIAL_PLATFORMS, sanitizeSocialLinks, type SocialLinksMap, type SocialPlatform } from "@/lib/socialLinks";
 
@@ -157,7 +158,7 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
                     key={c}
                     className="inline-flex items-center gap-1.5 bg-card border border-border rounded-full pl-2 pr-1 py-1"
                   >
-                    <span className="text-base leading-none">{getFlagEmoji(c)}</span>
+                    <CountryFlag country={c} />
                     <span className="text-xs text-foreground">{c}</span>
                     <button
                       onClick={() => handleRemoveCountry(c)}
@@ -192,7 +193,7 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
                         onClick={() => handleSelectCountry(c)}
                         className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/50 text-left"
                       >
-                        <span className="text-base">{getFlagEmoji(c)}</span>
+                        <CountryFlag country={c} />
                         <span className="text-sm text-foreground">{c}</span>
                       </button>
                     ))}

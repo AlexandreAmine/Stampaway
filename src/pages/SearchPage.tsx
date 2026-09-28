@@ -493,7 +493,7 @@ export default function SearchPage() {
     <div className="min-h-screen bg-background pb-24">
       <div className="pt-14 px-5">
         <div className="flex items-center gap-3 mb-6">
-          <h1 className="text-xl font-bold text-foreground">{t("nav.search")}</h1>
+          <h1 className="page-title">{t("nav.search")}</h1>
         </div>
 
         <div className="relative mb-5">

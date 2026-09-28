@@ -80,6 +80,13 @@
 }
 
 @layer utilities {
+  /* Screen titles ("Search", "Settings", …) use the brand serif, like the
+     wordmark and the intro. DM Serif Display has a single weight, so the
+     size carries the hierarchy instead of bold. */
+  .page-title {
+    @apply font-brand text-[26px] leading-tight font-normal tracking-tight text-foreground;
+  }
+
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }

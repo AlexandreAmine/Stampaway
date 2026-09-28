@@ -91,3 +91,13 @@ describe("RecentSearches", () => {
     expect(screen.getByText("Pays")).toBeTruthy();
   });
 });
+
+describe("CountryFlag", () => {
+  it("renders the same flag image as the posters, or nothing for an unknown country", async () => {
+    const { CountryFlag } = await import("@/components/CountryFlag");
+    const { container, rerender } = render(<CountryFlag country="Japan" />);
+    expect(flagImgs(container)[0].src).toContain("/w40/jp.png");
+    rerender(<CountryFlag country="Atlantis" />);
+    expect(flagImgs(container)).toHaveLength(0);
+  });
+});

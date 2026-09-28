@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { Heart, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { StarRating } from "@/components/StarRating";
@@ -242,8 +242,14 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
             <p className="text-sm font-semibold text-foreground mb-3">{t("review.yourRating")}</p>
             <div className="flex items-center justify-between">
               <StarRating rating={rating} size={36} interactive onChange={setRating} />
-              <button type="button" onClick={() => setLiked(!liked)} className="text-2xl">
-                {liked ? "❤️" : "🤍"}
+              <button
+                type="button"
+                onClick={() => setLiked(!liked)}
+                aria-pressed={liked}
+                aria-label={t("reviewDetail.liked")}
+                className="p-1 -m-1 transition-transform active:scale-90"
+              >
+                <Heart className={`w-7 h-7 transition-colors ${liked ? "text-red-500 fill-red-500" : "text-muted-foreground"}`} />
               </button>
             </div>
           </div>

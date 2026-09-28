@@ -5,6 +5,7 @@ import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
 import { getDestinationPosterOverride } from "@/lib/countryPosterOverrides";
 import { sizedPosterUrl } from "@/lib/imageSizing";
 import { FadeInImage } from "@/components/FadeInImage";
+import { FlagImage } from "@/components/CountryFlag";
 import {
   fetchDestinationPosterUrl,
   getCachedDestinationPosterUrl,
@@ -202,29 +203,5 @@ export function DestinationPoster({
         </>
       )}
     </div>
-  );
-}
-
-/**
- * Flags come from flagcdn.com. Until one arrives (cold cache, slow network)
- * a bordered <img> renders as an empty outlined box, which read as a broken
- * flag; keep it invisible until it has loaded, and drop it if it fails.
- */
-function FlagImage({ src, alt, className }: { src: string; alt: string; className: string }) {
-  // Keyed by URL (not reset in an effect): cached flags fire `load` before
-  // mount effects run, and a reset there left them invisible for good.
-  const [result, setResult] = useState<{ src: string; state: "loaded" | "failed" } | null>(null);
-  const state = result?.src === src ? result.state : "loading";
-  if (state === "failed") return null;
-  return (
-    <img
-      src={src}
-      alt={alt}
-      loading="lazy"
-      decoding="async"
-      onLoad={() => setResult({ src, state: "loaded" })}
-      onError={() => setResult({ src, state: "failed" })}
-      className={`${className} transition-opacity duration-200 ${state === "loaded" ? "opacity-100" : "opacity-0"}`}
-    />
   );
 }

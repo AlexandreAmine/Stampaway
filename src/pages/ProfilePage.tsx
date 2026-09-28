@@ -28,7 +28,7 @@ import { AdminStats } from "@/components/AdminStats";
 import { ProfileEditSheet } from "@/components/ProfileEditSheet";
 import { ShareProfileSheet } from "@/components/ShareProfileSheet";
 import { ProfileActionsMenu } from "@/components/ProfileActionsMenu";
-import { getFlagEmoji } from "@/lib/countryFlags";
+import { CountryFlag } from "@/components/CountryFlag";
 import { RichBio } from "@/components/RichBio";
 import { SocialLinks } from "@/components/SocialLinks";
 import { sanitizeSocialLinks } from "@/lib/socialLinks";
@@ -775,8 +775,8 @@ export default function ProfilePage() {
             <button onClick={closeSubPage}>
               <ChevronLeft className="w-6 h-6 text-foreground" />
             </button>
-            <h1 className="text-xl font-bold text-foreground">
-              {subPage === "CountriesByRating" ? <>{t("profile.countries")} · {ratingFilter}★ <span className="text-sm font-normal text-muted-foreground">({countryDistribution[Math.round((ratingFilter || 0) * 2) - 1] || 0})</span></> : subPage === "CitiesByRating" ? <>{t("profile.cities")} · {ratingFilter}★ <span className="text-sm font-normal text-muted-foreground">({cityDistribution[Math.round((ratingFilter || 0) * 2) - 1] || 0})</span></> : (subPageLabels[subPage] || subPage)}
+            <h1 className="page-title">
+              {subPage === "CountriesByRating" ? <>{t("profile.countries")} · {ratingFilter}★ <span className="font-sans text-sm font-normal text-muted-foreground">({countryDistribution[Math.round((ratingFilter || 0) * 2) - 1] || 0})</span></> : subPage === "CitiesByRating" ? <>{t("profile.cities")} · {ratingFilter}★ <span className="font-sans text-sm font-normal text-muted-foreground">({cityDistribution[Math.round((ratingFilter || 0) * 2) - 1] || 0})</span></> : (subPageLabels[subPage] || subPage)}
             </h1>
           </div>
           {renderSubPage()}
@@ -887,7 +887,7 @@ export default function ProfilePage() {
               <div className="flex items-center gap-1.5 flex-wrap">
                 <h1 className="text-xl font-bold text-foreground" data-no-translate>{displayName}</h1>
                 {countryList.map((c: string) => (
-                  <span key={c} className="text-lg" title={c}>{getFlagEmoji(c)}</span>
+                  <CountryFlag key={c} country={c} className="w-[22px] h-4" />
                 ))}
               </div>
               {/* Instagram-style follower / following counts */}

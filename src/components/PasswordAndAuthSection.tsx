@@ -102,7 +102,7 @@ export function PasswordAndAuthSection({ user, t, onBack }: Props) {
       <div className="pt-12 px-5">
         <div className="flex items-center gap-3 mb-8">
           <button onClick={onBack}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
-          <h1 className="text-xl font-bold text-foreground">{t("settings.changePassword")}</h1>
+          <h1 className="page-title">{t("settings.changePassword")}</h1>
         </div>
 
         {/* Change password */}

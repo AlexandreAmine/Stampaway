@@ -161,7 +161,7 @@ export default function SettingsPage() {
         <div className="pt-12 px-5">
           <div className="flex items-center gap-3 mb-8">
             <button onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
-            <h1 className="text-xl font-bold text-foreground">{t("settings.personalDetails")}</h1>
+            <h1 className="page-title">{t("settings.personalDetails")}</h1>
           </div>
           <div className="space-y-5">
             <div>
@@ -190,7 +190,7 @@ export default function SettingsPage() {
         <div className="pt-12 px-5">
           <div className="flex items-center gap-3 mb-8">
             <button onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
-            <h1 className="text-xl font-bold text-foreground">{t("settings.language")}</h1>
+            <h1 className="page-title">{t("settings.language")}</h1>
           </div>
           <p className="text-sm text-muted-foreground mb-6">{t("settings.selectLanguage")}</p>
           <div className="space-y-1">
@@ -224,7 +224,7 @@ export default function SettingsPage() {
         <div className="pt-12 px-5">
           <div className="flex items-center gap-3 mb-8">
             <button onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
-            <h1 className="text-xl font-bold text-foreground">{t("settings.accountPrivacy")}</h1>
+            <h1 className="page-title">{t("settings.accountPrivacy")}</h1>
           </div>
           <div className="flex items-center justify-between py-4 border-b border-border">
             <div>
@@ -247,7 +247,7 @@ export default function SettingsPage() {
         <div className="pt-12 px-5">
           <div className="flex items-center gap-3 mb-6">
             <button onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
-            <h1 className="text-xl font-bold text-foreground">{t("settings.blockedUsers")}</h1>
+            <h1 className="page-title">{t("settings.blockedUsers")}</h1>
           </div>
           <div className="relative mb-4">
             <Input value={blockQuery} onChange={e => setBlockQuery(e.target.value)} placeholder={t("settings.searchToBlock")} className="w-full" />
@@ -320,7 +320,7 @@ export default function SettingsPage() {
         <div className="pt-12 px-5">
           <div className="flex items-center gap-3 mb-8">
             <button onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
-            <h1 className="text-xl font-bold text-foreground">{t("settings.deleteAccount")}</h1>
+            <h1 className="page-title">{t("settings.deleteAccount")}</h1>
           </div>
           <p className="text-sm text-foreground mb-2">{t("settings.deleteWarning")}</p>
           <p className="text-xs text-muted-foreground mb-4">{t("settings.typeDelete")}</p>
@@ -338,7 +338,7 @@ export default function SettingsPage() {
       <div className="pt-12 px-5">
         <div className="flex items-center gap-3 mb-8">
           <button onClick={() => navigate(-1)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
-          <h1 className="text-xl font-bold text-foreground">{t("settings.title")}</h1>
+          <h1 className="page-title">{t("settings.title")}</h1>
         </div>
 
         <div className="space-y-0">
