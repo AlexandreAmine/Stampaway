@@ -5,6 +5,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
 import { StarRating } from "@/components/StarRating";
 import { ReviewCard } from "@/components/ReviewCard";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -94,7 +96,25 @@ async function fetchReviewCardLikeSnapshot(reviewIds: string[], currentUserId: s
   return { likeCounts, likedByCurrentUser };
 }
 
+const SECTION_TITLES: Record<string, TranslationKey> = {
+  visitors: "place.visitors",
+  friendvisitors: "placeSub.visitedByFriends",
+  reviews: "place.reviews",
+  wanttovisit: "placeSub.wantToGo",
+  categories: "place.categoryRatings",
+  lists: "place.lists",
+};
+
+const SECTION_EMPTY: Record<string, TranslationKey> = {
+  visitors: "placeSub.noVisitors",
+  friendvisitors: "placeSub.noFriendVisitors",
+  reviews: "reviews.noReviews",
+  wanttovisit: "placeSub.noWantToGo",
+  lists: "lists.noLists",
+};
+
 export default function PlaceSubPage() {
+  const { t } = useLanguage();
   const { id, section } = useParams<{ id: string; section: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -514,7 +534,7 @@ export default function PlaceSubPage() {
     }
   };
 
-  const title = section === "visitors" ? "Visitors" : section === "friendvisitors" ? "Visited by friends" : section === "reviews" ? "Reviews" : section === "wanttovisit" ? "Want to go" : section === "categories" ? "Category Ratings" : "Lists";
+  const title = t(SECTION_TITLES[section ?? ""] ?? "place.lists");
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -536,13 +556,13 @@ export default function PlaceSubPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => setReviewFilter("most_liked")} className={reviewFilter === "most_liked" ? "bg-accent" : ""}>
-                  Most liked
+                  {t("placeSub.mostLiked")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setReviewFilter("most_recent")} className={reviewFilter === "most_recent" ? "bg-accent" : ""}>
-                  Most recent
+                  {t("placeSub.mostRecent")}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => setReviewFilter("friends_first")} className={reviewFilter === "friends_first" ? "bg-accent" : ""}>
-                  Friend reviews first
+                  {t("placeSub.friendsFirst")}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -558,7 +578,7 @@ export default function PlaceSubPage() {
         ) : section === "categories" ? (
           <PlaceCategoryRatings placeId={id!} userId={user?.id} />
         ) : data.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-12">No {title.toLowerCase()} yet</p>
+          <p className="text-sm text-muted-foreground text-center py-12">{t(SECTION_EMPTY[section ?? ""] ?? "lists.noLists")}</p>
         ) : (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
             {(section === "visitors" || section === "friendvisitors") &&
@@ -569,7 +589,7 @@ export default function PlaceSubPage() {
                       <AvatarImage src={v.profile?.profile_picture || fallbackAvatarUrl(v.profile?.username || "?")} />
                       <AvatarFallback>{v.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
-                    <p className="text-sm text-foreground flex-1">{v.profile?.username || "User"}</p>
+                    <p className="text-sm text-foreground flex-1">{v.profile?.username || t("common.user")}</p>
                   </button>
                   <button onClick={() => navigate(`/review/${v.id}`)} className="flex items-center justify-end gap-1.5 active:scale-95 transition-transform w-1/2 min-h-9 text-right">
                     {v.rating != null && <StarRating rating={Number(v.rating)} size={12} liked={v.liked} />}
@@ -639,7 +659,7 @@ export default function PlaceSubPage() {
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate" data-no-translate>{l.list_name}</p>
-                    <p className="text-xs text-muted-foreground" data-no-translate>by {l.profile?.username || "User"}</p>
+                    <p className="text-xs text-muted-foreground">{t("lists.by")} <span data-no-translate>{l.profile?.username || t("common.user")}</span></p>
                   </div>
                 </button>
               ))}
@@ -651,7 +671,7 @@ export default function PlaceSubPage() {
                     <AvatarImage src={w.profile_picture || fallbackAvatarUrl(w.username || "?")} />
                     <AvatarFallback>{w.username?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
-                  <p className="text-sm text-foreground flex-1" data-no-translate>{w.username || "User"}</p>
+                  <p className="text-sm text-foreground flex-1" data-no-translate>{w.username || t("common.user")}</p>
                 </button>
               ))}
           </motion.div>

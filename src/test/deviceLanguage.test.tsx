@@ -21,6 +21,7 @@ vi.mock("@/lib/domTranslator", () => ({
   startDomTranslator: vi.fn(),
   setDomTranslatorLanguage: vi.fn(),
   addNoTranslateStrings: vi.fn(),
+  addNoTranslateTemplates: vi.fn(),
 }));
 
 import {

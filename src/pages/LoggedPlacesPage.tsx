@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { StarRating } from "@/components/StarRating";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { dedupeByNewest } from "@/lib/reviewDedup";
@@ -24,6 +25,7 @@ export default function LoggedPlacesPage() {
   const [searchParams] = useSearchParams();
   const type = searchParams.get("type") || "city";
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   // Cached by React Query: reopening this page renders instantly from the
   // last known data while a background refetch keeps it fresh.
@@ -64,18 +66,18 @@ export default function LoggedPlacesPage() {
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
           <h1 className="text-xl font-bold text-foreground">
-            My {type === "city" ? "Cities" : "Countries"}
+            {t(type === "city" ? "logged.myCities" : "logged.myCountries")}
           </h1>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center h-40">
-            <p className="text-muted-foreground text-sm">Loading...</p>
+            <p className="text-muted-foreground text-sm">{t("loading")}</p>
           </div>
         ) : places.length === 0 ? (
           <div className="flex items-center justify-center h-40">
             <p className="text-muted-foreground text-sm">
-              No {type === "city" ? "cities" : "countries"} logged yet
+              {t(type === "city" ? "logged.noCities" : "logged.noCountries")}
             </p>
           </div>
         ) : (

@@ -848,9 +848,10 @@ export default function ProfilePage() {
                             allowEditing: true,
                             resultType: CameraResultType.Base64,
                             source: CameraSource.Prompt,
-                            promptLabelHeader: "Profile photo",
-                            promptLabelPhoto: "Choose from Library",
-                            promptLabelPicture: "Take Photo",
+                            promptLabelHeader: t("photo.header"),
+                            promptLabelPhoto: t("photo.library"),
+                            promptLabelPicture: t("photo.take"),
+                            promptLabelCancel: t("cancel"),
                           });
                           if (!photo.base64String) return;
                           const ext = photo.format || "jpg";

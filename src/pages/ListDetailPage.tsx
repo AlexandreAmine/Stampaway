@@ -6,6 +6,7 @@ import { ChevronLeft, Heart } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
@@ -14,6 +15,7 @@ export default function ListDetailPage() {
   const { listId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [likeCount, setLikeCount] = useState(0);
   const [liked, setLiked] = useState(false);
   const [toggling, setToggling] = useState(false);
@@ -127,7 +129,7 @@ export default function ListDetailPage() {
     return (
       <div className="min-h-screen bg-background pt-12 px-5">
         <button onClick={() => navigate(-1)} className="mb-4"><ChevronLeft className="w-6 h-6 text-foreground" /></button>
-        <p className="text-sm text-muted-foreground text-center">List not found</p>
+        <p className="text-sm text-muted-foreground text-center">{t("lists.notFound")}</p>
       </div>
     );
   }
@@ -161,7 +163,7 @@ export default function ListDetailPage() {
         {list.description && <p className="text-sm text-muted-foreground mb-5">{list.description}</p>}
 
         {items.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-12">No destinations in this list</p>
+          <p className="text-sm text-muted-foreground text-center py-12">{t("lists.empty")}</p>
         ) : (
           <div className="grid grid-cols-3 gap-3">
             {items.map((item) => (

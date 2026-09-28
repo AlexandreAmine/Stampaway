@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { StarRating } from "@/components/StarRating";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { dedupeByNewest } from "@/lib/reviewDedup";
@@ -23,6 +24,7 @@ interface ReviewEntry {
 
 export function ReviewsTab({ userId }: { userId?: string }) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [reviews, setReviews] = useState<ReviewEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,7 +71,7 @@ export function ReviewsTab({ userId }: { userId?: string }) {
   if (reviews.length === 0) {
     return (
       <div className="flex items-center justify-center h-40">
-        <p className="text-muted-foreground text-sm">No reviews written yet</p>
+        <p className="text-muted-foreground text-sm">{t("reviews.noneWritten")}</p>
       </div>
     );
   }

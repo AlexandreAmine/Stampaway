@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from "react";
 import { X } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface ProfilePicturePreviewProps {
   src: string;
@@ -9,6 +10,7 @@ interface ProfilePicturePreviewProps {
 }
 
 export function ProfilePicturePreview({ src, alt, isOpen, onClose }: ProfilePicturePreviewProps) {
+  const { t } = useLanguage();
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -33,7 +35,7 @@ export function ProfilePicturePreview({ src, alt, isOpen, onClose }: ProfilePict
       <button
         onClick={onClose}
         className="absolute top-6 right-4 z-10 w-8 h-8 rounded-full bg-black/50 flex items-center justify-center"
-        aria-label="Close"
+        aria-label={t("common.close")}
       >
         <X className="w-5 h-5 text-white" />
       </button>

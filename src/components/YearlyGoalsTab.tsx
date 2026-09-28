@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { continentLabel } from "@/lib/continentLabels";
 import { supabase } from "@/integrations/supabase/client";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -16,15 +17,25 @@ import {
 
 const CONTINENTS = ["total", "Europe", "Asia", "North America", "South America", "Africa", "Oceania"] as const;
 
-const CONTINENT_LABELS: Record<string, Record<string, string>> = {
-  total: { en: "Overall", fr: "Global", es: "Global", it: "Globale", pt: "Global", nl: "Totaal" },
-  Europe: { en: "Europe", fr: "Europe", es: "Europa", it: "Europa", pt: "Europa", nl: "Europa" },
-  Asia: { en: "Asia", fr: "Asie", es: "Asia", it: "Asia", pt: "Ásia", nl: "Azië" },
-  "North America": { en: "North America", fr: "Amérique du Nord", es: "América del Norte", it: "Nord America", pt: "América do Norte", nl: "Noord-Amerika" },
-  "South America": { en: "South America", fr: "Amérique du Sud", es: "América del Sur", it: "Sud America", pt: "América do Sul", nl: "Zuid-Amerika" },
-  Africa: { en: "Africa", fr: "Afrique", es: "África", it: "Africa", pt: "África", nl: "Afrika" },
-  Oceania: { en: "Oceania", fr: "Océanie", es: "Oceanía", it: "Oceania", pt: "Oceania", nl: "Oceanië" },
-};
+// Keys under "goals." in translations.ts.
+type GoalLabel =
+  | "yearlyGoals"
+  | "countries"
+  | "cities"
+  | "setGoals"
+  | "editGoals"
+  | "noGoals"
+  | "mustVisit"
+  | "addPlace"
+  | "byContinent"
+  | "visited"
+  | "overall"
+  | "goalsTab"
+  | "statsTab"
+  | "thisYear"
+  | "allTime"
+  | "newThisYear"
+  | "completionRate";
 
 
 function getContinentForCountry(country: string): string {
@@ -48,7 +59,7 @@ interface YearlyGoalsTabProps { userId: string; }
 
 export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
   const { user } = useAuth();
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const currentYear = new Date().getFullYear();
   const isOwn = user?.id === userId;
@@ -215,7 +226,7 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
 
   const addGoalPlace = async (placeId: string) => {
     if (!user) return;
-    if (goalPlaces.find(p => p.place_id === placeId)) { toast.error("Already added"); return; }
+    if (goalPlaces.find(p => p.place_id === placeId)) { toast.error(t("common.alreadyAdded")); return; }
     await supabase.from("yearly_goal_places").insert({ user_id: user.id, year: currentYear, place_id: placeId });
     setSearchQuery(""); setSearchResults([]); fetchGoals();
   };
@@ -239,26 +250,9 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
   const goalCountries = goalPlaces.filter(p => p.place?.type === "country");
   const goalCities = goalPlaces.filter(p => p.place?.type === "city");
 
-  const labels = {
-    yearlyGoals: { en: "Yearly Goals", fr: "Objectifs annuels", es: "Objetivos anuales", it: "Obiettivi annuali", pt: "Metas anuais", nl: "Jaardoelen" },
-    countries: { en: "New Countries", fr: "Nouveaux pays", es: "Nuevos países", it: "Nuovi paesi", pt: "Novos países", nl: "Nieuwe landen" },
-    cities: { en: "New Cities", fr: "Nouvelles villes", es: "Nuevas ciudades", it: "Nuove città", pt: "Novas cidades", nl: "Nieuwe steden" },
-    setGoals: { en: "Set Goals", fr: "Définir", es: "Definir", it: "Imposta", pt: "Definir", nl: "Instellen" },
-    editGoals: { en: "Edit Goals", fr: "Modifier", es: "Editar", it: "Modifica", pt: "Editar", nl: "Bewerken" },
-    noGoals: { en: "No goals set for this year yet.", fr: "Aucun objectif défini pour cette année.", es: "Sin objetivos este año.", it: "Nessun obiettivo per quest'anno.", pt: "Sem metas este ano.", nl: "Nog geen doelen voor dit jaar." },
-    mustVisit: { en: "Must-Visit List", fr: "Liste incontournable", es: "Lista imprescindible", it: "Lista imperdibile", pt: "Lista obrigatória", nl: "Must-visit lijst" },
-    addPlace: { en: "Search destinations to add...", fr: "Rechercher des destinations...", es: "Buscar destinos...", it: "Cerca destinazioni...", pt: "Pesquisar destinos...", nl: "Zoek bestemmingen..." },
-    byContinent: { en: "By Continent", fr: "Par continent", es: "Por continente", it: "Per continente", pt: "Por continente", nl: "Per continent" },
-    visited: { en: "visited", fr: "visité(s)", es: "visitados", it: "visitati", pt: "visitados", nl: "bezocht" },
-    overall: { en: "Overall Progress", fr: "Progression globale", es: "Progreso global", it: "Progresso globale", pt: "Progresso global", nl: "Algemene voortgang" },
-    goalsTab: { en: "Goals", fr: "Objectifs", es: "Objetivos", it: "Obiettivi", pt: "Metas", nl: "Doelen" },
-    statsTab: { en: "Stats", fr: "Stats", es: "Estadísticas", it: "Statistiche", pt: "Estatísticas", nl: "Statistieken" },
-    thisYear: { en: "This Year", fr: "Cette année", es: "Este año", it: "Quest'anno", pt: "Este ano", nl: "Dit jaar" },
-    allTime: { en: "All Time", fr: "Depuis toujours", es: "Desde siempre", it: "Da sempre", pt: "Desde sempre", nl: "Altijd" },
-    newThisYear: { en: "New this year", fr: "Nouveaux cette année", es: "Nuevos este año", it: "Nuovi quest'anno", pt: "Novos este ano", nl: "Nieuw dit jaar" },
-    completionRate: { en: "Completion Rate", fr: "Taux de complétion", es: "Tasa de finalización", it: "Tasso completamento", pt: "Taxa de conclusão", nl: "Voltooiingspercentage" },
-  };
-  const l = (key: keyof typeof labels) => labels[key][language] || labels[key].en;
+  const l = (key: GoalLabel) => t(`goals.${key}`);
+  const goalContinentLabel = (continent: string) =>
+    continent === "total" ? t("goals.continentTotal") : continentLabel(continent, t);
 
   const hasAnyGoal = goals.some(g => g.country_goal > 0 || g.city_goal > 0) || goalPlaces.length > 0;
 
@@ -287,7 +281,7 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
               {CONTINENTS.map(continent => (
                 <div key={continent} className="space-y-1">
                   <p className="text-sm font-medium text-foreground">
-                    {CONTINENT_LABELS[continent]?.[language] || continent}
+                    {goalContinentLabel(continent)}
                   </p>
                   <div className="flex gap-3">
                     <div className="flex-1">
@@ -377,7 +371,7 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
                     return (
                       <div key={g.continent} className="space-y-2 pb-3 border-b border-border last:border-0">
                       <p className="text-xs font-medium">
-                          {CONTINENT_LABELS[g.continent]?.[language] || g.continent}
+                          {goalContinentLabel(g.continent)}
                         </p>
                         {g.country_goal > 0 && (
                           <div className="space-y-0.5">

@@ -156,12 +156,12 @@ export function PasswordAndAuthSection({ user, t, onBack }: Props) {
               <p className="text-sm text-foreground">{t("settings.scan2FACode")}</p>
               {qrUrl && (
                 <div className="flex justify-center">
-                  <img src={qrUrl} alt="TOTP QR Code" className="w-48 h-48 rounded-xl border border-border" />
+                  <img src={qrUrl} alt={t("settings.qrAlt")} className="w-48 h-48 rounded-xl border border-border" />
                 </div>
               )}
               {totpSecret && (
                 <div className="bg-muted/50 rounded-xl p-3">
-                  <p className="text-xs text-muted-foreground mb-1">Manual entry key:</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t("settings.manualKey")}</p>
                   <p className="text-xs font-mono text-foreground break-all select-all">{totpSecret}</p>
                 </div>
               )}

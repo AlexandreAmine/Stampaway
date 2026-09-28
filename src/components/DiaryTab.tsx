@@ -5,6 +5,8 @@ import { motion } from "framer-motion";
 import { Trash2, Pencil } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { monthShortNames } from "@/lib/localeFormat";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { StarRating } from "@/components/StarRating";
 import { DiaryEditSheet } from "@/components/DiaryEditSheet";
@@ -31,10 +33,10 @@ interface DiaryEntry {
   };
 }
 
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
 export function DiaryTab({ userId }: { userId?: string }) {
   const { user } = useAuth();
+  const { t, tn, language } = useLanguage();
+  const months = monthShortNames(language);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [section, setSection] = useState<"country" | "city">("country");
@@ -84,10 +86,10 @@ export function DiaryTab({ userId }: { userId?: string }) {
   const handleDelete = async (entryId: string) => {
     const { error } = await supabase.from("reviews").delete().eq("id", entryId);
     if (error) {
-      toast.error("Failed to delete entry");
+      toast.error(t("diary.deleteFailed"));
       return;
     }
-    toast.success("Entry deleted");
+    toast.success(t("toast.entryDeleted"));
     if (user?.id) {
       invalidateOwnProfileContentCache(user.id);
       clearRankingsCache();
@@ -111,7 +113,7 @@ export function DiaryTab({ userId }: { userId?: string }) {
   if (entries.length === 0) {
     return (
       <div className="flex items-center justify-center h-40">
-        <p className="text-muted-foreground text-sm">No diary entries yet. Log a destination to start!</p>
+        <p className="text-muted-foreground text-sm">{t("diary.emptyCta")}</p>
       </div>
     );
   }
@@ -148,28 +150,28 @@ export function DiaryTab({ userId }: { userId?: string }) {
           onClick={() => setSection("country")}
           className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${section === "country" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"}`}
         >
-          Countries
+          {t("profile.countries")}
         </button>
         <button
           onClick={() => setSection("city")}
           className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${section === "city" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"}`}
         >
-          Cities
+          {t("profile.cities")}
         </button>
       </div>
 
       {filtered.length === 0 ? (
         <div className="flex items-center justify-center h-32">
-          <p className="text-muted-foreground text-sm">No {section === "country" ? "country" : "city"} entries yet</p>
+          <p className="text-muted-foreground text-sm">{t(section === "country" ? "diary.noCountryEntries" : "diary.noCityEntries")}</p>
         </div>
       ) : (
         <div className="space-y-6">
         {sortedYears.map((year) => (
         <div key={year}>
           <h3 className="text-lg font-bold text-foreground mb-3">
-            {year}
+            {year === "Unknown" ? t("common.unknown") : year}
             <span className="text-sm font-normal text-muted-foreground ml-2">
-              ({uniquePlacesPerYear[String(year)]?.size || 0} {section === "country" ? (uniquePlacesPerYear[String(year)]?.size === 1 ? "country" : "countries") : (uniquePlacesPerYear[String(year)]?.size === 1 ? "city" : "cities")})
+              ({tn(section === "country" ? "count.country" : "count.city", uniquePlacesPerYear[String(year)]?.size || 0)})
             </span>
           </h3>
           <div className="space-y-3">
@@ -188,16 +190,16 @@ export function DiaryTab({ userId }: { userId?: string }) {
                 <button onClick={() => navigate(`/place/${entry.place.id}`)} className="flex-1 min-w-0 text-left">
                   <p className="text-sm font-bold text-foreground truncate">{entry.place.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {entry.visit_month ? MONTHS[entry.visit_month - 1] + " " : ""}
+                    {entry.visit_month ? months[entry.visit_month - 1] + " " : ""}
                     {entry.visit_year || ""}
-                    {entry.duration_days ? ` · ${entry.duration_days} day${entry.duration_days > 1 ? "s" : ""}` : ""}
+                    {entry.duration_days ? ` · ${tn("count.day", entry.duration_days)}` : ""}
                   </p>
                    {entry.rating != null ? (
                      <div className="mt-1">
                        <StarRating rating={entry.rating} size={14} liked={entry.liked} />
                      </div>
                    ) : (
-                     <p className="text-xs text-muted-foreground mt-1">No rating</p>
+                     <p className="text-xs text-muted-foreground mt-1">{t("common.noRating")}</p>
                    )}
                   {entry.review_text && (
                     <p className="text-xs text-muted-foreground mt-1 line-clamp-2" data-no-translate>{entry.review_text}</p>

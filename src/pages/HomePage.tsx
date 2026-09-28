@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { relativeDays } from "@/lib/localeFormat";
 import { getPlaceCoordinates } from "@/lib/cityCoordinates";
 import { GlobeActivityPopup } from "@/components/GlobeActivityPopup";
 import { NotificationsSheet } from "@/components/NotificationsSheet";
@@ -40,7 +41,7 @@ interface FriendActivity {
 
 export default function HomePage() {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const globeReady = useAfterFirstPaint();
@@ -250,17 +251,7 @@ export default function HomePage() {
   const getAvatarUrl = (a: FriendActivity) =>
     a.profile_picture || fallbackAvatarUrl(a.username);
 
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now.getTime() - d.getTime();
-    const diffDays = Math.floor(diffMs / 86400000);
-    if (diffDays === 0) return "today";
-    if (diffDays === 1) return "yesterday";
-    if (diffDays < 7) return `${diffDays}d ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
-    return `${Math.floor(diffDays / 30)}mo ago`;
-  };
+  const formatDate = (dateStr: string) => relativeDays(dateStr, language);
 
   const handlePinClick = useCallback((a: FriendActivity) => {
     if (selectedActivity?.id === a.id) {
@@ -420,7 +411,7 @@ export default function HomePage() {
                 onClick={() => setShowAllActivities(true)}
                 className="w-full mt-3 py-2.5 text-sm font-medium text-primary hover:bg-muted/40 rounded-lg transition-colors"
               >
-                View more ({activities.length - 10})
+                {t("common.viewMoreCount", { count: String(activities.length - 10) })}
               </button>
             )}
             {showAllActivities && activities.length > 10 && (
@@ -428,7 +419,7 @@ export default function HomePage() {
                 onClick={() => setShowAllActivities(false)}
                 className="w-full mt-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted/40 rounded-lg transition-colors"
               >
-                Show less
+                {t("common.showLess")}
               </button>
             )}
           </div>

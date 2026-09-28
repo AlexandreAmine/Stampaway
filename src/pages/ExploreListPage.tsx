@@ -3,6 +3,8 @@ import { ChevronLeft } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { DestinationPoster } from "@/components/DestinationPoster";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
 import {
   fetchMonthlyVisitorCountMap,
   fetchAllTimeVisitorCountMap,
@@ -28,15 +30,32 @@ type PlaceWithStat = {
   stat: number;
 };
 
-const CATEGORY_TITLE: Record<string, { country: string; city: string }> = {
-  "Affordability": { country: "most affordable countries", city: "most affordable cities" },
-  "Entertainment & Nightlife": { country: "most vibrant countries", city: "most vibrant cities" },
-  "Natural Beauty": { country: "most scenic countries", city: "most scenic cities" },
-  "Safety & Security": { country: "safest countries", city: "safest cities" },
-  "Hospitality & People": { country: "most welcoming countries", city: "most welcoming cities" },
+const CATEGORY_TITLE: Record<string, { country: TranslationKey; city: TranslationKey }> = {
+  "Affordability": { country: "explore.cat.affordableCountries", city: "explore.cat.affordableCities" },
+  "Entertainment & Nightlife": { country: "explore.cat.vibrantCountries", city: "explore.cat.vibrantCities" },
+  "Natural Beauty": { country: "explore.cat.scenicCountries", city: "explore.cat.scenicCities" },
+  "Safety & Security": { country: "explore.cat.safestCountries", city: "explore.cat.safestCities" },
+  "Hospitality & People": { country: "explore.cat.welcomingCountries", city: "explore.cat.welcomingCities" },
+};
+
+// "in Europe" / "d'Europe" / "de Europa": the preposition depends on the
+// language and the region, so each region carries its own.
+const IN_REGION: Record<string, TranslationKey> = {
+  "World": "explore.in.world",
+  "Europe": "explore.in.europe",
+  "Asia": "explore.in.asia",
+  "North America": "explore.in.northAmerica",
+  "South America": "explore.in.southAmerica",
+  "Africa": "explore.in.africa",
+  "Oceania": "explore.in.oceania",
+  "Eastern Europe": "explore.in.easternEurope",
+  "Southeast Asia": "explore.in.southeastAsia",
+  "Caribbean": "explore.in.caribbean",
+  "Middle East": "explore.in.middleEast",
 };
 
 export default function ExploreListPage() {
+  const { t } = useLanguage();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const mode = searchParams.get("mode") || "trending";
@@ -51,17 +70,25 @@ export default function ExploreListPage() {
   const fetchRequestIdRef = useRef(0);
   const visibleContextRef = useRef<string | null>(null);
 
+  const inRegion = (name: string) => (IN_REGION[name] ? t(IN_REGION[name]) : t("explore.in.unknownRegion", { region: name }));
+
   const getTitle = () => {
+    const isCountry = placeType === "country";
     if (mode === "trending") {
-      return `Trendy ${placeType === "country" ? "countries" : "cities"} this month`;
+      return t(isCountry ? "explore.section.trendyCountries" : "explore.section.trendyCities");
     }
     if (mode === "by-category" && category && CATEGORY_TITLE[category]) {
-      const label = placeType === "country" ? CATEGORY_TITLE[category].country : CATEGORY_TITLE[category].city;
-      if (region) return `${label.charAt(0).toUpperCase() + label.slice(1)} in ${region}`;
-      return `${limit} ${label}`;
+      const label = t(isCountry ? CATEGORY_TITLE[category].country : CATEGORY_TITLE[category].city);
+      if (region) {
+        const title = t("explore.list.labelInRegion", { label, region: inRegion(region) });
+        return title.charAt(0).toUpperCase() + title.slice(1);
+      }
+      return t(isCountry ? "explore.list.nCountries" : "explore.list.nCities", { limit: String(limit), label });
     }
-    const regionLabel = continent || "World";
-    return `Top ${limit} ${placeType === "country" ? "countries" : "cities"} in ${regionLabel}`;
+    return t(isCountry ? "explore.list.topCountries" : "explore.list.topCities", {
+      limit: String(limit),
+      region: inRegion(continent || "World"),
+    });
   };
 
   useEffect(() => {
@@ -195,7 +222,7 @@ export default function ExploreListPage() {
             ))}
           </div>
         ) : places.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-12">No destinations found</p>
+          <p className="text-sm text-muted-foreground text-center py-12">{t("explore.noDestinations")}</p>
         ) : (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-3 gap-2.5">
             {places.map((place) => (

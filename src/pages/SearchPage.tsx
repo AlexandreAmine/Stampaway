@@ -7,8 +7,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { matchesPlaceName, normalizeSearchText } from "@/lib/placeSearch";
+import { getCachedPlaceName } from "@/lib/placeNames";
 import { prefetchPlacePrimary } from "@/lib/placePrimaryQuery";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { continentLabel } from "@/lib/continentLabels";
+import { subCategoryLabel } from "@/lib/subCategories";
 import type { TranslationKey } from "@/i18n/translations";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { PosterWishlistButton } from "@/components/PosterWishlistButton";
@@ -34,12 +37,6 @@ type FilterTab = (typeof filterTabs)[number];
 
 type DestSort = "most-popular" | "avg-highest" | "category-avg";
 
-const DEST_SORT_LABELS: Record<string, string> = {
-  "most-popular": "Most popular",
-  "avg-highest": "Average highest first",
-  "category-avg": "Categories average highest first",
-};
-
 const CONTINENT_ORDER = ["Europe", "Asia", "North America", "South America", "Africa", "Oceania", "Other"];
 function getContinent(country: string): string {
   if (EUROPE_COUNTRIES.includes(country)) return "Europe";
@@ -56,7 +53,7 @@ export default function SearchPage() {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { t, language } = useLanguage();
+  const { t, tn, language } = useLanguage();
   const filterTabLabels: Record<FilterTab, string> = {
     Countries: t("search.countries"),
     Cities: t("search.cities"),
@@ -295,7 +292,7 @@ export default function SearchPage() {
     if (!sortedPlaces.length) return <EmptyState text={t("noResults")} />;
 
     const currentLabel = destSort === "category-avg"
-      ? `${selectedCategory}`
+      ? subCategoryLabel(selectedCategory, t)
       : destSort === "most-popular" ? t("search.mostPopular") : t("search.avgHighest");
 
     const groupLabel = activeFilter === "Countries" ? t("profile.byContinent") : t("profile.byCountry");
@@ -310,9 +307,12 @@ export default function SearchPage() {
         map.get(key)!.push(p);
       });
       if (activeFilter === "Countries") {
-        CONTINENT_ORDER.forEach((c) => { if (map.has(c)) groups.push({ label: c, items: map.get(c)! }); });
+        CONTINENT_ORDER.forEach((c) => { if (map.has(c)) groups.push({ label: continentLabel(c, t), items: map.get(c)! }); });
       } else {
-        [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([label, items]) => groups.push({ label, items }));
+        [...map.entries()]
+          .map(([country, items]) => ({ label: getCachedPlaceName(country, language, true), items }))
+          .sort((a, b) => a.label.localeCompare(b.label))
+          .forEach((group) => groups.push(group));
       }
     }
 
@@ -402,7 +402,7 @@ export default function SearchPage() {
               onClick={() => setVisibleCount((c) => c + 250)}
               className="text-xs font-medium px-4 py-2 rounded-lg bg-card border border-border text-foreground hover:bg-accent transition-colors"
             >
-              View more
+              {t("common.viewMore")}
             </button>
           </div>
         )}
@@ -416,7 +416,7 @@ export default function SearchPage() {
     if (loading) return <LoadingSpinner />;
 
     if (activeFilter === "Lists") {
-      if (!lists.length) return <EmptyState text="No lists found" />;
+      if (!lists.length) return <EmptyState text={t("search.noLists")} />;
       return (
         <div className="space-y-3">
           {lists.map((l: any) => (
@@ -432,8 +432,8 @@ export default function SearchPage() {
                   <p className="text-sm font-semibold text-foreground" data-no-translate>{l.name}</p>
                   {l.description && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{l.description}</p>}
                   <div className="flex items-center gap-2 mt-1">
-                    {l.profiles && <p className="text-xs text-muted-foreground">by <span data-no-translate>{l.profiles.username}</span></p>}
-                    <span className="text-xs text-muted-foreground">• {l.item_count ?? "?"} destination{(l.item_count ?? 0) !== 1 ? "s" : ""}</span>
+                    {l.profiles && <p className="text-xs text-muted-foreground">{t("lists.by")} <span data-no-translate>{l.profiles.username}</span></p>}
+                    <span className="text-xs text-muted-foreground">• {l.item_count == null ? "?" : tn("count.destination", l.item_count)}</span>
                   </div>
                 </div>
               </div>
@@ -445,7 +445,7 @@ export default function SearchPage() {
     }
 
     if (activeFilter === "Users") {
-      if (!users.length) return <EmptyState text="No users found" />;
+      if (!users.length) return <EmptyState text={t("search.noUsers")} />;
       return (
         <div className="space-y-3">
           {users.map((u: any) => {
@@ -467,18 +467,18 @@ export default function SearchPage() {
                     onClick={async () => {
                       if (!user) return;
                       const { error } = await supabase.from("followers").insert({ follower_id: user.id, following_id: u.user_id });
-                      if (error) { toast.error("Failed to follow"); return; }
+                      if (error) { toast.error(t("following.followFailed")); return; }
                       invalidateOwnProfileContentCache(user.id);
                       setFollowingIds((prev) => new Set([...prev, u.user_id]));
-                      toast.success(`Following ${u.username}!`);
+                      toast.success(t("search.followingUser", { username: u.username }));
                     }}
                     className="text-xs bg-primary text-primary-foreground px-4 py-1.5 rounded-lg font-medium"
                   >
-                    Follow
+                    {t("profile.follow")}
                   </button>
                 )}
                 {!isMe && isFollowing && (
-                  <span className="text-xs text-muted-foreground px-3 py-1.5">Following</span>
+                  <span className="text-xs text-muted-foreground px-3 py-1.5">{t("profile.following")}</span>
                 )}
               </motion.div>
             );

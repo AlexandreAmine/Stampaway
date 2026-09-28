@@ -10,7 +10,8 @@ import { toast } from "sonner";
 import { hapticSuccess, hapticMedium, hapticLight } from "@/lib/haptics";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import { useSheetTransition } from "@/hooks/useSheetTransition";
-import { formatDistanceToNow } from "date-fns";
+import { timeAgo } from "@/lib/localeFormat";
+import { getCachedAnyPlaceName } from "@/lib/placeNames";
 
 interface NotificationsSheetProps {
   open: boolean;
@@ -29,7 +30,8 @@ interface NotifItem {
 
 export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const placeLabel = (name?: string) => (name ? getCachedAnyPlaceName(name, language) : t("activity.aDestination"));
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { closing, requestClose } = useSheetTransition(open, onClose);
@@ -147,20 +149,20 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
     reviewLikes.forEach(l => {
       const p = pMap.get(l.user_id);
       const placeId = reviewPlaceMap.get(l.review_id);
-      const placeName = placeId ? placeNameMap.get(placeId) || "a destination" : "a destination";
+      const placeName = placeId ? placeNameMap.get(placeId) : undefined;
       allItems.push({ type: "review_like", id: l.id, userId: l.user_id, username: p?.username || "User", profilePicture: p?.profile_picture || null, extra: placeName, createdAt: l.created_at });
     });
 
     reviewComments.forEach(c => {
       const p = pMap.get(c.user_id);
       const placeId = reviewPlaceMap.get(c.review_id);
-      const placeName = placeId ? placeNameMap.get(placeId) || "a destination" : "a destination";
+      const placeName = placeId ? placeNameMap.get(placeId) : undefined;
       allItems.push({ type: "review_comment", id: c.id, userId: c.user_id, username: p?.username || "User", profilePicture: p?.profile_picture || null, extra: placeName, createdAt: c.created_at });
     });
 
     listLikes.forEach(l => {
       const p = pMap.get(l.user_id);
-      allItems.push({ type: "list_like", id: l.id, userId: l.user_id, username: p?.username || "User", profilePicture: p?.profile_picture || null, extra: myListMap.get(l.list_id) || "a list", createdAt: l.created_at });
+      allItems.push({ type: "list_like", id: l.id, userId: l.user_id, username: p?.username || "User", profilePicture: p?.profile_picture || null, extra: myListMap.get(l.list_id), createdAt: l.created_at });
     });
 
     // Sort by date, but keep follow_requests at top
@@ -182,14 +184,14 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
     // Remove request
     await supabase.from("follow_requests").delete().eq("id", requestId);
     const profile = items.find(i => i.id === requestId);
-    toast.success(`${profile?.username || "User"} started following you`);
+    toast.success(t("notifications.startedFollowingToast", { username: profile?.username || t("common.user") }));
     void queryClient.invalidateQueries({ queryKey: ["notifications"] });
   };
 
   const declineRequest = async (requestId: string) => {
     hapticLight();
     await supabase.from("follow_requests").delete().eq("id", requestId);
-    toast.success("Follow request declined");
+    toast.success(t("notifications.requestDeclined"));
     void queryClient.invalidateQueries({ queryKey: ["notifications"] });
   };
 
@@ -206,7 +208,7 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
         style={{ height: "85vh", maxHeight: "85vh" }}
       >
         <div className="bg-card flex items-center justify-between p-4 border-b border-border rounded-t-2xl shrink-0">
-          <h2 className="text-lg font-bold text-foreground">Notifications</h2>
+          <h2 className="text-lg font-bold text-foreground">{t("notifications.title")}</h2>
           <button onClick={requestClose}><X className="w-5 h-5 text-muted-foreground" /></button>
         </div>
         <div
@@ -220,7 +222,7 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
               ))}
             </div>
           ) : items.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-12">No activity yet</p>
+            <p className="text-sm text-muted-foreground text-center py-12">{t("activity.noActivity")}</p>
           ) : (
             <div className="space-y-3">
               {items.map((item) => (
@@ -237,11 +239,11 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
                       {" "}
                       {item.type === "new_follower" && t("notifications.newFollower")}
                       {item.type === "follow_request" && t("notifications.followRequest")}
-                      {item.type === "review_like" && <>{t("notifications.likedReview")} <span className="font-medium" data-no-translate>{item.extra}</span></>}
-                      {item.type === "review_comment" && <>{t("notifications.commentedReview")} <span className="font-medium" data-no-translate>{item.extra}</span></>}
-                      {item.type === "list_like" && <>{t("notifications.likedListPre")} "<span className="font-medium" data-no-translate>{item.extra}</span>"</>}
+                      {item.type === "review_like" && <>{t("notifications.likedReview")} <span className="font-medium" data-no-translate>{placeLabel(item.extra)}</span></>}
+                      {item.type === "review_comment" && <>{t("notifications.commentedReview")} <span className="font-medium" data-no-translate>{placeLabel(item.extra)}</span></>}
+                      {item.type === "list_like" && <>{t("notifications.likedListPre")} "<span className="font-medium" data-no-translate>{item.extra || t("activity.aList")}</span>"</>}
                     </p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{formatDistanceToNow(new Date(item.createdAt), { addSuffix: true }).replace(/^about /, "")}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{timeAgo(item.createdAt, language)}</p>
                   </div>
                   {item.type === "follow_request" && (
                     <div className="flex items-center gap-1 shrink-0">

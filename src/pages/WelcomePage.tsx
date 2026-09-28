@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { WelcomeGlobe } from "@/components/WelcomeGlobe";
 import { AppleLogo } from "@/components/AppleLogo";
 import { lovable } from "@/integrations/lovable";
@@ -17,6 +18,7 @@ import { useAfterFirstPaint } from "@/hooks/useAfterFirstPaint";
 export default function WelcomePage() {
   const { user, loading, mustCompletePasswordReset } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 380, h: 380 });
   const globeReady = useAfterFirstPaint();
@@ -48,7 +50,7 @@ export default function WelcomePage() {
             <img src={logoImage} alt="Stampaway" className="w-full h-full object-cover" />
           </div>
           <h1 className="font-brand text-3xl font-normal text-foreground tracking-tight">Stampaway</h1>
-          <p className="text-sm text-muted-foreground mt-1">Your travel social diary</p>
+          <p className="text-sm text-muted-foreground mt-1">{t("welcome.tagline")}</p>
         </div>
 
         {/* Globe — mounted one frame after the page shell paints, so the
@@ -68,13 +70,13 @@ export default function WelcomePage() {
             onClick={() => navigate("/auth?mode=login")}
             className="w-full bg-primary text-primary-foreground rounded-xl py-3.5 text-sm font-semibold hover:bg-primary/90 transition-colors"
           >
-            Sign In
+            {t("auth.signIn")}
           </button>
           <button
             onClick={() => navigate("/auth?mode=signup")}
             className="w-full bg-card text-foreground border border-border rounded-xl py-3.5 text-sm font-semibold hover:bg-card/80 transition-colors"
           >
-            Create Account
+            {t("auth.createAccount")}
           </button>
           <button
             onClick={async () => {
@@ -87,14 +89,14 @@ export default function WelcomePage() {
                 }
               } catch (e: any) {
                 if (!isNativeAppleSignInCanceled(e)) {
-                  toast.error(e?.message ?? "Apple sign-in failed");
+                  toast.error(e?.message ?? t("auth.appleFailed"));
                 }
               }
             }}
             className="w-full bg-white text-black rounded-xl py-3.5 text-sm font-semibold hover:bg-white/90 transition-colors flex items-center justify-center gap-2"
           >
             <AppleLogo className="w-4 h-4" />
-            Continue with Apple
+            {t("auth.continueWithApple")}
           </button>
         </div>
       </motion.div>

@@ -2,6 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { monthShortNames } from "@/lib/localeFormat";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { StarRating } from "@/components/StarRating";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -17,6 +19,7 @@ interface TagEntry {
 
 export function TagsTab({ userId }: { userId?: string }) {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const viewerUserId = user?.id ?? null;
 
@@ -94,10 +97,10 @@ export function TagsTab({ userId }: { userId?: string }) {
   const tags = tagsQuery.data ?? [];
   const loading = tagsQuery.isPending;
 
-  if (loading) return <div className="text-center text-muted-foreground py-8 text-sm">Loading...</div>;
-  if (tags.length === 0) return <div className="text-center text-muted-foreground py-8 text-sm">No tags yet</div>;
+  if (loading) return <div className="text-center text-muted-foreground py-8 text-sm">{t("loading")}</div>;
+  if (tags.length === 0) return <div className="text-center text-muted-foreground py-8 text-sm">{t("tags.none")}</div>;
 
-  const months = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const months = ["", ...monthShortNames(language)];
 
   return (
     <div className="space-y-3">
@@ -120,12 +123,12 @@ export function TagsTab({ userId }: { userId?: string }) {
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-foreground truncate">{tag.place?.name || "Unknown"}</p>
+            <p className="text-sm font-bold text-foreground truncate">{tag.place?.name || t("common.unknown")}</p>
             {tag.review?.rating && (
               <StarRating rating={tag.review.rating} size={14} />
             )}
             <div className="flex items-center gap-1.5 mt-1">
-              <span className="text-xs text-muted-foreground">Tagged by</span>
+              <span className="text-xs text-muted-foreground">{t("tags.taggedBy")}</span>
               <button
                 onClick={(e) => { e.stopPropagation(); navigate(`/profile/${tag.tagged_by_user_id}`); }}
                 className="flex items-center gap-1"
@@ -137,7 +140,7 @@ export function TagsTab({ userId }: { userId?: string }) {
                     <AvatarFallback className="text-[8px]">{tag.tagger?.username?.[0]?.toUpperCase()}</AvatarFallback>
                   )}
                 </Avatar>
-                <span className="text-xs font-semibold text-foreground" data-no-translate>{tag.tagger?.username || "Unknown"}</span>
+                <span className="text-xs font-semibold text-foreground" data-no-translate>{tag.tagger?.username || t("common.unknown")}</span>
               </button>
             </div>
             {tag.review?.visit_year && (

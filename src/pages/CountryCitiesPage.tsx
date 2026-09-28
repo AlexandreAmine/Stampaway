@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { subCategoryLabel } from "@/lib/subCategories";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { PosterWishlistButton } from "@/components/PosterWishlistButton";
 import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
@@ -149,7 +150,7 @@ export default function CountryCitiesPage() {
 
   const currentLabel =
     destSort === "category-avg"
-      ? `${selectedCategory}`
+      ? subCategoryLabel(selectedCategory, t)
       : destSort === "most-popular"
       ? t("search.mostPopular")
       : t("search.avgHighest");
@@ -206,7 +207,7 @@ export default function CountryCitiesPage() {
           </div>
         ) : sortedCities.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-12">
-            {mode === "wishlist" ? "No cities from this country in your wishlist" : "No cities found"}
+            {mode === "wishlist" ? t("countryCities.noWishlistCities") : t("picker.noCities")}
           </p>
         ) : (
           <>
@@ -240,7 +241,7 @@ export default function CountryCitiesPage() {
                   onClick={() => setVisibleCount((c) => c + 500)}
                   className="text-xs font-medium px-4 py-2 rounded-lg bg-card border border-border text-foreground hover:bg-accent transition-colors"
                 >
-                  View more
+                  {t("common.viewMore")}
                 </button>
               </div>
             )}

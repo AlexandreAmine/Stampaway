@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import {
@@ -28,6 +29,7 @@ interface FollowUser {
 
 export function FollowingTab({ userId, readOnly = false }: { userId?: string; readOnly?: boolean }) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const targetUserId = userId || user?.id;
   const queryClient = useQueryClient();
@@ -88,11 +90,11 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
   const handleFollow = async (targetId: string) => {
     if (!user) return;
     const already = following.some((f) => f.id === targetId);
-    if (already) { toast("Already following"); return; }
+    if (already) { toast(t("following.already")); return; }
     const { error } = await supabase.from("followers").insert({ follower_id: user.id, following_id: targetId });
-    if (error) { toast.error("Failed to follow"); return; }
+    if (error) { toast.error(t("following.followFailed")); return; }
     invalidateOwnProfileContentCache(user.id);
-    toast.success("Following!");
+    toast.success(t("following.followed"));
     setShowSearch(false);
     setQuery("");
     void refreshFollowing();
@@ -100,9 +102,9 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
 
   const handleUnfollow = async (followId: string, username: string) => {
     const { error } = await supabase.from("followers").delete().eq("id", followId);
-    if (error) { toast.error("Failed to unfollow"); return; }
+    if (error) { toast.error(t("following.unfollowFailed")); return; }
     if (user?.id) invalidateOwnProfileContentCache(user.id);
-    toast.success(`Unfollowed ${username}`);
+    toast.success(t("following.unfollowed", { username }));
     void refreshFollowing();
   };
 
@@ -133,7 +135,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
           <input
             value={filterQuery}
             onChange={(e) => setFilterQuery(e.target.value)}
-            placeholder="Search"
+            placeholder={t("search")}
             className="w-full bg-card rounded-xl py-2.5 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
@@ -141,7 +143,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
           <button
             onClick={() => setShowSearch(!showSearch)}
             className="w-9 h-9 shrink-0 rounded-full bg-primary/10 flex items-center justify-center"
-            aria-label="Find users to follow"
+            aria-label={t("following.findUsers")}
           >
             <Plus className="w-4 h-4 text-primary" />
           </button>
@@ -157,7 +159,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
                 autoFocus
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Find users to follow..."
+                placeholder={t("following.findUsersPlaceholder")}
                 className="w-full bg-card rounded-xl py-2.5 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
@@ -179,7 +181,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
                   </button>
                   {!isFollowing && (
                     <button onClick={() => handleFollow(u.user_id)} className="text-xs bg-primary text-primary-foreground px-3 py-1 rounded-lg font-medium">
-                      Follow
+                      {t("profile.follow")}
                     </button>
                   )}
                 </div>
@@ -191,7 +193,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
 
       {following.length === 0 && !showSearch ? (
         <div className="flex flex-col items-center justify-center h-32 gap-2">
-          <p className="text-sm text-muted-foreground">Not following anyone yet</p>
+          <p className="text-sm text-muted-foreground">{t("following.none")}</p>
         </div>
       ) : (
         <div className="space-y-1">
@@ -217,7 +219,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
             </div>
           ))}
           {filtered.length === 0 && filterQuery.trim() && (
-            <p className="text-xs text-muted-foreground text-center py-4">No matches</p>
+            <p className="text-xs text-muted-foreground text-center py-4">{t("common.noMatches")}</p>
           )}
         </div>
       )}
@@ -226,13 +228,13 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
       <AlertDialog open={!!pendingUnfollow} onOpenChange={(v) => !v && setPendingUnfollow(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Unfollow</AlertDialogTitle>
+            <AlertDialogTitle>{t("profile.unfollow")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Stop following {pendingUnfollow?.username}?
+              {t("following.stopConfirm", { username: pendingUnfollow?.username ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={async () => {
@@ -240,7 +242,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
                 setPendingUnfollow(null);
               }}
             >
-              Unfollow
+              {t("profile.unfollow")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

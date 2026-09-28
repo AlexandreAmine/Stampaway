@@ -20,6 +20,7 @@ import { DiaryEditSheet } from "@/components/DiaryEditSheet";
 import { dedupeByNewest } from "@/lib/reviewDedup";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
+import { getCachedPlaceName } from "@/lib/placeNames";
 import { setCachedWishlistStatus } from "@/lib/wishlistCache";
 import { placePrimaryQueryKey, fetchPlacePrimary } from "@/lib/placePrimaryQuery";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
@@ -406,7 +407,7 @@ export default function PlacePage() {
     };
     applyWishlistState(next);
     if (next) {
-      toast.success(`${place?.name} added to wishlist`, { duration: 2000 });
+      toast.success(t("wishlist.addedNamed", { place: getCachedPlaceName(place?.name ?? "", language, place?.type === "country") }), { duration: 2000 });
     }
 
     const { error } = wasInWishlist
@@ -582,7 +583,7 @@ export default function PlacePage() {
               className="w-full bg-card rounded-xl p-4 border border-border mb-5 text-left"
             >
               <div className="flex items-center justify-between mb-1">
-                <p className="text-xs text-primary font-medium">You rated this</p>
+                <p className="text-xs text-primary font-medium">{t("place.youRated")}</p>
                 <Pencil className="w-3.5 h-3.5 text-muted-foreground" />
               </div>
               <div className="flex items-center gap-2">

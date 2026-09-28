@@ -21,15 +21,20 @@ import {
   SOUTH_AMERICA_COUNTRIES, AFRICA_COUNTRIES, OCEANIA_COUNTRIES,
 } from "@/lib/continents";
 import { CategorySortDropdown, type SubRatingCategory } from "@/components/CategorySortDropdown";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
+import { continentLabel } from "@/lib/continentLabels";
+import { subCategoryLabel } from "@/lib/subCategories";
+import { getCachedPlaceName } from "@/lib/placeNames";
 import { setCachedWishlistStatus } from "@/lib/wishlistCache";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 
 type WishSort = "recent" | "avg-highest" | "category-avg";
 
-const SORT_LABELS: Record<WishSort, string> = {
-  recent: "Recently added",
-  "avg-highest": "Average highest first",
-  "category-avg": "Categories average highest first",
+const SORT_LABEL_KEYS: Record<WishSort, TranslationKey> = {
+  recent: "wishlist.recentlyAdded",
+  "avg-highest": "search.avgHighest",
+  "category-avg": "search.catAvgHighest",
 };
 
 const CONTINENT_ORDER = ["Europe", "Asia", "North America", "South America", "Africa", "Oceania", "Other"];
@@ -54,6 +59,7 @@ interface WishlistItem {
 export function WishlistTab({ userId, readOnly = false }: { userId?: string; readOnly?: boolean }) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const [items, setItems] = useState<WishlistItem[]>([]);
   const [subTab, setSubTab] = useState<"country" | "city">("country");
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -140,12 +146,12 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
   const handleAdd = async (placeId: string) => {
     if (!user) return;
     const exists = items.some((i) => i.place.id === placeId);
-    if (exists) { toast("Already in wishlist"); return; }
+    if (exists) { toast(t("wishlist.alreadyInWishlist")); return; }
     const { error } = await supabase.from("wishlists").insert({ user_id: user.id, place_id: placeId });
-    if (error) { toast.error("Failed to add"); return; }
+    if (error) { toast.error(t("common.failedToAdd")); return; }
     setCachedWishlistStatus(user.id, placeId, true);
     invalidateOwnProfileContentCache(user.id);
-    toast.success("Added to wishlist!");
+    toast.success(t("wishlist.addedToWishlist"));
     void refreshWishlist();
   };
 
@@ -156,7 +162,7 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
       setCachedWishlistStatus(user.id, removed.place.id, false);
       invalidateOwnProfileContentCache(user.id);
     }
-    toast.success("Removed from wishlist");
+    toast.success(t("wishlist.removedFromWishlist"));
     void refreshWishlist();
   };
 
@@ -177,10 +183,10 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
   const sorted = getSorted();
 
   const currentLabel = sort === "category-avg"
-    ? `${selectedCategory}`
-    : SORT_LABELS[sort];
+    ? subCategoryLabel(selectedCategory, t)
+    : t(SORT_LABEL_KEYS[sort]);
 
-  const groupLabel = subTab === "country" ? "By continent" : "By country";
+  const groupLabel = subTab === "country" ? t("profile.byContinent") : t("profile.byCountry");
 
   // Grouping
   const groups: { label: string; items: WishlistItem[] }[] = [];
@@ -192,9 +198,12 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
       map.get(key)!.push(item);
     });
     if (subTab === "country") {
-      CONTINENT_ORDER.forEach((c) => { if (map.has(c)) groups.push({ label: c, items: map.get(c)! }); });
+      CONTINENT_ORDER.forEach((c) => { if (map.has(c)) groups.push({ label: continentLabel(c, t), items: map.get(c)! }); });
     } else {
-      [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([label, items]) => groups.push({ label, items }));
+      [...map.entries()]
+        .map(([country, items]) => ({ label: getCachedPlaceName(country, language, true), items }))
+        .sort((a, b) => a.label.localeCompare(b.label))
+        .forEach((group) => groups.push(group));
     }
   }
 
@@ -228,15 +237,15 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
-          {(["country", "city"] as const).map((t) => (
+          {(["country", "city"] as const).map((tab) => (
             <button
-              key={t}
-              onClick={() => { setSubTab(t); setGrouped(false); }}
+              key={tab}
+              onClick={() => { setSubTab(tab); setGrouped(false); }}
               className={`text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors ${
-                subTab === t ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"
+                subTab === tab ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"
               }`}
             >
-              {t === "country" ? "Countries" : "Cities"}
+              {tab === "country" ? t("profile.countries") : t("profile.cities")}
             </button>
           ))}
         </div>
@@ -249,7 +258,7 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
 
       {filtered.length === 0 ? (
         <div className="flex items-center justify-center h-32">
-          <p className="text-sm text-muted-foreground">No {subTab === "country" ? "countries" : "cities"} in wishlist</p>
+          <p className="text-sm text-muted-foreground">{t(subTab === "country" ? "wishlist.noCountries" : "wishlist.noCities")}</p>
         </div>
       ) : (
         <>
@@ -274,11 +283,11 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
                     onClick={() => setSort(key)}
                     className={sort === key ? "text-primary font-semibold" : ""}
                   >
-                    {SORT_LABELS[key]}
+                    {t(SORT_LABEL_KEYS[key])}
                   </DropdownMenuItem>
                 ))}
                 <CategorySortDropdown
-                  label="Categories average highest first"
+                  label={t("search.catAvgHighest")}
                   onSelect={(cat) => { setSelectedCategory(cat); setSort("category-avg"); }}
                   selectedCategory={selectedCategory}
                   isActive={sort === "category-avg"}

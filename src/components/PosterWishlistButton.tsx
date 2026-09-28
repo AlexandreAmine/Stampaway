@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Bookmark } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { getCachedAnyPlaceName } from "@/lib/placeNames";
 import { toast } from "sonner";
 import {
   getCachedWishlistStatus,
@@ -21,6 +23,7 @@ interface PosterWishlistButtonProps {
 
 export function PosterWishlistButton({ placeId, placeName }: PosterWishlistButtonProps) {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const userId = user?.id ?? null;
   const [inWishlist, setInWishlist] = useState(false);
   const [toggling, setToggling] = useState(false);
@@ -61,7 +64,7 @@ export function PosterWishlistButton({ placeId, placeName }: PosterWishlistButto
     setInWishlist(!wasInWishlist);
     setCachedWishlistStatus(userId, placeId, !wasInWishlist);
     if (!wasInWishlist) {
-      toast.success(`${placeName} added to wishlist`, { duration: 2000 });
+      toast.success(t("wishlist.addedNamed", { place: getCachedAnyPlaceName(placeName, language) }), { duration: 2000 });
     }
 
     try {

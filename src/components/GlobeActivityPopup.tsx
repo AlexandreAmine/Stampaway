@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { SubRatingsDisplay } from "@/components/SubRatingsDisplay";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { monthShortNames } from "@/lib/localeFormat";
 
 interface GlobeActivityPopupProps {
   activity: {
@@ -29,7 +31,6 @@ interface GlobeActivityPopupProps {
   onProfileNavigate: (userId: string) => void;
 }
 
-const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 interface TaggedPerson {
   username: string;
@@ -43,6 +44,8 @@ interface Comment {
 }
 
 export function GlobeActivityPopup({ activity, onClose, onNavigate, onProfileNavigate }: GlobeActivityPopupProps) {
+  const { t, language } = useLanguage();
+  const monthNames = monthShortNames(language);
   const [taggedPeople, setTaggedPeople] = useState<TaggedPerson[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
 
@@ -178,7 +181,7 @@ export function GlobeActivityPopup({ activity, onClose, onNavigate, onProfileNav
                   {activity.duration_days != null && (
                     <div className="flex items-center gap-1 bg-muted rounded-full px-2.5 py-1">
                       <Clock className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">{activity.duration_days}d</span>
+                      <span className="text-xs text-muted-foreground">{t("count.daysShort", { count: String(activity.duration_days) })}</span>
                     </div>
                   )}
                 </div>
@@ -230,7 +233,7 @@ export function GlobeActivityPopup({ activity, onClose, onNavigate, onProfileNav
             )}
 
             {/* Tap hint */}
-            <p className="text-[10px] text-muted-foreground/50 text-center mt-3">Tap destination to view details</p>
+            <p className="text-[10px] text-muted-foreground/50 text-center mt-3">{t("globe.tapHint")}</p>
           </div>
         </motion.div>
       )}

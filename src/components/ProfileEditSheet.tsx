@@ -109,7 +109,7 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
       .eq("user_id", user.id);
 
     if (error) {
-      toast.error("Failed to update profile");
+      toast.error(t("editProfile.failed"));
     } else {
       toast.success(t("toast.profileUpdated"));
       onSaved();
@@ -122,11 +122,11 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent side="bottom" className="bg-background border-border rounded-t-2xl max-h-[85vh] overflow-y-auto">
         <SheetHeader>
-          <SheetTitle className="text-foreground">Edit Profile</SheetTitle>
+          <SheetTitle className="text-foreground">{t("editProfile.title")}</SheetTitle>
         </SheetHeader>
         <div className="space-y-4 mt-4 pb-6">
           <div>
-            <Label className="text-muted-foreground text-xs">Username</Label>
+            <Label className="text-muted-foreground text-xs">{t("editProfile.username")}</Label>
             <Input
               value={username}
               onChange={(e) => setUsername(e.target.value)}
@@ -135,11 +135,11 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
             />
           </div>
           <div>
-            <Label className="text-muted-foreground text-xs">Bio</Label>
+            <Label className="text-muted-foreground text-xs">{t("editProfile.bio")}</Label>
             <Textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              placeholder="Tell others about yourself..."
+              placeholder={t("editProfile.bioPlaceholder")}
               maxLength={300}
               className="mt-1 resize-none"
               rows={3}
@@ -147,7 +147,7 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
             <p className="text-xs text-muted-foreground mt-1 text-right">{bio.length}/300</p>
           </div>
           <div ref={countryRef} className="relative">
-            <Label className="text-muted-foreground text-xs">Countries</Label>
+            <Label className="text-muted-foreground text-xs">{t("profile.countries")}</Label>
 
             {/* Selected countries chips */}
             {countries.length > 0 && (
@@ -162,7 +162,7 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
                     <button
                       onClick={() => handleRemoveCountry(c)}
                       className="w-4 h-4 rounded-full hover:bg-muted/50 flex items-center justify-center"
-                      aria-label={`Remove ${c}`}
+                      aria-label={t("editProfile.removeCountry", { country: c })}
                     >
                       <X className="w-3 h-3 text-muted-foreground" />
                     </button>
@@ -181,7 +181,7 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
                     setShowCountrySuggestions(true);
                   }}
                   onFocus={() => setShowCountrySuggestions(true)}
-                  placeholder="Start typing a country..."
+                  placeholder={t("editProfile.countryPlaceholder")}
                   maxLength={60}
                 />
                 {showCountrySuggestions && filteredCountries.length > 0 && (
@@ -205,14 +205,14 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
                 className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-dashed border-border text-xs text-muted-foreground hover:text-foreground hover:border-primary transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
-                {countries.length === 0 ? "Add a country" : "Add more"}
+                {countries.length === 0 ? t("editProfile.addCountry") : t("editProfile.addMore")}
               </button>
             )}
           </div>
 
           {/* Other social media */}
           <div>
-            <Label className="text-muted-foreground text-xs">Other social media</Label>
+            <Label className="text-muted-foreground text-xs">{t("editProfile.otherSocial")}</Label>
             <div className="space-y-2 mt-2">
               {SOCIAL_PLATFORMS.map((p) => {
                 const Icon = p.icon;
@@ -236,7 +236,7 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
           </div>
 
           <Button onClick={handleSave} disabled={saving || !username.trim()} className="w-full">
-            {saving ? "Saving..." : "Save"}
+            {saving ? t("common.saving") : t("save")}
           </Button>
         </div>
       </SheetContent>

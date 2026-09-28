@@ -45,8 +45,8 @@ export default function UsernameSetupGate() {
           <div className="w-20 h-20 rounded-2xl overflow-hidden mb-4 shadow-lg ring-1 ring-white/10">
             <img src={logoImage} alt="Stampaway" className="w-full h-full object-cover" />
           </div>
-          <h1 className="font-brand text-3xl font-normal text-foreground tracking-tight mb-2">Choose a username</h1>
-          <p className="text-sm text-muted-foreground">Pick a unique username to finish setting up your account.</p>
+          <h1 className="font-brand text-3xl font-normal text-foreground tracking-tight mb-2">{t("usernameSetup.title")}</h1>
+          <p className="text-sm text-muted-foreground">{t("usernameSetup.body")}</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <input
@@ -62,7 +62,7 @@ export default function UsernameSetupGate() {
             disabled={submitting}
             className="w-full bg-primary text-primary-foreground rounded-xl py-3 text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
           >
-            {submitting ? "..." : "Continue"}
+            {submitting ? "..." : t("common.continue")}
           </button>
         </form>
       </motion.div>

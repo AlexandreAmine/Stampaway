@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ReportSheet } from "@/components/ReportSheet";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface Props {
   reviewId: string;
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export function ReviewActionsMenu({ reviewId, reviewUserId, className }: Props) {
+  const { t } = useLanguage();
   const [reportOpen, setReportOpen] = useState(false);
 
   return (
@@ -26,7 +28,7 @@ export function ReviewActionsMenu({ reviewId, reviewUserId, className }: Props) 
               className ??
               "w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"
             }
-            aria-label="More options"
+            aria-label={t("common.moreOptions")}
             onClick={(e) => e.stopPropagation()}
           >
             <MoreHorizontal className="w-5 h-5 text-foreground" />
@@ -35,7 +37,7 @@ export function ReviewActionsMenu({ reviewId, reviewUserId, className }: Props) 
         <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem onSelect={() => setReportOpen(true)}>
             <Flag className="w-4 h-4 mr-2" />
-            Report this review
+            {t("report.thisReview")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

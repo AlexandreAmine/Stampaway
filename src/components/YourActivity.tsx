@@ -2,17 +2,33 @@ import { useState, useEffect } from "react";
 import { ChevronLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { formatDistanceToNow } from "date-fns";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
+import { timeAgo } from "@/lib/localeFormat";
+import { getCachedAnyPlaceName } from "@/lib/placeNames";
+import { continentLabel } from "@/lib/continentLabels";
+
+// Raw names are kept and the sentence is built at render time, so it follows
+// the app language (and place names get their localized form).
+interface ActivityParams {
+  place?: string;
+  user?: string;
+  list?: string;
+  year?: string;
+  continent?: string;
+}
 
 interface ActivityItem {
   id: string;
   type: string;
-  description: string;
+  key: TranslationKey;
+  params: ActivityParams;
   created_at: string;
 }
 
 export function YourActivity({ onBack }: { onBack: () => void }) {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -102,61 +118,59 @@ export function YourActivity({ onBack }: { onBack: () => void }) {
 
       // Assemble items (identical descriptions/ids to the previous version).
       (reviews || []).forEach(r => {
-        all.push({ id: `log-${r.id}`, type: "log", description: `Logged ${placeMap[r.place_id] || "a destination"}`, created_at: r.created_at });
+        all.push({ id: `log-${r.id}`, type: "log", key: "activity.logged", params: { place: placeMap[r.place_id] }, created_at: r.created_at });
         if (r.updated_at && r.updated_at !== r.created_at) {
-          all.push({ id: `edit-${r.id}`, type: "edit", description: `Edited entry for ${placeMap[r.place_id] || "a destination"}`, created_at: r.updated_at });
+          all.push({ id: `edit-${r.id}`, type: "edit", key: "activity.edited", params: { place: placeMap[r.place_id] }, created_at: r.updated_at });
         }
       });
 
       (reviewLikes || []).forEach(l => {
         const rev = refReviewMap.get(l.review_id);
-        const uname = rev ? userMap[rev.user_id] || "someone" : "someone";
-        const pname = rev ? placeMap[rev.place_id] || "a destination" : "a destination";
-        all.push({ id: `rl-${l.id}`, type: "review_like", description: `Liked ${uname}'s review of ${pname}`, created_at: l.created_at });
+        const params = { user: rev ? userMap[rev.user_id] : undefined, place: rev ? placeMap[rev.place_id] : undefined };
+        all.push({ id: `rl-${l.id}`, type: "review_like", key: "activity.likedReview", params, created_at: l.created_at });
       });
 
       (myComments || []).forEach(c => {
         const rev = refReviewMap.get(c.review_id);
-        const uname = rev ? userMap[rev.user_id] || "someone" : "someone";
-        const pname = rev ? placeMap[rev.place_id] || "a destination" : "a destination";
-        const verb = c.parent_id ? "Replied to" : "Commented on";
-        all.push({ id: `cm-${c.id}`, type: "comment", description: `${verb} ${uname}'s review of ${pname}`, created_at: c.created_at });
+        const params = { user: rev ? userMap[rev.user_id] : undefined, place: rev ? placeMap[rev.place_id] : undefined };
+        const key = c.parent_id ? "activity.repliedReview" : "activity.commentedReview";
+        all.push({ id: `cm-${c.id}`, type: "comment", key, params, created_at: c.created_at });
       });
 
       (listLikes || []).forEach(l => {
-        all.push({ id: `ll-${l.id}`, type: "list_like", description: `Liked the list "${likedListMap[l.list_id] || "a list"}"`, created_at: l.created_at });
+        all.push({ id: `ll-${l.id}`, type: "list_like", key: "activity.likedList", params: { list: likedListMap[l.list_id] }, created_at: l.created_at });
       });
 
       (following || []).forEach(f => {
-        all.push({ id: `fol-${f.id}`, type: "follow", description: `Started following ${userMap[f.following_id] || "someone"}`, created_at: f.created_at });
+        all.push({ id: `fol-${f.id}`, type: "follow", key: "activity.followed", params: { user: userMap[f.following_id] }, created_at: f.created_at });
       });
 
       (blocks || []).forEach(b => {
-        all.push({ id: `blk-${b.id}`, type: "block", description: `Blocked ${userMap[b.blocked_id] || "someone"}`, created_at: b.created_at });
+        all.push({ id: `blk-${b.id}`, type: "block", key: "activity.blocked", params: { user: userMap[b.blocked_id] }, created_at: b.created_at });
       });
 
       (wishlists || []).forEach(w => {
-        all.push({ id: `wl-${w.id}`, type: "wishlist", description: `Added ${placeMap[w.place_id] || "a destination"} to wishlist`, created_at: w.created_at });
+        all.push({ id: `wl-${w.id}`, type: "wishlist", key: "activity.wishlisted", params: { place: placeMap[w.place_id] }, created_at: w.created_at });
       });
 
       (lists || []).forEach(l => {
-        all.push({ id: `lst-${l.id}`, type: "list_create", description: `Created the list "${l.name}"`, created_at: l.created_at });
+        all.push({ id: `lst-${l.id}`, type: "list_create", key: "activity.createdList", params: { list: l.name }, created_at: l.created_at });
       });
 
       (goals || []).forEach(g => {
-        const label = g.continent === "total" ? `${g.year}` : `${g.year} (${g.continent})`;
-        all.push({ id: `goal-${g.id}`, type: "goal_set", description: `Set yearly goal for ${label}`, created_at: g.created_at });
+        const params = { year: String(g.year), continent: g.continent };
+        all.push({ id: `goal-${g.id}`, type: "goal_set", key: "activity.goalSet", params, created_at: g.created_at });
         if (g.updated_at && g.updated_at !== g.created_at) {
-          all.push({ id: `goal-edit-${g.id}`, type: "goal_edit", description: `Edited yearly goal for ${label}`, created_at: g.updated_at });
+          all.push({ id: `goal-edit-${g.id}`, type: "goal_edit", key: "activity.goalEdited", params, created_at: g.updated_at });
         }
       });
 
       (goalPlaces || []).forEach(g => {
-        all.push({ id: `gp-${g.id}`, type: "goal_place", description: `Added ${placeMap[g.place_id] || "a destination"} to ${g.year} must-visit list`, created_at: g.created_at });
+        all.push({ id: `gp-${g.id}`, type: "goal_place", key: "activity.goalPlace", params: { place: placeMap[g.place_id], year: String(g.year) }, created_at: g.created_at });
       });
 
       (favorites || []).forEach(f => {
-        all.push({ id: `fav-${f.id}`, type: "favorite", description: `Added ${placeMap[f.place_id] || "a destination"} to favorites`, created_at: f.created_at });
+        all.push({ id: `fav-${f.id}`, type: "favorite", key: "activity.favorited", params: { place: placeMap[f.place_id] }, created_at: f.created_at });
       });
 
       // Sort by most recent
@@ -165,6 +179,20 @@ export function YourActivity({ onBack }: { onBack: () => void }) {
       setLoading(false);
     })();
   }, [user]);
+
+  const describe = ({ key, params }: ActivityItem) => {
+    const year = params.year ?? "";
+    const goal = params.continent && params.continent !== "total"
+      ? `${year} (${continentLabel(params.continent, t)})`
+      : year;
+    return t(key, {
+      place: params.place ? getCachedAnyPlaceName(params.place, language) : t("activity.aDestination"),
+      user: params.user || t("activity.someone"),
+      list: params.list || t("activity.aList"),
+      goal,
+      year,
+    });
+  };
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -190,7 +218,7 @@ export function YourActivity({ onBack }: { onBack: () => void }) {
       <div className="pt-12 px-5">
         <div className="flex items-center gap-3 mb-6">
           <button onClick={onBack}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
-          <h1 className="text-xl font-bold text-foreground">Your Activity</h1>
+          <h1 className="text-xl font-bold text-foreground">{t("activity.title")}</h1>
         </div>
 
         {loading ? (
@@ -200,16 +228,16 @@ export function YourActivity({ onBack }: { onBack: () => void }) {
             ))}
           </div>
         ) : activities.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center mt-8">No activity yet</p>
+          <p className="text-sm text-muted-foreground text-center mt-8">{t("activity.noActivity")}</p>
         ) : (
           <div className="space-y-0">
             {activities.map(a => (
               <div key={a.id} className="flex items-start gap-3 py-3 border-b border-border last:border-0">
                 <span className="text-base mt-0.5">{getIcon(a.type)}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground">{a.description}</p>
+                  <p className="text-sm text-foreground">{describe(a)}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {formatDistanceToNow(new Date(a.created_at), { addSuffix: true }).replace(/^about /, "")}
+                    {timeAgo(a.created_at, language)}
                   </p>
                 </div>
               </div>

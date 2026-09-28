@@ -264,7 +264,7 @@ export default function AuthPage() {
             <img src={logoImage} alt="Stampaway" className="w-full h-full object-cover" />
           </div>
           <h1 className="font-brand text-4xl font-normal text-foreground tracking-tight mb-1">Stampaway</h1>
-          <p className="text-sm text-muted-foreground">Log & rate your trips</p>
+          <p className="text-sm text-muted-foreground">{t("auth.tagline")}</p>
         </div>
 
         <AnimatePresence mode="wait">
@@ -403,14 +403,14 @@ export default function AuthPage() {
                       }
                     } catch (e: any) {
                       if (!isNativeAppleSignInCanceled(e)) {
-                        toast.error(e?.message ?? "Apple sign-in failed");
+                        toast.error(e?.message ?? t("auth.appleFailed"));
                       }
                     }
                   }}
                   className="w-full bg-white text-black rounded-xl py-3 text-sm font-semibold hover:bg-white/90 transition-colors flex items-center justify-center gap-2"
                 >
                   <AppleLogo className="w-4 h-4" />
-                  Continue with Apple
+                  {t("auth.continueWithApple")}
                 </button>
 
                 {mode === "signup" && (

@@ -6,6 +6,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { PosterWishlistButton } from "@/components/PosterWishlistButton";
 import { ReviewCard } from "@/components/ReviewCard";
@@ -41,6 +43,30 @@ import {
 
 const tabs = ["Places", "Reviews", "Lists"] as const;
 type ExploreTab = typeof tabs[number];
+const TAB_LABELS: Record<ExploreTab, TranslationKey> = {
+  Places: "explore.places",
+  Reviews: "explore.reviews",
+  Lists: "explore.lists",
+};
+// Section titles are cached with the section data, so the shown title is
+// looked up by the section key at render time and follows the app language.
+const SECTION_TITLES: Record<string, TranslationKey> = {
+  tc: "explore.section.trendyCountries",
+  tci: "explore.section.trendyCities",
+  te: "explore.section.topCountriesEurope",
+  tce: "explore.section.topCitiesEurope",
+  tna: "explore.section.topCitiesNorthAmerica",
+  ta: "explore.section.topCountriesAsia",
+  tsa: "explore.section.topCountriesSouthAmerica",
+  afford: "explore.section.affordableCountries",
+  vibrant: "explore.section.vibrantCities",
+  scenic: "explore.section.scenicCountries",
+  safe: "explore.section.safestCities",
+  "afford-sea": "explore.section.affordableSoutheastAsia",
+  "scenic-carib": "explore.section.scenicCaribbean",
+  "top-ee": "explore.section.topEasternEurope",
+  "welcoming-me": "explore.section.welcomingMiddleEast",
+};
 const EXPLORE_PLACES_PUBLIC_CACHE_VERSION = "places-public-v1";
 const EXPLORE_CATEGORY_RANKINGS = [
   "Affordability",
@@ -167,6 +193,7 @@ const getExploreCacheKey = (userId: string | null, tab: ExploreTab) =>
   ].join("|");
 
 export default function ExplorePage() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<ExploreTab>("Places");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -1056,7 +1083,7 @@ export default function ExplorePage() {
                   activeTab === tab ? "text-foreground" : "text-muted-foreground"
                 }`}
               >
-                {tab}
+                {t(TAB_LABELS[tab])}
               </span>
               {activeTab === tab && (
                 <motion.div
@@ -1099,11 +1126,11 @@ export default function ExplorePage() {
                       onClick={() => navigate(`/explore/list?${section.linkParams}`)}
                       className="flex items-center gap-1 mb-3"
                     >
-                      <h2 className="text-lg font-bold text-foreground">{section.title}</h2>
+                      <h2 className="text-lg font-bold text-foreground">{SECTION_TITLES[section.key] ? t(SECTION_TITLES[section.key]) : section.title}</h2>
                       <ChevronRight className="w-5 h-5 text-foreground" />
                     </button>
                     {section.places.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">No data yet</p>
+                      <p className="text-sm text-muted-foreground">{t("explore.noData")}</p>
                     ) : (
                     <div className="flex items-start gap-2.5 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
                         {section.places.map((place, placeIndex) => (
@@ -1170,7 +1197,7 @@ export default function ExplorePage() {
               <div className="space-y-6">
                 {friendReviews.length > 0 && (
                   <div>
-                    <h2 className="text-lg font-bold text-foreground mb-3">Recent from friends</h2>
+                    <h2 className="text-lg font-bold text-foreground mb-3">{t("explore.recentFromFriends")}</h2>
                     <div className="space-y-3">
                       {friendReviews.map((r) => (
                         <motion.div key={r.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
@@ -1197,9 +1224,9 @@ export default function ExplorePage() {
                   </div>
                 )}
                 <div>
-                  <h2 className="text-lg font-bold text-foreground mb-3">Most liked reviews</h2>
+                  <h2 className="text-lg font-bold text-foreground mb-3">{t("explore.mostLikedReviews")}</h2>
                   {popularReviews.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">No reviews yet</p>
+                    <p className="text-sm text-muted-foreground text-center py-8">{t("reviews.noReviews")}</p>
                   ) : (
                     <div className="space-y-3">
                       {popularReviews.map((r) => (
@@ -1244,7 +1271,7 @@ export default function ExplorePage() {
               <div className="space-y-6">
                 {friendLists.length > 0 && (
                   <div>
-                    <h2 className="text-lg font-bold text-foreground mb-3">Recent from friends</h2>
+                    <h2 className="text-lg font-bold text-foreground mb-3">{t("explore.recentFromFriends")}</h2>
                     <div className="space-y-3">
                       {friendLists.map((l) => (
                         <ListCard key={l.id} list={l} />
@@ -1253,9 +1280,9 @@ export default function ExplorePage() {
                   </div>
                 )}
                 <div>
-                  <h2 className="text-lg font-bold text-foreground mb-3">Most liked lists</h2>
+                  <h2 className="text-lg font-bold text-foreground mb-3">{t("explore.mostLikedLists")}</h2>
                   {popularLists.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">No lists yet</p>
+                    <p className="text-sm text-muted-foreground text-center py-8">{t("lists.noLists")}</p>
                   ) : (
                     <div className="space-y-3">
                       {popularLists.map((l) => (
@@ -1275,6 +1302,7 @@ export default function ExplorePage() {
 
 // ── List Card for Explore ──
 function ListCard({ list, showLikes = false }: { list: any; showLikes?: boolean }) {
+  const { t, tn } = useLanguage();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [liked, setLiked] = useState(false);
@@ -1334,11 +1362,11 @@ function ListCard({ list, showLikes = false }: { list: any; showLikes?: boolean 
             {list.profile_picture && (
               <img src={list.profile_picture} alt="" loading="lazy" decoding="async" width={24} height={24} className="w-6 h-6 rounded-full object-cover" />
             )}
-            <span className="text-xs text-muted-foreground" data-no-translate>{list.username || "User"}</span>
+            <span className="text-xs text-muted-foreground" data-no-translate>{list.username || t("common.user")}</span>
           </div>
           <p className="text-sm font-bold text-foreground" data-no-translate>{list.name}</p>
           <p className="text-xs text-muted-foreground">
-            {list.item_count} destination{list.item_count !== 1 ? "s" : ""}
+            {tn("count.destination", list.item_count ?? 0)}
           </p>
           <ListPreviewPosters listId={list.id} maxItems={4} />
         </div>

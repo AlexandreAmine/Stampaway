@@ -3,6 +3,8 @@ import { Star, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { shortDate } from "@/lib/localeFormat";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import { sizedPosterUrl } from "@/lib/imageSizing";
 import { hapticLight } from "@/lib/haptics";
@@ -62,6 +64,7 @@ export function ReviewCard({
   likeDataStatus = "unavailable",
 }: ReviewCardProps) {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const reviewId = review.id;
   const hasInitialLikeCount = likeDataStatus === "ready" && typeof initialLikeCount === "number";
@@ -75,14 +78,14 @@ export function ReviewCard({
   );
   const [toggling, setToggling] = useState(false);
   const localMutationReviewIdRef = useRef<string | null>(null);
-  const userName = review.userName || review.profile_username || "User";
+  const userName = review.userName || review.profile_username || t("common.user");
   const userAvatar = review.userAvatar || review.profile_picture || "";
   const placeName = review.placeName || review.place_name || "";
   // 48px thumbnail — request a 150px rendition instead of the 900×1200 poster
   const placeImage = sizedPosterUrl(review.placeImage || review.place_image || "", 150) || "";
   const rating = review.rating;
   const reviewText = review.reviewText || review.review_text || "";
-  const createdAt = review.createdAt || (review.created_at ? new Date(review.created_at).toLocaleDateString() : "");
+  const createdAt = review.createdAt || (review.created_at ? shortDate(new Date(review.created_at), language) : "");
   const currentLikeState = likeState.reviewId === reviewId
     ? likeState
     : getInitialLikeState(

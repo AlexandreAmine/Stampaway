@@ -18,6 +18,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CategorySortDropdown, type SubRatingCategory } from "@/components/CategorySortDropdown";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { destSortLabels, type DestSort } from "@/lib/sortLabels";
+import { continentLabel } from "@/lib/continentLabels";
+import { subCategoryLabel } from "@/lib/subCategories";
+import { getCachedPlaceName } from "@/lib/placeNames";
 import {
   EUROPE_COUNTRIES, ASIA_COUNTRIES, NORTH_AMERICA_COUNTRIES,
   SOUTH_AMERICA_COUNTRIES, AFRICA_COUNTRIES, OCEANIA_COUNTRIES,
@@ -33,17 +38,6 @@ function getContinent(country: string): string {
   if (OCEANIA_COUNTRIES.includes(country)) return "Oceania";
   return "Other";
 }
-
-type DestSort = "your-highest" | "category-highest" | "avg-highest" | "avg-category-highest" | "newest" | "longest";
-
-const getSortLabels = (name?: string): Record<DestSort, string> => ({
-  "your-highest": name ? `${name}'s highest first` : "Your highest first",
-  "category-highest": name ? `${name}'s categories highest first` : "Your categories highest first",
-  "avg-highest": "Average highest first",
-  "avg-category-highest": "Average categories highest first",
-  "newest": name ? `${name}'s newest visited first` : "Newest visited first",
-  "longest": name ? `${name}'s highest total duration first` : "Highest total duration first",
-});
 
 interface LikedEntry {
   id: string;
@@ -61,6 +55,7 @@ type Section = "countries" | "cities" | "reviews" | "lists";
 
 export function LikesTab({ userId, profileUsername }: { userId?: string; profileUsername?: string }) {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState<Section>("countries");
   const [countries, setCountries] = useState<LikedEntry[]>([]);
@@ -321,10 +316,10 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
   };
 
   const sections: { key: Section; label: string; count: number }[] = [
-    { key: "countries", label: "Countries", count: countries.length },
-    { key: "cities", label: "Cities", count: cities.length },
-    { key: "reviews", label: "Reviews", count: likedReviews.length },
-    { key: "lists", label: "Lists", count: likedLists.length },
+    { key: "countries", label: t("profile.countries"), count: countries.length },
+    { key: "cities", label: t("profile.cities"), count: cities.length },
+    { key: "reviews", label: t("profile.reviews"), count: likedReviews.length },
+    { key: "lists", label: t("profile.lists"), count: likedLists.length },
   ];
 
   if (loading) {
@@ -340,16 +335,16 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
     );
   }
 
-  const sortLabels = getSortLabels(isOtherUser ? profileUsername : undefined);
+  const sortLabels = destSortLabels(t, isOtherUser ? profileUsername : undefined);
   // dropdown order handled inline below
   const currentLabel = destSort === "category-highest"
-    ? `${selectedCategory}`
+    ? subCategoryLabel(selectedCategory, t)
     : destSort === "avg-category-highest"
-    ? `${avgSelectedCategory}`
+    ? subCategoryLabel(avgSelectedCategory, t)
     : sortLabels[destSort];
 
   const isDestSection = activeSection === "countries" || activeSection === "cities";
-  const groupLabel = activeSection === "countries" ? "By continent" : "By country";
+  const groupLabel = activeSection === "countries" ? t("profile.byContinent") : t("profile.byCountry");
 
   const renderDestGrid = (items: LikedEntry[]) => (
     <div className="grid grid-cols-3 gap-3">
@@ -384,9 +379,12 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
         map.get(key)!.push(item);
       });
       if (activeSection === "countries") {
-        CONTINENT_ORDER.forEach((c) => { if (map.has(c)) groups.push({ label: c, items: map.get(c)! }); });
+        CONTINENT_ORDER.forEach((c) => { if (map.has(c)) groups.push({ label: continentLabel(c, t), items: map.get(c)! }); });
       } else {
-        [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([label, items]) => groups.push({ label, items }));
+        [...map.entries()]
+          .map(([country, items]) => ({ label: getCachedPlaceName(country, language, true), items }))
+          .sort((a, b) => a.label.localeCompare(b.label))
+          .forEach((group) => groups.push(group));
       }
     }
 
@@ -420,7 +418,7 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
                 {sortLabels["avg-highest"]}
               </DropdownMenuItem>
               <CategorySortDropdown
-                label="Average categories highest first"
+                label={t("sort.avgCatHighest")}
                 onSelect={(cat) => { setAvgSelectedCategory(cat); setDestSort("avg-category-highest"); }}
                 selectedCategory={avgSelectedCategory}
                 isActive={destSort === "avg-category-highest"}
@@ -468,12 +466,12 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
         ))}
       </div>
 
-      {activeSection === "countries" && renderDestSection(countries, "No liked countries yet")}
-      {activeSection === "cities" && renderDestSection(cities, "No liked cities yet")}
+      {activeSection === "countries" && renderDestSection(countries, t("likes.noCountries"))}
+      {activeSection === "cities" && renderDestSection(cities, t("likes.noCities"))}
 
       {activeSection === "reviews" && (
         likedReviews.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">No liked reviews yet</p>
+          <p className="text-sm text-muted-foreground text-center py-8">{t("likes.noReviews")}</p>
         ) : (
           <div className="space-y-3">
             {likedReviews.map((r: any) => {
@@ -494,7 +492,7 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
 
       {activeSection === "lists" && (
         likedLists.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">No liked lists yet</p>
+          <p className="text-sm text-muted-foreground text-center py-8">{t("likes.noLists")}</p>
         ) : (
           <div className="space-y-3">
             {likedLists.map((l: any) => (

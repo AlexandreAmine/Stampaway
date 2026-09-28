@@ -233,7 +233,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
             )}
             <div>
               <p className="font-bold text-foreground">{entry.place.name}</p>
-              <p className="text-xs text-muted-foreground">{entry.place.type === "city" ? entry.place.country : "Country"}</p>
+              <p className="text-xs text-muted-foreground">{entry.place.type === "city" ? entry.place.country : t("common.country")}</p>
             </div>
           </div>
 

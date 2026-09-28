@@ -72,12 +72,34 @@ export function addNoTranslateStrings(values: Iterable<string>) {
   }
 }
 
-function shouldTranslate(text: string): boolean {
+// Same idea for already-translated strings with placeholders filled in
+// ("Réponse à {username}" rendered as "Réponse à alice"), which can't be
+// matched exactly.
+const noTranslatePatterns: RegExp[] = [];
+const PLACEHOLDER = /\{\w+\}/g;
+export function addNoTranslateTemplates(values: Iterable<string>) {
+  for (const v of values) {
+    const trimmed = v?.trim();
+    if (!trimmed || !/\{\w+\}/.test(trimmed)) continue;
+    // A template that is almost all placeholder ("{count} pays") would match
+    // far too much, so require some real text around the placeholders.
+    if (trimmed.replace(PLACEHOLDER, "").replace(/[^\p{L}]/gu, "").length < 4) continue;
+    const source = trimmed
+      .split(PLACEHOLDER)
+      .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      .join("[\\s\\S]+?");
+    noTranslatePatterns.push(new RegExp(`^${source}$`));
+  }
+}
+
+/** Exported for tests. */
+export function shouldTranslate(text: string): boolean {
   const trimmed = text.trim();
   if (trimmed.length < 2) return false;
   if (!/[A-Za-z]/.test(trimmed)) return false;
   if (/^[\d.,:/\s\-+%]+$/.test(trimmed)) return false;
   if (noTranslateExact.has(trimmed)) return false;
+  if (noTranslatePatterns.some((re) => re.test(trimmed))) return false;
   return true;
 }
 

@@ -27,7 +27,7 @@ export function FavoritePicker({ open, onClose, type, onSelect }: FavoritePicker
   const [places, setPlaces] = useState<PlaceOption[]>([]);
   const [loading, setLoading] = useState(false);
   const { closing, requestClose } = useSheetTransition(open, onClose);
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     if (!open) {
@@ -77,7 +77,7 @@ export function FavoritePicker({ open, onClose, type, onSelect }: FavoritePicker
         <div className="max-w-lg mx-auto w-full flex flex-col h-full">
           <div className="flex items-center justify-between pt-12 px-5 mb-4">
             <h2 className="text-lg font-bold text-foreground">
-              Select a {type === "city" ? "City" : "Country"}
+              {t(type === "city" ? "picker.selectCity" : "picker.selectCountry")}
             </h2>
             <button onClick={requestClose} className="p-2">
               <X className="w-5 h-5 text-muted-foreground" />
@@ -124,7 +124,7 @@ export function FavoritePicker({ open, onClose, type, onSelect }: FavoritePicker
             </div>
             {!loading && places.length === 0 && (
               <p className="text-sm text-muted-foreground text-center mt-8">
-                No {type === "city" ? "cities" : "countries"} found
+                {t(type === "city" ? "picker.noCities" : "picker.noCountries")}
               </p>
             )}
           </div>

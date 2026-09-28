@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { X, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import {
@@ -27,6 +28,7 @@ interface FollowerUser {
 
 export function FollowersTab({ userId }: { userId?: string }) {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const targetUserId = userId || user?.id;
   const isOwnProfile = !userId || userId === user?.id;
@@ -66,7 +68,7 @@ export function FollowersTab({ userId }: { userId?: string }) {
     queryClient.setQueryData(["followers", targetUserId ?? null], (old?: FollowerUser[]) =>
       (old ?? []).filter((f) => f.id !== followerId)
     );
-    toast.success(`${username} removed from followers`);
+    toast.success(t("followers.removed", { username }));
   };
 
   if (loading) {
@@ -95,14 +97,14 @@ export function FollowersTab({ userId }: { userId?: string }) {
         <input
           value={filterQuery}
           onChange={(e) => setFilterQuery(e.target.value)}
-          placeholder="Search"
+          placeholder={t("search")}
           className="w-full bg-card rounded-xl py-2.5 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
 
       {followers.length === 0 ? (
         <div className="flex items-center justify-center h-40">
-          <p className="text-sm text-muted-foreground">No followers yet</p>
+          <p className="text-sm text-muted-foreground">{t("followers.none")}</p>
         </div>
       ) : (
         <div className="space-y-1">
@@ -128,7 +130,7 @@ export function FollowersTab({ userId }: { userId?: string }) {
             </div>
           ))}
           {filtered.length === 0 && filterQuery.trim() && (
-            <p className="text-xs text-muted-foreground text-center py-4">No matches</p>
+            <p className="text-xs text-muted-foreground text-center py-4">{t("common.noMatches")}</p>
           )}
         </div>
       )}
@@ -137,13 +139,13 @@ export function FollowersTab({ userId }: { userId?: string }) {
       <AlertDialog open={!!pendingRemove} onOpenChange={(v) => !v && setPendingRemove(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove follower</AlertDialogTitle>
+            <AlertDialogTitle>{t("followers.removeTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {pendingRemove?.username} will no longer follow you. They won't be notified.
+              {t("followers.removeBody", { username: pendingRemove?.username ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={async () => {
@@ -151,7 +153,7 @@ export function FollowersTab({ userId }: { userId?: string }) {
                 setPendingRemove(null);
               }}
             >
-              Remove
+              {t("common.remove")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

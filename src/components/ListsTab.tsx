@@ -4,6 +4,7 @@ import { Plus, X, ChevronRight, Trash2, GripVertical } from "lucide-react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { FavoritePicker } from "@/components/FavoritePicker";
 import { toast } from "sonner";
@@ -29,6 +30,7 @@ interface ListWithItems {
 
 export function ListsTab({ userId, readOnly = false }: { userId?: string; readOnly?: boolean }) {
   const { user } = useAuth();
+  const { t, tn } = useLanguage();
   const [lists, setLists] = useState<ListWithItems[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const targetUserId = userId || user?.id;
@@ -90,9 +92,9 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
       description: newDesc.trim() || null,
     });
     setCreating(false);
-    if (error) { toast.error("Failed to create list"); return; }
+    if (error) { toast.error(t("lists.createFailed")); return; }
     invalidateOwnProfileContentCache(user.id);
-    toast.success("List created!");
+    toast.success(t("lists.created"));
     setNewName("");
     setNewDesc("");
     setShowCreate(false);
@@ -104,12 +106,12 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
     if (!itemsError) invalidateListPreviewPostersCache(listId);
 
     const { error } = await supabase.from("lists").delete().eq("id", listId);
-    if (error) { toast.error("Failed to delete list"); return; }
+    if (error) { toast.error(t("lists.deleteFailed")); return; }
     if (user?.id) {
       invalidateOwnProfileContentCache(user.id);
       invalidateListPreviewPostersCache(listId);
     }
-    toast.success("List deleted");
+    toast.success(t("lists.deleted"));
     setOpenList(null);
     fetchLists();
   };
@@ -117,21 +119,21 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
   const handleAddToList = async (placeId: string) => {
     if (!openList) return;
     const exists = openList.items.some((i) => i.place.id === placeId);
-    if (exists) { toast("Already in this list"); return; }
+    if (exists) { toast(t("toast.alreadyInList")); return; }
     const maxPos = openList.items.reduce((max, i) => Math.max(max, i.position), -1);
     const { error } = await supabase.from("list_items").insert({ list_id: openList.id, place_id: placeId, position: maxPos + 1 });
-    if (error) { toast.error("Failed to add"); return; }
+    if (error) { toast.error(t("common.failedToAdd")); return; }
     invalidateListPreviewPostersCache(openList.id);
-    toast.success("Added to list!");
+    toast.success(t("toast.addedToList"));
     fetchLists();
   };
 
   const handleRemoveItem = async (itemId: string) => {
     const listId = openList?.id;
     const { error } = await supabase.from("list_items").delete().eq("id", itemId);
-    if (error) { toast.error("Failed to remove"); return; }
+    if (error) { toast.error(t("common.failedToRemove")); return; }
     invalidateListPreviewPostersCache(listId);
-    toast.success("Removed from list");
+    toast.success(t("lists.removed"));
     fetchLists();
   };
 
@@ -157,7 +159,7 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
       // optimistic state and re-read rather than leaving the UI showing an order
       // that was never saved.
       setOpenList(previous);
-      toast.error("Couldn't save the new order");
+      toast.error(t("lists.reorderFailed"));
       fetchLists();
       return;
     }
@@ -189,7 +191,7 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
         <div className="flex items-center justify-between">
           <button onClick={() => setOpenList(null)} className="flex items-center gap-2">
             <ChevronRight className="w-4 h-4 text-muted-foreground rotate-180" />
-            <span className="text-sm text-muted-foreground">Back</span>
+            <span className="text-sm text-muted-foreground">{t("back")}</span>
           </button>
           {!readOnly && (
             <button onClick={() => handleDeleteList(openList.id)} className="p-2">
@@ -202,13 +204,13 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
 
         {!readOnly && (
           <div className="flex gap-2">
-            <button onClick={() => { setPickerType("city"); setPickerOpen(true); }} className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg font-medium">+ Add City</button>
-            <button onClick={() => { setPickerType("country"); setPickerOpen(true); }} className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg font-medium">+ Add Country</button>
+            <button onClick={() => { setPickerType("city"); setPickerOpen(true); }} className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg font-medium">+ {t("lists.addCity")}</button>
+            <button onClick={() => { setPickerType("country"); setPickerOpen(true); }} className="text-xs bg-primary/10 text-primary px-3 py-1.5 rounded-lg font-medium">+ {t("lists.addCountry")}</button>
           </div>
         )}
 
         {openList.items.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">No destinations in this list yet</p>
+          <p className="text-sm text-muted-foreground text-center py-8">{t("lists.emptyYet")}</p>
         ) : !readOnly ? (
           <Reorder.Group axis="y" values={openList.items} onReorder={handleReorder} className="space-y-2">
             {openList.items.map((item) => (
@@ -272,18 +274,18 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
                   autoFocus
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  placeholder="List name..."
+                  placeholder={t("lists.namePlaceholder")}
                   className="w-full bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none font-semibold"
                 />
                 <input
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
-                  placeholder="Description (optional)"
+                  placeholder={t("lists.description")}
                   className="w-full bg-transparent text-xs text-muted-foreground placeholder:text-muted-foreground focus:outline-none"
                 />
                 <div className="flex gap-2">
-                  <button onClick={handleCreate} disabled={creating || !newName.trim()} className="text-xs bg-primary text-primary-foreground px-4 py-1.5 rounded-lg font-medium disabled:opacity-50">Create</button>
-                  <button onClick={() => setShowCreate(false)} className="text-xs text-muted-foreground px-4 py-1.5">Cancel</button>
+                  <button onClick={handleCreate} disabled={creating || !newName.trim()} className="text-xs bg-primary text-primary-foreground px-4 py-1.5 rounded-lg font-medium disabled:opacity-50">{t("common.create")}</button>
+                  <button onClick={() => setShowCreate(false)} className="text-xs text-muted-foreground px-4 py-1.5">{t("cancel")}</button>
                 </div>
               </div>
             </motion.div>
@@ -293,10 +295,10 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
 
       {lists.length === 0 && !showCreate ? (
         <div className="flex flex-col items-center justify-center h-40 gap-3">
-          <p className="text-muted-foreground text-sm">No lists yet</p>
+          <p className="text-muted-foreground text-sm">{t("lists.noLists")}</p>
           {!readOnly && (
             <button onClick={() => setShowCreate(true)} className="flex items-center gap-1 text-primary text-sm font-medium">
-              <Plus className="w-4 h-4" /> Create your first list
+              <Plus className="w-4 h-4" /> {t("lists.createFirst")}
             </button>
           )}
         </div>
@@ -304,7 +306,7 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
         <>
           {!readOnly && !showCreate && (
             <button onClick={() => setShowCreate(true)} className="flex items-center gap-1 text-primary text-sm font-medium">
-              <Plus className="w-4 h-4" /> New list
+              <Plus className="w-4 h-4" /> {t("lists.new")}
             </button>
           )}
           {lists.map((list) => (
@@ -316,7 +318,7 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-bold text-foreground" data-no-translate>{list.name}</p>
-                  <p className="text-xs text-muted-foreground">{list.items.length} destination{list.items.length !== 1 ? "s" : ""}</p>
+                  <p className="text-xs text-muted-foreground">{tn("count.destination", list.items.length)}</p>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </div>

@@ -276,6 +276,12 @@ export function getCachedPlaceName(name: string, language: Language, isCountry: 
   return aiCache.get(`${language}::${name}`) ?? name;
 }
 
+/** For callers that don't know whether a name is a city or a country. */
+export function getCachedAnyPlaceName(name: string, language: Language): string {
+  const asCountry = getCachedPlaceName(name, language, true);
+  return asCountry !== name ? asCountry : getCachedPlaceName(name, language, false);
+}
+
 const inflight = new Map<string, Promise<string[]>>();
 
 /**

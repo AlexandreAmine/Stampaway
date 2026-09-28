@@ -4,6 +4,9 @@ import { ComposableMap, Geographies, Geography, ZoomableGroup, Marker } from "re
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { continentLabel } from "@/lib/continentLabels";
+import { getCachedPlaceName } from "@/lib/placeNames";
 import { getCountryCode } from "@/lib/countryFlags";
 import { getCityCoordinates } from "@/lib/cityCoordinates";
 import {
@@ -262,6 +265,7 @@ CompareMapChart.displayName = "CompareMapChart";
 // ─── Main Component ───
 export function MapTab({ userId }: { userId?: string }) {
   const { user } = useAuth();
+  const { t, tn } = useLanguage();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [totalCountries, setTotalCountries] = useState(0);
@@ -337,7 +341,7 @@ export function MapTab({ userId }: { userId?: string }) {
         <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(217, 91%, 60%)" }} />
-            <span>You</span>
+            <span>{t("profile.legendYou")}</span>
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(40, 95%, 55%)" }} />
@@ -345,7 +349,7 @@ export function MapTab({ userId }: { userId?: string }) {
           </div>
           <div className="flex items-center gap-1.5">
             <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(150, 60%, 45%)" }} />
-            <span>Both</span>
+            <span>{t("profile.legendBoth")}</span>
           </div>
         </div>
 
@@ -355,28 +359,28 @@ export function MapTab({ userId }: { userId?: string }) {
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left px-3 py-2 text-muted-foreground font-medium"></th>
-                <th className="text-right px-3 py-2 font-semibold text-primary">You</th>
+                <th className="text-right px-3 py-2 font-semibold text-primary">{t("profile.legendYou")}</th>
                 <th className="text-right px-3 py-2 font-semibold" style={{ color: "hsl(40, 95%, 55%)" }}>{theirUsername}</th>
               </tr>
             </thead>
             <tbody>
               <tr className="border-b border-border/50">
-                <td className="px-3 py-2 text-muted-foreground">Countries</td>
+                <td className="px-3 py-2 text-muted-foreground">{t("profile.countries")}</td>
                 <td className="text-right px-3 py-2 font-semibold text-primary">{myData.visitedCountries.size}</td>
                 <td className="text-right px-3 py-2 font-semibold" style={{ color: "hsl(40, 95%, 55%)" }}>{theirData.visitedCountries.size}</td>
               </tr>
               <tr className="border-b border-border/50">
-                <td className="px-3 py-2 text-muted-foreground pl-6">• In Percent</td>
+                <td className="px-3 py-2 text-muted-foreground pl-6">• {t("map.inPercent")}</td>
                 <td className="text-right px-3 py-2 font-semibold text-primary">{totalCountries > 0 ? ((myData.visitedCountries.size / totalCountries) * 100).toFixed(1) : 0}%</td>
                 <td className="text-right px-3 py-2 font-semibold" style={{ color: "hsl(40, 95%, 55%)" }}>{totalCountries > 0 ? ((theirData.visitedCountries.size / totalCountries) * 100).toFixed(1) : 0}%</td>
               </tr>
               <tr className="border-b border-border/50">
-                <td className="px-3 py-2 text-muted-foreground">Cities</td>
+                <td className="px-3 py-2 text-muted-foreground">{t("profile.cities")}</td>
                 <td className="text-right px-3 py-2 font-semibold text-primary">{myData.visitedCitiesCount}</td>
                 <td className="text-right px-3 py-2 font-semibold" style={{ color: "hsl(40, 95%, 55%)" }}>{theirData.visitedCitiesCount}</td>
               </tr>
               <tr className="border-b border-border/50">
-                <td className="px-3 py-2 text-muted-foreground">Continents</td>
+                <td className="px-3 py-2 text-muted-foreground">{t("map.continents")}</td>
                 <td className="text-right px-3 py-2 font-semibold text-primary">{myVisitedContinents}</td>
                 <td className="text-right px-3 py-2 font-semibold" style={{ color: "hsl(40, 95%, 55%)" }}>{theirVisitedContinents}</td>
               </tr>
@@ -385,7 +389,7 @@ export function MapTab({ userId }: { userId?: string }) {
                 const theirStat = theirData.continentStats[continent];
                 return (
                   <tr key={continent} className="border-b border-border/50 last:border-0">
-                    <td className="px-3 py-2 text-muted-foreground pl-6">• {continent}</td>
+                    <td className="px-3 py-2 text-muted-foreground pl-6">• {continentLabel(continent, t)}</td>
                     <td className={`text-right px-3 py-2 text-xs font-medium ${myStat?.visited > 0 ? "text-primary" : "text-muted-foreground"}`}>
                       {myStat?.total > 0 ? ((myStat.visited / myStat.total) * 100).toFixed(0) : 0}%
                     </td>
@@ -431,7 +435,7 @@ export function MapTab({ userId }: { userId?: string }) {
               : "bg-card/80 backdrop-blur-sm text-muted-foreground border border-border"
           }`}
         >
-          Colored ratings
+          {t("map.coloredRatings")}
         </button>
         <SoloMapChart
           data={myData}
@@ -447,15 +451,15 @@ export function MapTab({ userId }: { userId?: string }) {
           <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(25, 95%, 53%)" }} /><span>4 - 3.5</span></div>
           <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(45, 95%, 50%)" }} /><span>3 - 2</span></div>
           <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(75, 60%, 45%)" }} /><span>1.5 - 0.5</span></div>
-          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(217, 91%, 60%)" }} /><span>No grade</span></div>
-          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(270, 70%, 50%)" }} /><span>5★ city</span></div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(217, 91%, 60%)" }} /><span>{t("map.noGrade")}</span></div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-full" style={{ background: "hsl(270, 70%, 50%)" }} /><span>{t("map.fiveStarCity")}</span></div>
         </div>
       )}
 
       {/* Country stats */}
       <div className="mt-4 flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          <span className="text-foreground font-semibold">{myData.visitedCountries.size}</span> / {totalCountries} countries
+          <span className="text-foreground font-semibold">{myData.visitedCountries.size}</span> {t("map.ofCountries", { total: String(totalCountries) })}
         </p>
         <span className="text-xs font-medium text-primary">
           {totalCountries > 0 ? ((myData.visitedCountries.size / totalCountries) * 100).toFixed(1) : 0}%
@@ -466,13 +470,13 @@ export function MapTab({ userId }: { userId?: string }) {
       <div className="mt-4 space-y-2">
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            <span className="text-foreground font-semibold">{visitedContinentsCount}</span> / 6 continents
+            <span className="text-foreground font-semibold">{visitedContinentsCount}</span> {t("map.ofContinents")}
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2">
           {Object.entries(myData.continentStats).map(([continent, stats]) => (
             <div key={continent} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-1.5">
-              <span className="text-xs text-muted-foreground">{continent}</span>
+              <span className="text-xs text-muted-foreground">{continentLabel(continent, t)}</span>
               <span className={`text-xs font-medium ${stats.visited > 0 ? "text-primary" : "text-muted-foreground"}`}>
                 {stats.total > 0 ? ((stats.visited / stats.total) * 100).toFixed(0) : 0}%
               </span>
@@ -484,7 +488,7 @@ export function MapTab({ userId }: { userId?: string }) {
       {/* Cities visited */}
       <div className="mt-4 flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          <span className="text-foreground font-semibold">{myData.visitedCitiesCount}</span> cities visited
+          <span className="text-foreground font-semibold">{myData.visitedCitiesCount}</span> {tn("map.citiesVisited", myData.visitedCitiesCount)}
         </p>
       </div>
 
@@ -497,6 +501,7 @@ export function MapTab({ userId }: { userId?: string }) {
 
 // Small sub-component to fetch top countries by cities
 function TopCountriesByCities({ userId }: { userId: string }) {
+  const { t, tn, language } = useLanguage();
   const [top, setTop] = useState<{ country: string; count: number }[]>([]);
 
   useEffect(() => {
@@ -524,7 +529,7 @@ function TopCountriesByCities({ userId }: { userId: string }) {
 
   return (
     <div className="mt-4 space-y-1">
-      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-2">Top countries by cities</p>
+      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-2">{t("map.topCountriesByCities")}</p>
       {top.map((item) => {
         const code = getCountryCode(item.country);
         const flag = code
@@ -532,8 +537,8 @@ function TopCountriesByCities({ userId }: { userId: string }) {
           : "";
         return (
           <div key={item.country} className="flex items-center justify-between bg-muted/30 rounded-lg px-3 py-1.5">
-            <span className="text-sm">{flag} {item.country}</span>
-            <span className="text-xs font-medium text-primary">{item.count} {item.count === 1 ? "city" : "cities"}</span>
+            <span className="text-sm">{flag} {getCachedPlaceName(item.country, language, true)}</span>
+            <span className="text-xs font-medium text-primary">{tn("count.city", item.count)}</span>
           </div>
         );
       })}
@@ -544,6 +549,7 @@ function TopCountriesByCities({ userId }: { userId: string }) {
 // ─── Visited Together ───
 function VisitedTogether({ myUserId, theirUserId, theirUsername }: { myUserId: string; theirUserId: string; theirUsername: string }) {
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
   const [countries, setCountries] = useState<{ name: string; placeId: string }[]>([]);
   const [cities, setCities] = useState<{ name: string; country: string; placeId: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -599,13 +605,13 @@ function VisitedTogether({ myUserId, theirUserId, theirUsername }: { myUserId: s
   return (
     <div className="mt-6">
       <p className="text-sm font-semibold text-foreground mb-3">
-        Visited together with {theirUsername}
+        {t("map.visitedTogetherWith", { username: theirUsername })}
       </p>
       <div className="grid grid-cols-2 gap-4">
         {countries.length > 0 && (
           <div>
             <p className="text-xs text-muted-foreground font-medium mb-2">
-              Countries ({countries.length})
+              {t("profile.countries")} ({countries.length})
             </p>
             <div className="space-y-1">
               {countries.map(c => {
@@ -620,7 +626,7 @@ function VisitedTogether({ myUserId, theirUserId, theirUsername }: { myUserId: s
                     className="w-full flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left"
                   >
                     <span className="text-sm">{flag}</span>
-                    <span className="text-xs text-foreground">{c.name}</span>
+                    <span className="text-xs text-foreground">{getCachedPlaceName(c.name, language, true)}</span>
                   </button>
                 );
               })}
@@ -630,7 +636,7 @@ function VisitedTogether({ myUserId, theirUserId, theirUsername }: { myUserId: s
         {cities.length > 0 && (
           <div>
             <p className="text-xs text-muted-foreground font-medium mb-2">
-              Cities ({cities.length})
+              {t("profile.cities")} ({cities.length})
             </p>
             <div className="space-y-1">
               {cities.map(c => (
@@ -639,8 +645,8 @@ function VisitedTogether({ myUserId, theirUserId, theirUsername }: { myUserId: s
                   onClick={() => navigate(`/place/${c.placeId}`)}
                   className="w-full flex items-center gap-1.5 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left"
                 >
-                  <span className="text-xs text-foreground">{c.name}</span>
-                  <span className="text-[10px] text-muted-foreground">({c.country})</span>
+                  <span className="text-xs text-foreground">{getCachedPlaceName(c.name, language, false)}</span>
+                  <span className="text-[10px] text-muted-foreground">({getCachedPlaceName(c.country, language, true)})</span>
                 </button>
               ))}
             </div>
@@ -654,6 +660,7 @@ function VisitedTogether({ myUserId, theirUserId, theirUsername }: { myUserId: s
 // ─── Rating Comparison ───
 function RatingComparison({ myUserId, theirUserId, theirUsername }: { myUserId: string; theirUserId: string; theirUsername: string }) {
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
   const [countries, setCountries] = useState<{ name: string; placeId: string; myRating: number | null; theirRating: number | null }[]>([]);
   const [cities, setCities] = useState<{ name: string; country: string; placeId: string; myRating: number | null; theirRating: number | null }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -731,8 +738,8 @@ function RatingComparison({ myUserId, theirUserId, theirUsername }: { myUserId: 
       >
         <div className="flex items-center gap-2 min-w-0">
           {flag && <span className="text-sm">{flag}</span>}
-          <span className="text-xs text-foreground truncate">{item.name}</span>
-          {showCountry && <span className="text-[10px] text-muted-foreground">({item.country})</span>}
+          <span className="text-xs text-foreground truncate">{getCachedPlaceName(item.name, language, !showCountry)}</span>
+          {showCountry && <span className="text-[10px] text-muted-foreground">({getCachedPlaceName(item.country ?? "", language, true)})</span>}
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <span className="text-xs font-semibold text-primary">{item.myRating != null ? item.myRating.toFixed(1) : "—"}</span>
@@ -746,29 +753,29 @@ function RatingComparison({ myUserId, theirUserId, theirUsername }: { myUserId: 
 
   return (
     <div className="mt-6">
-      <p className="text-sm font-semibold text-foreground mb-2">Rating comparison</p>
+      <p className="text-sm font-semibold text-foreground mb-2">{t("map.ratingComparison")}</p>
       <div className="flex items-center justify-between mb-3">
         <div className="flex gap-2">
-          {(["country", "city"] as const).map((t) => (
+          {(["country", "city"] as const).map((tab) => (
             <button
-              key={t}
-              onClick={() => setRatingTab(t)}
+              key={tab}
+              onClick={() => setRatingTab(tab)}
               className={`text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors ${
-                ratingTab === t ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"
+                ratingTab === tab ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"
               }`}
             >
-              {t === "country" ? "Countries" : "Cities"}
+              {tab === "country" ? t("profile.countries") : t("profile.cities")}
             </button>
           ))}
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] font-medium text-primary">You</span>
+          <span className="text-[10px] font-medium text-primary">{t("profile.legendYou")}</span>
           <span className="text-[10px] font-medium" style={{ color: "hsl(40, 95%, 55%)" }}>{theirUsername}</span>
         </div>
       </div>
 
       {activeList.length === 0 ? (
-        <p className="text-xs text-muted-foreground text-center py-4">No shared {ratingTab === "country" ? "countries" : "cities"}</p>
+        <p className="text-xs text-muted-foreground text-center py-4">{t(ratingTab === "country" ? "map.noSharedCountries" : "map.noSharedCities")}</p>
       ) : (
         <div className="space-y-1">{activeList.map((c) => renderRow(c, ratingTab === "city"))}</div>
       )}
@@ -779,6 +786,7 @@ function RatingComparison({ myUserId, theirUserId, theirUsername }: { myUserId: 
 // ─── Shared Wishlist ───
 function SharedWishlist({ myUserId, theirUserId, theirUsername }: { myUserId: string; theirUserId: string; theirUsername: string }) {
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
   const [countries, setCountries] = useState<{ name: string; placeId: string }[]>([]);
   const [cities, setCities] = useState<{ name: string; country: string; placeId: string }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -818,23 +826,23 @@ function SharedWishlist({ myUserId, theirUserId, theirUsername }: { myUserId: st
 
   return (
     <div className="mt-6">
-      <p className="text-sm font-semibold text-foreground mb-2">Shared wishlist</p>
+      <p className="text-sm font-semibold text-foreground mb-2">{t("map.sharedWishlist")}</p>
       <div className="flex gap-2 mb-3">
-        {(["country", "city"] as const).map((t) => (
+        {(["country", "city"] as const).map((tab) => (
           <button
-            key={t}
-            onClick={() => setWishTab(t)}
+            key={tab}
+            onClick={() => setWishTab(tab)}
             className={`text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors ${
-              wishTab === t ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"
+              wishTab === tab ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"
             }`}
           >
-            {t === "country" ? "Countries" : "Cities"}
+            {tab === "country" ? t("profile.countries") : t("profile.cities")}
           </button>
         ))}
       </div>
 
       {activeList.length === 0 ? (
-        <p className="text-xs text-muted-foreground text-center py-4">No shared {wishTab === "country" ? "countries" : "cities"}</p>
+        <p className="text-xs text-muted-foreground text-center py-4">{t(wishTab === "country" ? "map.noSharedCountries" : "map.noSharedCities")}</p>
       ) : (
         <div className="space-y-1">
           {activeList.map((c) => {
@@ -843,8 +851,8 @@ function SharedWishlist({ myUserId, theirUserId, theirUsername }: { myUserId: st
             return (
               <button key={c.placeId} onClick={() => navigate(`/place/${c.placeId}`)} className="w-full flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left">
                 {flag && <span className="text-sm">{flag}</span>}
-                <span className="text-xs text-foreground">{c.name}</span>
-                {"country" in c && wishTab === "city" && <span className="text-[10px] text-muted-foreground">({(c as any).country})</span>}
+                <span className="text-xs text-foreground">{getCachedPlaceName(c.name, language, wishTab === "country")}</span>
+                {"country" in c && wishTab === "city" && <span className="text-[10px] text-muted-foreground">({getCachedPlaceName((c as any).country, language, true)})</span>}
               </button>
             );
           })}

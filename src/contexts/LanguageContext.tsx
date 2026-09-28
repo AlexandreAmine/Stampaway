@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { translations, Language, TranslationKey } from "@/i18n/translations";
-import { startDomTranslator, setDomTranslatorLanguage, addNoTranslateStrings } from "@/lib/domTranslator";
+import { startDomTranslator, setDomTranslatorLanguage, addNoTranslateStrings, addNoTranslateTemplates } from "@/lib/domTranslator";
 import { getAllLocalizedPlaceNames } from "@/lib/placeNames";
 import {
   EXPLICIT_KEY,
@@ -10,10 +10,15 @@ import {
   rememberDetectedLanguage,
 } from "@/lib/deviceLanguage";
 
+/** Keys that come as a "<base>.one" / "<base>.other" pair. */
+export type PluralKey = TranslationKey extends infer K ? (K extends `${infer B}.one` ? B : never) : never;
+
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: (key: TranslationKey, replacements?: Record<string, string>) => string;
+  /** Picks the plural form for `count` and fills in {count}, e.g. "1 city" / "3 cities". */
+  tn: (key: PluralKey, count: number, replacements?: Record<string, string>) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -37,13 +42,16 @@ function seedNoTranslateRegistry() {
 // to DeepL as well — paying for a French-to-French round trip whose output
 // then REPLACES the hand-written translation (dropping deliberate details
 // such as French non-breaking spaces). Only the active language's strings are
-// registered: English ones must stay translatable, or a hardcoded "Save"
+// registered (placeholders become wildcards, so "Réponse à alice" is covered
+// too): English ones must stay translatable, or a hardcoded "Save"
 // would match en's "Save" and stop being translated.
 const seededUiLanguages = new Set<Language>();
 function seedTranslatedUiStrings(lang: Language) {
   if (lang === "en" || seededUiLanguages.has(lang)) return;
   seededUiLanguages.add(lang);
-  addNoTranslateStrings(Object.values(translations[lang]));
+  const strings = Object.values(translations[lang]);
+  addNoTranslateStrings(strings);
+  addNoTranslateTemplates(strings);
 }
 
 // The translator's MutationObserver scans every DOM addition — pure overhead
@@ -99,8 +107,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return text;
   }, [language]);
 
+  const tn = useCallback((key: PluralKey, count: number, replacements?: Record<string, string>): string => {
+    const form = new Intl.PluralRules(language).select(count) === "one" ? "one" : "other";
+    return t(`${key}.${form}` as TranslationKey, { ...replacements, count: String(count) });
+  }, [t, language]);
+
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={{ language, setLanguage, t, tn }}>
       {children}
     </LanguageContext.Provider>
   );

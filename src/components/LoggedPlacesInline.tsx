@@ -15,12 +15,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { CategorySortDropdown, type SubRatingCategory } from "@/components/CategorySortDropdown";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { destSortLabels, type DestSort } from "@/lib/sortLabels";
+import { continentLabel } from "@/lib/continentLabels";
+import { subCategoryLabel } from "@/lib/subCategories";
+import { getCachedPlaceName } from "@/lib/placeNames";
 import {
   EUROPE_COUNTRIES, ASIA_COUNTRIES, NORTH_AMERICA_COUNTRIES,
   SOUTH_AMERICA_COUNTRIES, AFRICA_COUNTRIES, OCEANIA_COUNTRIES,
 } from "@/lib/continents";
 
-type SortOption = "your-highest" | "category-highest" | "avg-highest" | "avg-category-highest" | "newest" | "longest";
+type SortOption = DestSort;
 
 const CONTINENT_ORDER = ["Europe", "Asia", "North America", "South America", "Africa", "Oceania", "Other"];
 
@@ -33,15 +38,6 @@ function getContinent(country: string): string {
   if (OCEANIA_COUNTRIES.includes(country)) return "Oceania";
   return "Other";
 }
-
-const getSortLabels = (name?: string): Record<SortOption, string> => ({
-  "your-highest": name ? `${name}'s highest first` : "Your highest first",
-  "category-highest": name ? `${name}'s categories highest first` : "Your categories highest first",
-  "avg-highest": "Average highest first",
-  "avg-category-highest": "Average categories highest first",
-  "newest": name ? `${name}'s newest visited first` : "Newest visited first",
-  "longest": name ? `${name}'s highest total duration first` : "Highest total duration first",
-});
 
 interface PlaceEntry {
   place_id: string;
@@ -61,6 +57,7 @@ interface PlaceEntry {
 
 export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername }: { type: "city" | "country"; userId?: string; ratingFilter?: number; profileUsername?: string }) {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [places, setPlaces] = useState<PlaceEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -228,19 +225,19 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
       ))}
     </div>
   );
-  if (places.length === 0) return <div className="flex items-center justify-center h-40"><p className="text-sm text-muted-foreground">No {type === "city" ? "cities" : "countries"} logged yet</p></div>;
-  if (ratingFilter != null && sorted.length === 0) return <div className="flex items-center justify-center h-40"><p className="text-sm text-muted-foreground">No {type === "city" ? "cities" : "countries"} with this rating</p></div>;
+  if (places.length === 0) return <div className="flex items-center justify-center h-40"><p className="text-sm text-muted-foreground">{t(type === "city" ? "logged.noCities" : "logged.noCountries")}</p></div>;
+  if (ratingFilter != null && sorted.length === 0) return <div className="flex items-center justify-center h-40"><p className="text-sm text-muted-foreground">{t(type === "city" ? "logged.noCitiesWithRating" : "logged.noCountriesWithRating")}</p></div>;
 
   const isOtherUser = !!userId && userId !== user?.id;
-  const sortLabels = getSortLabels(isOtherUser ? profileUsername : undefined);
+  const sortLabels = destSortLabels(t, isOtherUser ? profileUsername : undefined);
 
   const currentLabel = sort === "category-highest"
-    ? `${selectedCategory}`
+    ? subCategoryLabel(selectedCategory, t)
     : sort === "avg-category-highest"
-    ? `${avgSelectedCategory}`
+    ? subCategoryLabel(avgSelectedCategory, t)
     : sortLabels[sort];
 
-  const groupLabel = type === "country" ? "By continent" : "By country";
+  const groupLabel = type === "country" ? t("profile.byContinent") : t("profile.byCountry");
 
   // Grouping logic
   const groups: { label: string; items: typeof sorted }[] = [];
@@ -252,9 +249,12 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
       map.get(key)!.push(item);
     });
     if (type === "country") {
-      CONTINENT_ORDER.forEach((c) => { if (map.has(c)) groups.push({ label: c, items: map.get(c)! }); });
+      CONTINENT_ORDER.forEach((c) => { if (map.has(c)) groups.push({ label: continentLabel(c, t), items: map.get(c)! }); });
     } else {
-      [...map.entries()].sort((a, b) => a[0].localeCompare(b[0])).forEach(([label, items]) => groups.push({ label, items }));
+      [...map.entries()]
+        .map(([country, items]) => ({ label: getCachedPlaceName(country, language, true), items }))
+        .sort((a, b) => a.label.localeCompare(b.label))
+        .forEach((group) => groups.push(group));
     }
   }
 
@@ -308,7 +308,7 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
               {sortLabels["avg-highest"]}
             </DropdownMenuItem>
             <CategorySortDropdown
-              label="Average categories highest first"
+              label={t("sort.avgCatHighest")}
               onSelect={(cat) => { setAvgSelectedCategory(cat); setSort("avg-category-highest"); }}
               selectedCategory={avgSelectedCategory}
               isActive={sort === "avg-category-highest"}

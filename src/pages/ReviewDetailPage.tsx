@@ -5,6 +5,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { StarRating } from "@/components/StarRating";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { DestinationPoster } from "@/components/DestinationPoster";
@@ -19,6 +20,7 @@ export default function ReviewDetailPage() {
   const { reviewId } = useParams<{ reviewId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t } = useLanguage();
 
   const [review, setReview] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
@@ -129,7 +131,7 @@ export default function ReviewDetailPage() {
   if (!review || !place) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Review not found</p>
+        <p className="text-muted-foreground">{t("reviewDetail.notFound")}</p>
       </div>
     );
   }
@@ -200,7 +202,7 @@ export default function ReviewDetailPage() {
             {review.liked && (
               <div className="flex items-center gap-1.5 text-red-400">
                 <Heart className="w-4 h-4 fill-current" />
-                <span className="text-xs font-medium">Liked</span>
+                <span className="text-xs font-medium">{t("reviewDetail.liked")}</span>
               </div>
             )}
           </div>
@@ -234,7 +236,7 @@ export default function ReviewDetailPage() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }} className="mb-4">
             <div className="flex items-center gap-2 mb-2">
               <MessageSquare className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">Review</h3>
+              <h3 className="text-sm font-semibold text-foreground">{t("reviewDetail.review")}</h3>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed bg-card rounded-xl p-4 border border-border whitespace-pre-wrap break-words">
               <span data-no-translate><Linkify text={review.review_text} /></span>
@@ -247,7 +249,7 @@ export default function ReviewDetailPage() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="mb-4">
             <div className="flex items-center gap-2 mb-3">
               <History className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">Previous visits</h3>
+              <h3 className="text-sm font-semibold text-foreground">{t("reviewDetail.previousVisits")}</h3>
             </div>
             <div className="space-y-2">
               {pastLoggings.map((log) => {

@@ -3,6 +3,8 @@ import { useState, useEffect } from "react";
 import { Send, Reply, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { relativeDays } from "@/lib/localeFormat";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 
@@ -19,6 +21,7 @@ interface Comment {
 
 export function ReviewComments({ reviewId }: { reviewId: string }) {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [comments, setComments] = useState<Comment[]>([]);
   const [text, setText] = useState("");
@@ -93,17 +96,7 @@ export function ReviewComments({ reviewId }: { reviewId: string }) {
     await fetchComments();
   };
 
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    const now = new Date();
-    const diffMs = now.getTime() - d.getTime();
-    const diffDays = Math.floor(diffMs / 86400000);
-    if (diffDays === 0) return "today";
-    if (diffDays === 1) return "yesterday";
-    if (diffDays < 7) return `${diffDays}d ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
-    return `${Math.floor(diffDays / 30)}mo ago`;
-  };
+  const formatDate = (dateStr: string) => relativeDays(dateStr, language);
 
   const renderComment = (comment: Comment, depth: number = 0) => (
     <div key={comment.id} className={`${depth > 0 ? "ml-8 border-l-2 border-border pl-3" : ""}`}>
@@ -120,7 +113,7 @@ export function ReviewComments({ reviewId }: { reviewId: string }) {
               onClick={() => navigate(comment.user_id === user?.id ? "/profile" : `/profile/${comment.user_id}`)}
               className="text-xs font-semibold text-foreground hover:underline"
             >
-              {comment.profile?.username || "User"}
+              {comment.profile?.username || t("common.user")}
             </button>
             <span className="text-[10px] text-muted-foreground">{formatDate(comment.created_at)}</span>
           </div>
@@ -132,7 +125,7 @@ export function ReviewComments({ reviewId }: { reviewId: string }) {
                 className="text-[10px] text-primary font-medium flex items-center gap-1"
               >
                 <Reply className="w-3 h-3" />
-                Reply
+                {t("comments.reply")}
               </button>
             )}
             {user?.id === comment.user_id && (
@@ -152,10 +145,10 @@ export function ReviewComments({ reviewId }: { reviewId: string }) {
 
   return (
     <div>
-      <h3 className="text-sm font-semibold text-foreground mb-3">Comments</h3>
+      <h3 className="text-sm font-semibold text-foreground mb-3">{t("comments.title")}</h3>
 
       {comments.length === 0 && (
-        <p className="text-xs text-muted-foreground mb-3">No comments yet</p>
+        <p className="text-xs text-muted-foreground mb-3">{t("comments.none")}</p>
       )}
 
       <div className="space-y-0.5 mb-4">
@@ -167,7 +160,7 @@ export function ReviewComments({ reviewId }: { reviewId: string }) {
           <div className="flex-1 relative">
             {replyTo && (
               <div className="text-[10px] text-primary mb-1 flex items-center gap-1">
-                Replying to {replyTo.profile?.username}
+                {t("comments.replyingTo", { username: replyTo.profile?.username ?? "" })}
                 <button onClick={() => setReplyTo(null)} className="text-muted-foreground ml-1">✕</button>
               </div>
             )}
@@ -175,7 +168,7 @@ export function ReviewComments({ reviewId }: { reviewId: string }) {
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
-              placeholder="Add a comment..."
+              placeholder={t("comments.placeholder")}
               className="w-full bg-card border border-border rounded-full px-4 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
             />
           </div>

@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { ChevronLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface LegalDocumentProps {
   title: string;
@@ -16,6 +17,7 @@ interface LegalDocumentProps {
  */
 export function LegalDocument({ title, lastUpdated, children }: LegalDocumentProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -23,7 +25,7 @@ export function LegalDocument({ title, lastUpdated, children }: LegalDocumentPro
         <div className="flex items-center gap-3 mb-6">
           <button
             onClick={() => navigate(-1)}
-            aria-label="Back"
+            aria-label={t("back")}
             className="p-1 -ml-1"
           >
             <ChevronLeft className="w-6 h-6 text-foreground" />
@@ -32,7 +34,7 @@ export function LegalDocument({ title, lastUpdated, children }: LegalDocumentPro
         </div>
 
         <p className="text-xs text-muted-foreground mb-8">
-          Last updated: {lastUpdated}
+          {t("legal.lastUpdated", { date: lastUpdated })}
         </p>
 
         <article

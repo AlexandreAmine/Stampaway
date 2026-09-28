@@ -74,7 +74,7 @@ export default function SettingsPage() {
       const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", ids);
       setBlockedUsers(data.map(d => {
         const p = (profiles || []).find(p => p.user_id === d.blocked_id);
-        return { id: d.id, blocked_id: d.blocked_id, username: p?.username || "Unknown", profile_picture: p?.profile_picture || null };
+        return { id: d.id, blocked_id: d.blocked_id, username: p?.username || t("common.unknown"), profile_picture: p?.profile_picture || null };
       }));
     })();
   }, [section, user]);
@@ -92,7 +92,7 @@ export default function SettingsPage() {
     if (!user) return;
     const { error } = await supabase.from("blocked_users").insert({ blocker_id: user.id, blocked_id: targetId });
     if (error) {
-      toast.error("Failed to block user");
+      toast.error(t("block.failed"));
       return;
     }
     const [{ error: followingError }, { error: followerError }] = await Promise.all([
@@ -125,7 +125,7 @@ export default function SettingsPage() {
     try {
       const { data, error } = await supabase.functions.invoke("delete-account");
       if (error || (data && (data as any).error)) {
-        const msg = (data as any)?.error || error?.message || "Failed to delete account";
+        const msg = (data as any)?.error || error?.message || t("settings.deleteFailed");
         toast.error(msg);
         return;
       }
@@ -136,7 +136,7 @@ export default function SettingsPage() {
       try { localStorage.clear(); } catch {}
       navigate("/auth", { replace: true });
     } catch (e: any) {
-      toast.error(e?.message || "Failed to delete account");
+      toast.error(e?.message || t("settings.deleteFailed"));
     }
   };
 
@@ -287,13 +287,13 @@ export default function SettingsPage() {
         <AlertDialog open={!!pendingBlock} onOpenChange={(v) => !v && setPendingBlock(null)}>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Block {pendingBlock?.username}?</AlertDialogTitle>
+              <AlertDialogTitle>{t("block.confirmNamed", { username: pendingBlock?.username ?? "" })}</AlertDialogTitle>
               <AlertDialogDescription>
-                They won't be able to find your profile, posts or activity. They won't be notified.
+                {t("block.settingsBody")}
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
               <AlertDialogAction
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 onClick={async () => {
@@ -301,7 +301,7 @@ export default function SettingsPage() {
                   setPendingBlock(null);
                 }}
               >
-                Block
+                {t("block.action")}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -324,7 +324,7 @@ export default function SettingsPage() {
           </div>
           <p className="text-sm text-foreground mb-2">{t("settings.deleteWarning")}</p>
           <p className="text-xs text-muted-foreground mb-4">{t("settings.typeDelete")}</p>
-          <Input value={deleteConfirm} onChange={e => setDeleteConfirm(e.target.value)} placeholder="Type DELETE" className="mb-4" />
+          <Input value={deleteConfirm} onChange={e => setDeleteConfirm(e.target.value)} placeholder={t("settings.typeDeletePlaceholder")} className="mb-4" />
           <Button variant="destructive" onClick={handleDeleteAccount} disabled={deleteConfirm !== "DELETE"} className="w-full">
             {t("settings.deleteMyAccount")}
           </Button>
@@ -426,15 +426,15 @@ export default function SettingsPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t("settings.signOut")}</AlertDialogTitle>
-            <AlertDialogDescription>Are you sure you want to sign out?</AlertDialogDescription>
+            <AlertDialogDescription>{t("settings.signOutConfirm")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={async () => { await signOut(); navigate("/welcome", { replace: true }); }}
             >
-              Sign out
+              {t("settings.signOutAction")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
