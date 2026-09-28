@@ -9,6 +9,7 @@ import { SoloMapChart, type UserMapData } from "@/components/MapTab";
 import { places } from "@/data/mockData";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { hapticLight, hapticSuccess } from "@/lib/haptics";
+import { subCategoryLabel } from "@/lib/subCategories";
 import type { TranslationKey } from "@/i18n/translations";
 import avatarElena from "@/assets/avatars/a1.webp";
 
@@ -83,6 +84,7 @@ const SUB_RATINGS: [string, number][] = [
 ];
 
 function ScreenRate({ active }: { active: boolean }) {
+  const { t } = useLanguage();
   const paris = places[0];
   const [rating, setRating] = useState(0);
 
@@ -117,15 +119,15 @@ function ScreenRate({ active }: { active: boolean }) {
               <img src={paris.image} alt="" className="w-full h-full object-cover" />
             </div>
             <div>
-              <p className="text-[11px] text-muted-foreground">I stamped...</p>
+              <p className="text-[11px] text-muted-foreground">{t("review.iStamped")}</p>
               <p className="text-lg font-bold text-foreground leading-tight">Paris</p>
               <p className="text-[11px] text-muted-foreground">France</p>
             </div>
           </div>
-          <span className="text-sm font-semibold text-primary">Save</span>
+          <span className="text-sm font-semibold text-primary">{t("save")}</span>
         </div>
 
-        <p className="mt-5 text-sm font-semibold text-foreground mb-2">Your rating</p>
+        <p className="mt-5 text-sm font-semibold text-foreground mb-2">{t("review.yourRating")}</p>
         <div className="flex items-center justify-between">
           <StarRating rating={rating} size={30} />
           <motion.span
@@ -146,7 +148,7 @@ function ScreenRate({ active }: { active: boolean }) {
               {...appear(active, 0.3 + i * 0.05, 6)}
               className="flex items-center justify-between"
             >
-              <span className="text-xs text-muted-foreground">{category}</span>
+              <span className="text-xs text-muted-foreground">{subCategoryLabel(category, t)}</span>
               <StarRating rating={value} size={13} />
             </motion.div>
           ))}
@@ -189,7 +191,7 @@ function ScreenProfile({ active }: { active: boolean }) {
       <PanelCopy titleKey="onboarding.profile.title" bodyKey="onboarding.profile.body" />
       <div className="shrink-0">
         <motion.h3 {...appear(active, 0.06, 8)} className="text-lg font-bold text-foreground mb-3">
-          Favorite Cities
+          {t("profile.favoriteCities")}
         </motion.h3>
         <div className="grid grid-cols-4 gap-2">
           {FAVOURITE_CITIES.map((city, i) => (
@@ -225,7 +227,7 @@ function ScreenProfile({ active }: { active: boolean }) {
             <SoloMapChart data={PREVIEW_MAP_DATA} />
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            <span className="text-foreground font-semibold">{VISITED_CODES.length}</span> / 195 countries
+            <span className="text-foreground font-semibold">{VISITED_CODES.length}</span> {t("onboarding.ofCountries")}
           </p>
         </motion.div>
       </div>
@@ -282,6 +284,7 @@ function ScreenFriends({
 /* 4 — Where to next? */
 
 function ScreenDiscover({ active }: { active: boolean }) {
+  const { t } = useLanguage();
   const trending = [places[3], places[4], places[1]];
 
   return (
@@ -291,7 +294,7 @@ function ScreenDiscover({ active }: { active: boolean }) {
         <div>
           <motion.div {...appear(active, 0.08, 0)} className="flex items-center gap-1.5 mb-3">
             <TrendingUp className="w-4 h-4 text-primary" />
-            <span className="text-sm font-semibold text-foreground">Trending now</span>
+            <span className="text-sm font-semibold text-foreground">{t("onboarding.trending")}</span>
           </motion.div>
           {/* Bleeds to the screen edge so the row reads as more content
               rather than a card clipped by the page padding. */}

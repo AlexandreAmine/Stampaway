@@ -597,7 +597,7 @@ export default function ProfilePage() {
         const updated = [...favoriteCountries]; updated[pickerSlot] = newSlot; setFavoriteCountries(updated);
       }
       invalidateOwnProfileContentCache(viewerUserId);
-      toast.success("Favorite saved!");
+      toast.success(t("profile.favoriteSaved"));
     } else {
       // Not yet logged — redirect directly to logging form with place pre-selected
       setPickerOpen(false);
@@ -640,7 +640,7 @@ export default function ProfilePage() {
   const canOpenFollowLists = isOwnProfile || (!isBlocked && (!viewedProfile?.is_private || isFollowing));
   const handleOpenFollowList = (target: "Following" | "Followers") => {
     if (!canOpenFollowLists) {
-      toast("Follow this account to see their list");
+      toast(t("profile.followToSeeList"));
       return;
     }
     openSubPage(target);
@@ -776,7 +776,7 @@ export default function ProfilePage() {
               <ChevronLeft className="w-6 h-6 text-foreground" />
             </button>
             <h1 className="text-xl font-bold text-foreground">
-              {subPage === "CountriesByRating" ? <>Countries · {ratingFilter}★ <span className="text-sm font-normal text-muted-foreground">({countryDistribution[Math.round((ratingFilter || 0) * 2) - 1] || 0})</span></> : subPage === "CitiesByRating" ? <>Cities · {ratingFilter}★ <span className="text-sm font-normal text-muted-foreground">({cityDistribution[Math.round((ratingFilter || 0) * 2) - 1] || 0})</span></> : (subPageLabels[subPage] || subPage)}
+              {subPage === "CountriesByRating" ? <>{t("profile.countries")} · {ratingFilter}★ <span className="text-sm font-normal text-muted-foreground">({countryDistribution[Math.round((ratingFilter || 0) * 2) - 1] || 0})</span></> : subPage === "CitiesByRating" ? <>{t("profile.cities")} · {ratingFilter}★ <span className="text-sm font-normal text-muted-foreground">({cityDistribution[Math.round((ratingFilter || 0) * 2) - 1] || 0})</span></> : (subPageLabels[subPage] || subPage)}
             </h1>
           </div>
           {renderSubPage()}
@@ -829,12 +829,12 @@ export default function ProfilePage() {
                       const ext = file.name.split('.').pop() || 'jpg';
                       const path = `${user.id}/avatar.${ext}`;
                       const { error: uploadErr } = await supabase.storage.from('profile-pictures').upload(path, file, { upsert: true });
-                      if (uploadErr) { toast.error("Upload failed"); return; }
+                      if (uploadErr) { toast.error(t("profile.uploadFailed")); return; }
                       const { data: urlData } = supabase.storage.from('profile-pictures').getPublicUrl(path);
                       const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
                       await supabase.from('profiles').update({ profile_picture: publicUrl }).eq('user_id', user.id);
                       setOwnProfileFull(prev => prev ? { ...prev, profile_picture: publicUrl } : prev);
-                      toast.success("Profile picture updated");
+                      toast.success(t("profile.pictureUpdated"));
                     }}
                   />
                   <button
@@ -858,16 +858,16 @@ export default function ProfilePage() {
                           const blob = new Blob([bytes], { type: `image/${ext}` });
                           const path = `${user.id}/avatar.${ext}`;
                           const { error: uploadErr } = await supabase.storage.from('profile-pictures').upload(path, blob, { upsert: true, contentType: `image/${ext}` });
-                          if (uploadErr) { toast.error("Upload failed"); return; }
+                          if (uploadErr) { toast.error(t("profile.uploadFailed")); return; }
                           const { data: urlData } = supabase.storage.from('profile-pictures').getPublicUrl(path);
                           const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
                           await supabase.from('profiles').update({ profile_picture: publicUrl }).eq('user_id', user.id);
                           setOwnProfileFull(prev => prev ? { ...prev, profile_picture: publicUrl } : prev);
-                          toast.success("Profile picture updated");
+                          toast.success(t("profile.pictureUpdated"));
                         } catch (err: any) {
                           // User cancelled or denied permission — silent
                           if (err?.message && !/cancel|denied/i.test(err.message)) {
-                            toast.error("Could not open camera");
+                            toast.error(t("profile.cameraFailed"));
                           }
                         }
                         return;
@@ -976,15 +976,15 @@ export default function ProfilePage() {
         {/* Blocked state */}
         {!isOwnProfile && isBlocked && (
           <div className="flex flex-col items-center justify-center py-20">
-            <p className="text-sm text-muted-foreground">This content is not available.</p>
+            <p className="text-sm text-muted-foreground">{t("profile.unavailable")}</p>
           </div>
         )}
 
         {/* Private account - not following */}
         {!isOwnProfile && !isBlocked && viewedProfile?.is_private && !isFollowing && (
           <div className="flex flex-col items-center justify-center py-20">
-            <p className="text-sm font-semibold text-foreground mb-1">This account is private</p>
-            <p className="text-xs text-muted-foreground">Follow this account to see their content.</p>
+            <p className="text-sm font-semibold text-foreground mb-1">{t("profile.privateTitle")}</p>
+            <p className="text-xs text-muted-foreground">{t("profile.privateBody")}</p>
           </div>
         )}
 
@@ -1020,14 +1020,14 @@ export default function ProfilePage() {
 
         {/* Favorite Countries */}
         <div className="mb-4">
-          <h2 className="text-lg font-bold text-foreground mb-3">Favorite Countries</h2>
+          <h2 className="text-lg font-bold text-foreground mb-3">{t("profile.favoriteCountries")}</h2>
           {renderFavoriteSlots("country", favoriteCountries)}
         </div>
         <div className="mb-6"><RatingHistogram distribution={countryDistribution} onBarClick={(r) => { setRatingFilter(r); openSubPage("CountriesByRating"); }} /></div>
 
         {/* Favorite Cities */}
         <div className="mb-4">
-          <h2 className="text-lg font-bold text-foreground mb-3">Favorite Cities</h2>
+          <h2 className="text-lg font-bold text-foreground mb-3">{t("profile.favoriteCities")}</h2>
           {renderFavoriteSlots("city", favoriteCities)}
         </div>
         <div className="mb-6"><RatingHistogram distribution={cityDistribution} onBarClick={(r) => { setRatingFilter(r); openSubPage("CitiesByRating"); }} /></div>
@@ -1073,7 +1073,7 @@ export default function ProfilePage() {
                 <>
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(217, 91%, 60%)" }} />
-                    <span>You</span>
+                    <span>{t("profile.legendYou")}</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(40, 95%, 55%)" }} />
@@ -1081,7 +1081,7 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     <div className="w-3 h-3 rounded-sm" style={{ background: "hsl(150, 60%, 45%)" }} />
-                    <span>Both</span>
+                    <span>{t("profile.legendBoth")}</span>
                   </div>
                 </>
               ) : null}

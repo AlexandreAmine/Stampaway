@@ -8,19 +8,10 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { SUB_CATEGORIES, subCategoryLabel, type SubCategory } from "@/lib/subCategories";
 
-export const SUB_RATING_CATEGORIES = [
-  "Affordability",
-  "Natural Beauty",
-  "Culture & Heritage",
-  "Safety & Security",
-  "Food",
-  "Hospitality & People",
-  "Weather",
-  "Entertainment & Nightlife",
-] as const;
-
-export type SubRatingCategory = (typeof SUB_RATING_CATEGORIES)[number];
+export type SubRatingCategory = SubCategory;
 
 interface CategorySortDropdownProps {
   label: string;
@@ -31,6 +22,7 @@ interface CategorySortDropdownProps {
 
 export function CategorySortDropdown({ label, onSelect, selectedCategory, isActive }: CategorySortDropdownProps) {
   const isMobile = useIsMobile();
+  const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
 
   if (!isMobile) {
@@ -43,13 +35,13 @@ export function CategorySortDropdown({ label, onSelect, selectedCategory, isActi
           )}
         </DropdownMenuSubTrigger>
         <DropdownMenuSubContent className="min-w-[200px]">
-          {SUB_RATING_CATEGORIES.map((cat) => (
+          {SUB_CATEGORIES.map((cat) => (
             <DropdownMenuItem
               key={cat}
               onClick={() => onSelect(cat)}
               className={selectedCategory === cat && isActive ? "text-primary font-semibold" : ""}
             >
-              {cat}
+              {subCategoryLabel(cat, t)}
             </DropdownMenuItem>
           ))}
         </DropdownMenuSubContent>
@@ -86,10 +78,10 @@ export function CategorySortDropdown({ label, onSelect, selectedCategory, isActi
         className="text-muted-foreground"
       >
         <ChevronLeft className="mr-1 h-4 w-4" />
-        Back
+        {t("back")}
       </DropdownMenuItem>
       <DropdownMenuSeparator />
-      {SUB_RATING_CATEGORIES.map((cat) => (
+      {SUB_CATEGORIES.map((cat) => (
         <DropdownMenuItem
           key={cat}
           onClick={() => {
@@ -98,7 +90,7 @@ export function CategorySortDropdown({ label, onSelect, selectedCategory, isActi
           }}
           className={selectedCategory === cat && isActive ? "text-primary font-semibold" : ""}
         >
-          {cat}
+          {subCategoryLabel(cat, t)}
         </DropdownMenuItem>
       ))}
     </>

@@ -15,6 +15,10 @@ import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import { invalidateExploreCache } from "@/lib/exploreCache";
 import { clearRankingsCache, fetchAllPlaces } from "@/lib/placeRankings";
 import { matchesPlaceName, normalizeSearchText } from "@/lib/placeSearch";
+import { SUB_CATEGORIES, subCategoryLabel } from "@/lib/subCategories";
+import { monthShortNames } from "@/lib/localeFormat";
+import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
+import { getCachedPlaceName } from "@/lib/placeNames";
 
 type Step = "search" | "review";
 
@@ -46,9 +50,12 @@ export default function AddPlacePage() {
       ? { id: preSelectedPlaceId, name: preSelectedPlaceName, country: preSelectedPlaceCountry || "", type: favoriteType || "city", image: preSelectedPlaceImage || null }
       : null
   );
+  // The search results show localized names ("Lisbonne"); the review header
+  // must match rather than fall back to the stored English name.
+  const localizedPlaceName = useLocalizedPlaceName(selectedPlace?.name, selectedPlace?.type === "country");
+  const localizedPlaceCountry = useLocalizedPlaceName(selectedPlace?.country, true);
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
-  const SUB_CATEGORIES = ["Affordability", "Natural Beauty", "Culture & Heritage", "Safety & Security", "Food", "Hospitality & People", "Weather", "Entertainment & Nightlife"] as const;
   const [subRatings, setSubRatings] = useState<Record<string, number>>({});
   const [visitYear, setVisitYear] = useState<number | "">(""); 
   const [visitMonth, setVisitMonth] = useState<number | "">("");
@@ -260,7 +267,7 @@ export default function AddPlacePage() {
 
   const handleSave = async () => {
     if (!user || !selectedPlace) {
-      toast.error("Please select a place");
+      toast.error(t("review.selectPlace"));
       return;
     }
     setSaving(true);
@@ -354,8 +361,13 @@ export default function AddPlacePage() {
           return rev && (rev as any).places?.type === (placeType === "country" ? "country" : "city");
         }).length;
 
-        const label = placeType === "country" ? "countries" : "cities";
-        toast.success(`🎉 New ${placeType}! ${newCount}/${totalTarget} new ${label} this year`, { duration: 2000 });
+        toast.success(
+          t(placeType === "country" ? "review.newCountry" : "review.newCity", {
+            count: String(newCount),
+            target: String(totalTarget),
+          }),
+          { duration: 2000 }
+        );
       };
 
       // Save tags
@@ -423,10 +435,10 @@ export default function AddPlacePage() {
     setSaving(false);
 
     if (error) {
-      toast.error("Failed to save review");
+      toast.error(t("review.saveFailed"));
     } else {
       hapticSuccess();
-      toast.success("Review saved!");
+      toast.success(t("review.saved"));
 
       // If user logged a city and hasn't logged the corresponding country, show a prompt
       // (fire-and-forget — navigation continues normally as for any other log)
@@ -450,12 +462,14 @@ export default function AddPlacePage() {
 
           if (!countryReview || countryReview.length === 0) {
             toast(
-              `You've logged the city, press here to log ${countryPlace.name}!`,
+              t("review.logCountryPrompt", {
+                country: getCachedPlaceName(countryPlace.name, language, true),
+              }),
               {
                 duration: 3000,
                 className: "!text-base !p-5 !min-h-[72px]",
                 action: {
-                  label: "Log",
+                  label: t("review.logAction"),
                   onClick: () => {
                     navigate(
                       `/add?placeId=${countryPlace.id}&placeName=${encodeURIComponent(countryPlace.name)}&placeCountry=${encodeURIComponent(countryPlace.country || "")}&placeImage=${encodeURIComponent(countryPlace.image || "")}`
@@ -490,10 +504,10 @@ export default function AddPlacePage() {
                   )}
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">I stamped...</p>
-                  <h1 className="text-xl font-bold text-foreground">{selectedPlace.name}</h1>
+                  <p className="text-xs text-muted-foreground">{t("review.iStamped")}</p>
+                  <h1 className="text-xl font-bold text-foreground">{localizedPlaceName || selectedPlace.name}</h1>
                   <p className="text-xs text-muted-foreground">
-                    {selectedPlace.type === "city" ? selectedPlace.country : "Country"}
+                    {selectedPlace.type === "city" ? localizedPlaceCountry || selectedPlace.country : t("common.country")}
                   </p>
                 </div>
               </div>
@@ -503,13 +517,13 @@ export default function AddPlacePage() {
               disabled={saving}
               className="text-primary font-semibold text-sm disabled:opacity-50"
             >
-              {saving ? "Saving..." : "Save"}
+              {saving ? t("common.saving") : t("save")}
             </button>
           </div>
 
           <div className="space-y-6">
             <div>
-              <p className="text-sm font-semibold text-foreground mb-3">Your rating</p>
+              <p className="text-sm font-semibold text-foreground mb-3">{t("review.yourRating")}</p>
               <div className="flex items-center justify-between">
                 <StarRating rating={rating} size={40} interactive onChange={setRating} />
                 <button type="button" onClick={() => setLiked(!liked)} className="text-2xl transition-transform active:scale-90">
@@ -522,13 +536,13 @@ export default function AddPlacePage() {
               <textarea
                 value={reviewText}
                 onChange={(e) => setReviewText(e.target.value)}
-                placeholder="Add a review..."
+                placeholder={t("review.placeholder")}
                 className="w-full h-24 bg-card rounded-xl p-4 text-sm text-foreground placeholder:text-muted-foreground resize-none border border-border focus:outline-none focus:ring-1 focus:ring-primary"
               />
               <div className="mt-3 space-y-2">
                 {SUB_CATEGORIES.map((cat) => (
                   <div key={cat} className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">{cat}</span>
+                    <span className="text-xs text-muted-foreground">{subCategoryLabel(cat, t)}</span>
                     <StarRating rating={subRatings[cat] || 0} size={16} interactive onChange={(v) => setSubRatings(prev => ({ ...prev, [cat]: v }))} />
                   </div>
                 ))}
@@ -536,10 +550,10 @@ export default function AddPlacePage() {
             </div>
 
             <div className="space-y-3">
-              <p className="text-sm font-semibold text-foreground">When did you visit?</p>
+              <p className="text-sm font-semibold text-foreground">{t("review.whenVisit")}</p>
               <div className="flex gap-3">
                 <div className="flex-1">
-                  <label className="text-xs text-muted-foreground mb-1 block">Year</label>
+                  <label className="text-xs text-muted-foreground mb-1 block">{t("review.year")}</label>
                   <select
                     value={visitYear}
                     onChange={(e) => setVisitYear(e.target.value ? Number(e.target.value) : "")}
@@ -552,26 +566,26 @@ export default function AddPlacePage() {
                   </select>
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs text-muted-foreground mb-1 block">Month</label>
+                  <label className="text-xs text-muted-foreground mb-1 block">{t("review.month")}</label>
                   <select
                     value={visitMonth}
                     onChange={(e) => setVisitMonth(e.target.value ? Number(e.target.value) : "")}
                     className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
                   >
                     <option value="">—</option>
-                    {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, i) => (
+                    {monthShortNames(language).map((m, i) => (
                       <option key={i} value={i + 1}>{m}</option>
                     ))}
                   </select>
                 </div>
                 <div className="flex-1">
-                  <label className="text-xs text-muted-foreground mb-1 block">Duration</label>
+                  <label className="text-xs text-muted-foreground mb-1 block">{t("diary.duration")}</label>
                   <input
                     type="number"
                     inputMode="numeric"
                     value={durationDays}
                     onChange={(e) => setDurationDays(e.target.value ? Number(e.target.value) : "")}
-                    placeholder="Days"
+                    placeholder={t("review.daysPlaceholder")}
                     min={1}
                     className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
                   />
@@ -581,7 +595,7 @@ export default function AddPlacePage() {
 
             {/* Tag people */}
             <div>
-              <p className="text-sm font-semibold text-foreground mb-2">Tag people that visited with you</p>
+              <p className="text-sm font-semibold text-foreground mb-2">{t("review.tagPeople")}</p>
               {taggedUsers.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-2">
                   {taggedUsers.map(u => (
@@ -605,7 +619,7 @@ export default function AddPlacePage() {
                   autoCorrect="off"
                   value={tagQuery}
                   onChange={(e) => setTagQuery(e.target.value)}
-                  placeholder="Search by username..."
+                  placeholder={t("review.searchUsername")}
                   className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
                 />
                 {tagResults.length > 0 && (
@@ -644,7 +658,7 @@ export default function AddPlacePage() {
         <div className="flex items-center gap-3 mb-6">
           <h1 className="text-xl font-bold text-foreground">
             {isFavoriteFlow
-              ? `Add a Favorite ${favoriteType === "city" ? "City" : "Country"}`
+              ? t(favoriteType === "city" ? "add.favoriteCityTitle" : "add.favoriteCountryTitle")
               : t("add.title")}
           </h1>
         </div>
@@ -657,7 +671,11 @@ export default function AddPlacePage() {
             autoCorrect="off"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder={isFavoriteFlow ? `Search ${favoriteType === "city" ? "cities" : "countries"}...` : t("add.namePlaceholder")}
+            placeholder={
+              isFavoriteFlow
+                ? t(favoriteType === "city" ? "add.searchCities" : "add.searchCountries")
+                : t("add.namePlaceholder")
+            }
             className="w-full bg-card rounded-xl py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
@@ -665,7 +683,7 @@ export default function AddPlacePage() {
         {/* Recent Searches */}
         {!query && recentSearches.length > 0 && (
           <div className="mb-6">
-            <p className="text-xs text-muted-foreground mb-3">Recent Searches</p>
+            <p className="text-xs text-muted-foreground mb-3">{t("search.recentSearches")}</p>
             <div className="space-y-0">
               {recentSearches.map((place) => (
                 <button

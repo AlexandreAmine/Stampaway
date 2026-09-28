@@ -10,11 +10,9 @@ import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import { invalidateExploreCache } from "@/lib/exploreCache";
 import { clearRankingsCache } from "@/lib/placeRankings";
 import { useSheetTransition } from "@/hooks/useSheetTransition";
-
-const SUB_CATEGORIES = [
-  "Affordability", "Natural Beauty", "Culture & Heritage", "Safety & Security",
-  "Food", "Hospitality & People", "Weather", "Entertainment & Nightlife",
-];
+import { useLanguage } from "@/contexts/LanguageContext";
+import { SUB_CATEGORIES, subCategoryLabel } from "@/lib/subCategories";
+import { monthShortNames } from "@/lib/localeFormat";
 
 interface DiaryEntry {
   id: string;
@@ -48,6 +46,7 @@ interface DiaryEditSheetProps {
 
 export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheetProps) {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const { closing, requestClose } = useSheetTransition(open, onClose);
   const [rating, setRating] = useState(entry.rating ? Number(entry.rating) : 0);
   const [liked, setLiked] = useState(entry.liked);
@@ -187,14 +186,14 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
       await Promise.all([syncTags(), syncSubRatings()]);
 
       hapticSuccess();
-      toast.success("Entry updated");
+      toast.success(t("diary.updated"));
       invalidateOwnProfileContentCache(user.id);
       clearRankingsCache();
       invalidateExploreCache(user.id);
       onSaved();
       requestClose();
     } else {
-      toast.error("Failed to update entry");
+      toast.error(t("diary.updateFailed"));
     }
     setSaving(false);
   };
@@ -209,14 +208,14 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
       />
       <div className={`relative bg-card w-full max-w-lg rounded-t-2xl border border-border max-h-[85vh] overflow-y-auto pb-40 ${closing ? "animate-out slide-out-to-bottom fill-mode-forwards duration-200" : "animate-in slide-in-from-bottom duration-200"}`}>
         <div className="sticky top-0 bg-card z-10 flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-lg font-bold text-foreground">Edit Entry</h2>
+          <h2 className="text-lg font-bold text-foreground">{t("diary.editEntry")}</h2>
           <div className="flex items-center gap-3">
             <button
               onClick={handleSave}
               disabled={saving}
               className="text-primary font-semibold text-sm disabled:opacity-50"
             >
-              {saving ? "Saving..." : "Save"}
+              {saving ? t("common.saving") : t("save")}
             </button>
             <button onClick={requestClose}>
               <X className="w-5 h-5 text-muted-foreground" />
@@ -240,7 +239,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
 
           {/* Rating */}
           <div>
-            <p className="text-sm font-semibold text-foreground mb-3">Your rating</p>
+            <p className="text-sm font-semibold text-foreground mb-3">{t("review.yourRating")}</p>
             <div className="flex items-center justify-between">
               <StarRating rating={rating} size={36} interactive onChange={setRating} />
               <button type="button" onClick={() => setLiked(!liked)} className="text-2xl">
@@ -254,18 +253,18 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
             <textarea
               value={reviewText}
               onChange={(e) => setReviewText(e.target.value)}
-              placeholder="Add a review..."
+              placeholder={t("review.placeholder")}
               className="w-full h-28 bg-background rounded-xl p-4 text-sm text-foreground placeholder:text-muted-foreground resize-none border border-border focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
 
           {/* Sub-category ratings */}
           <div>
-            <p className="text-sm font-semibold text-foreground mb-3">Category Ratings</p>
+            <p className="text-sm font-semibold text-foreground mb-3">{t("review.categoryRatings")}</p>
             <div className="grid grid-cols-2 gap-3">
               {SUB_CATEGORIES.map((cat) => (
                 <div key={cat} className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground leading-tight">{cat}</p>
+                  <p className="text-[10px] text-muted-foreground leading-tight">{subCategoryLabel(cat, t)}</p>
                   <StarRating
                     rating={subRatings[cat] || 0}
                     size={16}
@@ -279,10 +278,10 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
 
           {/* Date */}
           <div className="space-y-3">
-            <p className="text-sm font-semibold text-foreground">When did you visit?</p>
+            <p className="text-sm font-semibold text-foreground">{t("review.whenVisit")}</p>
             <div className="flex gap-3">
               <div className="flex-1">
-                <label className="text-xs text-muted-foreground mb-1 block">Year</label>
+                <label className="text-xs text-muted-foreground mb-1 block">{t("review.year")}</label>
                 <select
                   value={visitYear}
                   onChange={(e) => setVisitYear(e.target.value ? Number(e.target.value) : "")}
@@ -295,26 +294,26 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
                 </select>
               </div>
               <div className="flex-1">
-                <label className="text-xs text-muted-foreground mb-1 block">Month</label>
+                <label className="text-xs text-muted-foreground mb-1 block">{t("review.month")}</label>
                 <select
                   value={visitMonth}
                   onChange={(e) => setVisitMonth(e.target.value ? Number(e.target.value) : "")}
                   className="w-full bg-background rounded-xl py-2.5 px-3 text-sm text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
                 >
                   <option value="">—</option>
-                  {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, i) => (
+                  {monthShortNames(language).map((m, i) => (
                     <option key={i} value={i + 1}>{m}</option>
                   ))}
                 </select>
               </div>
               <div className="flex-1">
-                <label className="text-xs text-muted-foreground mb-1 block">Duration</label>
+                <label className="text-xs text-muted-foreground mb-1 block">{t("diary.duration")}</label>
                 <input
                   type="number"
                   inputMode="numeric"
                   value={durationDays}
                   onChange={(e) => setDurationDays(e.target.value ? Number(e.target.value) : "")}
-                  placeholder="Days"
+                  placeholder={t("review.daysPlaceholder")}
                   min={1}
                   className="w-full bg-background rounded-xl py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
                 />
@@ -324,7 +323,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
 
           {/* Tags */}
           <div>
-            <p className="text-sm font-semibold text-foreground mb-2">Tag people that visited with you</p>
+            <p className="text-sm font-semibold text-foreground mb-2">{t("review.tagPeople")}</p>
             {loadingTags ? (
               <div className="flex items-center justify-center h-8">
                 <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -351,7 +350,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
                     type="text"
                     value={tagQuery}
                     onChange={(e) => setTagQuery(e.target.value)}
-                    placeholder="Search by username..."
+                    placeholder={t("review.searchUsername")}
                     className="w-full bg-background rounded-xl py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                   {tagResults.length > 0 && (

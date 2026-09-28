@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { StarRating } from "@/components/StarRating";
+import { useLanguage } from "@/contexts/LanguageContext";
+import { SUB_CATEGORIES, subCategoryLabel, subCategoryShortLabel } from "@/lib/subCategories";
 
 interface SubRating {
   category: string;
@@ -12,29 +14,8 @@ interface SubRatingsDisplayProps {
   compact?: boolean;
 }
 
-const CATEGORY_ORDER = [
-  "Affordability",
-  "Natural Beauty",
-  "Culture & Heritage",
-  "Safety & Security",
-  "Food",
-  "Hospitality & People",
-  "Weather",
-  "Entertainment & Nightlife",
-];
-
-const SHORT_LABELS: Record<string, string> = {
-  "Affordability": "Afford.",
-  "Natural Beauty": "Nature",
-  "Culture & Heritage": "Culture",
-  "Safety & Security": "Safety",
-  "Food": "Food",
-  "Hospitality & People": "People",
-  "Weather": "Weather",
-  "Entertainment & Nightlife": "Nightlife",
-};
-
 export function SubRatingsDisplay({ reviewId, compact = false }: SubRatingsDisplayProps) {
+  const { t } = useLanguage();
   const [subRatings, setSubRatings] = useState<SubRating[]>([]);
 
   useEffect(() => {
@@ -44,7 +25,7 @@ export function SubRatingsDisplay({ reviewId, compact = false }: SubRatingsDispl
         .select("category, rating")
         .eq("review_id", reviewId);
       if (data && data.length > 0) {
-        const sorted = CATEGORY_ORDER
+        const sorted = SUB_CATEGORIES
           .map(cat => data.find(d => d.category === cat))
           .filter(Boolean) as SubRating[];
         setSubRatings(sorted);
@@ -59,7 +40,7 @@ export function SubRatingsDisplay({ reviewId, compact = false }: SubRatingsDispl
       <div className="flex flex-col gap-0.5">
         {subRatings.map((sr) => (
           <div key={sr.category} className="flex items-center justify-between gap-1">
-            <span className="text-[9px] text-muted-foreground truncate">{SHORT_LABELS[sr.category] || sr.category}</span>
+            <span className="text-[9px] text-muted-foreground truncate">{subCategoryShortLabel(sr.category, t)}</span>
             <span className="text-[9px] font-semibold text-foreground shrink-0">{sr.rating}</span>
           </div>
         ))}
@@ -69,11 +50,11 @@ export function SubRatingsDisplay({ reviewId, compact = false }: SubRatingsDispl
 
   return (
     <div className="space-y-2">
-      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Category Ratings</h4>
+      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("review.categoryRatings")}</h4>
       <div className="grid gap-2">
         {subRatings.map((sr) => (
           <div key={sr.category} className="flex items-center justify-between">
-            <span className="text-xs text-muted-foreground">{sr.category}</span>
+            <span className="text-xs text-muted-foreground">{subCategoryLabel(sr.category, t)}</span>
             <div className="flex items-center gap-1.5">
               <StarRating rating={Number(sr.rating)} size={10} />
               <span className="text-xs font-semibold text-foreground">{sr.rating}</span>
@@ -92,6 +73,7 @@ interface PlaceCategoryRatingsProps {
 }
 
 export function PlaceCategoryRatings({ placeId, userId }: PlaceCategoryRatingsProps) {
+  const { t } = useLanguage();
   const [averages, setAverages] = useState<{ category: string; avg: number; count: number }[]>([]);
   const [myRatings, setMyRatings] = useState<SubRating[]>([]);
   const [loading, setLoading] = useState(true);
@@ -123,7 +105,7 @@ export function PlaceCategoryRatings({ placeId, userId }: PlaceCategoryRatingsPr
         catMap.get(s.category)!.push(Number(s.rating));
       });
 
-      const avgs = CATEGORY_ORDER
+      const avgs = SUB_CATEGORIES
         .filter(cat => catMap.has(cat))
         .map(cat => {
           const vals = catMap.get(cat)!;
@@ -153,7 +135,7 @@ export function PlaceCategoryRatings({ placeId, userId }: PlaceCategoryRatingsPr
       ))}
     </div>
   );
-  if (averages.length === 0) return <p className="text-sm text-muted-foreground text-center py-8">No category ratings yet</p>;
+  if (averages.length === 0) return <p className="text-sm text-muted-foreground text-center py-8">{t("review.noCategoryRatings")}</p>;
 
   return (
     <div className="space-y-3">
@@ -161,7 +143,7 @@ export function PlaceCategoryRatings({ placeId, userId }: PlaceCategoryRatingsPr
         const myR = myRatings.find(m => m.category === a.category);
         return (
           <div key={a.category} className="bg-card rounded-xl p-3 border border-border">
-            <p className="text-xs font-semibold text-foreground mb-1.5">{a.category}</p>
+            <p className="text-xs font-semibold text-foreground mb-1.5">{subCategoryLabel(a.category, t)}</p>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
                 <StarRating rating={a.avg} size={12} />
@@ -170,7 +152,7 @@ export function PlaceCategoryRatings({ placeId, userId }: PlaceCategoryRatingsPr
               </div>
               {myR && (
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-primary font-medium">You:</span>
+                  <span className="text-[10px] text-primary font-medium">{t("review.youLabel")}</span>
                   <StarRating rating={Number(myR.rating)} size={10} />
                   <span className="text-xs font-semibold text-primary">{myR.rating}</span>
                 </div>
