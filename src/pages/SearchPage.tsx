@@ -14,6 +14,7 @@ import { continentLabel } from "@/lib/continentLabels";
 import { subCategoryLabel } from "@/lib/subCategories";
 import type { TranslationKey } from "@/i18n/translations";
 import { DestinationPoster } from "@/components/DestinationPoster";
+import { RecentSearches, type RecentPlace } from "@/components/RecentSearches";
 import { PosterWishlistButton } from "@/components/PosterWishlistButton";
 import { fetchAllTimeVisitorCountMap, fetchAverageRatingMap, fetchAllPlaces, fetchCategoryAverageMap } from "@/lib/placeRankings";
 import { ListPreviewPosters } from "@/components/ListPreviewPosters";
@@ -67,9 +68,7 @@ export default function SearchPage() {
   const [activeFilter, setActiveFilter] = useState<FilterTab>(initialTab);
   const [query, setQuery] = useState("");
   // Written on every result tap below, but never read back until now.
-  const [recentSearches, setRecentSearches] = useState<
-    { id: string; name: string }[]
-  >([]);
+  const [recentSearches, setRecentSearches] = useState<RecentPlace[]>([]);
 
   useEffect(() => {
     try {
@@ -536,23 +535,11 @@ export default function SearchPage() {
         {!query &&
           recentSearches.length > 0 &&
           (activeFilter === "Countries" || activeFilter === "Cities") && (
-            <div className="mb-6">
-              <p className="text-xs text-muted-foreground mb-3">
-                {t("search.recentSearches")}
-              </p>
-              {recentSearches.map((p) => (
-                <button
-                  key={p.id}
-                  onTouchStart={() =>
-                    prefetchPlacePrimary(queryClient, p.id, user?.id ?? null)
-                  }
-                  onClick={() => navigate(`/place/${p.id}`)}
-                  className="w-full text-left py-2.5 active:opacity-60"
-                >
-                  <p className="text-base font-bold text-foreground">{p.name}</p>
-                </button>
-              ))}
-            </div>
+            <RecentSearches
+              places={recentSearches}
+              onPressStart={(p) => prefetchPlacePrimary(queryClient, p.id, user?.id ?? null)}
+              onSelect={(p) => navigate(`/place/${p.id}`)}
+            />
           )}
 
         {renderResults()}

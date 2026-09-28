@@ -58,6 +58,11 @@ export function DestinationPoster({
 
   const [imageUrl, setImageUrl] = useState(resolvedImage);
   const [loading, setLoading] = useState(false);
+  // Tracks the photo itself: until it loads the placeholder shimmers (so a
+  // slow download reads as loading, not broken); if it fails we fall back.
+  // Keyed by URL rather than reset in an effect: a cached image can fire
+  // `load` before a mount effect runs, and the reset would then undo it.
+  const [photoResult, setPhotoResult] = useState<{ url: string; state: "loaded" | "failed" } | null>(null);
   const generatedRef = useRef(false);
   const activeRequestRef = useRef<DestinationPosterRequestToken | null>(null);
 
@@ -116,6 +121,14 @@ export function DestinationPoster({
 
   const flagCountry = type === "country" ? name : country;
   const flagUrl = getFlagUrl(flagCountry, 40);
+  const photoState = imageUrl && photoResult?.url === imageUrl ? photoResult.state : "loading";
+  const showPhoto = !!imageUrl && photoState !== "failed";
+  // No photo at all (or it failed): a deliberate card with the flag, rather
+  // than a near-black tile that looks like a failed load.
+  // With autoGenerate, the first render happens before the fetch starts; show
+  // the spinner rather than flashing the fallback for a frame.
+  const awaitingGeneration = autoGenerate && !imageUrl && !generatedRef.current;
+  const showFallback = !showPhoto && !loading && !awaitingGeneration;
 
   const localizedName = useLocalizedPlaceName(name, type === "country");
   const localizedCountry = useLocalizedPlaceName(country, true);
@@ -124,13 +137,17 @@ export function DestinationPoster({
     <div
       className={`relative rounded-2xl overflow-hidden bg-card ${className}`}
     >
-      {imageUrl ? (
+      {showPhoto ? (
         <>
           {/* Gradient placeholder stays visible until the file has actually
               loaded; FadeInImage then fades the photo in on load (the old
               mount-timed fade finished before slow first-launch downloads
               arrived, so images popped in raw). */}
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-muted" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/10 to-muted">
+            {/* Nested: .skeleton-shimmer sets position: relative, which would
+                override `absolute` if applied to the placeholder itself. */}
+            {photoState === "loading" && <div className="w-full h-full skeleton-shimmer" />}
+          </div>
           <FadeInImage
             key={imageUrl}
             src={sizedPosterUrl(imageUrl, renderWidth) || imageUrl}
@@ -138,16 +155,24 @@ export function DestinationPoster({
             loading={priority ? "eager" : "lazy"}
             decoding="async"
             {...(priority ? ({ fetchpriority: "high" } as Record<string, string>) : {})}
+            onLoad={() => setPhotoResult({ url: imageUrl, state: "loaded" })}
+            onError={() => setPhotoResult({ url: imageUrl, state: "failed" })}
             className="relative w-full h-full object-cover"
           />
         </>
+      ) : showFallback ? (
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/45 via-primary/20 to-card">
+          {flagUrl && (
+            <FlagImage
+              src={getFlagUrl(flagCountry, 160) ?? flagUrl}
+              alt={flagCountry}
+              className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2 w-[42%] aspect-[7/5] rounded-md shadow-lg object-cover ring-1 ring-white/20"
+            />
+          )}
+        </div>
       ) : (
         <div className="w-full h-full bg-gradient-to-br from-primary/20 via-primary/10 to-muted flex items-center justify-center">
-          {loading ? (
-            <Loader2 className="w-6 h-6 text-primary animate-spin" />
-          ) : (
-            <div className="w-8 h-8 rounded-full bg-primary/20" />
-          )}
+          <Loader2 className="w-6 h-6 text-primary animate-spin" />
         </div>
       )}
 
@@ -156,13 +181,11 @@ export function DestinationPoster({
           {/* Gradient overlay for text readability */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-          {/* Country flag - top right */}
-          {flagUrl && (
-            <img
+          {/* Country flag - top right (the fallback card already shows it large) */}
+          {flagUrl && !showFallback && (
+            <FlagImage
               src={flagUrl}
               alt={flagCountry}
-              loading="lazy"
-              decoding="async"
               className="absolute top-2 right-2 w-7 h-5 rounded-sm shadow-lg object-cover border border-white/20"
             />
           )}
@@ -179,5 +202,29 @@ export function DestinationPoster({
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * Flags come from flagcdn.com. Until one arrives (cold cache, slow network)
+ * a bordered <img> renders as an empty outlined box, which read as a broken
+ * flag; keep it invisible until it has loaded, and drop it if it fails.
+ */
+function FlagImage({ src, alt, className }: { src: string; alt: string; className: string }) {
+  // Keyed by URL (not reset in an effect): cached flags fire `load` before
+  // mount effects run, and a reset there left them invisible for good.
+  const [result, setResult] = useState<{ src: string; state: "loaded" | "failed" } | null>(null);
+  const state = result?.src === src ? result.state : "loading";
+  if (state === "failed") return null;
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      onLoad={() => setResult({ src, state: "loaded" })}
+      onError={() => setResult({ src, state: "failed" })}
+      className={`${className} transition-opacity duration-200 ${state === "loaded" ? "opacity-100" : "opacity-0"}`}
+    />
   );
 }

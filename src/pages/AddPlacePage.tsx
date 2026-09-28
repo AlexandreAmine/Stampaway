@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { StarRating } from "@/components/StarRating";
 import { DestinationPoster } from "@/components/DestinationPoster";
+import { RecentSearches } from "@/components/RecentSearches";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { hapticSuccess, hapticMedium, hapticLight } from "@/lib/haptics";
@@ -682,20 +683,10 @@ export default function AddPlacePage() {
 
         {/* Recent Searches */}
         {!query && recentSearches.length > 0 && (
-          <div className="mb-6">
-            <p className="text-xs text-muted-foreground mb-3">{t("search.recentSearches")}</p>
-            <div className="space-y-0">
-              {recentSearches.map((place) => (
-                <button
-                  key={place.id}
-                  onClick={() => handleSelectPlace(place)}
-                  className="w-full text-left py-2.5"
-                >
-                  <p className="text-base font-bold text-foreground">{place.name}</p>
-                </button>
-              ))}
-            </div>
-          </div>
+          <RecentSearches
+            places={recentSearches}
+            onSelect={(place) => handleSelectPlace(place as PlaceResult)}
+          />
         )}
 
         <div className="grid grid-cols-3 gap-3">
