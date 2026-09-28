@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { reportError } from "@/lib/monitoring";
+import { readInitialLanguage } from "@/lib/deviceLanguage";
 
 /**
  * Last-resort crash screen. Without this, any render-time exception unmounts
@@ -48,12 +49,12 @@ const COPY: Record<Language, { title: string; body: string; action: string }> = 
 
 function currentLanguage(): Language {
   try {
-    const stored = localStorage.getItem("app_language");
-    if (stored && stored in COPY) return stored as Language;
+    // Same resolution the app uses (chosen, else detected from the device),
+    // without depending on the React context that may have crashed.
+    return readInitialLanguage();
   } catch {
-    // localStorage can throw when site data is blocked
+    return "en";
   }
-  return "en";
 }
 
 interface Props {
