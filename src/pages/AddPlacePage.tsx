@@ -64,7 +64,16 @@ export default function AddPlacePage() {
   const [liked, setLiked] = useState(false);
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [saving, setSaving] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<PlaceResult[]>([]);
+  // Read during the first render so the grid below doesn't jump down a
+  // frame later when the recents appear.
+  const [recentSearches] = useState<PlaceResult[]>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("recentSearches") || "[]");
+      return Array.isArray(saved) ? saved : [];
+    } catch {
+      return [];
+    }
+  });
   const [tagQuery, setTagQuery] = useState("");
   const [tagResults, setTagResults] = useState<{ user_id: string; username: string; profile_picture: string | null }[]>([]);
   const [taggedUsers, setTaggedUsers] = useState<{ user_id: string; username: string; profile_picture: string | null }[]>([]);
@@ -79,13 +88,6 @@ export default function AddPlacePage() {
   const reviewCountsInflightRef = useRef<Promise<Map<string, number>> | null>(
     null
   );
-
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem("recentSearches") || "[]");
-      setRecentSearches(saved);
-    } catch { /* ignore */ }
-  }, []);
 
   useEffect(() => {
     const viewerId = user?.id ?? null;

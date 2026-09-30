@@ -201,9 +201,17 @@ export default function ExplorePage() {
   const { user } = useAuth();
   const userId = user?.id ?? null;
 
-  // Places state
-  const [sections, setSections] = useState<SectionConfig[]>([]);
-  const [placesLoading, setPlacesLoading] = useState(true);
+  // Places state. Cached sections are read while building the FIRST render,
+  // so Explore appears complete immediately instead of showing a skeleton
+  // for a frame on every visit (they used to be applied from an effect); the
+  // mount effect below still refreshes them silently.
+  const [initialPlaces] = useState(() => {
+    const cacheKey = getExploreCacheKey(userId, "Places");
+    const cached = getFreshExploreCache<PlacesPublicSnapshot>(userId, cacheKey);
+    return cached ? { cacheKey, sections: cached.sections } : null;
+  });
+  const [sections, setSections] = useState<SectionConfig[]>(() => initialPlaces?.sections ?? []);
+  const [placesLoading, setPlacesLoading] = useState(() => !initialPlaces);
   const [friendComments, setFriendComments] = useState<Map<string, { profile_picture: string | null; text: string; review_id: string }>>(new Map());
 
   // Reviews state
@@ -217,11 +225,11 @@ export default function ExplorePage() {
   const [popularLists, setPopularLists] = useState<any[]>([]);
   const [listsLoading, setListsLoading] = useState(true);
   const currentCacheKey = getExploreCacheKey(userId, activeTab);
-  const [visibleExploreCacheKey, setVisibleExploreCacheKey] = useState<string | null>(null);
+  const [visibleExploreCacheKey, setVisibleExploreCacheKey] = useState<string | null>(() => initialPlaces?.cacheKey ?? null);
   const activeExploreRef = useRef({ cacheKey: currentCacheKey, userId });
   const placesFetchRequestIdRef = useRef(0);
   const placesLoadingRequestRef = useRef<PlacesLoadingRequestContext | null>(null);
-  const placesSectionsContextRef = useRef<string | null>(null);
+  const placesSectionsContextRef = useRef<string | null>(initialPlaces?.cacheKey ?? null);
   const reviewCardLikeSnapshotRequestIdRef = useRef(0);
   const reviewsFetchRequestIdRef = useRef(0);
   const listsFetchRequestIdRef = useRef(0);
@@ -1118,14 +1126,16 @@ export default function ExplorePage() {
             ) : (
               <div className="space-y-6">
                 {sections.map((section, sectionIndex) => (
-                  // content-visibility skips render work for sections that are
-                  // off-screen (~10 sections x 8 posters mounted at once);
-                  // intrinsic size reserves space so scrollbar/scroll restore
-                  // stay stable. No-op on iOS < 18.
-                  <div
-                    key={section.key}
-                    style={{ contentVisibility: "auto", containIntrinsicSize: "auto 300px" }}
-                  >
+                  // No content-visibility here: off-screen sections would take a
+                  // placeholder height (300px) instead of their real one (~242px,
+                  // more when a translated title wraps). Coming back to Explore
+                  // mounts them fresh, so the saved scroll position pointed at
+                  // different content, and WebKit has no scroll anchoring to
+                  // absorb the jumps when they rendered. overflow-hidden keeps
+                  // the clipping content-visibility used to apply as a side
+                  // effect, so the poster rows look exactly as before (they
+                  // stop at the page margin instead of bleeding to the edge).
+                  <div key={section.key} className="overflow-hidden">
                     <button
                       onClick={() => navigate(`/explore/list?${section.linkParams}`)}
                       className="flex items-center gap-1 mb-3"

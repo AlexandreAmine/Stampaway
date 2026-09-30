@@ -13,11 +13,11 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { usePerfReady } from "@/lib/perfMarks";
 import { continentLabel } from "@/lib/continentLabels";
 import { subCategoryLabel } from "@/lib/subCategories";
-import type { TranslationKey } from "@/i18n/translations";
+import type { Language, TranslationKey } from "@/i18n/translations";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { RecentSearches, type RecentPlace } from "@/components/RecentSearches";
 import { PosterWishlistButton } from "@/components/PosterWishlistButton";
-import { fetchAllTimeVisitorCountMap, fetchAverageRatingMap, fetchAllPlaces, fetchCategoryAverageMap } from "@/lib/placeRankings";
+import { fetchAllTimeVisitorCountMap, fetchAverageRatingMap, fetchAllPlaces, fetchCategoryAverageMap, peekAllPlaces, peekAllTimeVisitorCountMap } from "@/lib/placeRankings";
 import { ListPreviewPosters } from "@/components/ListPreviewPosters";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
@@ -50,6 +50,33 @@ function getContinent(country: string): string {
   return "Other";
 }
 
+/** Destinations of one type matching the query, most visited first. */
+function buildDestinationResults(
+  allPlaces: any[],
+  countMap: Map<string, number>,
+  placeType: "country" | "city",
+  q: string,
+  language: Language,
+): any[] {
+  let filtered = allPlaces.filter((p: any) => p.type === placeType);
+  if (q) {
+    // Matches the English DB name OR the localized name for the active
+    // language (e.g. FR "espag" finds "Spain" via "Espagne"),
+    // accent-insensitive both ways.
+    const normalizedQuery = normalizeSearchText(q);
+    filtered = filtered.filter((p: any) => matchesPlaceName(p, normalizedQuery, language));
+  }
+
+  const withCounts = filtered.map((p: any) => ({ ...p, review_count: countMap.get(p.id) || 0 }));
+  withCounts.sort((a: any, b: any) => {
+    const diff = b.review_count - a.review_count;
+    return diff !== 0 ? diff : a.name.localeCompare(b.name);
+  });
+  return withCounts;
+}
+
+const placeTypeForTab = (tab: FilterTab) => (tab === "Countries" ? "country" : tab === "Cities" ? "city" : null);
+
 export default function SearchPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -68,18 +95,28 @@ export default function SearchPage() {
   })();
   const [activeFilter, setActiveFilter] = useState<FilterTab>(initialTab);
   const [query, setQuery] = useState("");
-  // Written on every result tap below, but never read back until now.
-  const [recentSearches, setRecentSearches] = useState<RecentPlace[]>([]);
-
-  useEffect(() => {
+  // Read during the first render (not in an effect) so the grid below
+  // doesn't jump down a frame later when the recents appear.
+  const [recentSearches] = useState<RecentPlace[]>(() => {
     try {
       const saved = JSON.parse(localStorage.getItem("recentSearches") || "[]");
-      if (Array.isArray(saved)) setRecentSearches(saved.slice(0, 8));
+      return Array.isArray(saved) ? saved.slice(0, 8) : [];
     } catch {
       // Corrupt or blocked storage just means no recents to show.
+      return [];
     }
-  }, []);
-  const [places, setPlaces] = useState<any[]>([]);
+  });
+  // Built from the cached catalog while building the FIRST render, so Search
+  // shows its grid immediately instead of a skeleton on every visit; the
+  // mount search below refreshes it silently.
+  const [places, setPlaces] = useState<any[]>(() => {
+    const placeType = placeTypeForTab(initialTab);
+    const allPlaces = placeType ? peekAllPlaces() : null;
+    const countMap = placeType ? peekAllTimeVisitorCountMap() : null;
+    return placeType && allPlaces && countMap
+      ? buildDestinationResults(allPlaces, countMap, placeType, "", language)
+      : [];
+  });
   const [lists, setLists] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -88,7 +125,7 @@ export default function SearchPage() {
   const [selectedCategory, setSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
   const [grouped, setGrouped] = useState(false);
   const [visibleCount, setVisibleCount] = useState(250);
-  usePerfReady("search:skeleton", loading);
+  usePerfReady("search:skeleton", loading && places.length === 0);
   usePerfReady("search", !loading && places.length > 0, `${places.length} places`);
   const searchStateRef = useRef<{ initialized: boolean; query: string; activeFilter: FilterTab }>({
     initialized: false,
@@ -96,7 +133,9 @@ export default function SearchPage() {
     activeFilter: initialTab,
   });
   const searchRequestIdRef = useRef(0);
-  const visiblePlaceSearchContextRef = useRef<string | null>(null);
+  const visiblePlaceSearchContextRef = useRef<string | null>(
+    places.length > 0 ? `${initialTab}\u0000` : null
+  );
   const sortMetricRequestIdRef = useRef(0);
 
   useEffect(() => {
@@ -131,7 +170,7 @@ export default function SearchPage() {
     setLoading(true);
     const q = query.trim();
     const requestFilter = activeFilter;
-    const placeType = requestFilter === "Countries" ? "country" : requestFilter === "Cities" ? "city" : null;
+    const placeType = placeTypeForTab(requestFilter);
 
     if (placeType) {
       const contextKey = `${requestFilter}\u0000${q}`;
@@ -145,20 +184,7 @@ export default function SearchPage() {
           fetchAllPlaces(),
         ]);
 
-        let filtered = allPlaces.filter((p: any) => p.type === placeType);
-        if (q) {
-          // Matches the English DB name OR the localized name for the active
-          // language (e.g. FR "espag" finds "Spain" via "Espagne"),
-          // accent-insensitive both ways.
-          const normalizedQuery = normalizeSearchText(q);
-          filtered = filtered.filter((p: any) => matchesPlaceName(p, normalizedQuery, language));
-        }
-
-        const withCounts = filtered.map((p: any) => ({ ...p, review_count: countMap.get(p.id) || 0 }));
-        withCounts.sort((a: any, b: any) => {
-          const diff = b.review_count - a.review_count;
-          return diff !== 0 ? diff : a.name.localeCompare(b.name);
-        });
+        const withCounts = buildDestinationResults(allPlaces, countMap, placeType, q, language);
 
         if (searchRequestIdRef.current !== requestId) return;
         setPlaces(withCounts);
@@ -288,7 +314,9 @@ export default function SearchPage() {
   const sortedPlaces = getSortedPlaces();
 
   const renderDestinations = () => {
-    if (loading) return <LoadingSpinner />;
+    // Keep showing the current results while they refresh (stale-while-
+    // revalidate); the skeleton is only for when there is nothing to show.
+    if (loading && places.length === 0) return <LoadingSpinner />;
     const isDestTab = activeFilter === "Countries" || activeFilter === "Cities";
     if (!isDestTab) return null;
     if (!sortedPlaces.length) return <EmptyState text={t("noResults")} />;

@@ -4,8 +4,10 @@
 // serving old snapshots is safe (stale-while-revalidate): the user sees the
 // last known sections instantly — including on a cold app start — and the
 // data refreshes in place. The TTL below only bounds how old a snapshot may
-// be to still qualify for that instant first paint.
-export const EXPLORE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+// be to still qualify for that instant first paint. Matches the rankings
+// cache (placeRankings STALE_MAX_AGE_MS): at 24h, opening the app the next
+// day showed a skeleton and waited on the network instead.
+export const EXPLORE_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const STORAGE_KEY = "stampaway_explore_cache_v1";
 

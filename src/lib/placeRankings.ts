@@ -133,6 +133,19 @@ async function cachedFetch<T>(
   return dedup(key, doRefresh);
 }
 
+/**
+ * Synchronous reads of whatever is cached (any age), for painting a screen's
+ * first frame. Callers still call the async fetchers right after, which
+ * refresh stale data in the background.
+ */
+export function peekAllPlaces(): any[] | null {
+  return placesCache.current?.data ?? null;
+}
+
+export function peekAllTimeVisitorCountMap(): Map<string, number> | null {
+  return visitorCountCache.current?.data ?? null;
+}
+
 /** Clear all rankings caches (call after logging a new review etc.) */
 export function clearRankingsCache() {
   visitorCountCache.current = null;
