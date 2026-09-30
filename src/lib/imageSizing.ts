@@ -6,11 +6,23 @@
  *
  * Any other host (user uploads, overrides, local assets) is returned as-is.
  */
+// Posters bundled with the app (see lib/countryPosterOverrides) come in three
+// widths; pick the smallest one that still covers the requested width.
+const BUNDLED_POSTER = /\/posters\/w(200|450|900)\/([^/]+\.jpg)$/;
+const BUNDLED_WIDTHS = [200, 450, 900];
+
 export function sizedPosterUrl(
   url: string | null | undefined,
   width: number
 ): string | null {
   if (!url) return null;
+
+  const bundled = url.match(BUNDLED_POSTER);
+  if (bundled) {
+    const best = BUNDLED_WIDTHS.find((w) => w >= width) ?? 900;
+    return url.replace(BUNDLED_POSTER, `/posters/w${best}/${bundled[2]}`);
+  }
+
   try {
     const u = new URL(url);
     const isUnsplash = u.hostname === "images.unsplash.com";

@@ -79,3 +79,19 @@ describe("sizedPosterUrl", () => {
     expect(u.pathname).toBe("/photo-abc");
   });
 });
+
+describe("sizedPosterUrl with posters bundled in the app", () => {
+  const base = "/posters/w900/london.jpg";
+
+  it("picks the smallest bundled width that covers the request", () => {
+    expect(sizedPosterUrl(base, 100)).toBe("/posters/w200/london.jpg");
+    expect(sizedPosterUrl(base, 150)).toBe("/posters/w200/london.jpg");
+    expect(sizedPosterUrl(base, 400)).toBe("/posters/w450/london.jpg");
+    expect(sizedPosterUrl(base, 900)).toBe("/posters/w900/london.jpg");
+    expect(sizedPosterUrl(base, 1400)).toBe("/posters/w900/london.jpg");
+  });
+
+  it("works whatever size the stored URL points at", () => {
+    expect(sizedPosterUrl("/posters/w200/saint-lucia.jpg", 400)).toBe("/posters/w450/saint-lucia.jpg");
+  });
+});

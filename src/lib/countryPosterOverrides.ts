@@ -1,57 +1,36 @@
-import portugalPoster from "@/assets/countries/portugal.png.asset.json";
-import qatarPoster from "@/assets/countries/qatar.png.asset.json";
-import vanuatuPoster from "@/assets/countries/vanuatu.png.asset.json";
-import bhutanPoster from "@/assets/countries/bhutan.png.asset.json";
-import eritreaPoster from "@/assets/countries/eritrea.png.asset.json";
-import iraqPoster from "@/assets/countries/iraq.png.asset.json";
-import liberiaPoster from "@/assets/countries/liberia.png.asset.json";
-import ugandaPoster from "@/assets/countries/uganda.png.asset.json";
-import libyaPoster from "@/assets/countries/libya.png.asset.json";
-import mongoliaPoster from "@/assets/countries/mongolia.png.asset.json";
-import russiaPoster from "@/assets/countries/russia.png.asset.json";
-import saintLuciaPoster from "@/assets/countries/saint-lucia.png.asset.json";
-import londonPoster from "@/assets/cities/london.png.asset.json";
-import athensPoster from "@/assets/cities/athens.png.asset.json";
-import marrakeshPoster from "@/assets/cities/marrakesh.png.asset.json";
-import budapestPoster from "@/assets/cities/budapest.png.asset.json";
-import ibizaPoster from "@/assets/cities/ibiza.png.asset.json";
-import lisbonPoster from "@/assets/cities/lisbon.png.asset.json";
+// Hand-picked posters for destinations whose stored photo was replaced.
+//
+// They ship with the app in public/posters, in three widths (200/450/900 px,
+// JPEG). They used to load from Lovable's asset host as full-size PNGs —
+// ~2.4 MB and 941×1672 each, behind a redirect — even for 120 px cards.
+// sizedPosterUrl() (lib/imageSizing) picks the width each screen needs; the
+// map below points at the largest one. Aspect ratio is unchanged, so the
+// crop on screen is identical.
 
-// Lovable serves uploaded assets from a root-relative path (/__l5e/...).
-// That works in a browser (resolves against the published origin) but
-// inside the Capacitor iOS/Android WebView the root is capacitor://localhost,
-// so the images 404. Force an absolute https URL for native builds.
-const ASSET_ORIGIN = "https://stampaway.lovable.app";
-
-function absolutize(url: string): string {
-  if (!url) return url;
-  if (/^https?:\/\//i.test(url)) return url;
-  if (url.startsWith("/")) return `${ASSET_ORIGIN}${url}`;
-  return url;
-}
+const poster = (slug: string) => `${import.meta.env.BASE_URL}posters/w900/${slug}.jpg`;
 
 const countryPosterOverrides: Record<string, string> = {
-  Portugal: absolutize(portugalPoster.url),
-  Qatar: absolutize(qatarPoster.url),
-  Vanuatu: absolutize(vanuatuPoster.url),
-  Bhutan: absolutize(bhutanPoster.url),
-  Eritrea: absolutize(eritreaPoster.url),
-  Iraq: absolutize(iraqPoster.url),
-  Liberia: absolutize(liberiaPoster.url),
-  Uganda: absolutize(ugandaPoster.url),
-  Libya: absolutize(libyaPoster.url),
-  Mongolia: absolutize(mongoliaPoster.url),
-  Russia: absolutize(russiaPoster.url),
-  "Saint Lucia": absolutize(saintLuciaPoster.url),
+  Portugal: poster("portugal"),
+  Qatar: poster("qatar"),
+  Vanuatu: poster("vanuatu"),
+  Bhutan: poster("bhutan"),
+  Eritrea: poster("eritrea"),
+  Iraq: poster("iraq"),
+  Liberia: poster("liberia"),
+  Uganda: poster("uganda"),
+  Libya: poster("libya"),
+  Mongolia: poster("mongolia"),
+  Russia: poster("russia"),
+  "Saint Lucia": poster("saint-lucia"),
 };
 
 const cityPosterOverrides: Record<string, string> = {
-  London: absolutize(londonPoster.url),
-  Athens: absolutize(athensPoster.url),
-  Marrakesh: absolutize(marrakeshPoster.url),
-  Budapest: absolutize(budapestPoster.url),
-  Ibiza: absolutize(ibizaPoster.url),
-  Lisbon: absolutize(lisbonPoster.url),
+  London: poster("london"),
+  Athens: poster("athens"),
+  Marrakesh: poster("marrakesh"),
+  Budapest: poster("budapest"),
+  Ibiza: poster("ibiza"),
+  Lisbon: poster("lisbon"),
 };
 
 export function getDestinationPosterOverride(name?: string | null, type?: string | null) {
@@ -68,4 +47,3 @@ export function getCountryPosterOverride(countryName?: string | null) {
 export function getCityPosterOverride(cityName?: string | null) {
   return getDestinationPosterOverride(cityName, "city");
 }
-
