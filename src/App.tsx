@@ -13,6 +13,7 @@ import ScrollRestoration from "@/components/ScrollRestoration";
 import EdgeSwipeBack from "@/components/EdgeSwipeBack";
 import RouteTransition from "@/components/RouteTransition";
 import DeepLinkHandler from "@/components/DeepLinkHandler";
+import PressPrefetch from "@/components/PressPrefetch";
 import { PushNotificationsHandler } from "@/components/PushNotificationsHandler";
 import UsernameSetupGate from "@/components/UsernameSetupGate";
 import OnboardingGate from "@/components/onboarding/OnboardingGate";
@@ -59,6 +60,7 @@ function AppRoutes() {
       <EdgeSwipeBack />
       <RouteTransition />
       <DeepLinkHandler />
+      <PressPrefetch />
       <OfflineBanner />
       {user && <PushNotificationsHandler />}
       {/* Status-bar scrim: subtle fade under the clock/Dynamic Island so

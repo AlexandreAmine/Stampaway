@@ -1,5 +1,7 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
-import { useState, useEffect, useRef } from "react";
+import { reviewLinkProps } from "@/lib/reviewDetailQuery";
+import { profileLinkProps } from "@/lib/profileHeaderQuery";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Users, List, MessageSquare, Bookmark, Plus, BarChart3, Pencil } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -92,7 +94,9 @@ export default function PlacePage() {
   // Reset all per-place state when navigating to a different place so data
   // from a previously viewed place (e.g. country) doesn't leak into the new
   // page (e.g. one of its cities). Runs before the apply-effect below.
-  useEffect(() => {
+  // Both run as layout effects (before paint): with cached/prefetched data
+  // the page's first frame is complete instead of flashing the skeleton.
+  useLayoutEffect(() => {
     setLoading(true);
     setSecondaryLoaded(false);
     setPlace(null);
@@ -122,7 +126,7 @@ export default function PlacePage() {
     queryFn: () => fetchPlacePrimary(id!, user?.id ?? null),
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const data = primaryQuery.data;
     if (!data) return;
 
@@ -615,9 +619,10 @@ export default function PlacePage() {
                 <button
                   key={fv.id || fv.user_id}
                   onClick={() => navigate(`/review/${fv.review_id}`)}
+                  {...reviewLinkProps(fv.review_id)}
                   className="flex-shrink-0 flex items-center gap-1.5 bg-card border border-border rounded-full pl-1 pr-3 py-1"
                 >
-                  <Avatar className="w-8 h-8" onClick={(e) => { e.stopPropagation(); navigate(fv.user_id === user?.id ? "/profile" : `/profile/${fv.user_id}`); }}>
+                  <Avatar className="w-8 h-8" onClick={(e) => { e.stopPropagation(); navigate(fv.user_id === user?.id ? "/profile" : `/profile/${fv.user_id}`); }} {...profileLinkProps(fv.user_id, fv.profile?.username, fv.profile?.profile_picture)}>
                     <AvatarImage src={fv.profile?.profile_picture || fallbackAvatarUrl(fv.profile?.username || "?")} />
                     <AvatarFallback>{fv.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
                   </Avatar>
@@ -645,7 +650,7 @@ export default function PlacePage() {
             </button>
             <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
               {friendWishlist.map((fw: any) => (
-                <button key={fw.user_id} onClick={() => navigate(fw.user_id === user?.id ? "/profile" : `/profile/${fw.user_id}`)}>
+                <button key={fw.user_id} onClick={() => navigate(fw.user_id === user?.id ? "/profile" : `/profile/${fw.user_id}`)} {...profileLinkProps(fw.user_id, fw.username, fw.profile_picture)}>
                   <Avatar className="w-9 h-9 border-2 border-border">
                     <AvatarImage src={fw.profile_picture || fallbackAvatarUrl(fw.username || "?")} />
                     <AvatarFallback>{fw.username?.[0]?.toUpperCase()}</AvatarFallback>

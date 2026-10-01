@@ -1,4 +1,5 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
@@ -151,7 +152,7 @@ export default function ListDetailPage() {
         </div>
 
         {owner && (
-          <button onClick={() => navigate(`/profile/${owner.user_id}`)} className="flex items-center gap-2 mb-4">
+          <button onClick={() => navigate(`/profile/${owner.user_id}`)} {...profileLinkProps(owner.user_id, owner.username, owner.profile_picture)} className="flex items-center gap-2 mb-4">
             <Avatar className="w-7 h-7">
               <AvatarImage src={owner.profile_picture || fallbackAvatarUrl(owner.username)} />
               <AvatarFallback>{owner.username?.[0]?.toUpperCase()}</AvatarFallback>

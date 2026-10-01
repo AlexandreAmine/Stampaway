@@ -1,4 +1,5 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, X, Search } from "lucide-react";
@@ -167,7 +168,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
               const isFollowing = following.some((f) => f.id === u.user_id);
               return (
                 <div key={u.user_id} className="flex items-center justify-between py-2">
-                  <button onClick={() => navigate(`/profile/${u.user_id}`)} className="flex items-center gap-3">
+                  <button onClick={() => navigate(`/profile/${u.user_id}`)} {...profileLinkProps(u.user_id, u.username, u.profile_picture)} className="flex items-center gap-3">
                     <img
                       src={u.profile_picture || fallbackAvatarUrl(u.username)}
                       alt={u.username}
@@ -199,7 +200,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
         <div className="space-y-1">
           {filtered.map((f) => (
             <div key={f.id} className="flex items-center justify-between py-2.5">
-              <button onClick={() => navigate(`/profile/${f.id}`)} className="flex items-center gap-3">
+              <button onClick={() => navigate(`/profile/${f.id}`)} {...profileLinkProps(f.id, f.username, f.profile_picture)} className="flex items-center gap-3">
                 <img
                   src={f.profile_picture || fallbackAvatarUrl(f.username)}
                   alt={f.username}

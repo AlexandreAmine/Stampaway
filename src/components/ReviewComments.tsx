@@ -1,4 +1,5 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useState, useEffect } from "react";
 import { Send, Reply, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -101,7 +102,7 @@ export function ReviewComments({ reviewId }: { reviewId: string }) {
   const renderComment = (comment: Comment, depth: number = 0) => (
     <div key={comment.id} className={`${depth > 0 ? "ml-8 border-l-2 border-border pl-3" : ""}`}>
       <div className="flex items-start gap-2.5 py-2">
-        <button onClick={() => navigate(comment.user_id === user?.id ? "/profile" : `/profile/${comment.user_id}`)}>
+        <button onClick={() => navigate(comment.user_id === user?.id ? "/profile" : `/profile/${comment.user_id}`)} {...profileLinkProps(comment.user_id, comment.profile?.username, comment.profile?.profile_picture)}>
           <Avatar className="w-7 h-7">
             <AvatarImage src={comment.profile?.profile_picture || fallbackAvatarUrl(comment.profile?.username || "?")} />
             <AvatarFallback>{comment.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
@@ -110,7 +111,7 @@ export function ReviewComments({ reviewId }: { reviewId: string }) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <button
-              onClick={() => navigate(comment.user_id === user?.id ? "/profile" : `/profile/${comment.user_id}`)}
+              onClick={() => navigate(comment.user_id === user?.id ? "/profile" : `/profile/${comment.user_id}`)} {...profileLinkProps(comment.user_id, comment.profile?.username, comment.profile?.profile_picture)}
               className="text-xs font-semibold text-foreground hover:underline"
             >
               {comment.profile?.username || t("common.user")}

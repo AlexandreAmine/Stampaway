@@ -1,4 +1,5 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useState, useEffect, useRef } from "react";
 import { Search, ChevronDown } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -75,6 +76,8 @@ function buildDestinationResults(
   return withCounts;
 }
 
+const SEARCH_FILTER_KEY = "stampaway_search_filter";
+
 const placeTypeForTab = (tab: FilterTab) => (tab === "Countries" ? "country" : tab === "Cities" ? "city" : null);
 
 export default function SearchPage() {
@@ -89,9 +92,20 @@ export default function SearchPage() {
     Lists: t("search.lists"),
     Users: t("search.users"),
   };
+  // A ?tab= link wins; otherwise come back to the filter last used this
+  // session (it used to reset to Countries after opening a result and going
+  // back).
   const initialTab = (() => {
-    const t = searchParams.get("tab");
-    return (filterTabs as readonly string[]).includes(t || "") ? (t as FilterTab) : "Countries";
+    const isTab = (v: string | null): v is FilterTab => (filterTabs as readonly string[]).includes(v || "");
+    const fromUrl = searchParams.get("tab");
+    if (isTab(fromUrl)) return fromUrl;
+    try {
+      const remembered = sessionStorage.getItem(SEARCH_FILTER_KEY);
+      if (isTab(remembered)) return remembered;
+    } catch {
+      // Storage unavailable: fall back to the default filter.
+    }
+    return "Countries";
   })();
   const [activeFilter, setActiveFilter] = useState<FilterTab>(initialTab);
   const [query, setQuery] = useState("");
@@ -483,7 +497,7 @@ export default function SearchPage() {
             const isFollowing = followingIds.has(u.user_id);
             return (
               <motion.div key={u.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between py-3">
-                <button onClick={() => navigate(isMe ? "/profile" : `/profile/${u.user_id}`)} className="flex items-center gap-3">
+                <button onClick={() => navigate(isMe ? "/profile" : `/profile/${u.user_id}`)} {...profileLinkProps(u.user_id, u.username, u.profile_picture)} className="flex items-center gap-3">
                   <Avatar className="w-10 h-10">
                     <AvatarImage src={u.profile_picture || fallbackAvatarUrl(u.username)} />
                     <AvatarFallback>{u.username?.[0]?.toUpperCase()}</AvatarFallback>
@@ -546,6 +560,11 @@ export default function SearchPage() {
               key={tab}
               onClick={() => {
                 setActiveFilter(tab);
+                try {
+                  sessionStorage.setItem(SEARCH_FILTER_KEY, tab);
+                } catch {
+                  // Not remembering the filter is harmless.
+                }
                 setGrouped(false);
                 // Reset sort to "Most popular" when switching between Countries <-> Cities
                 if ((tab === "Countries" || tab === "Cities") && destSort !== "most-popular") {

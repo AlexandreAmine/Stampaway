@@ -1,4 +1,6 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { reviewLinkProps } from "@/lib/reviewDetailQuery";
+import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, MessageSquare, SlidersHorizontal } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -584,14 +586,14 @@ export default function PlaceSubPage() {
             {(section === "visitors" || section === "friendvisitors") &&
               data.map((v: any) => (
                 <div key={v.user_id} className="flex items-center gap-3 w-full">
-                  <button onClick={() => navigate(v.user_id === user?.id ? "/profile" : `/profile/${v.user_id}`)} className="flex items-center gap-3 min-w-0 w-1/2 text-left">
+                  <button onClick={() => navigate(v.user_id === user?.id ? "/profile" : `/profile/${v.user_id}`)} {...profileLinkProps(v.user_id, v.profile?.username, v.profile?.profile_picture)} className="flex items-center gap-3 min-w-0 w-1/2 text-left">
                     <Avatar className="w-9 h-9">
                       <AvatarImage src={v.profile?.profile_picture || fallbackAvatarUrl(v.profile?.username || "?")} />
                       <AvatarFallback>{v.profile?.username?.[0]?.toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <p className="text-sm text-foreground flex-1">{v.profile?.username || t("common.user")}</p>
                   </button>
-                  <button onClick={() => navigate(`/review/${v.id}`)} className="flex items-center justify-end gap-1.5 active:scale-95 transition-transform w-1/2 min-h-9 text-right">
+                  <button onClick={() => navigate(`/review/${v.id}`)} {...reviewLinkProps(v.id)} className="flex items-center justify-end gap-1.5 active:scale-95 transition-transform w-1/2 min-h-9 text-right">
                     {v.rating != null && <StarRating rating={Number(v.rating)} size={12} liked={v.liked} />}
                     {v.has_review && <MessageSquare className="w-3 h-3 text-primary" />}
                   </button>
@@ -666,7 +668,7 @@ export default function PlaceSubPage() {
 
             {section === "wanttovisit" &&
               data.map((w: any) => (
-                <button key={w.user_id} onClick={() => navigate(w.user_id === user?.id ? "/profile" : `/profile/${w.user_id}`)} className="flex items-center gap-3 w-full text-left">
+                <button key={w.user_id} onClick={() => navigate(w.user_id === user?.id ? "/profile" : `/profile/${w.user_id}`)} {...profileLinkProps(w.user_id, w.username, w.profile_picture)} className="flex items-center gap-3 w-full text-left">
                   <Avatar className="w-9 h-9">
                     <AvatarImage src={w.profile_picture || fallbackAvatarUrl(w.username || "?")} />
                     <AvatarFallback>{w.username?.[0]?.toUpperCase()}</AvatarFallback>

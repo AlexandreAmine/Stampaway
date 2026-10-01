@@ -1,4 +1,5 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { X, UserPlus, Heart, Check, XIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -227,7 +228,7 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
             <div className="space-y-3">
               {items.map((item) => (
                 <div key={`${item.type}-${item.id}`} className="flex items-center gap-3">
-                  <button onClick={() => { onClose(); navigate(item.userId === user?.id ? "/profile" : `/profile/${item.userId}`); }}>
+                  <button onClick={() => { onClose(); navigate(item.userId === user?.id ? "/profile" : `/profile/${item.userId}`); }} {...profileLinkProps(item.userId, item.username, item.profilePicture)}>
                     <Avatar className="w-9 h-9">
                       <AvatarImage src={item.profilePicture || fallbackAvatarUrl(item.username)} />
                       <AvatarFallback>{item.username[0]?.toUpperCase()}</AvatarFallback>
@@ -235,7 +236,7 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
                   </button>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-foreground">
-                      <button onClick={() => { onClose(); navigate(`/profile/${item.userId}`); }} className="font-semibold hover:underline" data-no-translate>{item.username}</button>
+                      <button onClick={() => { onClose(); navigate(`/profile/${item.userId}`); }} {...profileLinkProps(item.userId, item.username, item.profilePicture)} className="font-semibold hover:underline" data-no-translate>{item.username}</button>
                       {" "}
                       {item.type === "new_follower" && t("notifications.newFollower")}
                       {item.type === "follow_request" && t("notifications.followRequest")}

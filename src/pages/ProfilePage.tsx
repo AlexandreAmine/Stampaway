@@ -1,6 +1,7 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { fetchProfileHeader, profileHeaderQueryKey, type ProfileHeader } from "@/lib/profileHeaderQuery";
 import { ChevronRight, ChevronLeft, Settings, Plus, X, UserPlus, UserMinus, Pencil, Share2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
@@ -158,7 +159,15 @@ export default function ProfilePage() {
   const activeProfileRef = useRef({ viewerUserId, viewingUserId, isOwnProfile });
   activeProfileRef.current = { viewerUserId, viewingUserId, isOwnProfile };
 
-  const [viewedProfile, setViewedProfile] = useState<{ username: string; profile_picture: string | null; bio: string | null; country: string | null; is_private?: boolean; social_links?: any } | null>(null);
+  // Another user's header: cached (so revisits show the real name at once),
+  // prefilled from the row that was tapped (PressPrefetch), and refetched on
+  // every open. A prefilled header has no is_private: see handleFollow.
+  const headerQuery = useQuery({
+    queryKey: profileHeaderQueryKey(viewingUserId ?? null),
+    enabled: !!viewingUserId && !isOwnProfile,
+    queryFn: () => fetchProfileHeader(viewingUserId!),
+  });
+  const viewedProfile = !isOwnProfile ? ((headerQuery.data as (ProfileHeader & { social_links?: any }) | undefined) ?? null) : null;
   const [ownProfileFull, setOwnProfileFull] = useState<{ username: string; profile_picture: string | null; bio: string | null; country: string | null; social_links?: any } | null>(null);
   const [editOpen, setEditOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -263,11 +272,7 @@ export default function ProfilePage() {
       supabase.from("profiles").select("username, profile_picture, bio, country, social_links").eq("user_id", viewingUserId).single().then(({ data }) => {
         if (data) setOwnProfileFull(data as any);
       });
-      setViewedProfile(null);
     } else if (viewingUserId) {
-      supabase.from("profiles").select("username, profile_picture, bio, country, is_private, social_links").eq("user_id", viewingUserId).single().then(({ data }) => {
-        if (data) setViewedProfile(data as any);
-      });
       // Check if blocked
       if (user) {
         supabase.from("blocked_users").select("id").or(`and(blocker_id.eq.${user.id},blocked_id.eq.${viewingUserId}),and(blocker_id.eq.${viewingUserId},blocked_id.eq.${user.id})`).then(({ data }) => {
@@ -311,8 +316,10 @@ export default function ProfilePage() {
       await supabase.from("follow_requests").delete().eq("requester_id", user.id).eq("target_id", viewingUserId);
       setHasPendingRequest(false);
     } else {
-      // Check if target is private
-      const isTargetPrivate = viewedProfile?.is_private;
+      // Check if target is private. Never assume public: if the header is
+      // still a preview (or not loaded), ask the server first — otherwise a
+      // fast tap would follow a private account without a request.
+      const isTargetPrivate = viewedProfile?.is_private ?? (await fetchProfileHeader(viewingUserId)).is_private;
       if (isTargetPrivate) {
         await supabase.from("follow_requests").insert({ requester_id: user.id, target_id: viewingUserId });
         setHasPendingRequest(true);
@@ -336,7 +343,9 @@ export default function ProfilePage() {
   const currentProfile = isOwnProfile ? (ownProfileFull || profile) : viewedProfile;
   usePerfReady("profile:header", !!currentProfile?.username, isOwnProfile ? "own" : "other");
   usePerfReady("profile", totalCountries > 0, isOwnProfile ? "own" : "other");
-  const displayName = currentProfile?.username || "User";
+  // Empty rather than "User" while the header loads, so the wrong word
+  // never flashes before the real name.
+  const displayName = currentProfile?.username ?? "";
   const avatarUrl = currentProfile?.profile_picture || fallbackAvatarUrl(displayName);
   const profileBio = (currentProfile as any)?.bio as string | null;
   const profileCountry = (currentProfile as any)?.country as string | null;
@@ -796,7 +805,7 @@ export default function ProfilePage() {
             invalidateOwnProfileContentCache(user.id);
             await fetchData();
           } else {
-            await otherProfileQuery.refetch();
+            await Promise.all([otherProfileQuery.refetch(), headerQuery.refetch()]);
           }
         }}
       />

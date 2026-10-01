@@ -137,6 +137,7 @@ export function DestinationPoster({
   return (
     <div
       className={`relative rounded-2xl overflow-hidden bg-card ${className}`}
+      data-prefetch-place={placeId}
     >
       {showPhoto ? (
         <>

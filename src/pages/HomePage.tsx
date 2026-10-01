@@ -1,4 +1,5 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Star, UserPlus, Bell } from "lucide-react";
@@ -57,14 +58,6 @@ export default function HomePage() {
   const [mapWidth, setMapWidth] = useState(380);
   const [selectedActivity, setSelectedActivity] = useState<FriendActivity | null>(null);
   const [notifOpen, setNotifOpen] = useState(false);
-  const [unreadState, setUnreadState] = useState<{
-    userId: string | null;
-    count: number;
-  }>({ userId: null, count: 0 });
-  const unreadRequestSequenceRef = useRef(0);
-  const unreadPendingRequestRef = useRef<number | null>(null);
-  const unreadCount =
-    unreadState.userId === (user?.id ?? null) ? unreadState.count : 0;
   const [showAllActivities, setShowAllActivities] = useState(false);
 
   // Stats: unique countries & cities reviewed (matches Profile page logic).
@@ -107,70 +100,29 @@ export default function HomePage() {
   }, [user]);
 
 
-  // Fetch unread notification count
-  useEffect(() => {
-    const userId = user?.id ?? null;
-    const requestId = ++unreadRequestSequenceRef.current;
-    let cancelled = false;
-
-    setUnreadState((current) =>
-      current.userId === userId ? current : { userId, count: 0 }
-    );
-
-    if (!userId) {
-      unreadPendingRequestRef.current = null;
-      return;
-    }
-
-    unreadPendingRequestRef.current = requestId;
-    const isCurrentRequest = () =>
-      !cancelled && unreadPendingRequestRef.current === requestId;
-
-    const lastRead = localStorage.getItem(`notif_last_read_${userId}`);
-    const lastReadDate = lastRead || "1970-01-01T00:00:00Z";
-
-    const fetchUnreadCount = async () => {
-      try {
-        // One server-side RPC; previously this downloaded all of the user's
-        // review ids and list ids to count likes with .in() filters.
-        const { data, error } = await supabase.rpc("get_unread_notification_counts", {
-          _since: lastReadDate,
-        });
-        if (error) throw error;
-
-        const row = data?.[0];
-        const count = row
-          ? Number(row.followers_count) +
+  // Unread notification count. Cached (and persisted) so the badge shows
+  // straight away instead of appearing a moment after Home opens; refetched
+  // on every visit. Opening the sheet zeroes it optimistically (below).
+  const unreadQueryKey = ["unread-notifications", user?.id ?? null] as const;
+  const unreadQuery = useQuery({
+    queryKey: unreadQueryKey,
+    enabled: !!user,
+    queryFn: async () => {
+      const lastRead = localStorage.getItem(`notif_last_read_${user!.id}`) || "1970-01-01T00:00:00Z";
+      // One server-side RPC; previously this downloaded all of the user's
+      // review ids and list ids to count likes with .in() filters.
+      const { data, error } = await supabase.rpc("get_unread_notification_counts", { _since: lastRead });
+      if (error) throw error;
+      const row = data?.[0];
+      return row
+        ? Number(row.followers_count) +
             Number(row.requests_count) +
             Number(row.review_likes_count) +
             Number(row.list_likes_count)
-          : 0;
-
-        if (!isCurrentRequest()) return;
-        setUnreadState({ userId, count });
-      } catch {
-        if (isCurrentRequest()) {
-          console.error("Failed to refresh unread notification count");
-        }
-      } finally {
-        if (isCurrentRequest()) {
-          unreadPendingRequestRef.current = null;
-        }
-      }
-    };
-
-    void fetchUnreadCount();
-
-    return () => {
-      cancelled = true;
-      if (unreadPendingRequestRef.current === requestId) {
-        unreadPendingRequestRef.current = null;
-      }
-    };
-    // Note: intentionally not keyed on notifOpen — opening the sheet zeroes
-    // the badge optimistically and stores the read timestamp, so refetching
-    // on open/close was redundant network traffic.
-  }, [user]);
+        : 0;
+    },
+  });
+  const unreadCount = unreadQuery.data ?? 0;
 
   // Friend activity feed. Cached by React Query so switching back to Home
   // renders the map pins and list instantly while refreshing in background.
@@ -300,7 +252,7 @@ export default function HomePage() {
               <button onClick={() => {
                 setNotifOpen(true);
                 if (user) localStorage.setItem(`notif_last_read_${user.id}`, new Date().toISOString());
-                setUnreadState({ userId: user?.id ?? null, count: 0 });
+                queryClient.setQueryData(unreadQueryKey, 0);
               }} className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center relative">
                 <Bell className="w-5 h-5 text-foreground" />
                 {unreadCount > 0 && (
@@ -379,7 +331,7 @@ export default function HomePage() {
                 className="flex items-center gap-3 py-2.5 w-full text-left"
               >
                 <button
-                  onClick={(e) => { e.stopPropagation(); navigate(a.user_id === user?.id ? "/profile" : `/profile/${a.user_id}`); }}
+                  onClick={(e) => { e.stopPropagation(); navigate(a.user_id === user?.id ? "/profile" : `/profile/${a.user_id}`); }} {...profileLinkProps(a.user_id, a.username, a.profile_picture)}
                   className="shrink-0"
                 >
                   <img

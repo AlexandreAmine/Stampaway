@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { reviewLinkProps } from "@/lib/reviewDetailQuery";
+import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -108,6 +110,7 @@ export function TagsTab({ userId }: { userId?: string }) {
         <button
           key={`${tag.review_id}-${tag.tagged_by_user_id}`}
           onClick={() => navigate(`/review/${tag.review_id}`)}
+          {...reviewLinkProps(tag.review_id)}
           className="w-full flex items-center gap-3 bg-card rounded-xl p-3 border border-border text-left"
         >
           {tag.place && (
@@ -130,7 +133,7 @@ export function TagsTab({ userId }: { userId?: string }) {
             <div className="flex items-center gap-1.5 mt-1">
               <span className="text-xs text-muted-foreground">{t("tags.taggedBy")}</span>
               <button
-                onClick={(e) => { e.stopPropagation(); navigate(`/profile/${tag.tagged_by_user_id}`); }}
+                onClick={(e) => { e.stopPropagation(); navigate(`/profile/${tag.tagged_by_user_id}`); }} {...profileLinkProps(tag.tagged_by_user_id, tag.tagger?.username, tag.tagger?.profile_picture)}
                 className="flex items-center gap-1"
               >
                 <Avatar className="w-4 h-4">

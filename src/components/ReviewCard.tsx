@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { reviewLinkProps } from "@/lib/reviewDetailQuery";
+import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { Star, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -219,6 +221,7 @@ export function ReviewCard({
     <div
       className="bg-card rounded-xl p-3 border border-border cursor-pointer active:scale-[0.98] transition-transform"
       onClick={() => reviewId && navigate(`/review/${reviewId}`)}
+      {...reviewLinkProps(reviewId)}
     >
       <div className="flex items-start gap-3">
         {showImage && placeImage && (
@@ -232,11 +235,11 @@ export function ReviewCard({
                   src={userAvatar}
                   alt={userName}
                   className="w-5 h-5 rounded-full object-cover shrink-0 cursor-pointer"
-                  onClick={(e) => { e.stopPropagation(); if (userId) navigate(userId === user?.id ? "/profile" : `/profile/${userId}`); }}
+                  onClick={(e) => { e.stopPropagation(); if (userId) navigate(userId === user?.id ? "/profile" : `/profile/${userId}`); }} {...profileLinkProps(userId, userName, userAvatar)}
                 />
               )}
               <button
-                onClick={(e) => { e.stopPropagation(); if (userId) navigate(userId === user?.id ? "/profile" : `/profile/${userId}`); }}
+                onClick={(e) => { e.stopPropagation(); if (userId) navigate(userId === user?.id ? "/profile" : `/profile/${userId}`); }} {...profileLinkProps(userId, userName, userAvatar)}
                 className="text-xs font-medium text-muted-foreground truncate hover:underline"
                 data-no-translate
               >

@@ -1,4 +1,5 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -110,7 +111,7 @@ export function FollowersTab({ userId }: { userId?: string }) {
         <div className="space-y-1">
           {filtered.map((f) => (
             <div key={f.id} className="flex items-center gap-3 py-2.5 w-full">
-              <button onClick={() => navigate(`/profile/${f.id}`)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+              <button onClick={() => navigate(`/profile/${f.id}`)} {...profileLinkProps(f.id, f.username, f.profile_picture)} className="flex items-center gap-3 flex-1 min-w-0 text-left">
                 <img
                   src={f.profile_picture || fallbackAvatarUrl(f.username)}
                   alt={f.username}

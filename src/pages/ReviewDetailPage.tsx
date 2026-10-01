@@ -1,5 +1,10 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
-import { useState, useEffect, useRef } from "react";
+import { reviewLinkProps } from "@/lib/reviewDetailQuery";
+import { profileLinkProps } from "@/lib/profileHeaderQuery";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchReviewDetail, reviewDetailQueryKey } from "@/lib/reviewDetailQuery";
+import { monthShortNames } from "@/lib/localeFormat";
 import { ChevronLeft, Heart, MessageSquare, Calendar, Clock, History } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -20,96 +25,26 @@ export default function ReviewDetailPage() {
   const { reviewId } = useParams<{ reviewId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
-  const [review, setReview] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
-  const [place, setPlace] = useState<any>(null);
-  const [pastLoggings, setPastLoggings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const fetchRequestIdRef = useRef(0);
-  const currentReviewIdRef = useRef(reviewId ?? null);
 
-  currentReviewIdRef.current = reviewId ?? null;
-
-  useEffect(() => {
-    if (!reviewId) return;
-
-    const requestContext = {
-      requestId: fetchRequestIdRef.current + 1,
-      reviewId,
-    };
-    fetchRequestIdRef.current = requestContext.requestId;
-
-    const isCurrentRequest = () => (
-      fetchRequestIdRef.current === requestContext.requestId &&
-      currentReviewIdRef.current === requestContext.reviewId
-    );
-
-    void fetchReview(requestContext, isCurrentRequest);
-    return () => {
-      fetchRequestIdRef.current += 1;
-    };
-  }, [reviewId]);
-
-  const fetchReview = async (
-    requestContext: { requestId: number; reviewId: string },
-    isCurrentRequest: () => boolean
-  ) => {
-    setLoading(true);
-    setReview(null);
-    setProfile(null);
-    setPlace(null);
-    setPastLoggings([]);
-
-    try {
-      const { data: reviewData, error: reviewError } = await supabase
-        .from("reviews")
-        .select("*, places!inner(id, name, country, type, image)")
-        .eq("id", requestContext.reviewId)
-        .maybeSingle();
-
-      if (!isCurrentRequest()) return;
-      if (reviewError || !reviewData) return;
-
-      const [profileResult, loggingsResult] = await Promise.all([
-        supabase
-          .from("profiles")
-          .select("user_id, username, profile_picture")
-          .eq("user_id", reviewData.user_id)
-          .maybeSingle(),
-        supabase
-          .from("reviews")
-          .select("id, rating, liked, review_text, visit_year, visit_month, duration_days, created_at")
-          .eq("user_id", reviewData.user_id)
-          .eq("place_id", reviewData.place_id)
-          .neq("id", requestContext.reviewId)
-          .order("created_at", { ascending: false }),
-      ]);
-
-      if (!isCurrentRequest()) return;
-
-      setReview(reviewData);
-      setPlace(reviewData.places);
-      if (!profileResult.error) {
-        setProfile(profileResult.data);
-      }
-      if (!loggingsResult.error) {
-        setPastLoggings(loggingsResult.data || []);
-      }
-    } catch (error) {
-      console.error("Failed to load review details:", error);
-    } finally {
-      if (isCurrentRequest()) {
-        setLoading(false);
-      }
-    }
-  };
+  // Cached (instant when going back, or when the card was pressed and the
+  // data prefetched) and refetched on every open.
+  const detailQuery = useQuery({
+    queryKey: reviewDetailQueryKey(reviewId ?? null),
+    enabled: !!reviewId,
+    queryFn: () => fetchReviewDetail(reviewId!),
+  });
+  const review = detailQuery.data?.review ?? null;
+  const profile = detailQuery.data?.profile ?? null;
+  const place = review?.places ?? null;
+  const pastLoggings = detailQuery.data?.pastLoggings ?? [];
+  const loading = detailQuery.isPending && !!reviewId;
+  const months = monthShortNames(language);
 
   const formatVisitDate = (r: any) => {
     if (!r?.visit_year) return null;
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     if (r.visit_month) return `${months[r.visit_month - 1]} ${r.visit_year}`;
     return `${r.visit_year}`;
   };
@@ -182,7 +117,7 @@ export default function ReviewDetailPage() {
               </Avatar>
             </button>
             <div>
-              <button onClick={() => navigate(profile?.user_id === user?.id ? "/profile" : `/profile/${profile?.user_id}`)} className="text-base font-semibold text-foreground hover:text-primary transition-colors">
+              <button onClick={() => navigate(profile?.user_id === user?.id ? "/profile" : `/profile/${profile?.user_id}`)} {...profileLinkProps(profile?.user_id, profile?.username, profile?.profile_picture)} className="text-base font-semibold text-foreground hover:text-primary transition-colors">
                 {profile?.username || "User"}
               </button>
               <p className="text-xs text-muted-foreground">
@@ -258,6 +193,7 @@ export default function ReviewDetailPage() {
                   <button
                     key={log.id}
                     onClick={() => navigate(`/review/${log.id}`)}
+                    {...reviewLinkProps(log.id)}
                     className="bg-card rounded-xl p-3 border border-border w-full text-left active:scale-[0.98] transition-transform"
                   >
                     <div className="flex items-center justify-between mb-1">
