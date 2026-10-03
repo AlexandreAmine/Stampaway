@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { hapticLight, hapticMedium } from "@/lib/haptics";
+import { hapticLight } from "@/lib/haptics";
 
 const PULL_THRESHOLD = 70; // px of (damped) pull needed to trigger
 const MAX_PULL = 110; // px cap so the indicator can't be dragged forever
@@ -63,7 +63,7 @@ export function PullToRefresh({ onRefresh }: PullToRefreshProps) {
       setPullBoth(damped);
       if (damped >= PULL_THRESHOLD && !firedHapticRef.current) {
         firedHapticRef.current = true;
-        hapticMedium();
+        hapticLight();
       }
     };
 
@@ -95,8 +95,6 @@ export function PullToRefresh({ onRefresh }: PullToRefreshProps) {
             refreshingRef.current = false;
             setRefreshing(false);
             setPullBoth(0);
-            // Soft tick confirming the refresh finished
-            hapticLight();
           };
           if (elapsed >= MIN_SPIN_MS) settle();
           else window.setTimeout(settle, MIN_SPIN_MS - elapsed);

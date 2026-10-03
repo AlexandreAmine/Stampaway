@@ -1,4 +1,5 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { selectInChunks, newestFirst } from "@/lib/inChunks";
 import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -152,18 +153,25 @@ export default function HomePage() {
       // The profiles we may need are exactly the followed users, so both
       // queries can run in parallel instead of profiles waiting on reviews.
       const [{ data: reviews }, { data: profiles }] = await Promise.all([
-        supabase
-          .from("reviews")
-          .select("id, user_id, place_id, rating, created_at, visit_year, visit_month, duration_days, review_text, places!inner(name, country, type)")
-          .in("user_id", followingIds)
-          .not("visit_year", "is", null)
-          .not("visit_month", "is", null)
-          .or(`and(visit_year.eq.${currentYear},visit_month.eq.${currentMonth}),and(visit_year.eq.${prevYear},visit_month.eq.${prevMonth})`)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("profiles")
-          .select("user_id, username, profile_picture")
-          .in("user_id", followingIds),
+        selectInChunks(
+          followingIds,
+          (ids) =>
+            supabase
+              .from("reviews")
+              .select("id, user_id, place_id, rating, created_at, visit_year, visit_month, duration_days, review_text, places!inner(name, country, type)")
+              .in("user_id", ids)
+              .not("visit_year", "is", null)
+              .not("visit_month", "is", null)
+              .or(`and(visit_year.eq.${currentYear},visit_month.eq.${currentMonth}),and(visit_year.eq.${prevYear},visit_month.eq.${prevMonth})`)
+              .order("created_at", { ascending: false }),
+          { sort: newestFirst("created_at") }
+        ),
+        selectInChunks(followingIds, (ids) =>
+          supabase
+            .from("profiles")
+            .select("user_id, username, profile_picture")
+            .in("user_id", ids)
+        ),
       ]);
 
       const filtered = reviews || [];

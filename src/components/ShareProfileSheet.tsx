@@ -13,6 +13,7 @@ import {
   Send,
 } from "lucide-react";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toastError";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useNativeFeatures } from "@/hooks/useNativeFeatures";
 import { CountryFlag } from "@/components/CountryFlag";
@@ -55,7 +56,7 @@ export function ShareProfileSheet({ open, onClose, profile, stats }: ShareProfil
       toast.success(t("share.linkCopied"));
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error(t("share.copyFailed"));
+      toastError(t("share.copyFailed"));
     }
   };
 

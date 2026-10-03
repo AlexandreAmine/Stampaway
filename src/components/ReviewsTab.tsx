@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { placeLinkProps } from "@/lib/placePrimaryQuery";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -81,7 +82,7 @@ export function ReviewsTab({ userId }: { userId?: string }) {
       {reviews.map((r) => (
         <button
           key={r.id}
-          onClick={() => navigate(`/place/${r.place.id}`)}
+          onClick={() => navigate(`/place/${r.place.id}`)} {...placeLinkProps(r.place.id)}
           className="flex gap-3 bg-card rounded-xl p-3 border border-border w-full text-left"
         >
           <div className="w-14 h-[72px] shrink-0 rounded-lg overflow-hidden">

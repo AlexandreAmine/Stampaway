@@ -1,4 +1,5 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { selectInChunks } from "@/lib/inChunks";
 import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -9,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toastError";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import {
   AlertDialog,
@@ -51,10 +53,12 @@ export function FollowersTab({ userId }: { userId?: string }) {
       if (!data || data.length === 0) return [];
 
       const ids = data.map((f) => f.follower_id);
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, username, profile_picture")
-        .in("user_id", ids);
+      const { data: profiles } = await selectInChunks(ids, (chunk) =>
+        supabase
+          .from("profiles")
+          .select("user_id, username, profile_picture")
+          .in("user_id", chunk)
+      );
 
       return (profiles || []).map((p) => ({ id: p.user_id, username: p.username, profile_picture: p.profile_picture }));
     },
@@ -64,12 +68,19 @@ export function FollowersTab({ userId }: { userId?: string }) {
 
   const removeFollower = async (followerId: string, username: string) => {
     if (!user) return;
-    const { error } = await supabase.from("followers").delete().eq("follower_id", followerId).eq("following_id", user.id);
-    if (!error) invalidateOwnProfileContentCache(user.id);
-    queryClient.setQueryData(["followers", targetUserId ?? null], (old?: FollowerUser[]) =>
-      (old ?? []).filter((f) => f.id !== followerId)
-    );
+    // Instant: the row disappears now and comes back if the save fails (it
+    // used to say "removed" even when the removal failed).
+    const key = ["followers", targetUserId ?? null];
+    const previous = queryClient.getQueryData<FollowerUser[]>(key);
+    queryClient.setQueryData(key, (old?: FollowerUser[]) => (old ?? []).filter((f) => f.id !== followerId));
     toast.success(t("followers.removed", { username }));
+    const { error } = await supabase.from("followers").delete().eq("follower_id", followerId).eq("following_id", user.id);
+    if (error) {
+      queryClient.setQueryData(key, previous);
+      toastError(t("followers.removeFailed"));
+      return;
+    }
+    invalidateOwnProfileContentCache(user.id);
   };
 
   if (loading) {

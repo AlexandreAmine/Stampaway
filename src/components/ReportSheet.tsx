@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { hapticSuccess } from "@/lib/haptics";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { TranslationKey } from "@/i18n/translations";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toastError";
 
 // `value` is what gets stored in `reports.reason` and stays English so
 // moderation reads one language; only the label shown is translated.
@@ -66,9 +68,10 @@ export function ReportSheet({ open, onOpenChange, targetType, targetId, targetUs
     });
     setSubmitting(false);
     if (error) {
-      toast.error(t("report.failed"));
+      toastError(t("report.failed"));
       return;
     }
+    hapticSuccess();
     toast.success(t("report.submitted"));
     reset();
     onOpenChange(false);

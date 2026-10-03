@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { slideBack } from "@/lib/backTransition";
+import { selectInChunks } from "@/lib/inChunks";
 import { ChevronLeft, Lock, Shield, KeyRound, LogOut, Trash2, ChevronRight, Activity, Globe, User, FileText, ShieldCheck } from "lucide-react";
 import { PasswordAndAuthSection } from "@/components/PasswordAndAuthSection";
 import { useNavigate } from "react-router-dom";
@@ -11,6 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toastError";
 import { YourActivity } from "@/components/YourActivity";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import {
@@ -71,7 +74,9 @@ export default function SettingsPage() {
       const { data } = await supabase.from("blocked_users").select("id, blocked_id").eq("blocker_id", user.id);
       if (!data || data.length === 0) { setBlockedUsers([]); return; }
       const ids = data.map(d => d.blocked_id);
-      const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", ids);
+      const { data: profiles } = await selectInChunks(ids, (chunk) =>
+        supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", chunk)
+      );
       setBlockedUsers(data.map(d => {
         const p = (profiles || []).find(p => p.user_id === d.blocked_id);
         return { id: d.id, blocked_id: d.blocked_id, username: p?.username || t("common.unknown"), profile_picture: p?.profile_picture || null };
@@ -92,7 +97,7 @@ export default function SettingsPage() {
     if (!user) return;
     const { error } = await supabase.from("blocked_users").insert({ blocker_id: user.id, blocked_id: targetId });
     if (error) {
-      toast.error(t("block.failed"));
+      toastError(t("block.failed"));
       return;
     }
     const [{ error: followingError }, { error: followerError }] = await Promise.all([
@@ -121,12 +126,12 @@ export default function SettingsPage() {
 
 
   const handleDeleteAccount = async () => {
-    if (deleteConfirm !== "DELETE") { toast.error(t("toast.typeDelete")); return; }
+    if (deleteConfirm !== "DELETE") { toastError(t("toast.typeDelete")); return; }
     try {
       const { data, error } = await supabase.functions.invoke("delete-account");
       if (error || (data && (data as any).error)) {
         const msg = (data as any)?.error || error?.message || t("settings.deleteFailed");
-        toast.error(msg);
+        toastError(msg);
         return;
       }
       toast.success(t("toast.accountDeleted"));
@@ -136,7 +141,7 @@ export default function SettingsPage() {
       try { localStorage.clear(); } catch {}
       navigate("/auth", { replace: true });
     } catch (e: any) {
-      toast.error(e?.message || t("settings.deleteFailed"));
+      toastError(e?.message || t("settings.deleteFailed"));
     }
   };
 
@@ -337,7 +342,7 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-background pb-24">
       <div className="pt-12 px-5">
         <div className="flex items-center gap-3 mb-8">
-          <button onClick={() => navigate(-1)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
+          <button onClick={() => slideBack(() => navigate(-1))}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
           <h1 className="page-title">{t("settings.title")}</h1>
         </div>
 

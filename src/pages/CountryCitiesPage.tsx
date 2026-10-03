@@ -1,4 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { slideBack } from "@/lib/backTransition";
+import { placeLinkProps } from "@/lib/placePrimaryQuery";
+import { hapticSelection } from "@/lib/haptics";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronDown } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -159,7 +162,7 @@ export default function CountryCitiesPage() {
     <div className="min-h-screen bg-background pb-24">
       <div className="pt-12 px-5">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate(-1)}>
+          <button onClick={() => slideBack(() => navigate(-1))}>
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
           <h1 className="page-title">{title}</h1>
@@ -174,13 +177,13 @@ export default function CountryCitiesPage() {
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="min-w-[220px]">
                 <DropdownMenuItem
-                  onClick={() => setDestSort("most-popular")}
+                  onClick={() => { hapticSelection(); setDestSort("most-popular"); }}
                   className={destSort === "most-popular" ? "text-primary font-semibold" : ""}
                 >
                   {t("search.mostPopular")}
                 </DropdownMenuItem>
                 <DropdownMenuItem
-                  onClick={() => setDestSort("avg-highest")}
+                  onClick={() => { hapticSelection(); setDestSort("avg-highest"); }}
                   className={destSort === "avg-highest" ? "text-primary font-semibold" : ""}
                 >
                   {t("search.avgHighest")}
@@ -219,7 +222,7 @@ export default function CountryCitiesPage() {
               {sortedCities.slice(0, visibleCount).map((city) => (
                 <button
                   key={city.id}
-                  onClick={() => navigate(`/place/${city.id}`)}
+                  onClick={() => navigate(`/place/${city.id}`)} {...placeLinkProps(city.id)}
                   className="relative text-left aspect-[3/4] w-full"
                 >
                   <PosterWishlistButton placeId={city.id} placeName={city.name} />

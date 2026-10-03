@@ -67,3 +67,11 @@ export function prefetchPlacePrimary(
     staleTime: 10_000,
   });
 }
+
+/**
+ * Spread onto anything that opens a place page, so PressPrefetch starts
+ * loading it when a finger lands on it (posters already carry this).
+ */
+export function placeLinkProps(placeId: string | null | undefined) {
+  return placeId ? { "data-prefetch-place": placeId } : {};
+}

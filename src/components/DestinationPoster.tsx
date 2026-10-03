@@ -38,6 +38,12 @@ interface DestinationPosterProps {
    * first visible row appears as fast as possible on a cold cache.
    */
   priority?: boolean;
+  /**
+   * Load now rather than when scrolled near: for the first few posters of a
+   * horizontal row, which are off-screen sideways and would otherwise show
+   * blank and fade in as the row is swiped. Normal fetch priority.
+   */
+  eager?: boolean;
 }
 
 export function DestinationPoster({
@@ -53,6 +59,7 @@ export function DestinationPoster({
   bare = false,
   renderWidth = 400,
   priority = false,
+  eager = false,
 }: DestinationPosterProps) {
   const overrideImage = getDestinationPosterOverride(name, type);
   const resolvedImage = overrideImage || image || null;
@@ -154,7 +161,7 @@ export function DestinationPoster({
             key={imageUrl}
             src={sizedPosterUrl(imageUrl, renderWidth) || imageUrl}
             alt={localizedName}
-            loading={priority ? "eager" : "lazy"}
+            loading={priority || eager ? "eager" : "lazy"}
             decoding="async"
             {...(priority ? ({ fetchpriority: "high" } as Record<string, string>) : {})}
             onLoad={() => setPhotoResult({ url: imageUrl, state: "loaded" })}

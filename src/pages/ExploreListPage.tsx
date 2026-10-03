@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { slideBack } from "@/lib/backTransition";
+import { placeLinkProps } from "@/lib/placePrimaryQuery";
 import { ChevronLeft } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -209,7 +211,7 @@ export default function ExploreListPage() {
     <div className="min-h-screen bg-background pb-24">
       <div className="pt-12 px-5">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate(-1)}>
+          <button onClick={() => slideBack(() => navigate(-1))}>
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
           <h1 className="page-title">{getTitle()}</h1>
@@ -228,7 +230,7 @@ export default function ExploreListPage() {
             {places.map((place) => (
               <button
                 key={place.id}
-                onClick={() => navigate(`/place/${place.id}`)}
+                onClick={() => navigate(`/place/${place.id}`)} {...placeLinkProps(place.id)}
                 className="relative text-left"
               >
                 <div className="aspect-[3/4] w-full">

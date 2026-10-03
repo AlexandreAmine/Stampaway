@@ -6,7 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { WelcomeGlobe } from "@/components/WelcomeGlobe";
 import { AppleLogo } from "@/components/AppleLogo";
 import { lovable } from "@/integrations/lovable";
-import { toast } from "sonner";
+import { toastError } from "@/lib/toastError";
 import {
   canUseNativeAppleSignIn,
   isNativeAppleSignInCanceled,
@@ -75,11 +75,11 @@ export default function WelcomePage() {
                     await nativeAppleSignIn();
                   } else {
                     const result = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin });
-                    if (result.error) toast.error(result.error.message);
+                    if (result.error) toastError(result.error.message);
                   }
                 } catch (e: any) {
                   if (!isNativeAppleSignInCanceled(e)) {
-                    toast.error(e?.message ?? t("auth.appleFailed"));
+                    toastError(e?.message ?? t("auth.appleFailed"));
                   }
                 }
               }}

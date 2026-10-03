@@ -8,7 +8,6 @@ import { WelcomeGlobe } from "@/components/WelcomeGlobe";
 import { SoloMapChart, type UserMapData } from "@/components/MapTab";
 import { places } from "@/data/mockData";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { hapticLight, hapticSuccess } from "@/lib/haptics";
 import { subCategoryLabel } from "@/lib/subCategories";
 import type { TranslationKey } from "@/i18n/translations";
 import avatarElena from "@/assets/avatars/a1.webp";
@@ -358,12 +357,10 @@ export default function OnboardingFlow({ onFinish }: { onFinish: () => void }) {
   const goTo = (next: number) => {
     const clamped = Math.max(0, Math.min(SCREEN_COUNT - 1, next));
     if (clamped === index) return;
-    hapticLight();
     setIndex(clamped);
   };
 
   const finish = () => {
-    hapticSuccess();
     onFinish();
   };
 

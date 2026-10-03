@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toastError";
 import { supabase } from "@/integrations/supabase/client";
 import { ChevronLeft } from "lucide-react";
 import { AppleLogo } from "@/components/AppleLogo";
@@ -88,19 +89,19 @@ export default function AuthPage() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedUsername = username.trim();
-    if (!trimmedUsername) { toast.error(t("auth.usernameRequired")); return; }
-    if (!/^[a-zA-Z0-9_.]{3,20}$/.test(trimmedUsername)) { toast.error(t("auth.usernameInvalid")); return; }
+    if (!trimmedUsername) { toastError(t("auth.usernameRequired")); return; }
+    if (!/^[a-zA-Z0-9_.]{3,20}$/.test(trimmedUsername)) { toastError(t("auth.usernameInvalid")); return; }
     setSubmitting(true);
 
     // Check username availability before creating the account
     const { data: available, error: checkError } = await supabase.rpc("is_username_available", { _username: trimmedUsername });
-    if (checkError) { toast.error(checkError.message); setSubmitting(false); return; }
-    if (!available) { toast.error(t("auth.usernameTaken")); setSubmitting(false); return; }
+    if (checkError) { toastError(checkError.message); setSubmitting(false); return; }
+    if (!available) { toastError(t("auth.usernameTaken")); setSubmitting(false); return; }
 
     // Check email availability (catches mobile case where signUp doesn't surface the duplicate clearly)
     const { data: emailTaken, error: emailErr } = await supabase.rpc("is_email_taken", { _email: email });
-    if (emailErr) { toast.error(emailErr.message); setSubmitting(false); return; }
-    if (emailTaken) { toast.error(t("auth.accountExists")); setMode("login"); setSubmitting(false); return; }
+    if (emailErr) { toastError(emailErr.message); setSubmitting(false); return; }
+    if (emailTaken) { toastError(t("auth.accountExists")); setMode("login"); setSubmitting(false); return; }
 
     // Clean up any prior unconfirmed signup for this email so the new attempt is fresh
     await cleanupUnconfirmedSignup(email);
@@ -114,12 +115,12 @@ export default function AuthPage() {
     });
     if (error) {
       const msg = /username_taken/i.test(error.message) ? t("auth.usernameTaken") : error.message;
-      toast.error(msg);
+      toastError(msg);
       setSubmitting(false);
       return;
     }
     if (data.user && data.user.identities && data.user.identities.length === 0) {
-      toast.error(t("auth.accountExists"));
+      toastError(t("auth.accountExists"));
       setMode("login");
       setSubmitting(false);
       return;
@@ -133,7 +134,7 @@ export default function AuthPage() {
     e.preventDefault();
     setSubmitting(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) toast.error(error.message);
+    if (error) toastError(error.message);
     setSubmitting(false);
   };
 
@@ -202,7 +203,7 @@ export default function AuthPage() {
     if (otpCode.length !== 6) return;
     setSubmitting(true);
     const { error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: "signup" });
-    if (error) { toast.error(error.message); setSubmitting(false); return; }
+    if (error) { toastError(error.message); setSubmitting(false); return; }
     toast.success(t("auth.verified"));
     setSubmitting(false);
   };
@@ -211,7 +212,7 @@ export default function AuthPage() {
     e.preventDefault();
     setSubmitting(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email);
-    if (error) { toast.error(error.message); setSubmitting(false); return; }
+    if (error) { toastError(error.message); setSubmitting(false); return; }
     toast.success(t("auth.codeSentEmail"));
     setStep("forgotOtp");
     setSubmitting(false);
@@ -221,7 +222,7 @@ export default function AuthPage() {
     if (otpCode.length !== 6) return;
     setSubmitting(true);
     const { error } = await supabase.auth.verifyOtp({ email, token: otpCode, type: "recovery" });
-    if (error) { toast.error(error.message); setSubmitting(false); return; }
+    if (error) { toastError(error.message); setSubmitting(false); return; }
 
     beginPasswordReset();
     setOtpCode("");
@@ -233,14 +234,14 @@ export default function AuthPage() {
 
   const handleSetNewPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPassword.length < 6) { toast.error(t("toast.passwordTooShort")); return; }
-    if (newPassword !== confirmNewPassword) { toast.error(t("toast.passwordMismatch")); return; }
+    if (newPassword.length < 6) { toastError(t("toast.passwordTooShort")); return; }
+    if (newPassword !== confirmNewPassword) { toastError(t("toast.passwordMismatch")); return; }
 
     setSubmitting(true);
     const { error } = await supabase.auth.updateUser({ password: newPassword });
 
     if (error) {
-      toast.error(error.message);
+      toastError(error.message);
       setSubmitting(false);
       return;
     }
@@ -399,11 +400,11 @@ export default function AuthPage() {
                         await nativeAppleSignIn();
                       } else {
                         const result = await lovable.auth.signInWithOAuth("apple", { redirect_uri: window.location.origin });
-                        if (result.error) toast.error(result.error.message);
+                        if (result.error) toastError(result.error.message);
                       }
                     } catch (e: any) {
                       if (!isNativeAppleSignInCanceled(e)) {
-                        toast.error(e?.message ?? t("auth.appleFailed"));
+                        toastError(e?.message ?? t("auth.appleFailed"));
                       }
                     }
                   }}

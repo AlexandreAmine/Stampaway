@@ -1,4 +1,6 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { hapticSelection, hapticLight } from "@/lib/haptics";
 import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useState, useEffect, useRef } from "react";
 import { Search, ChevronDown } from "lucide-react";
@@ -12,16 +14,20 @@ import { getCachedPlaceName } from "@/lib/placeNames";
 import { prefetchPlacePrimary } from "@/lib/placePrimaryQuery";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePerfReady } from "@/lib/perfMarks";
+import { useProgressiveCount } from "@/hooks/useProgressiveCount";
 import { continentLabel } from "@/lib/continentLabels";
 import { subCategoryLabel } from "@/lib/subCategories";
 import type { Language, TranslationKey } from "@/i18n/translations";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { RecentSearches, type RecentPlace } from "@/components/RecentSearches";
 import { PosterWishlistButton } from "@/components/PosterWishlistButton";
-import { fetchAllTimeVisitorCountMap, fetchAverageRatingMap, fetchAllPlaces, fetchCategoryAverageMap, peekAllPlaces, peekAllTimeVisitorCountMap } from "@/lib/placeRankings";
+import { fetchAllTimeVisitorCountMap, fetchAverageRatingMap, fetchAllPlaces, fetchCategoryAverageMap, peekAllPlaces, peekAllTimeVisitorCountMap, clearRankingsCache } from "@/lib/placeRankings";
 import { ListPreviewPosters } from "@/components/ListPreviewPosters";
+import { fetchSearchLists } from "@/lib/searchLists";
+import { followOrRequest, type FollowResult } from "@/lib/followActions";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toastError";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import {
   DropdownMenu,
@@ -74,6 +80,29 @@ function buildDestinationResults(
     return diff !== 0 ? diff : a.name.localeCompare(b.name);
   });
   return withCounts;
+}
+
+/**
+ * Lists and Users results already seen this session, keyed by query, so
+ * coming back to those filters shows them at once instead of a spinner.
+ * Every visit still refetches and replaces them, as before. Reset when the
+ * signed-in user changes (list visibility depends on who is looking).
+ */
+const sessionResults = {
+  userId: null as string | null,
+  lists: new Map<string, any[]>(),
+  users: new Map<string, any[]>(),
+  // Who the viewer follows ("following") or has asked to follow ("requested").
+  relations: null as Map<string, FollowResult> | null,
+};
+function sessionResultsFor(userId: string | null) {
+  if (sessionResults.userId !== userId) {
+    sessionResults.userId = userId;
+    sessionResults.lists.clear();
+    sessionResults.users.clear();
+    sessionResults.relations = null;
+  }
+  return sessionResults;
 }
 
 const SEARCH_FILTER_KEY = "stampaway_search_filter";
@@ -131,16 +160,41 @@ export default function SearchPage() {
       ? buildDestinationResults(allPlaces, countMap, placeType, "", language)
       : [];
   });
-  const [lists, setLists] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
+  const [lists, setLists] = useState<any[]>(() => sessionResultsFor(user?.id ?? null).lists.get("") ?? []);
+  const [users, setUsers] = useState<any[]>(() => sessionResultsFor(user?.id ?? null).users.get("") ?? []);
+  // The mount search starts right away; when the first filter has nothing to
+  // show yet, start in the loading state so it shows the spinner rather than
+  // flashing "no results" for a frame.
+  const [loading, setLoading] = useState(() =>
+    placeTypeForTab(initialTab) ? places.length === 0 : (initialTab === "Lists" ? lists : users).length === 0
+  );
+  const [relations, setRelationsState] = useState<Map<string, FollowResult>>(
+    () => sessionResultsFor(user?.id ?? null).relations ?? new Map()
+  );
+  const setRelations = (update: (prev: Map<string, FollowResult>) => Map<string, FollowResult>) => {
+    setRelationsState((prev) => {
+      const next = update(prev);
+      sessionResultsFor(user?.id ?? null).relations = next;
+      return next;
+    });
+  };
+  const setRelation = (userId: string, relation: FollowResult | null) =>
+    setRelations((prev) => {
+      const next = new Map(prev);
+      if (relation) next.set(userId, relation);
+      else next.delete(userId);
+      return next;
+    });
+  // Follow taps still being saved, so a double tap can't send two.
+  const followingInFlight = useRef(new Set<string>());
   const [destSort, setDestSort] = useState<DestSort>("most-popular");
   const [selectedCategory, setSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
   const [grouped, setGrouped] = useState(false);
   const [visibleCount, setVisibleCount] = useState(250);
-  usePerfReady("search:skeleton", loading && places.length === 0);
-  usePerfReady("search", !loading && places.length > 0, `${places.length} places`);
+  const onPlacesFilter = !!placeTypeForTab(activeFilter);
+  usePerfReady("search:skeleton", onPlacesFilter && loading && places.length === 0);
+  usePerfReady("search", onPlacesFilter && !loading && places.length > 0, `${places.length} places`);
+  usePerfReady("search:lists", activeFilter === "Lists" && lists.length > 0, `${lists.length} lists${loading ? " (refreshing)" : ""}`);
   const searchStateRef = useRef<{ initialized: boolean; query: string; activeFilter: FilterTab }>({
     initialized: false,
     query: "",
@@ -154,8 +208,14 @@ export default function SearchPage() {
 
   useEffect(() => {
     if (!user) return;
-    supabase.from("followers").select("following_id").eq("follower_id", user.id).then(({ data }) => {
-      setFollowingIds(new Set((data || []).map((f) => f.following_id)));
+    Promise.all([
+      supabase.from("followers").select("following_id").eq("follower_id", user.id),
+      supabase.from("follow_requests").select("target_id").eq("requester_id", user.id),
+    ]).then(([{ data: follows }, { data: requests }]) => {
+      const next = new Map<string, FollowResult>();
+      (requests || []).forEach((r) => next.set(r.target_id, "requested"));
+      (follows || []).forEach((f) => next.set(f.following_id, "following"));
+      setRelations(() => next);
     });
   }, [user]);
 
@@ -213,58 +273,36 @@ export default function SearchPage() {
         }
       }
       return;
-    } else if (requestFilter === "Lists") {
-      let qb = supabase.from("lists").select("id, name, description, user_id");
-      if (q) qb = qb.ilike("name", `%${q}%`);
-      qb = qb.limit(100);
-      const { data } = await qb;
-      if (data && data.length > 0) {
-        const userIds = [...new Set(data.map((l: any) => l.user_id))];
-        const { data: profiles } = await supabase.from("profiles").select("user_id, username, profile_picture, is_private").in("user_id", userIds);
-        const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
-
-        // Privacy filter: hide lists from private users unless current user follows them or is the owner
-        const privateOwnerIds = (profiles || []).filter((p: any) => p.is_private && p.user_id !== user?.id).map((p: any) => p.user_id);
-        let allowedFollowing = new Set<string>();
-        if (user && privateOwnerIds.length > 0) {
-          const { data: follows } = await supabase.from("followers").select("following_id").eq("follower_id", user.id).in("following_id", privateOwnerIds);
-          (follows || []).forEach((f: any) => allowedFollowing.add(f.following_id));
-        }
-        const visibleLists = data.filter((l: any) => {
-          const p: any = profileMap.get(l.user_id);
-          if (!p?.is_private) return true;
-          if (l.user_id === user?.id) return true;
-          return allowedFollowing.has(l.user_id);
-        });
-
-        const listIds = visibleLists.map((l: any) => l.id);
-        const { data: allLikes } = listIds.length > 0
-          ? await supabase.from("list_likes").select("list_id").in("list_id", listIds)
-          : { data: [] as any[] };
-        const likeCountMap = new Map<string, number>();
-        (allLikes || []).forEach((lk: any) => {
-          likeCountMap.set(lk.list_id, (likeCountMap.get(lk.list_id) || 0) + 1);
-        });
-        const enriched = await Promise.all(
-          visibleLists.map(async (l: any) => {
-            const { count } = await supabase.from("list_items").select("*", { count: "exact", head: true }).eq("list_id", l.id);
-            return { ...l, item_count: count || 0, like_count: likeCountMap.get(l.id) || 0, profiles: profileMap.get(l.user_id) || null };
-          })
-        );
-        enriched.sort((a, b) => b.like_count - a.like_count);
-        setLists(enriched.slice(0, 30));
-      } else {
-        setLists([]);
-      }
-    } else if (requestFilter === "Users") {
-      let qb = supabase.from("profiles").select("id, user_id, username, profile_picture");
-      if (q) qb = qb.ilike("username", `%${q}%`);
-      qb = qb.order("username").limit(30);
-      const { data } = await qb;
-      setUsers(data || []);
     }
-    if (searchRequestIdRef.current === requestId) {
-      setLoading(false);
+
+    // Lists / Users: show this query's results from earlier in the session
+    // right away (or clear, so the spinner shows), then refresh them.
+    const viewerId = user?.id ?? null;
+    const isLists = requestFilter === "Lists";
+    const cache = isLists ? sessionResultsFor(viewerId).lists : sessionResultsFor(viewerId).users;
+    const setResults = isLists ? setLists : setUsers;
+    setResults(cache.get(q) ?? []);
+    try {
+      let results: any[];
+      if (isLists) {
+        results = await fetchSearchLists(q, viewerId);
+      } else {
+        let qb = supabase.from("profiles").select("id, user_id, username, profile_picture, is_private");
+        if (q) qb = qb.ilike("username", `%${q}%`);
+        qb = qb.order("username").limit(30);
+        const { data } = await qb;
+        results = data || [];
+      }
+      // A newer search (another keystroke or filter) has taken over.
+      if (searchRequestIdRef.current !== requestId) return;
+      cache.set(q, results);
+      setResults(results);
+    } catch (error) {
+      console.error(`Failed to search ${requestFilter}:`, error);
+    } finally {
+      if (searchRequestIdRef.current === requestId) {
+        setLoading(false);
+      }
     }
   };
 
@@ -287,6 +325,16 @@ export default function SearchPage() {
   // Cache sort metric maps so switching tabs (Countries ↔ Cities) reuses them instantly
   const avgMapCacheRef = useRef<Map<string, number> | null>(null);
   const catMapCacheRef = useRef<Record<string, Map<string, number>>>({});
+  // Bumped by pull to refresh so the sort metrics are fetched again too.
+  const [metricsVersion, setMetricsVersion] = useState(0);
+
+  const handleRefresh = async () => {
+    clearRankingsCache();
+    avgMapCacheRef.current = null;
+    catMapCacheRef.current = {};
+    await search();
+    setMetricsVersion((v) => v + 1);
+  };
 
   useEffect(() => {
     const requestId = ++sortMetricRequestIdRef.current;
@@ -323,9 +371,16 @@ export default function SearchPage() {
     return () => {
       cancelled = true;
     };
-  }, [destSort, selectedCategory, places.length, activeFilter]);
+  }, [destSort, selectedCategory, places.length, activeFilter, metricsVersion]);
 
   const sortedPlaces = getSortedPlaces();
+  // Up to 250 posters per page of results: the first eight rows render now,
+  // the rest over the next few frames.
+  const renderedPlaceCount = useProgressiveCount(Math.min(visibleCount, sortedPlaces.length), {
+    initial: 24,
+    step: 96,
+    resetKey: `${activeFilter}\u0000${query}\u0000${grouped}`,
+  });
 
   const renderDestinations = () => {
     // Keep showing the current results while they refresh (stale-while-
@@ -404,10 +459,10 @@ export default function SearchPage() {
               <ChevronDown className="w-3.5 h-3.5" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-[220px]">
-              <DropdownMenuItem onClick={() => setDestSort("most-popular")} className={destSort === "most-popular" ? "text-primary font-semibold" : ""}>
+              <DropdownMenuItem onClick={() => { hapticSelection(); setDestSort("most-popular"); }} className={destSort === "most-popular" ? "text-primary font-semibold" : ""}>
                 {t("search.mostPopular")}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setDestSort("avg-highest")} className={destSort === "avg-highest" ? "text-primary font-semibold" : ""}>
+              <DropdownMenuItem onClick={() => { hapticSelection(); setDestSort("avg-highest"); }} className={destSort === "avg-highest" ? "text-primary font-semibold" : ""}>
                 {t("search.avgHighest")}
               </DropdownMenuItem>
               <CategorySortDropdown
@@ -422,7 +477,7 @@ export default function SearchPage() {
         {grouped ? (
           <div className="space-y-5">
             {(() => {
-              let remaining = visibleCount;
+              let remaining = renderedPlaceCount;
               const visibleGroups: { label: string; items: any[] }[] = [];
               for (const g of groups) {
                 if (remaining <= 0) break;
@@ -438,7 +493,7 @@ export default function SearchPage() {
             })()}
           </div>
         ) : (
-          renderPlaceGrid(sortedPlaces.slice(0, visibleCount))
+          renderPlaceGrid(sortedPlaces.slice(0, renderedPlaceCount))
         )}
         {sortedPlaces.length > visibleCount && (
           <div className="flex justify-center mt-5">
@@ -457,7 +512,9 @@ export default function SearchPage() {
   const renderResults = () => {
     if (activeFilter === "Countries" || activeFilter === "Cities") return renderDestinations();
 
-    if (loading) return <LoadingSpinner />;
+    // Results from earlier this session stay visible while they refresh.
+    const shown = activeFilter === "Lists" ? lists : users;
+    if (loading && shown.length === 0) return <LoadingSpinner />;
 
     if (activeFilter === "Lists") {
       if (!lists.length) return <EmptyState text={t("search.noLists")} />;
@@ -494,7 +551,7 @@ export default function SearchPage() {
         <div className="space-y-3">
           {users.map((u: any) => {
             const isMe = u.user_id === user?.id;
-            const isFollowing = followingIds.has(u.user_id);
+            const relation = relations.get(u.user_id);
             return (
               <motion.div key={u.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between py-3">
                 <button onClick={() => navigate(isMe ? "/profile" : `/profile/${u.user_id}`)} {...profileLinkProps(u.user_id, u.username, u.profile_picture)} className="flex items-center gap-3">
@@ -506,23 +563,38 @@ export default function SearchPage() {
                     <p className="text-sm font-semibold text-foreground" data-no-translate>{u.username}</p>
                   </div>
                 </button>
-                {!isMe && !isFollowing && (
+                {!isMe && !relation && (
                   <button
                     onClick={async () => {
-                      if (!user) return;
-                      const { error } = await supabase.from("followers").insert({ follower_id: user.id, following_id: u.user_id });
-                      if (error) { toast.error(t("following.followFailed")); return; }
-                      invalidateOwnProfileContentCache(user.id);
-                      setFollowingIds((prev) => new Set([...prev, u.user_id]));
-                      toast.success(t("search.followingUser", { username: u.username }));
+                      if (!user || followingInFlight.current.has(u.user_id)) return;
+                      followingInFlight.current.add(u.user_id);
+                      // Instant: show the expected result now (a request for a
+                      // private account), correct it from the server's answer.
+                      hapticLight();
+                      setRelation(u.user_id, u.is_private ? "requested" : "following");
+                      try {
+                        const result = await followOrRequest(user.id, u.user_id);
+                        setRelation(u.user_id, result);
+                        if (result === "following") {
+                          invalidateOwnProfileContentCache(user.id);
+                          toast.success(t("search.followingUser", { username: u.username }));
+                        }
+                      } catch {
+                        setRelation(u.user_id, null);
+                        toastError(t("following.followFailed"));
+                      } finally {
+                        followingInFlight.current.delete(u.user_id);
+                      }
                     }}
                     className="text-xs bg-primary text-primary-foreground px-4 py-1.5 rounded-lg font-medium"
                   >
                     {t("profile.follow")}
                   </button>
                 )}
-                {!isMe && isFollowing && (
-                  <span className="text-xs text-muted-foreground px-3 py-1.5">{t("profile.following")}</span>
+                {!isMe && relation && (
+                  <span className="text-xs text-muted-foreground px-3 py-1.5">
+                    {t(relation === "requested" ? "profile.requested" : "profile.following")}
+                  </span>
                 )}
               </motion.div>
             );
@@ -536,6 +608,7 @@ export default function SearchPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
+      <PullToRefresh onRefresh={handleRefresh} />
       <div className="pt-14 px-5">
         <div className="flex items-center gap-3 mb-6">
           <h1 className="page-title">{t("nav.search")}</h1>
@@ -559,6 +632,7 @@ export default function SearchPage() {
             <button
               key={tab}
               onClick={() => {
+                if (activeFilter !== tab) hapticSelection();
                 setActiveFilter(tab);
                 try {
                   sessionStorage.setItem(SEARCH_FILTER_KEY, tab);

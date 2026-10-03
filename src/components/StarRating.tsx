@@ -1,6 +1,6 @@
 import { useRef } from "react";
 import { Star, Heart } from "lucide-react";
-import { hapticLight } from "@/lib/haptics";
+import { hapticSelection } from "@/lib/haptics";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 interface StarRatingProps {
@@ -41,7 +41,7 @@ export function StarRating({ rating, size = 16, interactive = false, onChange, l
   };
 
   const emit = (value: number) => {
-    hapticLight();
+    hapticSelection();
     onChange?.(value);
   };
 

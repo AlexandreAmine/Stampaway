@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { toast } from "sonner";
+import { toastError } from "@/lib/toastError";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -18,19 +18,19 @@ export default function UsernameSetupGate() {
     e.preventDefault();
     const trimmed = username.trim();
     if (!/^[a-zA-Z0-9_.]{3,20}$/.test(trimmed)) {
-      toast.error(t("auth.usernameInvalid"));
+      toastError(t("auth.usernameInvalid"));
       return;
     }
     setSubmitting(true);
     const { data: available, error: checkErr } = await supabase.rpc("is_username_available", { _username: trimmed });
-    if (checkErr) { toast.error(checkErr.message); setSubmitting(false); return; }
-    if (!available) { toast.error(t("auth.usernameTaken")); setSubmitting(false); return; }
+    if (checkErr) { toastError(checkErr.message); setSubmitting(false); return; }
+    if (!available) { toastError(t("auth.usernameTaken")); setSubmitting(false); return; }
 
     const { error } = await supabase
       .from("profiles")
       .update({ username: trimmed, needs_username: false })
       .eq("user_id", user.id);
-    if (error) { toast.error(error.message); setSubmitting(false); return; }
+    if (error) { toastError(error.message); setSubmitting(false); return; }
 
     await refreshProfile();
     setSubmitting(false);

@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
+import { placeLinkProps } from "@/lib/placePrimaryQuery";
+import { hapticSuccess } from "@/lib/haptics";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -9,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, X, Check, Target, Trophy, MapPin, Globe, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toastError";
 import { useNavigate } from "react-router-dom";
 import {
   EUROPE_COUNTRIES, ASIA_COUNTRIES, NORTH_AMERICA_COUNTRIES,
@@ -204,6 +207,7 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
     }
     setEditing(false);
     fetchGoals();
+    hapticSuccess();
     toast.success(t("save"));
   };
 
@@ -226,7 +230,7 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
 
   const addGoalPlace = async (placeId: string) => {
     if (!user) return;
-    if (goalPlaces.find(p => p.place_id === placeId)) { toast.error(t("common.alreadyAdded")); return; }
+    if (goalPlaces.find(p => p.place_id === placeId)) { toastError(t("common.alreadyAdded")); return; }
     await supabase.from("yearly_goal_places").insert({ user_id: user.id, year: currentYear, place_id: placeId });
     setSearchQuery(""); setSearchResults([]); fetchGoals();
   };
@@ -448,7 +452,7 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
                           )}
                           {!isOwn && gp.completed && <Check className="w-4 h-4 text-primary shrink-0" />}
                           <span className={`text-sm flex-1 cursor-pointer ${gp.completed ? "line-through text-muted-foreground" : ""}`}
-                            onClick={() => navigate(`/place/${gp.place_id}`)}>
+                            onClick={() => navigate(`/place/${gp.place_id}`)} {...placeLinkProps(gp.place_id)}>
                             {gp.place?.name}
                           </span>
                           {isOwn && (
@@ -477,7 +481,7 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
                           )}
                           {!isOwn && gp.completed && <Check className="w-4 h-4 text-primary shrink-0" />}
                           <span className={`text-sm flex-1 cursor-pointer ${gp.completed ? "line-through text-muted-foreground" : ""}`}
-                            onClick={() => navigate(`/place/${gp.place_id}`)}>
+                            onClick={() => navigate(`/place/${gp.place_id}`)} {...placeLinkProps(gp.place_id)}>
                             {gp.place?.name}
                             <span className="text-muted-foreground text-xs ml-1">({gp.place?.country})</span>
                           </span>

@@ -1,4 +1,6 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { slideBack } from "@/lib/backTransition";
+import { placeLinkProps } from "@/lib/placePrimaryQuery";
 import { reviewLinkProps } from "@/lib/reviewDetailQuery";
 import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useState } from "react";
@@ -89,7 +91,7 @@ export default function ReviewDetailPage() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => slideBack(() => navigate(-1))}
           className="absolute top-12 left-5 w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"
         >
           <ChevronLeft className="w-5 h-5 text-foreground" />
@@ -121,7 +123,7 @@ export default function ReviewDetailPage() {
                 {profile?.username || "User"}
               </button>
               <p className="text-xs text-muted-foreground">
-                logged <button onClick={() => navigate(`/place/${place.id}`)} className="text-primary hover:underline">{localizedPlaceName}</button>
+                logged <button onClick={() => navigate(`/place/${place.id}`)} {...placeLinkProps(place.id)} className="text-primary hover:underline">{localizedPlaceName}</button>
               </p>
             </div>
           </div>

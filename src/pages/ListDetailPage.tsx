@@ -1,4 +1,8 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { slideBack } from "@/lib/backTransition";
+import { placeLinkProps } from "@/lib/placePrimaryQuery";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { hapticLight } from "@/lib/haptics";
 import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -96,16 +100,19 @@ export default function ListDetailPage() {
   const toggleLike = async () => {
     if (!user || !listId || toggling) return;
     setToggling(true);
-    if (liked) {
-      const { error } = await supabase.from("list_likes").delete().eq("list_id", listId).eq("user_id", user.id);
-      if (!error) invalidateOwnProfileContentCache(user.id);
-      setLiked(false);
-      setLikeCount(c => Math.max(0, c - 1));
+    // Optimistic: flip the heart immediately, revert if the write fails.
+    const wasLiked = liked;
+    hapticLight();
+    setLiked(!wasLiked);
+    setLikeCount(c => (wasLiked ? Math.max(0, c - 1) : c + 1));
+    const { error } = wasLiked
+      ? await supabase.from("list_likes").delete().eq("list_id", listId).eq("user_id", user.id)
+      : await supabase.from("list_likes").insert({ list_id: listId, user_id: user.id });
+    if (error) {
+      setLiked(wasLiked);
+      setLikeCount(c => (wasLiked ? c + 1 : Math.max(0, c - 1)));
     } else {
-      const { error } = await supabase.from("list_likes").insert({ list_id: listId, user_id: user.id });
-      if (!error) invalidateOwnProfileContentCache(user.id);
-      setLiked(true);
-      setLikeCount(c => c + 1);
+      invalidateOwnProfileContentCache(user.id);
     }
     setToggling(false);
   };
@@ -129,7 +136,7 @@ export default function ListDetailPage() {
   if (!list) {
     return (
       <div className="min-h-screen bg-background pt-12 px-5">
-        <button onClick={() => navigate(-1)} className="mb-4"><ChevronLeft className="w-6 h-6 text-foreground" /></button>
+        <button onClick={() => slideBack(() => navigate(-1))} className="mb-4"><ChevronLeft className="w-6 h-6 text-foreground" /></button>
         <p className="text-sm text-muted-foreground text-center">{t("lists.notFound")}</p>
       </div>
     );
@@ -137,9 +144,10 @@ export default function ListDetailPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
+      <PullToRefresh onRefresh={() => listQuery.refetch()} />
       <div className="pt-12 px-5">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate(-1)}>
+          <button onClick={() => slideBack(() => navigate(-1))}>
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
           <h1 className="page-title flex-1" data-no-translate>{list.name}</h1>
@@ -172,7 +180,7 @@ export default function ListDetailPage() {
                 key={item.id}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                onClick={() => navigate(`/place/${item.place.id}`)}
+                onClick={() => navigate(`/place/${item.place.id}`)} {...placeLinkProps(item.place.id)}
                 className="aspect-[3/4] w-full"
               >
                 <DestinationPoster

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { hapticSuccess } from "@/lib/haptics";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toastError";
 import { ALL_COUNTRIES } from "@/lib/countryFlags";
 import { getCachedPlaceName } from "@/lib/placeNames";
 import { searchCountryNames } from "@/lib/placeSearch";
@@ -91,7 +93,7 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
     if (trimmed.toLowerCase() !== currentData.username.toLowerCase()) {
       const { data: available } = await supabase.rpc("is_username_available", { _username: trimmed });
       if (!available) {
-        toast.error(t("auth.usernameTaken"));
+        toastError(t("auth.usernameTaken"));
         return;
       }
     }
@@ -108,8 +110,9 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
       .eq("user_id", user.id);
 
     if (error) {
-      toast.error(t("editProfile.failed"));
+      toastError(t("editProfile.failed"));
     } else {
+      hapticSuccess();
       toast.success(t("toast.profileUpdated"));
       onSaved();
       onClose();

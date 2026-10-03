@@ -6,6 +6,11 @@ import { PERF_ENABLED, perfMark, perfNavStart } from "@/lib/perfMarks";
 // visited path (via tab switch or back/forward); resets to top for new paths.
 const scrollPositions = new Map<string, number>();
 
+/** True when visiting this path will restore a scroll position below the top. */
+export function hasSavedScrollPosition(key: string) {
+  return (scrollPositions.get(key) ?? 0) > 0;
+}
+
 // If a page isn't tall enough yet when we come back to it (content still
 // arriving), keep re-applying the saved position for a short while.
 const RESTORE_RETRY_MS = 800;

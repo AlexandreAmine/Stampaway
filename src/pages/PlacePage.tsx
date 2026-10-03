@@ -1,4 +1,6 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { slideBack } from "@/lib/backTransition";
+import { selectInChunks } from "@/lib/inChunks";
 import { reviewLinkProps } from "@/lib/reviewDetailQuery";
 import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
@@ -25,9 +27,10 @@ import { usePerfReady } from "@/lib/perfMarks";
 import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
 import { getCachedPlaceName } from "@/lib/placeNames";
 import { setCachedWishlistStatus } from "@/lib/wishlistCache";
-import { placePrimaryQueryKey, fetchPlacePrimary } from "@/lib/placePrimaryQuery";
+import { placePrimaryQueryKey, fetchPlacePrimary, placeLinkProps } from "@/lib/placePrimaryQuery";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import { hapticLight } from "@/lib/haptics";
+import { PullToRefresh } from "@/components/PullToRefresh";
 
 interface PlaceData {
   id: string;
@@ -187,6 +190,20 @@ export default function PlacePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [primaryQuery.data, user?.id, language]);
 
+  // Pull to refresh: reload the place, then its friend and country details
+  // (those only reload by themselves when the place data itself changed).
+  const handleRefresh = async () => {
+    const result = await primaryQuery.refetch();
+    const placeData = result.data?.placeData as PlaceData | null | undefined;
+    if (!placeData) return;
+    await fetchSecondaryPlaceData(placeData, {
+      requestId: ++placeFetchRequestIdRef.current,
+      placeId: placeData.id,
+      userId: user?.id ?? null,
+      language,
+    });
+  };
+
   const fetchSecondaryPlaceData = async (placeData: PlaceData, requestContext: PlaceFetchContext) => {
     try {
       const fetchFriendSocialData = async () => {
@@ -207,11 +224,13 @@ export default function PlacePage() {
 
         // Fetch only the friends' reviews of this place (the primary fetch
         // no longer downloads every review row of the place).
-        const { data: friendRevs } = await supabase
-          .from("reviews")
-          .select("id, rating, user_id, review_text, liked, created_at, visit_year, visit_month, duration_days")
-          .eq("place_id", requestContext.placeId)
-          .in("user_id", followingIds);
+        const { data: friendRevs } = await selectInChunks(followingIds, (ids) =>
+          supabase
+            .from("reviews")
+            .select("id, rating, user_id, review_text, liked, created_at, visit_year, visit_month, duration_days")
+            .eq("place_id", requestContext.placeId)
+            .in("user_id", ids)
+        );
         if (!isCurrentPlaceFetch(requestContext)) return null;
 
         const friendReviewsByUser = new Map<string, any>();
@@ -226,10 +245,12 @@ export default function PlacePage() {
         const fetchFriendVisitors = async () => {
           if (uniqueFriendReviews.length === 0) return [] as any[];
           const friendIds = uniqueFriendReviews.map((r) => r.user_id);
-          const { data: profiles } = await supabase
-            .from("profiles")
-            .select("user_id, username, profile_picture")
-            .in("user_id", friendIds);
+          const { data: profiles } = await selectInChunks(friendIds, (ids) =>
+            supabase
+              .from("profiles")
+              .select("user_id, username, profile_picture")
+              .in("user_id", ids)
+          );
           if (!isCurrentPlaceFetch(requestContext)) return null;
 
           return uniqueFriendReviews.map((r) => {
@@ -244,19 +265,23 @@ export default function PlacePage() {
         };
 
         const fetchFriendWishlist = async () => {
-          const { data: friendWish } = await supabase
-            .from("wishlists")
-            .select("user_id")
-            .eq("place_id", requestContext.placeId)
-            .in("user_id", followingIds);
+          const { data: friendWish } = await selectInChunks(followingIds, (ids) =>
+            supabase
+              .from("wishlists")
+              .select("user_id")
+              .eq("place_id", requestContext.placeId)
+              .in("user_id", ids)
+          );
           if (!isCurrentPlaceFetch(requestContext)) return null;
           if (!friendWish || friendWish.length === 0) return [] as any[];
 
           const wishIds = friendWish.map((w) => w.user_id);
-          const { data: profiles } = await supabase
-            .from("profiles")
-            .select("user_id, username, profile_picture")
-            .in("user_id", wishIds);
+          const { data: profiles } = await selectInChunks(wishIds, (ids) =>
+            supabase
+              .from("profiles")
+              .select("user_id, username, profile_picture")
+              .in("user_id", ids)
+          );
           if (!isCurrentPlaceFetch(requestContext)) return null;
           return profiles || [];
         };
@@ -473,6 +498,7 @@ export default function PlacePage() {
 
   return (
     <div className="min-h-screen bg-background pb-24 relative">
+      <PullToRefresh onRefresh={handleRefresh} />
       {/* Background poster — blurred & faded, matches hero */}
       {placePosterImage && (
         <div className="fixed inset-0 pointer-events-none z-0">
@@ -498,7 +524,7 @@ export default function PlacePage() {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => slideBack(() => navigate(-1))}
           className="absolute top-12 left-5 w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"
         >
           <ChevronLeft className="w-5 h-5 text-foreground" />
@@ -711,7 +737,7 @@ export default function PlacePage() {
                 {countryCities.slice(0, 8).map((city: any) => (
                   <button
                     key={city.id}
-                    onClick={() => navigate(`/place/${city.id}`)}
+                    onClick={() => navigate(`/place/${city.id}`)} {...placeLinkProps(city.id)}
                     className="relative aspect-[3/4] rounded-xl overflow-hidden active:scale-[0.97] transition-transform"
                   >
                     <DestinationPoster

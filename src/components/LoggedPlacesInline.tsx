@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { placeLinkProps } from "@/lib/placePrimaryQuery";
+import { hapticSelection } from "@/lib/haptics";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
@@ -263,7 +265,7 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
   const renderGrid = (items: typeof sorted) => (
     <div className="grid grid-cols-3 gap-3">
       {items.map((r, i) => (
-        <button key={r.place_id + i} onClick={() => navigate(`/place/${r.place_id}`)} className="relative text-left">
+        <button key={r.place_id + i} onClick={() => navigate(`/place/${r.place_id}`)} {...placeLinkProps(r.place_id)} className="relative text-left">
           <div className="aspect-[3/4] w-full relative">
             {isOtherUser && <PosterWishlistButton placeId={r.place_id} placeName={r.name} />}
             <DestinationPoster placeId={r.place_id} name={r.name} country={r.country} type={type} image={r.image} className="w-full h-full" />
@@ -295,7 +297,7 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
             <ChevronDown className="w-3.5 h-3.5" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="min-w-[220px]">
-            <DropdownMenuItem onClick={() => setSort("your-highest")} className={sort === "your-highest" ? "text-primary font-semibold" : ""}>
+            <DropdownMenuItem onClick={() => { hapticSelection(); setSort("your-highest"); }} className={sort === "your-highest" ? "text-primary font-semibold" : ""}>
               {sortLabels["your-highest"]}
             </DropdownMenuItem>
             <CategorySortDropdown
@@ -304,7 +306,7 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
               selectedCategory={selectedCategory}
               isActive={sort === "category-highest"}
             />
-            <DropdownMenuItem onClick={() => setSort("avg-highest")} className={sort === "avg-highest" ? "text-primary font-semibold" : ""}>
+            <DropdownMenuItem onClick={() => { hapticSelection(); setSort("avg-highest"); }} className={sort === "avg-highest" ? "text-primary font-semibold" : ""}>
               {sortLabels["avg-highest"]}
             </DropdownMenuItem>
             <CategorySortDropdown
@@ -313,10 +315,10 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
               selectedCategory={avgSelectedCategory}
               isActive={sort === "avg-category-highest"}
             />
-            <DropdownMenuItem onClick={() => setSort("newest")} className={sort === "newest" ? "text-primary font-semibold" : ""}>
+            <DropdownMenuItem onClick={() => { hapticSelection(); setSort("newest"); }} className={sort === "newest" ? "text-primary font-semibold" : ""}>
               {sortLabels["newest"]}
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setSort("longest")} className={sort === "longest" ? "text-primary font-semibold" : ""}>
+            <DropdownMenuItem onClick={() => { hapticSelection(); setSort("longest"); }} className={sort === "longest" ? "text-primary font-semibold" : ""}>
               {sortLabels["longest"]}
             </DropdownMenuItem>
           </DropdownMenuContent>

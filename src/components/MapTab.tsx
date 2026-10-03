@@ -1,4 +1,6 @@
 import { useState, useEffect, memo } from "react";
+import { placeLinkProps } from "@/lib/placePrimaryQuery";
+import { hapticSelection } from "@/lib/haptics";
 import { useNavigate } from "react-router-dom";
 import { ComposableMap, Geographies, Geography, ZoomableGroup, Marker } from "react-simple-maps";
 import { motion } from "framer-motion";
@@ -19,6 +21,21 @@ import {
 // depends on a third-party CDN request at runtime.
 const GEO_URL = "/countries-110m.json";
 const ANTARCTICA_ID = "010";
+
+// Read once per app session and handed to the maps as data. Given the URL,
+// react-simple-maps downloads and parses the file again on every mount and
+// draws nothing until that finishes; given the parsed file, it draws on
+// mount. Until the first read completes, the URL is used as before.
+let worldTopology: object | null = null;
+if (typeof window !== "undefined" && typeof fetch === "function") {
+  fetch(GEO_URL)
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data) => {
+      if (data) worldTopology = data;
+    })
+    .catch(() => {});
+}
+const worldGeography = () => worldTopology ?? GEO_URL;
 
 const numericToAlpha2: Record<string, string> = {
   "004":"AF","008":"AL","012":"DZ","020":"AD","024":"AO","028":"AG","032":"AR","051":"AM",
@@ -171,7 +188,7 @@ export const SoloMapChart = memo(({ data, onCountryClick, onCityClick, coloredMo
     style={{ width: "100%", height: "100%" }}
   >
     <ZoomableGroup>
-      <Geographies geography={GEO_URL}>
+      <Geographies geography={worldGeography()}>
         {({ geographies }) =>
           geographies.filter((geo) => geo.id !== ANTARCTICA_ID).map((geo) => {
             const alpha2 = numericToAlpha2[geo.id] || "";
@@ -229,7 +246,7 @@ export const CompareMapChart = memo(({ myData, theirData, onCountryClick }: {
     style={{ width: "100%", height: "100%" }}
   >
     <ZoomableGroup>
-      <Geographies geography={GEO_URL}>
+      <Geographies geography={worldGeography()}>
         {({ geographies }) =>
           geographies.filter((geo) => geo.id !== ANTARCTICA_ID).map((geo) => {
             const alpha2 = numericToAlpha2[geo.id] || "";
@@ -429,7 +446,7 @@ export function MapTab({ userId }: { userId?: string }) {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <div className="relative bg-card rounded-xl border border-border overflow-hidden" style={{ height: 300 }}>
         <button
-          onClick={() => setColoredMode(!coloredMode)}
+          onClick={() => { hapticSelection(); setColoredMode(!coloredMode); }}
           className={`absolute top-2 right-2 z-10 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors ${
             coloredMode
               ? "bg-primary text-primary-foreground"
@@ -618,7 +635,7 @@ function VisitedTogether({ myUserId, theirUserId, theirUsername }: { myUserId: s
                 return (
                   <button
                     key={c.placeId}
-                    onClick={() => navigate(`/place/${c.placeId}`)}
+                    onClick={() => navigate(`/place/${c.placeId}`)} {...placeLinkProps(c.placeId)}
                     className="w-full flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left"
                   >
                     <CountryFlag country={c.name} />
@@ -638,7 +655,7 @@ function VisitedTogether({ myUserId, theirUserId, theirUsername }: { myUserId: s
               {cities.map(c => (
                 <button
                   key={c.placeId}
-                  onClick={() => navigate(`/place/${c.placeId}`)}
+                  onClick={() => navigate(`/place/${c.placeId}`)} {...placeLinkProps(c.placeId)}
                   className="w-full flex items-center gap-1.5 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left"
                 >
                   <span className="text-xs text-foreground">{getCachedPlaceName(c.name, language, false)}</span>
@@ -727,7 +744,7 @@ function RatingComparison({ myUserId, theirUserId, theirUsername }: { myUserId: 
     return (
       <button
         key={item.placeId}
-        onClick={() => navigate(`/place/${item.placeId}`)}
+        onClick={() => navigate(`/place/${item.placeId}`)} {...placeLinkProps(item.placeId)}
         className="w-full flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2 hover:bg-muted/50 transition-colors"
       >
         <div className="flex items-center gap-2 min-w-0">
@@ -753,7 +770,7 @@ function RatingComparison({ myUserId, theirUserId, theirUsername }: { myUserId: 
           {(["country", "city"] as const).map((tab) => (
             <button
               key={tab}
-              onClick={() => setRatingTab(tab)}
+              onClick={() => { if (ratingTab !== tab) hapticSelection(); setRatingTab(tab); }}
               className={`text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors ${
                 ratingTab === tab ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"
               }`}
@@ -825,7 +842,7 @@ function SharedWishlist({ myUserId, theirUserId, theirUsername }: { myUserId: st
         {(["country", "city"] as const).map((tab) => (
           <button
             key={tab}
-            onClick={() => setWishTab(tab)}
+            onClick={() => { if (wishTab !== tab) hapticSelection(); setWishTab(tab); }}
             className={`text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors ${
               wishTab === tab ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"
             }`}
@@ -841,7 +858,7 @@ function SharedWishlist({ myUserId, theirUserId, theirUsername }: { myUserId: st
         <div className="space-y-1">
           {activeList.map((c) => {
             return (
-              <button key={c.placeId} onClick={() => navigate(`/place/${c.placeId}`)} className="w-full flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left">
+              <button key={c.placeId} onClick={() => navigate(`/place/${c.placeId}`)} {...placeLinkProps(c.placeId)} className="w-full flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left">
                 {wishTab === "country" && <CountryFlag country={c.name} />}
                 <span className="text-xs text-foreground">{getCachedPlaceName(c.name, language, wishTab === "country")}</span>
                 {"country" in c && wishTab === "city" && <span className="text-[10px] text-muted-foreground">({getCachedPlaceName((c as any).country, language, true)})</span>}

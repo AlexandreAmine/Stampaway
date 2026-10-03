@@ -8,6 +8,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { relativeDays } from "@/lib/localeFormat";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
+import { toastError } from "@/lib/toastError";
 
 interface Comment {
   id: string;
@@ -20,8 +21,27 @@ interface Comment {
   replies?: Comment[];
 }
 
+// Comments shown before the server has confirmed them.
+const PENDING_PREFIX = "pending-";
+
+/** Adds a comment at the end of the thread, or under its parent at any depth. */
+function addToTree(tree: Comment[], comment: Comment): Comment[] {
+  if (!comment.parent_id) return [...tree, comment];
+  return tree.map((c) =>
+    c.id === comment.parent_id
+      ? { ...c, replies: [...(c.replies ?? []), comment] }
+      : { ...c, replies: addToTree(c.replies ?? [], comment) }
+  );
+}
+
+function removeFromTree(tree: Comment[], id: string): Comment[] {
+  return tree
+    .filter((c) => c.id !== id)
+    .map((c) => ({ ...c, replies: removeFromTree(c.replies ?? [], id) }));
+}
+
 export function ReviewComments({ reviewId }: { reviewId: string }) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { t, language } = useLanguage();
   const navigate = useNavigate();
   const [comments, setComments] = useState<Comment[]>([]);
@@ -75,25 +95,55 @@ export function ReviewComments({ reviewId }: { reviewId: string }) {
     setComments(topLevel);
   };
 
+  // Instant: the comment appears as soon as it's sent, then the list is
+  // reloaded from the server. If the save fails it's taken out again and the
+  // text is put back in the box (it used to vanish silently).
   const handleSubmit = async () => {
     if (!user || !text.trim() || submitting) return;
     setSubmitting(true);
-
-    await supabase.from("review_comments").insert({
+    const commentText = text.trim();
+    const parent = replyTo;
+    const pending: Comment = {
+      id: `${PENDING_PREFIX}${Date.now()}`,
       review_id: reviewId,
       user_id: user.id,
-      parent_id: replyTo?.id || null,
-      comment_text: text.trim(),
-    });
-
+      parent_id: parent?.id || null,
+      comment_text: commentText,
+      created_at: new Date().toISOString(),
+      profile: profile ? { username: profile.username, profile_picture: profile.profile_picture } : undefined,
+      replies: [],
+    };
+    setComments((prev) => addToTree(prev, pending));
     setText("");
     setReplyTo(null);
-    await fetchComments();
+
+    const { error } = await supabase.from("review_comments").insert({
+      review_id: reviewId,
+      user_id: user.id,
+      parent_id: parent?.id || null,
+      comment_text: commentText,
+    });
+    if (error) {
+      setComments((prev) => removeFromTree(prev, pending.id));
+      setText(commentText);
+      setReplyTo(parent);
+      toastError(t("comments.postFailed"));
+    } else {
+      await fetchComments();
+    }
     setSubmitting(false);
   };
 
+  // Instant as well: removed on tap, restored if the delete fails.
   const handleDelete = async (commentId: string) => {
-    await supabase.from("review_comments").delete().eq("id", commentId);
+    const previous = comments;
+    setComments((prev) => removeFromTree(prev, commentId));
+    const { error } = await supabase.from("review_comments").delete().eq("id", commentId);
+    if (error) {
+      setComments(previous);
+      toastError(t("comments.deleteFailed"));
+      return;
+    }
     await fetchComments();
   };
 
@@ -120,7 +170,7 @@ export function ReviewComments({ reviewId }: { reviewId: string }) {
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed mt-0.5" data-no-translate>{comment.comment_text}</p>
           <div className="flex items-center gap-3 mt-1">
-            {user && (
+            {user && !comment.id.startsWith(PENDING_PREFIX) && (
               <button
                 onClick={() => setReplyTo(comment)}
                 className="text-[10px] text-primary font-medium flex items-center gap-1"
@@ -129,7 +179,7 @@ export function ReviewComments({ reviewId }: { reviewId: string }) {
                 {t("comments.reply")}
               </button>
             )}
-            {user?.id === comment.user_id && (
+            {user?.id === comment.user_id && !comment.id.startsWith(PENDING_PREFIX) && (
               <button
                 onClick={() => handleDelete(comment.id)}
                 className="text-[10px] text-muted-foreground flex items-center gap-1"

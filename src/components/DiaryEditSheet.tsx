@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { StarRating } from "@/components/StarRating";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toastError";
 import { hapticSuccess, hapticMedium, hapticLight } from "@/lib/haptics";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import { invalidateExploreCache } from "@/lib/exploreCache";
@@ -193,7 +194,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
       onSaved();
       requestClose();
     } else {
-      toast.error(t("diary.updateFailed"));
+      toastError(t("diary.updateFailed"));
     }
     setSaving(false);
   };
@@ -244,7 +245,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
               <StarRating rating={rating} size={36} interactive onChange={setRating} />
               <button
                 type="button"
-                onClick={() => setLiked(!liked)}
+                onClick={() => { hapticLight(); setLiked(!liked); }}
                 aria-pressed={liked}
                 aria-label={t("reviewDetail.liked")}
                 className="p-1 -m-1 transition-transform active:scale-90"

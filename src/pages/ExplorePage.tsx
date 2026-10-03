@@ -1,4 +1,6 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { selectInChunks, newestFirst } from "@/lib/inChunks";
+import { hapticSelection, hapticLight } from "@/lib/haptics";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ChevronRight, Heart } from "lucide-react";
 import { motion } from "framer-motion";
@@ -8,6 +10,7 @@ import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePerfReady } from "@/lib/perfMarks";
+import { useProgressiveCount } from "@/hooks/useProgressiveCount";
 import type { TranslationKey } from "@/i18n/translations";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { PosterWishlistButton } from "@/components/PosterWishlistButton";
@@ -23,7 +26,7 @@ import {
 } from "@/lib/placeRankings";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { useQueryClient } from "@tanstack/react-query";
-import { prefetchPlacePrimary } from "@/lib/placePrimaryQuery";
+import { prefetchPlacePrimary, placeLinkProps } from "@/lib/placePrimaryQuery";
 import {
   getExploreCacheVersion,
   getFreshExploreCache,
@@ -246,6 +249,14 @@ export default function ExplorePage() {
   const showPlacesSkeleton = activeTab === "Places" && (placesLoading || visibleExploreCacheKey !== currentCacheKey);
   usePerfReady("explore:skeleton", showPlacesSkeleton);
   usePerfReady("explore", activeTab === "Places" && !showPlacesSkeleton && sections.length > 0);
+  // About three sections fill the screen; the other ~12 (≈100 posters) mount
+  // over the next few frames instead of delaying the first one.
+  const renderedSectionCount = useProgressiveCount(sections.length, { initial: 3, step: 6, resetKey: activeTab });
+  usePerfReady(
+    "explore:all-sections",
+    activeTab === "Places" && !showPlacesSkeleton && sections.length > 0 && renderedSectionCount >= sections.length,
+    `${sections.length} sections`
+  );
 
   const isCurrentExploreRequest = useCallback((options: ExploreFetchOptions) => {
     return (
@@ -561,18 +572,25 @@ export default function ExplorePage() {
             // Friend profiles are a subset of followingIds, so both queries
             // can run in parallel instead of profiles waiting on reviews.
             const [{ data: friendRevs }, { data: profiles }] = await Promise.all([
-              supabase
-                .from("reviews")
-                .select("id, place_id, review_text, user_id, created_at")
-                .in("user_id", followingIds)
-                .in("place_id", displayedPlaceIds)
-                .not("review_text", "is", null)
-                .neq("review_text", "")
-                .order("created_at", { ascending: false }),
-              supabase
-                .from("profiles")
-                .select("user_id, username, profile_picture")
-                .in("user_id", followingIds),
+              selectInChunks(
+                followingIds,
+                (ids) =>
+                  supabase
+                    .from("reviews")
+                    .select("id, place_id, review_text, user_id, created_at")
+                    .in("user_id", ids)
+                    .in("place_id", displayedPlaceIds)
+                    .not("review_text", "is", null)
+                    .neq("review_text", "")
+                    .order("created_at", { ascending: false }),
+                { sort: newestFirst("created_at") }
+              ),
+              selectInChunks(followingIds, (ids) =>
+                supabase
+                  .from("profiles")
+                  .select("user_id, username, profile_picture")
+                  .in("user_id", ids)
+              ),
             ]);
 
             if (friendRevs && friendRevs.length > 0) {
@@ -680,18 +698,25 @@ export default function ExplorePage() {
           { data: reviews, error: reviewsError },
           { data: profiles, error: profilesError },
         ] = await Promise.all([
-          supabase
-            .from("reviews")
-            .select("*, places!inner(name, image)")
-            .in("user_id", followingIds)
-            .not("review_text", "is", null)
-            .neq("review_text", "")
-            .order("created_at", { ascending: false })
-            .limit(5),
-          supabase
-            .from("profiles")
-            .select("user_id, username, profile_picture")
-            .in("user_id", followingIds),
+          selectInChunks(
+            followingIds,
+            (ids) =>
+              supabase
+                .from("reviews")
+                .select("*, places!inner(name, image)")
+                .in("user_id", ids)
+                .not("review_text", "is", null)
+                .neq("review_text", "")
+                .order("created_at", { ascending: false })
+                .limit(5),
+            { sort: newestFirst("created_at"), limit: 5 }
+          ),
+          selectInChunks(followingIds, (ids) =>
+            supabase
+              .from("profiles")
+              .select("user_id, username, profile_picture")
+              .in("user_id", ids)
+          ),
         ]);
 
         if (reviewsError) throw reviewsError;
@@ -897,12 +922,17 @@ export default function ExplorePage() {
       const fetchFriendLists = async () => {
         if (followingIds.length === 0) return [] as any[];
 
-        const { data: lists, error: listsError } = await supabase
-          .from("lists")
-          .select("*")
-          .in("user_id", followingIds)
-          .order("created_at", { ascending: false })
-          .limit(5);
+        const { data: lists, error: listsError } = await selectInChunks(
+          followingIds,
+          (ids) =>
+            supabase
+              .from("lists")
+              .select("*")
+              .in("user_id", ids)
+              .order("created_at", { ascending: false })
+              .limit(5),
+          { sort: newestFirst("created_at"), limit: 5 }
+        );
 
         if (listsError) throw listsError;
         if (!lists || lists.length === 0) return [] as any[];
@@ -1087,7 +1117,7 @@ export default function ExplorePage() {
           {tabs.map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => { if (activeTab !== tab) hapticSelection(); setActiveTab(tab); }}
               className="relative pb-2"
             >
               <span
@@ -1125,7 +1155,7 @@ export default function ExplorePage() {
               </div>
             ) : (
               <div className="space-y-6">
-                {sections.map((section, sectionIndex) => (
+                {sections.slice(0, renderedSectionCount).map((section, sectionIndex) => (
                   // No content-visibility here: off-screen sections would take a
                   // placeholder height (300px) instead of their real one (~242px,
                   // more when a translated title wraps). Coming back to Explore
@@ -1151,7 +1181,7 @@ export default function ExplorePage() {
                           <button
                             key={place.id}
                             onTouchStart={() => prefetchPlacePrimary(queryClient, place.id, userId)}
-                            onClick={() => navigate(`/place/${place.id}`)}
+                            onClick={() => navigate(`/place/${place.id}`)} {...placeLinkProps(place.id)}
                             className="flex-shrink-0 w-[130px] flex flex-col items-stretch text-left active:scale-[0.97] transition-transform"
                           >
                             <div className="aspect-[3/4] w-full relative">
@@ -1164,6 +1194,7 @@ export default function ExplorePage() {
                                 image={place.image}
                                 autoGenerate
                                 priority={sectionIndex === 0 && placeIndex < 4}
+                                eager={placeIndex < 5}
                                 className="w-full h-full"
                               />
                             </div>
@@ -1347,16 +1378,19 @@ function ListCard({ list, showLikes = false }: { list: any; showLikes?: boolean 
     e.stopPropagation();
     if (!user || toggling) return;
     setToggling(true);
-    if (liked) {
-      const { error } = await supabase.from("list_likes").delete().eq("list_id", list.id).eq("user_id", user.id);
-      if (!error) invalidateOwnProfileContentCache(user.id);
-      setLiked(false);
-      setLikeCount((c: number) => Math.max(0, c - 1));
+    // Optimistic: flip the heart immediately, revert if the write fails.
+    const wasLiked = liked;
+    hapticLight();
+    setLiked(!wasLiked);
+    setLikeCount((c: number) => (wasLiked ? Math.max(0, c - 1) : c + 1));
+    const { error } = wasLiked
+      ? await supabase.from("list_likes").delete().eq("list_id", list.id).eq("user_id", user.id)
+      : await supabase.from("list_likes").insert({ list_id: list.id, user_id: user.id });
+    if (error) {
+      setLiked(wasLiked);
+      setLikeCount((c: number) => (wasLiked ? c + 1 : Math.max(0, c - 1)));
     } else {
-      const { error } = await supabase.from("list_likes").insert({ list_id: list.id, user_id: user.id });
-      if (!error) invalidateOwnProfileContentCache(user.id);
-      setLiked(true);
-      setLikeCount((c: number) => c + 1);
+      invalidateOwnProfileContentCache(user.id);
     }
     setToggling(false);
   };

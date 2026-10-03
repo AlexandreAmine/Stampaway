@@ -10,6 +10,7 @@ import { DestinationPoster } from "@/components/DestinationPoster";
 import { RecentSearches } from "@/components/RecentSearches";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toastError";
 import { hapticSuccess, hapticMedium, hapticLight } from "@/lib/haptics";
 import { setCachedWishlistStatus } from "@/lib/wishlistCache";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
@@ -270,7 +271,7 @@ export default function AddPlacePage() {
 
   const handleSave = async () => {
     if (!user || !selectedPlace) {
-      toast.error(t("review.selectPlace"));
+      toastError(t("review.selectPlace"));
       return;
     }
     setSaving(true);
@@ -438,7 +439,7 @@ export default function AddPlacePage() {
     setSaving(false);
 
     if (error) {
-      toast.error(t("review.saveFailed"));
+      toastError(t("review.saveFailed"));
     } else {
       hapticSuccess();
       toast.success(t("review.saved"));
@@ -531,7 +532,7 @@ export default function AddPlacePage() {
                 <StarRating rating={rating} size={40} interactive onChange={setRating} />
                 <button
                   type="button"
-                  onClick={() => setLiked(!liked)}
+                  onClick={() => { hapticLight(); setLiked(!liked); }}
                   aria-pressed={liked}
                   aria-label={t("reviewDetail.liked")}
                   className="p-1 -m-1 transition-transform active:scale-90"

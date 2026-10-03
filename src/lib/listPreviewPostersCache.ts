@@ -140,35 +140,112 @@ export function fetchListPreviewPosters(
   const inflight = previewInflight.get(cacheKey);
   if (inflight) return inflight;
 
-  const request = Promise.resolve(
-    supabase
-      .from("list_items")
-      .select("id, position, places!inner(id, name, country, type, image)")
-      .eq("list_id", listId)
-      .order("position", { ascending: true })
-      .limit(maxItems)
-      .then(({ data, error }) => {
-        if (error) throw error;
+  const request = loadPreviewItems(listId, maxItems)
+    .then((items) => {
+      if (isListPreviewPostersRequestTokenCurrent(userId, listId, token)) {
+        previewCache.set(cacheKey, {
+          items,
+          cachedAt: Date.now(),
+        });
+      }
 
-        const items = (data || []).map((i: any) => i.places as ListPreviewPosterPlace);
-
-        if (isListPreviewPostersRequestTokenCurrent(userId, listId, token)) {
-          previewCache.set(cacheKey, {
-            items,
-            cachedAt: Date.now(),
-          });
-        }
-
-        return items;
-      })
-  ).finally(() => {
-    if (previewInflight.get(cacheKey) === request) {
-      previewInflight.delete(cacheKey);
-    }
-  });
+      return items;
+    })
+    .finally(() => {
+      if (previewInflight.get(cacheKey) === request) {
+        previewInflight.delete(cacheKey);
+      }
+    });
 
   previewInflight.set(cacheKey, request);
   return request;
+}
+
+// ---- batched loading ----------------------------------------------------
+// A screen of lists (Search shows up to 30, Explore ~20) used to send one
+// request per list. Every preview asked for in the same tick — all the rows
+// of one render — now shares a single request: lists with their first
+// `maxItems` items embedded (PostgREST applies the limit per list).
+// Anything the batch doesn't return, or a failed batch, falls back to the
+// original per-list query, so results never differ from before.
+
+type BatchWaiter = {
+  resolve: (items: ListPreviewPosterPlace[]) => void;
+  reject: (error: unknown) => void;
+};
+
+const BATCH_CHUNK_SIZE = 50;
+const pendingBatches = new Map<number, Map<string, BatchWaiter[]>>();
+
+function loadPreviewItems(listId: string, maxItems: number): Promise<ListPreviewPosterPlace[]> {
+  return new Promise((resolve, reject) => {
+    let batch = pendingBatches.get(maxItems);
+    if (!batch) {
+      batch = new Map();
+      pendingBatches.set(maxItems, batch);
+      queueMicrotask(() => {
+        pendingBatches.delete(maxItems);
+        void flushBatch(maxItems, batch!);
+      });
+    }
+    const waiters = batch.get(listId) ?? [];
+    waiters.push({ resolve, reject });
+    batch.set(listId, waiters);
+  });
+}
+
+async function flushBatch(maxItems: number, batch: Map<string, BatchWaiter[]>) {
+  const listIds = [...batch.keys()];
+  const found = new Map<string, ListPreviewPosterPlace[]>();
+
+  if (listIds.length > 1) {
+    const chunks: string[][] = [];
+    for (let i = 0; i < listIds.length; i += BATCH_CHUNK_SIZE) {
+      chunks.push(listIds.slice(i, i + BATCH_CHUNK_SIZE));
+    }
+    await Promise.all(
+      chunks.map(async (ids) => {
+        try {
+          const { data, error } = await supabase
+            .from("lists")
+            .select("id, list_items(position, places!inner(id, name, country, type, image))")
+            .in("id", ids)
+            .order("position", { referencedTable: "list_items", ascending: true })
+            .limit(maxItems, { referencedTable: "list_items" });
+          if (error) throw error;
+          (data || []).forEach((row: any) => {
+            found.set(
+              row.id,
+              (row.list_items || []).map((i: any) => i.places as ListPreviewPosterPlace)
+            );
+          });
+        } catch (error) {
+          console.error("Batched list preview fetch failed, loading lists one by one:", error);
+        }
+      })
+    );
+  }
+
+  listIds.forEach((id) => {
+    const waiters = batch.get(id)!;
+    const items = found.get(id);
+    const result = items ? Promise.resolve(items) : fetchPreviewItemsSingle(id, maxItems);
+    result.then(
+      (value) => waiters.forEach((w) => w.resolve(value)),
+      (error) => waiters.forEach((w) => w.reject(error))
+    );
+  });
+}
+
+async function fetchPreviewItemsSingle(listId: string, maxItems: number) {
+  const { data, error } = await supabase
+    .from("list_items")
+    .select("id, position, places!inner(id, name, country, type, image)")
+    .eq("list_id", listId)
+    .order("position", { ascending: true })
+    .limit(maxItems);
+  if (error) throw error;
+  return (data || []).map((i: any) => i.places as ListPreviewPosterPlace);
 }
 
 export function invalidateListPreviewPostersCache(listId?: string | null) {

@@ -1,6 +1,7 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { selectInChunks } from "@/lib/inChunks";
 import { profileLinkProps } from "@/lib/profileHeaderQuery";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, X, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -9,7 +10,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toastError";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
+import { followOrRequest } from "@/lib/followActions";
+import { hapticLight } from "@/lib/haptics";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +24,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+interface SearchUser {
+  user_id: string;
+  username: string;
+  profile_picture: string | null;
+  is_private: boolean;
+}
 
 interface FollowUser {
   id: string;
@@ -36,7 +47,11 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
   const queryClient = useQueryClient();
   const [showSearch, setShowSearch] = useState(false);
   const [query, setQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<{ user_id: string; username: string; profile_picture: string | null }[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
+  // Private accounts asked to follow from here (a request, not a follow).
+  const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
+  // Follow taps still being saved, so a double tap can't send two.
+  const followInFlight = useRef(new Set<string>());
   const [filterQuery, setFilterQuery] = useState("");
   const [pendingUnfollow, setPendingUnfollow] = useState<FollowUser | null>(null);
 
@@ -60,10 +75,12 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
       if (!data || data.length === 0) return [];
 
       const ids = data.map((f) => f.following_id);
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, username, profile_picture")
-        .in("user_id", ids);
+      const { data: profiles } = await selectInChunks(ids, (chunk) =>
+        supabase
+          .from("profiles")
+          .select("user_id, username, profile_picture")
+          .in("user_id", chunk)
+      );
 
       return (profiles || []).map((p) => {
         const follow = data.find((f) => f.following_id === p.user_id);
@@ -74,38 +91,105 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
   const following = followingQuery.data ?? [];
   const loading = followingQuery.isPending;
 
-  const refreshFollowing = () =>
-    queryClient.invalidateQueries({ queryKey: ["following", targetUserId ?? null] });
+  const followingKey = ["following", targetUserId ?? null];
+  const refreshFollowing = () => queryClient.invalidateQueries({ queryKey: followingKey });
 
   const searchUsers = async (search: string) => {
     if (!user) return;
     const { data } = await supabase
       .from("profiles")
-      .select("user_id, username, profile_picture")
+      .select("user_id, username, profile_picture, is_private")
       .ilike("username", `%${search}%`)
       .neq("user_id", user.id)
       .limit(10);
-    setSearchResults(data || []);
+    const results = data || [];
+    // Show "Requested" for private accounts already asked.
+    const privateIds = results.filter((u) => u.is_private).map((u) => u.user_id);
+    if (privateIds.length > 0) {
+      const { data: requests } = await supabase
+        .from("follow_requests")
+        .select("target_id")
+        .eq("requester_id", user.id)
+        .in("target_id", privateIds);
+      if (requests?.length) {
+        setRequestedIds((prev) => new Set([...prev, ...requests.map((r) => r.target_id)]));
+      }
+    }
+    setSearchResults(results);
   };
 
-  const handleFollow = async (targetId: string) => {
-    if (!user) return;
-    const already = following.some((f) => f.id === targetId);
-    if (already) { toast(t("following.already")); return; }
-    const { error } = await supabase.from("followers").insert({ follower_id: user.id, following_id: targetId });
-    if (error) { toast.error(t("following.followFailed")); return; }
-    invalidateOwnProfileContentCache(user.id);
-    toast.success(t("following.followed"));
+  const addRequested = (id: string, requested: boolean) =>
+    setRequestedIds((prev) => {
+      const next = new Set(prev);
+      if (requested) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+
+  const closeSearch = () => {
     setShowSearch(false);
     setQuery("");
-    void refreshFollowing();
   };
 
-  const handleUnfollow = async (followId: string, username: string) => {
-    const { error } = await supabase.from("followers").delete().eq("id", followId);
-    if (error) { toast.error(t("following.unfollowFailed")); return; }
-    if (user?.id) invalidateOwnProfileContentCache(user.id);
-    toast.success(t("following.unfollowed", { username }));
+  // Instant: the list (or the "Requested" label, for a private account)
+  // updates on tap and is put back if the save fails. Private accounts get a
+  // follow request, as on their profile page.
+  const handleFollow = async (target: SearchUser) => {
+    if (!user || followInFlight.current.has(target.user_id) || requestedIds.has(target.user_id)) return;
+    const already = following.some((f) => f.id === target.user_id);
+    if (already) { toast(t("following.already")); return; }
+    followInFlight.current.add(target.user_id);
+    hapticLight();
+
+    const previous = queryClient.getQueryData<FollowUser[]>(followingKey);
+    const showFollowed = () => {
+      queryClient.setQueryData<FollowUser[]>(followingKey, (old) => [
+        ...(old ?? []).filter((f) => f.id !== target.user_id),
+        { id: target.user_id, followId: "", username: target.username, profile_picture: target.profile_picture },
+      ]);
+      toast.success(t("following.followed"));
+      closeSearch();
+    };
+    if (target.is_private) addRequested(target.user_id, true);
+    else showFollowed();
+
+    try {
+      const result = await followOrRequest(user.id, target.user_id);
+      if (result === "requested" && !target.is_private) {
+        // Turned private since the search: it's a request after all.
+        queryClient.setQueryData(followingKey, previous);
+        addRequested(target.user_id, true);
+      } else if (result === "following" && target.is_private) {
+        addRequested(target.user_id, false);
+        showFollowed();
+      }
+      if (result === "following") invalidateOwnProfileContentCache(user.id);
+    } catch {
+      if (target.is_private) addRequested(target.user_id, false);
+      else queryClient.setQueryData(followingKey, previous);
+      toastError(t("following.followFailed"));
+    } finally {
+      followInFlight.current.delete(target.user_id);
+      void refreshFollowing();
+    }
+  };
+
+  // Instant: the row disappears on confirm and comes back if the save fails.
+  const handleUnfollow = async (target: FollowUser) => {
+    if (!user) return;
+    const previous = queryClient.getQueryData<FollowUser[]>(followingKey);
+    queryClient.setQueryData<FollowUser[]>(followingKey, (old) => (old ?? []).filter((f) => f.id !== target.id));
+    hapticLight();
+    toast.success(t("following.unfollowed", { username: target.username }));
+    // By the pair rather than the row id, which a just-added row doesn't
+    // have yet (the same row either way).
+    const { error } = await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", target.id);
+    if (error) {
+      queryClient.setQueryData(followingKey, previous);
+      toastError(t("following.unfollowFailed"));
+      return;
+    }
+    invalidateOwnProfileContentCache(user.id);
     void refreshFollowing();
   };
 
@@ -180,10 +264,13 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
                     />
                     <span className="text-sm font-medium text-foreground" data-no-translate>{u.username}</span>
                   </button>
-                  {!isFollowing && (
-                    <button onClick={() => handleFollow(u.user_id)} className="text-xs bg-primary text-primary-foreground px-3 py-1 rounded-lg font-medium">
+                  {!isFollowing && !requestedIds.has(u.user_id) && (
+                    <button onClick={() => handleFollow(u)} className="text-xs bg-primary text-primary-foreground px-3 py-1 rounded-lg font-medium">
                       {t("profile.follow")}
                     </button>
+                  )}
+                  {!isFollowing && requestedIds.has(u.user_id) && (
+                    <span className="text-xs text-muted-foreground px-3 py-1">{t("profile.requested")}</span>
                   )}
                 </div>
               );
@@ -239,8 +326,9 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
             <AlertDialogAction
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               onClick={async () => {
-                if (pendingUnfollow) await handleUnfollow(pendingUnfollow.followId, pendingUnfollow.username);
+                const target = pendingUnfollow;
                 setPendingUnfollow(null);
+                if (target) await handleUnfollow(target);
               }}
             >
               {t("profile.unfollow")}

@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { placeLinkProps } from "@/lib/placePrimaryQuery";
+import { hapticSelection } from "@/lib/haptics";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -11,6 +13,7 @@ import { DestinationPoster } from "@/components/DestinationPoster";
 import { StarRating } from "@/components/StarRating";
 import { DiaryEditSheet } from "@/components/DiaryEditSheet";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toastError";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import { invalidateExploreCache } from "@/lib/exploreCache";
 import { clearRankingsCache } from "@/lib/placeRankings";
@@ -86,7 +89,7 @@ export function DiaryTab({ userId }: { userId?: string }) {
   const handleDelete = async (entryId: string) => {
     const { error } = await supabase.from("reviews").delete().eq("id", entryId);
     if (error) {
-      toast.error(t("diary.deleteFailed"));
+      toastError(t("diary.deleteFailed"));
       return;
     }
     toast.success(t("toast.entryDeleted"));
@@ -147,13 +150,13 @@ export function DiaryTab({ userId }: { userId?: string }) {
       {/* Section toggle */}
       <div className="flex gap-2">
         <button
-          onClick={() => setSection("country")}
+          onClick={() => { if (section !== "country") hapticSelection(); setSection("country"); }}
           className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${section === "country" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"}`}
         >
           {t("profile.countries")}
         </button>
         <button
-          onClick={() => setSection("city")}
+          onClick={() => { if (section !== "city") hapticSelection(); setSection("city"); }}
           className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${section === "city" ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"}`}
         >
           {t("profile.cities")}
@@ -177,7 +180,7 @@ export function DiaryTab({ userId }: { userId?: string }) {
           <div className="space-y-3">
             {grouped[year].map((entry) => (
               <div key={entry.id} className="flex gap-3 bg-card rounded-xl p-3 border border-border w-full">
-                <button onClick={() => navigate(`/place/${entry.place.id}`)} className="w-16 h-20 shrink-0 rounded-lg overflow-hidden">
+                <button onClick={() => navigate(`/place/${entry.place.id}`)} {...placeLinkProps(entry.place.id)} className="w-16 h-20 shrink-0 rounded-lg overflow-hidden">
                   <DestinationPoster
                     placeId={entry.place.id}
                     name={entry.place.name}
@@ -187,7 +190,7 @@ export function DiaryTab({ userId }: { userId?: string }) {
                     className="w-full h-full"
                   />
                 </button>
-                <button onClick={() => navigate(`/place/${entry.place.id}`)} className="flex-1 min-w-0 text-left">
+                <button onClick={() => navigate(`/place/${entry.place.id}`)} {...placeLinkProps(entry.place.id)} className="flex-1 min-w-0 text-left">
                   <p className="text-sm font-bold text-foreground truncate">{entry.place.name}</p>
                   <p className="text-xs text-muted-foreground">
                     {entry.visit_month ? months[entry.visit_month - 1] + " " : ""}

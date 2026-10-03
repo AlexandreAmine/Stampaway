@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import type { TranslationKey } from "@/i18n/translations";
 import { invokePageBackHandler } from "@/lib/pageBackStack";
+import { useKeyboardOpen } from "@/hooks/useKeyboardOpen";
 
 const tabDefs = [
   { path: "/", labelKey: "nav.home" as TranslationKey, icon: Globe },
@@ -48,6 +49,7 @@ export function BottomNav() {
   const { t } = useLanguage();
   const location = useLocation();
   const navigate = useNavigate();
+  const keyboardOpen = useKeyboardOpen();
   const [activeTab, setActiveTab] = useState<string>(() => {
     const ownTab = getOwnTabRoot(window.location.pathname);
     return ownTab || getStoredActiveTab();
@@ -96,6 +98,10 @@ export function BottomNav() {
     const closedSubView = invokePageBackHandler();
     window.scrollTo({ top: 0, behavior: closedSubView ? "auto" : "smooth" });
   };
+
+  // Out of the way while typing, like native tab bars (otherwise it sits on
+  // top of the keyboard in Search, Add and Edit Profile).
+  if (keyboardOpen) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-nav-bg border-t border-border safe-bottom">

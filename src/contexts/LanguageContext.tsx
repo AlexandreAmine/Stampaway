@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from "react";
 import { translations, Language, TranslationKey } from "@/i18n/translations";
 import { startDomTranslator, setDomTranslatorLanguage, addNoTranslateStrings, addNoTranslateTemplates } from "@/lib/domTranslator";
 import { getAllLocalizedPlaceNames } from "@/lib/placeNames";
@@ -67,17 +67,17 @@ function ensureTranslatorStarted(lang: Language) {
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>(readInitialLanguage);
 
-  const applyLanguage = (lang: Language) => {
+  const applyLanguage = useCallback((lang: Language) => {
     setLanguageState(lang);
     if (lang !== "en") ensureTranslatorStarted(lang);
     setDomTranslatorLanguage(lang);
-  };
+  }, []);
 
   // A choice made in Settings — the only thing persisted as the user's language.
-  const setLanguage = (lang: Language) => {
+  const setLanguage = useCallback((lang: Language) => {
     localStorage.setItem(EXPLICIT_KEY, lang);
     applyLanguage(lang);
-  };
+  }, [applyLanguage]);
 
   useEffect(() => {
     if (language !== "en") ensureTranslatorStarted(language);
@@ -112,8 +112,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return t(`${key}.${form}` as TranslationKey, { ...replacements, count: String(count) });
   }, [t, language]);
 
+  // Stable unless the language changes, so a re-render of whatever sits
+  // above this provider doesn't re-render every translated component.
+  const value = useMemo(() => ({ language, setLanguage, t, tn }), [language, setLanguage, t, tn]);
+
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, tn }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );

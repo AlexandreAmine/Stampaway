@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { slideBack } from "@/lib/backTransition";
 import { ChevronLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -24,7 +25,7 @@ export function LegalDocument({ title, lastUpdated, children }: LegalDocumentPro
       <div className="pt-12 px-5 max-w-2xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => slideBack(() => navigate(-1))}
             aria-label={t("back")}
             className="p-1 -ml-1"
           >

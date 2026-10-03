@@ -1,4 +1,5 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { selectInChunks, newestFirst } from "@/lib/inChunks";
 import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { X, UserPlus, Heart, Check, XIcon } from "lucide-react";
@@ -89,31 +90,46 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
         ? supabase.from("places").select("id, name").in("id", placeIds)
         : Promise.resolve({ data: [] as { id: string; name: string }[] }),
       myReviewIds.length > 0
-        ? supabase
-            .from("review_likes")
-            .select("id, user_id, review_id, created_at")
-            .in("review_id", myReviewIds)
-            .neq("user_id", userId)
-            .order("created_at", { ascending: false })
-            .limit(20)
+        ? selectInChunks(
+            myReviewIds,
+            (ids) =>
+              supabase
+                .from("review_likes")
+                .select("id, user_id, review_id, created_at")
+                .in("review_id", ids)
+                .neq("user_id", userId)
+                .order("created_at", { ascending: false })
+                .limit(20),
+            { sort: newestFirst("created_at"), limit: 20 }
+          )
         : Promise.resolve({ data: [] as any[] }),
       myReviewIds.length > 0
-        ? supabase
-            .from("review_comments")
-            .select("id, user_id, review_id, created_at")
-            .in("review_id", myReviewIds)
-            .neq("user_id", userId)
-            .order("created_at", { ascending: false })
-            .limit(20)
+        ? selectInChunks(
+            myReviewIds,
+            (ids) =>
+              supabase
+                .from("review_comments")
+                .select("id, user_id, review_id, created_at")
+                .in("review_id", ids)
+                .neq("user_id", userId)
+                .order("created_at", { ascending: false })
+                .limit(20),
+            { sort: newestFirst("created_at"), limit: 20 }
+          )
         : Promise.resolve({ data: [] as any[] }),
       myListIds.length > 0
-        ? supabase
-            .from("list_likes")
-            .select("id, user_id, list_id, created_at")
-            .in("list_id", myListIds)
-            .neq("user_id", userId)
-            .order("created_at", { ascending: false })
-            .limit(20)
+        ? selectInChunks(
+            myListIds,
+            (ids) =>
+              supabase
+                .from("list_likes")
+                .select("id, user_id, list_id, created_at")
+                .in("list_id", ids)
+                .neq("user_id", userId)
+                .order("created_at", { ascending: false })
+                .limit(20),
+            { sort: newestFirst("created_at"), limit: 20 }
+          )
         : Promise.resolve({ data: [] as any[] }),
     ]);
 
@@ -131,10 +147,12 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
     reviewComments.forEach(c => allUserIds.add(c.user_id));
     listLikes.forEach(l => allUserIds.add(l.user_id));
 
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, username, profile_picture")
-      .in("user_id", [...allUserIds]);
+    const { data: profiles } = await selectInChunks([...allUserIds], (ids) =>
+      supabase
+        .from("profiles")
+        .select("user_id, username, profile_picture")
+        .in("user_id", ids)
+    );
     const pMap = new Map((profiles || []).map(p => [p.user_id, p]));
 
     (requests || []).forEach(r => {

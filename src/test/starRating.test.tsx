@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 import { render, fireEvent, screen } from "@testing-library/react";
 import { StarRating, ratingAt } from "@/components/StarRating";
+import { hapticSelection } from "@/lib/haptics";
 
-vi.mock("@/lib/haptics", () => ({ hapticLight: vi.fn() }));
+vi.mock("@/lib/haptics", () => ({ hapticSelection: vi.fn() }));
 vi.mock("@/contexts/LanguageContext", () => ({
   useLanguage: () => ({
     t: (key: string, r?: Record<string, string>) =>
@@ -26,6 +27,7 @@ beforeAll(() => {
 
 // The star row is 100px wide starting at x=0, so each half-star is 10px.
 beforeEach(() => {
+  vi.mocked(hapticSelection).mockClear();
   vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
     left: 0, top: 0, right: 100, bottom: 16, width: 100, height: 16, x: 0, y: 0,
     toJSON: () => ({}),
@@ -88,6 +90,8 @@ describe("StarRating (interactive)", () => {
     fireEvent.pointerMove(slider, { clientX: 95, clientY: 8 }); // 5
     fireEvent.pointerUp(slider, { clientX: 95, clientY: 8 });
     expect(onChange.mock.calls.map((c) => c[0])).toEqual([1.5, 5]);
+    // One selection tick per half-star the value moves to, as iOS pickers do.
+    expect(vi.mocked(hapticSelection)).toHaveBeenCalledTimes(2);
   });
 
   it("does not toggle to 0 when a drag ends on the starting value", () => {

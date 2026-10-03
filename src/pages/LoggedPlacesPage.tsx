@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { slideBack } from "@/lib/backTransition";
 import { ChevronLeft } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -62,7 +63,7 @@ export default function LoggedPlacesPage() {
     <div className="min-h-screen bg-background pb-24">
       <div className="pt-12 px-5">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate(-1)}>
+          <button onClick={() => slideBack(() => navigate(-1))}>
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
           <h1 className="page-title">

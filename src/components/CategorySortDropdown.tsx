@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { hapticSelection } from "@/lib/haptics";
 import {
   DropdownMenuItem,
   DropdownMenuSub,
@@ -38,7 +39,7 @@ export function CategorySortDropdown({ label, onSelect, selectedCategory, isActi
           {SUB_CATEGORIES.map((cat) => (
             <DropdownMenuItem
               key={cat}
-              onClick={() => onSelect(cat)}
+              onClick={() => { hapticSelection(); onSelect(cat); }}
               className={selectedCategory === cat && isActive ? "text-primary font-semibold" : ""}
             >
               {subCategoryLabel(cat, t)}
@@ -85,6 +86,7 @@ export function CategorySortDropdown({ label, onSelect, selectedCategory, isActi
         <DropdownMenuItem
           key={cat}
           onClick={() => {
+            hapticSelection();
             onSelect(cat);
             setExpanded(false);
           }}

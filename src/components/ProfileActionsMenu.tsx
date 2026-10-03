@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toastError";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import {
   AlertDialog,
@@ -46,7 +47,7 @@ export function ProfileActionsMenu({ targetUserId, isBlocked, onBlockChange }: P
     ]);
     if (followResults.some((result) => !result.error)) invalidateOwnProfileContentCache(user.id);
     const { error } = await supabase.from("blocked_users").insert({ blocker_id: user.id, blocked_id: targetUserId });
-    if (error) { toast.error(t("block.failed")); return; }
+    if (error) { toastError(t("block.failed")); return; }
     toast.success(t("toast.userBlocked"));
     onBlockChange?.(true);
     setConfirmBlock(false);
@@ -59,7 +60,7 @@ export function ProfileActionsMenu({ targetUserId, isBlocked, onBlockChange }: P
       .delete()
       .eq("blocker_id", user.id)
       .eq("blocked_id", targetUserId);
-    if (error) { toast.error(t("block.unblockFailed")); return; }
+    if (error) { toastError(t("block.unblockFailed")); return; }
     toast.success(t("toast.userUnblocked"));
     onBlockChange?.(false);
   };

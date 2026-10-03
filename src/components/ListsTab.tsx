@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { hapticMedium, hapticSuccess } from "@/lib/haptics";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, X, ChevronRight, Trash2, GripVertical } from "lucide-react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
@@ -8,6 +9,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { FavoritePicker } from "@/components/FavoritePicker";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toastError";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import { invalidateListPreviewPostersCache } from "@/lib/listPreviewPostersCache";
 import {
@@ -92,8 +94,9 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
       description: newDesc.trim() || null,
     });
     setCreating(false);
-    if (error) { toast.error(t("lists.createFailed")); return; }
+    if (error) { toastError(t("lists.createFailed")); return; }
     invalidateOwnProfileContentCache(user.id);
+    hapticSuccess();
     toast.success(t("lists.created"));
     setNewName("");
     setNewDesc("");
@@ -106,7 +109,7 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
     if (!itemsError) invalidateListPreviewPostersCache(listId);
 
     const { error } = await supabase.from("lists").delete().eq("id", listId);
-    if (error) { toast.error(t("lists.deleteFailed")); return; }
+    if (error) { toastError(t("lists.deleteFailed")); return; }
     if (user?.id) {
       invalidateOwnProfileContentCache(user.id);
       invalidateListPreviewPostersCache(listId);
@@ -122,7 +125,7 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
     if (exists) { toast(t("toast.alreadyInList")); return; }
     const maxPos = openList.items.reduce((max, i) => Math.max(max, i.position), -1);
     const { error } = await supabase.from("list_items").insert({ list_id: openList.id, place_id: placeId, position: maxPos + 1 });
-    if (error) { toast.error(t("common.failedToAdd")); return; }
+    if (error) { toastError(t("common.failedToAdd")); return; }
     invalidateListPreviewPostersCache(openList.id);
     toast.success(t("toast.addedToList"));
     fetchLists();
@@ -131,7 +134,7 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
   const handleRemoveItem = async (itemId: string) => {
     const listId = openList?.id;
     const { error } = await supabase.from("list_items").delete().eq("id", itemId);
-    if (error) { toast.error(t("common.failedToRemove")); return; }
+    if (error) { toastError(t("common.failedToRemove")); return; }
     invalidateListPreviewPostersCache(listId);
     toast.success(t("lists.removed"));
     fetchLists();
@@ -159,7 +162,7 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
       // optimistic state and re-read rather than leaving the UI showing an order
       // that was never saved.
       setOpenList(previous);
-      toast.error(t("lists.reorderFailed"));
+      toastError(t("lists.reorderFailed"));
       fetchLists();
       return;
     }
@@ -214,7 +217,7 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
         ) : !readOnly ? (
           <Reorder.Group axis="y" values={openList.items} onReorder={handleReorder} className="space-y-2">
             {openList.items.map((item) => (
-              <Reorder.Item key={item.id} value={item} className="flex items-center gap-2 bg-card rounded-xl border border-border p-2">
+              <Reorder.Item key={item.id} value={item} onDragEnd={hapticMedium} className="flex items-center gap-2 bg-card rounded-xl border border-border p-2">
                 <GripVertical className="w-4 h-4 text-muted-foreground shrink-0 cursor-grab active:cursor-grabbing" />
                 <div className="w-12 h-16 shrink-0 rounded-lg overflow-hidden">
                   <DestinationPoster

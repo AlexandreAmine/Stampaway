@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { placeLinkProps } from "@/lib/placePrimaryQuery";
+import { hapticSelection } from "@/lib/haptics";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, X, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -10,6 +12,7 @@ import { DestinationPoster } from "@/components/DestinationPoster";
 import { PosterWishlistButton } from "@/components/PosterWishlistButton";
 import { FavoritePicker } from "@/components/FavoritePicker";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toastError";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -148,7 +151,7 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
     const exists = items.some((i) => i.place.id === placeId);
     if (exists) { toast(t("wishlist.alreadyInWishlist")); return; }
     const { error } = await supabase.from("wishlists").insert({ user_id: user.id, place_id: placeId });
-    if (error) { toast.error(t("common.failedToAdd")); return; }
+    if (error) { toastError(t("common.failedToAdd")); return; }
     setCachedWishlistStatus(user.id, placeId, true);
     invalidateOwnProfileContentCache(user.id);
     toast.success(t("wishlist.addedToWishlist"));
@@ -220,7 +223,7 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
   const renderGrid = (gridItems: WishlistItem[]) => (
     <div className="grid grid-cols-3 gap-3">
       {gridItems.map((item) => (
-        <div key={item.id} className="relative aspect-[3/4] cursor-pointer" onClick={() => navigate(`/place/${item.place.id}`)}>
+        <div key={item.id} className="relative aspect-[3/4] cursor-pointer" onClick={() => navigate(`/place/${item.place.id}`)} {...placeLinkProps(item.place.id)}>
           {readOnly && <PosterWishlistButton placeId={item.place.id} placeName={item.place.name} />}
           <DestinationPoster placeId={item.place.id} name={item.place.name} country={item.place.country} type={item.place.type as "city" | "country"} image={item.place.image} className="w-full h-full" />
           {!readOnly && (
@@ -240,7 +243,7 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
           {(["country", "city"] as const).map((tab) => (
             <button
               key={tab}
-              onClick={() => { setSubTab(tab); setGrouped(false); }}
+              onClick={() => { if (subTab !== tab) hapticSelection(); setSubTab(tab); setGrouped(false); }}
               className={`text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors ${
                 subTab === tab ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground border border-border"
               }`}
@@ -280,7 +283,7 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
                 {(["recent", "avg-highest"] as WishSort[]).map((key) => (
                   <DropdownMenuItem
                     key={key}
-                    onClick={() => setSort(key)}
+                    onClick={() => { hapticSelection(); setSort(key); }}
                     className={sort === key ? "text-primary font-semibold" : ""}
                   >
                     {t(SORT_LABEL_KEYS[key])}

@@ -1,4 +1,6 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { slideBack } from "@/lib/backTransition";
+import { hapticSelection } from "@/lib/haptics";
 import { reviewLinkProps } from "@/lib/reviewDetailQuery";
 import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useState, useEffect, useRef } from "react";
@@ -542,7 +544,7 @@ export default function PlaceSubPage() {
     <div className="min-h-screen bg-background pb-24">
       <div className="pt-12 px-5">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => navigate(-1)}>
+          <button onClick={() => slideBack(() => navigate(-1))}>
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
           <div>
@@ -557,13 +559,13 @@ export default function PlaceSubPage() {
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => setReviewFilter("most_liked")} className={reviewFilter === "most_liked" ? "bg-accent" : ""}>
+                <DropdownMenuItem onClick={() => { hapticSelection(); setReviewFilter("most_liked"); }} className={reviewFilter === "most_liked" ? "bg-accent" : ""}>
                   {t("placeSub.mostLiked")}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setReviewFilter("most_recent")} className={reviewFilter === "most_recent" ? "bg-accent" : ""}>
+                <DropdownMenuItem onClick={() => { hapticSelection(); setReviewFilter("most_recent"); }} className={reviewFilter === "most_recent" ? "bg-accent" : ""}>
                   {t("placeSub.mostRecent")}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setReviewFilter("friends_first")} className={reviewFilter === "friends_first" ? "bg-accent" : ""}>
+                <DropdownMenuItem onClick={() => { hapticSelection(); setReviewFilter("friends_first"); }} className={reviewFilter === "friends_first" ? "bg-accent" : ""}>
                   {t("placeSub.friendsFirst")}
                 </DropdownMenuItem>
               </DropdownMenuContent>

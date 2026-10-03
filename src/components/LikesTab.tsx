@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { placeLinkProps } from "@/lib/placePrimaryQuery";
+import { hapticSelection } from "@/lib/haptics";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -349,7 +351,7 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
   const renderDestGrid = (items: LikedEntry[]) => (
     <div className="grid grid-cols-3 gap-3">
       {items.map((item) => (
-        <button key={item.id} onClick={() => navigate(`/place/${item.place.id}`)} className="relative text-left">
+        <button key={item.id} onClick={() => navigate(`/place/${item.place.id}`)} {...placeLinkProps(item.place.id)} className="relative text-left">
           <div className="aspect-[3/4] w-full relative">
             {isOtherUser && <PosterWishlistButton placeId={item.place.id} placeName={item.place.name} />}
             <DestinationPoster placeId={item.place.id} name={item.place.name} country={item.place.country} type={item.place.type as "city" | "country"} image={item.place.image} className="w-full h-full" />
@@ -405,7 +407,7 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
               <ChevronDown className="w-3.5 h-3.5" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-[220px]">
-              <DropdownMenuItem onClick={() => setDestSort("your-highest")} className={destSort === "your-highest" ? "text-primary font-semibold" : ""}>
+              <DropdownMenuItem onClick={() => { hapticSelection(); setDestSort("your-highest"); }} className={destSort === "your-highest" ? "text-primary font-semibold" : ""}>
                 {sortLabels["your-highest"]}
               </DropdownMenuItem>
               <CategorySortDropdown
@@ -414,7 +416,7 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
                 selectedCategory={selectedCategory}
                 isActive={destSort === "category-highest"}
               />
-              <DropdownMenuItem onClick={() => setDestSort("avg-highest")} className={destSort === "avg-highest" ? "text-primary font-semibold" : ""}>
+              <DropdownMenuItem onClick={() => { hapticSelection(); setDestSort("avg-highest"); }} className={destSort === "avg-highest" ? "text-primary font-semibold" : ""}>
                 {sortLabels["avg-highest"]}
               </DropdownMenuItem>
               <CategorySortDropdown
@@ -423,10 +425,10 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
                 selectedCategory={avgSelectedCategory}
                 isActive={destSort === "avg-category-highest"}
               />
-              <DropdownMenuItem onClick={() => setDestSort("newest")} className={destSort === "newest" ? "text-primary font-semibold" : ""}>
+              <DropdownMenuItem onClick={() => { hapticSelection(); setDestSort("newest"); }} className={destSort === "newest" ? "text-primary font-semibold" : ""}>
                 {sortLabels["newest"]}
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setDestSort("longest")} className={destSort === "longest" ? "text-primary font-semibold" : ""}>
+              <DropdownMenuItem onClick={() => { hapticSelection(); setDestSort("longest"); }} className={destSort === "longest" ? "text-primary font-semibold" : ""}>
                 {sortLabels["longest"]}
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -454,7 +456,7 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
         {sections.map((s) => (
           <button
             key={s.key}
-            onClick={() => setActiveSection(s.key)}
+            onClick={() => { if (activeSection !== s.key) hapticSelection(); setActiveSection(s.key); }}
             className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
               activeSection === s.key
                 ? "bg-primary text-primary-foreground"

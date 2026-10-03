@@ -1,4 +1,6 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { slideBack } from "@/lib/backTransition";
+import { placeLinkProps } from "@/lib/placePrimaryQuery";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchProfileHeader, profileHeaderQueryKey, type ProfileHeader } from "@/lib/profileHeaderQuery";
@@ -36,6 +38,7 @@ import { SocialLinks } from "@/components/SocialLinks";
 import { sanitizeSocialLinks } from "@/lib/socialLinks";
 import { Camera } from "lucide-react";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toastError";
 import { ProfilePicturePreview } from "@/components/ProfilePicturePreview";
 import { isNative, Camera as CapCamera, CameraResultType, CameraSource } from "@/lib/native";
 import { hapticLight, hapticMedium } from "@/lib/haptics";
@@ -212,7 +215,6 @@ export default function ProfilePage() {
 
   const openSubPage = (target: SubPage) => {
     if (!target) return;
-    hapticLight();
     setSubPage(target);
   };
 
@@ -301,7 +303,7 @@ export default function ProfilePage() {
     setTogglingFollow(true);
     if (isFollowing) {
       // Optimistic: unfollow immediately, revert if the write fails.
-      hapticMedium();
+      hapticLight();
       setIsFollowing(false);
       setFollowersCount((c) => Math.max(0, c - 1));
       const { error } = await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", viewingUserId);
@@ -313,6 +315,7 @@ export default function ProfilePage() {
       }
     } else if (hasPendingRequest) {
       // Cancel request
+      hapticLight();
       await supabase.from("follow_requests").delete().eq("requester_id", user.id).eq("target_id", viewingUserId);
       setHasPendingRequest(false);
     } else {
@@ -321,11 +324,12 @@ export default function ProfilePage() {
       // fast tap would follow a private account without a request.
       const isTargetPrivate = viewedProfile?.is_private ?? (await fetchProfileHeader(viewingUserId)).is_private;
       if (isTargetPrivate) {
+        hapticLight();
         await supabase.from("follow_requests").insert({ requester_id: user.id, target_id: viewingUserId });
         setHasPendingRequest(true);
       } else {
         // Optimistic: follow immediately, revert if the write fails.
-        hapticMedium();
+        hapticLight();
         setIsFollowing(true);
         setFollowersCount((c) => c + 1);
         const { error } = await supabase.from("followers").insert({ follower_id: user.id, following_id: viewingUserId });
@@ -679,6 +683,7 @@ export default function ProfilePage() {
 
   const handleDrop = async (type: "city" | "country", targetIndex: number) => {
     if (dragIndex === null || dragType !== type || dragIndex === targetIndex || !user) return;
+    hapticMedium();
     const favorites = type === "city" ? [...favoriteCities] : [...favoriteCountries];
     const setFavorites = type === "city" ? setFavoriteCities : setFavoriteCountries;
 
@@ -717,7 +722,7 @@ export default function ProfilePage() {
             onDragOver={(e) => e.preventDefault()}
             onDrop={() => handleDrop(type, i)}
           >
-            <button onClick={() => navigate(`/place/${fav.place_id}`)} className="w-full h-full">
+            <button onClick={() => navigate(`/place/${fav.place_id}`)} {...placeLinkProps(fav.place_id)} className="w-full h-full">
               <DestinationPoster placeId={fav.place_id} name={fav.place_name} country={fav.place_country} type={type} image={fav.place_image} autoGenerate priority className="w-full h-full" />
             </button>
             {isOwnProfile && (
@@ -814,7 +819,7 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             {!isOwnProfile && (
-              <button onClick={() => navigate(-1)} className="mr-1">
+              <button onClick={() => slideBack(() => navigate(-1))} className="mr-1">
                 <ChevronLeft className="w-6 h-6 text-foreground" />
               </button>
             )}
@@ -841,7 +846,7 @@ export default function ProfilePage() {
                       const ext = file.name.split('.').pop() || 'jpg';
                       const path = `${user.id}/avatar.${ext}`;
                       const { error: uploadErr } = await supabase.storage.from('profile-pictures').upload(path, file, { upsert: true });
-                      if (uploadErr) { toast.error(t("profile.uploadFailed")); return; }
+                      if (uploadErr) { toastError(t("profile.uploadFailed")); return; }
                       const { data: urlData } = supabase.storage.from('profile-pictures').getPublicUrl(path);
                       const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
                       await supabase.from('profiles').update({ profile_picture: publicUrl }).eq('user_id', user.id);
@@ -857,6 +862,11 @@ export default function ProfilePage() {
                         try {
                           const photo = await CapCamera.getPhoto({
                             quality: 85,
+                            // Scaled down natively (aspect ratio kept): avatars
+                            // show at 32–96 px, and full camera photos were
+                            // several MB to upload and download everywhere.
+                            width: 1024,
+                            height: 1024,
                             allowEditing: true,
                             resultType: CameraResultType.Base64,
                             source: CameraSource.Prompt,
@@ -871,7 +881,7 @@ export default function ProfilePage() {
                           const blob = new Blob([bytes], { type: `image/${ext}` });
                           const path = `${user.id}/avatar.${ext}`;
                           const { error: uploadErr } = await supabase.storage.from('profile-pictures').upload(path, blob, { upsert: true, contentType: `image/${ext}` });
-                          if (uploadErr) { toast.error(t("profile.uploadFailed")); return; }
+                          if (uploadErr) { toastError(t("profile.uploadFailed")); return; }
                           const { data: urlData } = supabase.storage.from('profile-pictures').getPublicUrl(path);
                           const publicUrl = `${urlData.publicUrl}?t=${Date.now()}`;
                           await supabase.from('profiles').update({ profile_picture: publicUrl }).eq('user_id', user.id);
@@ -880,7 +890,7 @@ export default function ProfilePage() {
                         } catch (err: any) {
                           // User cancelled or denied permission — silent
                           if (err?.message && !/cancel|denied/i.test(err.message)) {
-                            toast.error(t("profile.cameraFailed"));
+                            toastError(t("profile.cameraFailed"));
                           }
                         }
                         return;

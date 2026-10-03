@@ -3,6 +3,7 @@ import { ChevronLeft, ShieldCheck, ShieldOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { toastError } from "@/lib/toastError";
 import { PasswordInput } from "@/components/PasswordInput";
 import type { User } from "@supabase/supabase-js";
 import { Input } from "@/components/ui/input";
@@ -48,14 +49,14 @@ export function PasswordAndAuthSection({ user, t, onBack }: Props) {
 
   const handleChangePassword = async () => {
     if (!user) return;
-    if (newPassword !== confirmPassword) { toast.error(t("toast.passwordMismatch")); return; }
-    if (newPassword.length < 6) { toast.error(t("toast.passwordTooShort")); return; }
-    if (newPassword === currentPassword) { toast.error(t("toast.samePassword")); return; }
+    if (newPassword !== confirmPassword) { toastError(t("toast.passwordMismatch")); return; }
+    if (newPassword.length < 6) { toastError(t("toast.passwordTooShort")); return; }
+    if (newPassword === currentPassword) { toastError(t("toast.samePassword")); return; }
     setChangingPassword(true);
     const { error: signInErr } = await supabase.auth.signInWithPassword({ email: user.email!, password: currentPassword });
-    if (signInErr) { toast.error(t("toast.wrongPassword")); setChangingPassword(false); return; }
+    if (signInErr) { toastError(t("toast.wrongPassword")); setChangingPassword(false); return; }
     const { error } = await supabase.auth.updateUser({ password: newPassword });
-    if (error) { toast.error(t("toast.passwordFailed")); } else { toast.success(t("toast.passwordUpdated")); }
+    if (error) { toastError(t("toast.passwordFailed")); } else { toast.success(t("toast.passwordUpdated")); }
     setCurrentPassword(""); setNewPassword(""); setConfirmPassword("");
     setChangingPassword(false);
   };
@@ -63,7 +64,7 @@ export function PasswordAndAuthSection({ user, t, onBack }: Props) {
   const handleEnroll2FA = async () => {
     setEnrolling(true);
     const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "TravelD App" });
-    if (error) { toast.error(error.message); setEnrolling(false); return; }
+    if (error) { toastError(error.message); setEnrolling(false); return; }
     setTotpUri(data.totp.uri);
     setTotpSecret(data.totp.secret);
     setFactorId(data.id);
@@ -74,9 +75,9 @@ export function PasswordAndAuthSection({ user, t, onBack }: Props) {
     if (!factorId || verifyCode.length !== 6) return;
     setVerifying2FA(true);
     const { data: challenge, error: challengeErr } = await supabase.auth.mfa.challenge({ factorId });
-    if (challengeErr) { toast.error(challengeErr.message); setVerifying2FA(false); return; }
+    if (challengeErr) { toastError(challengeErr.message); setVerifying2FA(false); return; }
     const { error: verifyErr } = await supabase.auth.mfa.verify({ factorId, challengeId: challenge.id, code: verifyCode });
-    if (verifyErr) { toast.error(verifyErr.message); setVerifying2FA(false); return; }
+    if (verifyErr) { toastError(verifyErr.message); setVerifying2FA(false); return; }
     toast.success(t("settings.2faEnabled"));
     setHas2FA(true);
     setTotpUri(null);
@@ -88,7 +89,7 @@ export function PasswordAndAuthSection({ user, t, onBack }: Props) {
   const handleDisable2FA = async () => {
     if (!factorId) return;
     const { error } = await supabase.auth.mfa.unenroll({ factorId });
-    if (error) { toast.error(error.message); return; }
+    if (error) { toastError(error.message); return; }
     toast.success(t("settings.2faDisabled"));
     setHas2FA(false);
     setFactorId(null);
