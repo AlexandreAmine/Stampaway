@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { hasPageBackHandler, invokePageBackHandler } from "@/lib/pageBackStack";
+import { isOverlayOpen } from "@/hooks/useSheetDrag";
+import { clearSlideWhenRouteChanges } from "@/lib/backTransition";
 
 // Root tabs where swipe-back should do nothing
 const ROOT_PATHS = new Set([
@@ -72,18 +74,26 @@ export default function EdgeSwipeBack() {
         // Pages with an internal drill-down view (e.g. Profile's tabs, which
         // are local state rather than a route) close that view instead of
         // navigating the router — same slide-off feel either way.
-        if (!invokePageBackHandler()) navigate(-1);
-        // Clear on the next frame so the incoming page never renders
-        // translated (one background-colored frame at most)
-        requestAnimationFrame(() => {
+        if (invokePageBackHandler()) {
+          // Same page, new state: clear on the next frame.
+          requestAnimationFrame(() => {
+            clearStyles();
+            animating = false;
+          });
+          // Fallback in case rAF is throttled
+          window.setTimeout(() => {
+            clearStyles();
+            animating = false;
+          }, 80);
+          return;
+        }
+        // Route change: clear in the frame the previous page is drawn, so
+        // the page that slid away never flashes back.
+        clearSlideWhenRouteChanges(() => {
           clearStyles();
           animating = false;
         });
-        // Fallback in case rAF is throttled
-        window.setTimeout(() => {
-          clearStyles();
-          animating = false;
-        }, 80);
+        navigate(-1);
       }, COMPLETE_MS + 10);
     };
 
@@ -91,6 +101,8 @@ export default function EdgeSwipeBack() {
       if (animating || e.touches.length !== 1) return;
       const t = e.touches[0];
       if (t.clientX > EDGE_PX) return;
+      // Not while a sheet or dialog covers the page.
+      if (isOverlayOpen()) return;
       // Root tabs have nowhere to swipe back to UNLESS they have an open
       // internal drill-down view (e.g. Profile's Countries/Map/etc. tabs).
       if (ROOT_PATHS.has(location.pathname) && !hasPageBackHandler()) return;

@@ -11,6 +11,8 @@ import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import { invalidateExploreCache } from "@/lib/exploreCache";
 import { clearRankingsCache } from "@/lib/placeRankings";
 import { useSheetTransition } from "@/hooks/useSheetTransition";
+import { useSheetDrag } from "@/hooks/useSheetDrag";
+import { RemoveScroll } from "react-remove-scroll";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { SUB_CATEGORIES, subCategoryLabel } from "@/lib/subCategories";
 import { monthShortNames } from "@/lib/localeFormat";
@@ -49,6 +51,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const { closing, requestClose } = useSheetTransition(open, onClose);
+  const sheetRef = useSheetDrag(requestClose);
   const [rating, setRating] = useState(entry.rating ? Number(entry.rating) : 0);
   const [liked, setLiked] = useState(entry.liked);
   const [reviewText, setReviewText] = useState(entry.review_text || "");
@@ -202,12 +205,13 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
+    <RemoveScroll>
+    <div className="fixed inset-0 z-50 flex items-end justify-center" data-overlay-open>
       <div
         className={`absolute inset-0 bg-black/60 ${closing ? "animate-out fade-out fill-mode-forwards duration-200" : "animate-in fade-in duration-200"}`}
         onClick={requestClose}
       />
-      <div className={`relative bg-card w-full max-w-lg rounded-t-2xl border border-border max-h-[85vh] overflow-y-auto pb-40 ${closing ? "animate-out slide-out-to-bottom fill-mode-forwards duration-200" : "animate-in slide-in-from-bottom duration-200"}`}>
+      <div ref={sheetRef} role="dialog" aria-modal="true" className={`relative bg-card w-full max-w-lg rounded-t-2xl border border-border max-h-[85vh] overflow-y-auto pb-40 ${closing ? "animate-out slide-out-to-bottom fill-mode-forwards duration-200" : "animate-in slide-in-from-bottom duration-200"}`}>
         <div className="sticky top-0 bg-card z-10 flex items-center justify-between p-4 border-b border-border">
           <h2 className="text-lg font-bold text-foreground">{t("diary.editEntry")}</h2>
           <div className="flex items-center gap-3">
@@ -271,7 +275,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
             <div className="grid grid-cols-2 gap-3">
               {SUB_CATEGORIES.map((cat) => (
                 <div key={cat} className="space-y-1">
-                  <p className="text-[10px] text-muted-foreground leading-tight">{subCategoryLabel(cat, t)}</p>
+                  <p className="text-[11px] text-muted-foreground leading-tight">{subCategoryLabel(cat, t)}</p>
                   <StarRating
                     rating={subRatings[cat] || 0}
                     size={16}
@@ -387,5 +391,6 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
         </div>
       </div>
     </div>
+    </RemoveScroll>
   );
 }

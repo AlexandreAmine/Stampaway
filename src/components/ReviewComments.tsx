@@ -166,14 +166,14 @@ export function ReviewComments({ reviewId }: { reviewId: string }) {
             >
               {comment.profile?.username || t("common.user")}
             </button>
-            <span className="text-[10px] text-muted-foreground">{formatDate(comment.created_at)}</span>
+            <span className="text-[11px] text-muted-foreground">{formatDate(comment.created_at)}</span>
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed mt-0.5" data-no-translate>{comment.comment_text}</p>
           <div className="flex items-center gap-3 mt-1">
             {user && !comment.id.startsWith(PENDING_PREFIX) && (
               <button
                 onClick={() => setReplyTo(comment)}
-                className="text-[10px] text-primary font-medium flex items-center gap-1"
+                className="text-[11px] text-primary font-medium flex items-center gap-1"
               >
                 <Reply className="w-3 h-3" />
                 {t("comments.reply")}
@@ -182,7 +182,7 @@ export function ReviewComments({ reviewId }: { reviewId: string }) {
             {user?.id === comment.user_id && !comment.id.startsWith(PENDING_PREFIX) && (
               <button
                 onClick={() => handleDelete(comment.id)}
-                className="text-[10px] text-muted-foreground flex items-center gap-1"
+                className="text-[11px] text-muted-foreground flex items-center gap-1"
               >
                 <Trash2 className="w-3 h-3" />
               </button>
@@ -210,7 +210,7 @@ export function ReviewComments({ reviewId }: { reviewId: string }) {
         <div className="flex items-center gap-2">
           <div className="flex-1 relative">
             {replyTo && (
-              <div className="text-[10px] text-primary mb-1 flex items-center gap-1">
+              <div className="text-[11px] text-primary mb-1 flex items-center gap-1">
                 {t("comments.replyingTo", { username: replyTo.profile?.username ?? "" })}
                 <button onClick={() => setReplyTo(null)} className="text-muted-foreground ml-1">✕</button>
               </div>

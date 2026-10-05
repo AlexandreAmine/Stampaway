@@ -178,7 +178,7 @@ export default function ListDetailPage() {
             {items.map((item) => (
               <motion.button
                 key={item.id}
-                initial={{ opacity: 0 }}
+                initial={false}
                 animate={{ opacity: 1 }}
                 onClick={() => navigate(`/place/${item.place.id}`)} {...placeLinkProps(item.place.id)}
                 className="aspect-[3/4] w-full"

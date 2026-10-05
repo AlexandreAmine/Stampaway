@@ -27,7 +27,7 @@ export function RatingHistogram({ distribution, onBarClick }: RatingHistogramPro
         return (
           <div key={i} className="relative flex-1 min-w-[8px] flex flex-col items-center">
             {isActive && count > 0 && (
-              <div className="absolute -top-6 px-1.5 py-0.5 rounded bg-foreground text-background text-[10px] font-medium whitespace-nowrap z-10">
+              <div className="absolute -top-6 px-1.5 py-0.5 rounded bg-foreground text-background text-[11px] font-medium whitespace-nowrap z-10">
                 {count}
               </div>
             )}

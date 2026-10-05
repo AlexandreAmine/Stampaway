@@ -141,14 +141,14 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
           <div className="bg-card rounded-xl p-3 border border-border">
             <div className="flex items-center gap-2 mb-1">
               <Users className="w-4 h-4 text-primary" />
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("facts.population")}</span>
+              <span className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("facts.population")}</span>
             </div>
             <p className="text-sm font-semibold text-foreground">{facts.population}</p>
           </div>
           <div className="bg-card rounded-xl p-3 border border-border">
             <div className="flex items-center gap-2 mb-1">
               <Globe className="w-4 h-4 text-primary" />
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("facts.area")}</span>
+              <span className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("facts.area")}</span>
             </div>
             <p className="text-sm font-semibold text-foreground">{facts.area_km2} km²</p>
           </div>
@@ -159,7 +159,7 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
           <div className="bg-card rounded-xl p-3 border border-border">
             <div className="flex items-center gap-2 mb-1">
               <Utensils className="w-4 h-4 text-primary" />
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("facts.famousDish")}</span>
+              <span className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("facts.famousDish")}</span>
             </div>
             <p className="text-sm font-semibold text-foreground">{facts.famous_dish}</p>
           </div>
@@ -170,7 +170,7 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
           <div className="bg-card rounded-xl p-3 border border-border">
             <div className="flex items-center gap-2 mb-2">
               <Star className="w-4 h-4 text-primary" />
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("facts.funFacts")}</span>
+              <span className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("facts.funFacts")}</span>
             </div>
             <ul className="space-y-1.5">
               {facts.fun_facts.map((f, i) => (
@@ -185,7 +185,7 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
           <div className="bg-card rounded-xl p-3 border border-border">
             <div className="flex items-center gap-2 mb-2">
               <Trophy className="w-4 h-4 text-primary" />
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("facts.cityRecords")}</span>
+              <span className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("facts.cityRecords")}</span>
             </div>
             <ul className="space-y-1.5">
               {facts.city_records.map((r, i) => (
@@ -200,17 +200,17 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
           <div className="bg-card rounded-xl p-3 border border-border">
             <div className="flex items-center gap-2 mb-3">
               <Sun className="w-4 h-4 text-primary" />
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("facts.avgTemperature")}</span>
+              <span className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("facts.avgTemperature")}</span>
             </div>
             <div className="flex items-end gap-1 h-20">
               {facts.avg_weather_by_month.map((m, i) => (
                 <div key={i} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-[8px] text-muted-foreground">{m.avg_temp_c}°</span>
+                  <span className="text-[10px] text-muted-foreground">{m.avg_temp_c}°</span>
                   <div
                     className="w-full rounded-t-sm bg-primary/70"
                     style={{ height: `${Math.max(8, (m.avg_temp_c / maxTemp) * 100)}%` }}
                   />
-                  <span className="text-[8px] text-muted-foreground">{m.month}</span>
+                  <span className="text-[10px] text-muted-foreground">{m.month}</span>
                 </div>
               ))}
             </div>
@@ -223,11 +223,11 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
             <div className="bg-card rounded-xl p-3 border border-border">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingUp className="w-4 h-4 text-primary" />
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("facts.peakSeason")}</span>
+                <span className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("facts.peakSeason")}</span>
               </div>
               <div className="flex flex-wrap gap-1">
                 {facts.most_touristic_months.map((m, i) => (
-                  <span key={i} className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full">{m}</span>
+                  <span key={i} className="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-full">{m}</span>
                 ))}
               </div>
             </div>
@@ -236,11 +236,11 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
             <div className="bg-card rounded-xl p-3 border border-border">
               <div className="flex items-center gap-2 mb-2">
                 <TrendingDown className="w-4 h-4 text-muted-foreground" />
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("facts.offSeason")}</span>
+                <span className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("facts.offSeason")}</span>
               </div>
               <div className="flex flex-wrap gap-1">
                 {facts.least_touristic_months.map((m, i) => (
-                  <span key={i} className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{m}</span>
+                  <span key={i} className="text-[11px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{m}</span>
                 ))}
               </div>
             </div>
@@ -252,7 +252,7 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
           <div className="bg-card rounded-xl p-3 border border-border">
             <div className="flex items-center gap-2 mb-2">
               <Trophy className="w-4 h-4 text-primary" />
-              <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("facts.appRankings")}</span>
+              <span className="text-[11px] text-muted-foreground uppercase tracking-wide">{t("facts.appRankings")}</span>
             </div>
             <div className="space-y-1.5">
               {visitorRank && (

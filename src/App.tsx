@@ -159,6 +159,11 @@ if (typeof window !== "undefined") {
     void import("./pages/AddPlacePage");
     void import("./pages/PlacePage");
     void import("./pages/LoggedPlacesPage");
+    void import("./pages/ReviewDetailPage");
+    void import("./pages/PlaceSubPage");
+    void import("./pages/ListDetailPage");
+    void import("./pages/ExploreListPage");
+    void import("./pages/CountryCitiesPage");
   };
   if ("requestIdleCallback" in window) {
     (window as unknown as { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void })
@@ -188,7 +193,11 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        {/* Route changes run as React transitions: a screen whose code is
+            still loading keeps the current screen up until it's ready,
+            instead of showing an empty frame (a supported React Router
+            setting, and the default from v7). */}
+        <BrowserRouter future={{ v7_startTransition: true }}>
           <AuthProvider>
             <LanguageProvider>
               <AppRoutes />

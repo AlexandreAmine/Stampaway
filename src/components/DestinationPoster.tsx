@@ -3,7 +3,7 @@ import { Loader2 } from "lucide-react";
 import { getFlagUrl } from "@/lib/countryFlags";
 import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
 import { getDestinationPosterOverride } from "@/lib/countryPosterOverrides";
-import { sizedPosterUrl } from "@/lib/imageSizing";
+import { sizedPosterUrl, tinyPosterUrl } from "@/lib/imageSizing";
 import { FadeInImage } from "@/components/FadeInImage";
 import { FlagImage } from "@/components/CountryFlag";
 import {
@@ -131,6 +131,7 @@ export function DestinationPoster({
   const flagUrl = getFlagUrl(flagCountry, 40);
   const photoState = imageUrl && photoResult?.url === imageUrl ? photoResult.state : "loading";
   const showPhoto = !!imageUrl && photoState !== "failed";
+  const tinySrc = showPhoto ? tinyPosterUrl(imageUrl) : null;
   // No photo at all (or it failed): a deliberate card with the flag, rather
   // than a near-black tile that looks like a failed load.
   // With autoGenerate, the first render happens before the fetch starts; show
@@ -156,6 +157,18 @@ export function DestinationPoster({
             {/* Nested: .skeleton-shimmer sets position: relative, which would
                 override `absolute` if applied to the placeholder itself. */}
             {photoState === "loading" && <div className="w-full h-full skeleton-shimmer" />}
+            {/* The photo's own colors while the full file downloads. */}
+            {photoState === "loading" && tinySrc && (
+              <FadeInImage
+                key={tinySrc}
+                src={tinySrc}
+                alt=""
+                aria-hidden
+                loading={priority || eager ? "eager" : "lazy"}
+                decoding="async"
+                className="absolute inset-0 w-full h-full object-cover blur-md scale-110"
+              />
+            )}
           </div>
           <FadeInImage
             key={imageUrl}
@@ -205,7 +218,7 @@ export function DestinationPoster({
               {localizedName}
             </p>
             {type === "city" && (
-              <p className="text-[10px] text-white/70 truncate">{localizedCountry}</p>
+              <p className="text-[11px] text-white/70 truncate">{localizedCountry}</p>
             )}
           </div>
         </>

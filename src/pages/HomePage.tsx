@@ -330,10 +330,9 @@ export default function HomePage() {
             {(showAllActivities ? activities : activities.slice(0, 10)).map((a, i) => (
               <motion.button
                 key={a.id}
-                initial={{ opacity: 0, y: 12 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
                 whileTap={{ scale: 0.97 }}
-                transition={{ delay: Math.min(i, 12) * 0.04 }}
                 onTouchStart={() => prefetchPlacePrimary(queryClient, a.place_id, user?.id ?? null)}
                 onClick={() => handlePinClick(a)}
                 className="flex items-center gap-3 py-2.5 w-full text-left"

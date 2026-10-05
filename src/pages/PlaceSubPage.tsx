@@ -117,18 +117,47 @@ const SECTION_EMPTY: Record<string, TranslationKey> = {
   lists: "lists.noLists",
 };
 
+// Last loaded content of each sub-page (per place, section and viewer), kept
+// in memory for the app session: reopening one, or going back to it, shows it
+// at once and refreshes it quietly instead of showing a skeleton again.
+type SubPageCacheEntry = {
+  placeName: string;
+  data: any[];
+  reviewLikeCounts: Map<string, number>;
+  friendIds: string[];
+  likeSnapshot: ReviewLikeSnapshot | null;
+};
+const SUB_PAGE_CACHE_LIMIT = 40;
+const subPageCache = new Map<string, SubPageCacheEntry>();
+const subPageCacheKey = (placeId: string, section: string, userId: string | null) =>
+  `${placeId}|${section}|${userId ?? ""}`;
+function rememberSubPage(key: string, entry: SubPageCacheEntry) {
+  subPageCache.delete(key);
+  subPageCache.set(key, entry);
+  if (subPageCache.size > SUB_PAGE_CACHE_LIMIT) {
+    subPageCache.delete(subPageCache.keys().next().value as string);
+  }
+}
+
 export default function PlaceSubPage() {
   const { t } = useLanguage();
   const { id, section } = useParams<{ id: string; section: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [placeName, setPlaceName] = useState("");
-  const [data, setData] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialCached] = useState(() =>
+    id && section ? subPageCache.get(subPageCacheKey(id, section, user?.id ?? null)) : undefined
+  );
+  const [placeName, setPlaceName] = useState(initialCached?.placeName ?? "");
+  const [data, setData] = useState<any[]>(initialCached?.data ?? []);
+  const [loading, setLoading] = useState(!initialCached);
   const [reviewFilter, setReviewFilter] = useState<"most_liked" | "most_recent" | "friends_first">("most_liked");
-  const [reviewLikeCounts, setReviewLikeCounts] = useState<Map<string, number>>(new Map());
-  const [reviewCardLikeSnapshot, setReviewCardLikeSnapshot] = useState<ReviewCardLikeSnapshotState | null>(null);
-  const [friendIds, setFriendIds] = useState<string[]>([]);
+  const [reviewLikeCounts, setReviewLikeCounts] = useState<Map<string, number>>(initialCached?.reviewLikeCounts ?? new Map());
+  const [reviewCardLikeSnapshot, setReviewCardLikeSnapshot] = useState<ReviewCardLikeSnapshotState | null>(() =>
+    initialCached?.likeSnapshot && id && section
+      ? { ...initialCached.likeSnapshot, requestId: 0, placeId: id, section, userId: user?.id ?? null, status: "ready" }
+      : null
+  );
+  const [friendIds, setFriendIds] = useState<string[]>(initialCached?.friendIds ?? []);
   const currentContextRef = useRef({ placeId: null as string | null, section: null as string | null, userId: null as string | null });
   const dataRequestIdRef = useRef(0);
   const lastAppliedDataContextRef = useRef<{
@@ -158,12 +187,17 @@ export default function PlaceSubPage() {
       userId: user?.id ?? null,
     };
 
-    setReviewCardLikeSnapshot({
-      ...requestContext,
-      status: "loading",
-      likeCounts: new Map(),
-      likedByCurrentUser: new Set(),
-    });
+    // A snapshot already on screen for this page stays until the new one
+    // arrives, so like counts don't blank out during a quiet refresh.
+    setReviewCardLikeSnapshot((prev) =>
+      prev &&
+      prev.status === "ready" &&
+      prev.placeId === requestContext.placeId &&
+      prev.section === requestContext.section &&
+      prev.userId === requestContext.userId
+        ? prev
+        : { ...requestContext, status: "loading", likeCounts: new Map(), likedByCurrentUser: new Set() }
+    );
 
     if (reviewIds.length === 0) {
       setReviewCardLikeSnapshot({
@@ -180,6 +214,11 @@ export default function PlaceSubPage() {
         const nextSnapshot = { ...requestContext, ...snapshot, status: "ready" as const };
         if (isCurrentReviewCardLikeContext(nextSnapshot)) {
           setReviewCardLikeSnapshot(nextSnapshot);
+          if (requestContext.placeId && requestContext.section) {
+            const key = subPageCacheKey(requestContext.placeId, requestContext.section, requestContext.userId);
+            const entry = subPageCache.get(key);
+            if (entry) entry.likeSnapshot = snapshot;
+          }
         }
       })
       .catch((error) => {
@@ -482,16 +521,31 @@ export default function PlaceSubPage() {
       previousContext.userId === requestContext.userId
     );
 
-    setLoading(true);
-
+    const cacheKey = subPageCacheKey(requestContext.placeId, requestContext.section, requestContext.userId);
+    const cached = subPageCache.get(cacheKey);
     if (!sameContext) {
-      setPlaceName("");
-      setData([]);
-      setReviewLikeCounts(new Map());
-      setFriendIds([]);
       reviewCardLikeSnapshotRequestIdRef.current += 1;
-      setReviewCardLikeSnapshot(null);
+      if (cached) {
+        // Shown at once from the last visit; refreshed below.
+        setPlaceName(cached.placeName);
+        setData(cached.data);
+        setReviewLikeCounts(cached.reviewLikeCounts);
+        setFriendIds(cached.friendIds);
+        setReviewCardLikeSnapshot(
+          cached.likeSnapshot
+            ? { ...cached.likeSnapshot, requestId: 0, placeId: requestContext.placeId, section: requestContext.section, userId: requestContext.userId, status: "ready" }
+            : null
+        );
+      } else {
+        setPlaceName("");
+        setData([]);
+        setReviewLikeCounts(new Map());
+        setFriendIds([]);
+        setReviewCardLikeSnapshot(null);
+      }
     }
+    // A skeleton only when there is nothing to show yet.
+    setLoading(!sameContext && !cached);
 
     try {
       const [placeResult, sectionResult] = await Promise.all([
@@ -508,6 +562,14 @@ export default function PlaceSubPage() {
       if (sectionResult.ok) {
         const nextSection = sectionResult.data;
         setData(nextSection.data);
+        rememberSubPage(cacheKey, {
+          placeName: placeResult.ok ? placeResult.data : cached?.placeName ?? "",
+          data: nextSection.data,
+          reviewLikeCounts: nextSection.reviewLikeCounts ?? new Map(),
+          friendIds: nextSection.friendIds ?? [],
+          // Replaced when the fresh like snapshot arrives.
+          likeSnapshot: cached?.likeSnapshot ?? null,
+        });
 
         if (nextSection.reviewLikeCounts) {
           setReviewLikeCounts(nextSection.reviewLikeCounts);
@@ -584,7 +646,7 @@ export default function PlaceSubPage() {
         ) : data.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-12">{t(SECTION_EMPTY[section ?? ""] ?? "lists.noLists")}</p>
         ) : (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
+          <motion.div initial={false} animate={{ opacity: 1 }} className="space-y-3">
             {(section === "visitors" || section === "friendvisitors") &&
               data.map((v: any) => (
                 <div key={v.user_id} className="flex items-center gap-3 w-full">

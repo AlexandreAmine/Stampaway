@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, ReactNode } from "react";
-import { Session, User } from "@supabase/supabase-js";
+import { User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { isNative } from "@/lib/native/platform";
@@ -8,7 +8,6 @@ import { perfMark } from "@/lib/perfMarks";
 const PASSWORD_RESET_LOCK_KEY = "traveld.password-reset-lock";
 
 interface AuthContextType {
-  session: Session | null;
   user: User | null;
   profile: { username: string; profile_picture: string | null; needs_username: boolean } | null;
   loading: boolean;
@@ -22,8 +21,13 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUserState] = useState<User | null>(null);
+  // Every hourly token renewal (and the double sign-in event at launch)
+  // hands over a new copy of the same user. Keeping the existing object when
+  // nothing in it changed stops everything that depends on the user from
+  // re-rendering and re-running its effects for no reason.
+  const setUser = (next: User | null) =>
+    setUserState((prev) => (prev && next && JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
   const [profile, setProfile] = useState<{ username: string; profile_picture: string | null; needs_username: boolean } | null>(null);
   const [loading, setLoading] = useState(true);
   const [mustCompletePasswordReset, setMustCompletePasswordReset] = useState(() => {
@@ -80,7 +84,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       perfMark("auth-event", `${_event} ${session ? "signed-in" : "signed-out"}`);
-      setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
         setTimeout(() => fetchProfile(session.user.id), 0);
@@ -95,7 +98,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       perfMark("auth-getSession", session ? "signed-in" : "signed-out");
-      setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
         fetchProfile(session.user.id);
@@ -142,9 +144,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo(
-    () => ({ session, user, profile, loading, mustCompletePasswordReset, beginPasswordReset, completePasswordReset, refreshProfile, signOut }),
+    () => ({ user, profile, loading, mustCompletePasswordReset, beginPasswordReset, completePasswordReset, refreshProfile, signOut }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [session, user, profile, loading, mustCompletePasswordReset]
+    [user, profile, loading, mustCompletePasswordReset]
   );
 
   return (

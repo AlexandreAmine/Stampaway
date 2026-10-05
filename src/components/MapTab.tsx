@@ -350,7 +350,7 @@ export function MapTab({ userId }: { userId?: string }) {
     const theirVisitedContinents = Object.values(theirData.continentStats).filter((s) => s.visited > 0).length;
 
     return (
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <motion.div initial={false} animate={{ opacity: 1 }}>
         <div className="bg-card rounded-xl border border-border overflow-hidden" style={{ height: 300 }}>
           <CompareMapChart myData={myData} theirData={theirData} onCountryClick={handleCountryClick} />
         </div>
@@ -443,11 +443,11 @@ export function MapTab({ userId }: { userId?: string }) {
   // For now, fetch it separately (it's fast since we can derive from visitedCountries)
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <motion.div initial={false} animate={{ opacity: 1 }}>
       <div className="relative bg-card rounded-xl border border-border overflow-hidden" style={{ height: 300 }}>
         <button
           onClick={() => { hapticSelection(); setColoredMode(!coloredMode); }}
-          className={`absolute top-2 right-2 z-10 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors ${
+          className={`absolute top-2 right-2 z-10 px-2.5 py-1 rounded-full text-[11px] font-semibold transition-colors ${
             coloredMode
               ? "bg-primary text-primary-foreground"
               : "bg-card/80 backdrop-blur-sm text-muted-foreground border border-border"
@@ -464,7 +464,7 @@ export function MapTab({ userId }: { userId?: string }) {
       </div>
 
       {coloredMode && (
-        <div className="mt-2 flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
+        <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
           <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(0, 85%, 50%)" }} /><span>5 - 4.5</span></div>
           <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(25, 95%, 53%)" }} /><span>4 - 3.5</span></div>
           <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm" style={{ background: "hsl(45, 95%, 50%)" }} /><span>3 - 2</span></div>
@@ -659,7 +659,7 @@ function VisitedTogether({ myUserId, theirUserId, theirUsername }: { myUserId: s
                   className="w-full flex items-center gap-1.5 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left"
                 >
                   <span className="text-xs text-foreground">{getCachedPlaceName(c.name, language, false)}</span>
-                  <span className="text-[10px] text-muted-foreground">({getCachedPlaceName(c.country, language, true)})</span>
+                  <span className="text-[11px] text-muted-foreground">({getCachedPlaceName(c.country, language, true)})</span>
                 </button>
               ))}
             </div>
@@ -750,7 +750,7 @@ function RatingComparison({ myUserId, theirUserId, theirUsername }: { myUserId: 
         <div className="flex items-center gap-2 min-w-0">
           {!showCountry && <CountryFlag country={item.name} />}
           <span className="text-xs text-foreground truncate">{getCachedPlaceName(item.name, language, !showCountry)}</span>
-          {showCountry && <span className="text-[10px] text-muted-foreground">({getCachedPlaceName(item.country ?? "", language, true)})</span>}
+          {showCountry && <span className="text-[11px] text-muted-foreground">({getCachedPlaceName(item.country ?? "", language, true)})</span>}
         </div>
         <div className="flex items-center gap-3 shrink-0">
           <span className="text-xs font-semibold text-primary">{item.myRating != null ? item.myRating.toFixed(1) : "—"}</span>
@@ -780,8 +780,8 @@ function RatingComparison({ myUserId, theirUserId, theirUsername }: { myUserId: 
           ))}
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] font-medium text-primary">{t("profile.legendYou")}</span>
-          <span className="text-[10px] font-medium" style={{ color: "hsl(40, 95%, 55%)" }}>{theirUsername}</span>
+          <span className="text-[11px] font-medium text-primary">{t("profile.legendYou")}</span>
+          <span className="text-[11px] font-medium" style={{ color: "hsl(40, 95%, 55%)" }}>{theirUsername}</span>
         </div>
       </div>
 
@@ -861,7 +861,7 @@ function SharedWishlist({ myUserId, theirUserId, theirUsername }: { myUserId: st
               <button key={c.placeId} onClick={() => navigate(`/place/${c.placeId}`)} {...placeLinkProps(c.placeId)} className="w-full flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left">
                 {wishTab === "country" && <CountryFlag country={c.name} />}
                 <span className="text-xs text-foreground">{getCachedPlaceName(c.name, language, wishTab === "country")}</span>
-                {"country" in c && wishTab === "city" && <span className="text-[10px] text-muted-foreground">({getCachedPlaceName((c as any).country, language, true)})</span>}
+                {"country" in c && wishTab === "city" && <span className="text-[11px] text-muted-foreground">({getCachedPlaceName((c as any).country, language, true)})</span>}
               </button>
             );
           })}

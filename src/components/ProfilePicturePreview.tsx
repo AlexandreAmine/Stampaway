@@ -28,6 +28,9 @@ export function ProfilePicturePreview({ src, alt, isOpen, onClose }: ProfilePict
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      data-overlay-open
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm"
       onClick={onClose}
     >

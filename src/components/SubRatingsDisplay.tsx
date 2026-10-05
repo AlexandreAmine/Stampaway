@@ -40,8 +40,8 @@ export function SubRatingsDisplay({ reviewId, compact = false }: SubRatingsDispl
       <div className="flex flex-col gap-0.5">
         {subRatings.map((sr) => (
           <div key={sr.category} className="flex items-center justify-between gap-1">
-            <span className="text-[9px] text-muted-foreground truncate">{subCategoryShortLabel(sr.category, t)}</span>
-            <span className="text-[9px] font-semibold text-foreground shrink-0">{sr.rating}</span>
+            <span className="text-[10px] text-muted-foreground truncate">{subCategoryShortLabel(sr.category, t)}</span>
+            <span className="text-[10px] font-semibold text-foreground shrink-0">{sr.rating}</span>
           </div>
         ))}
       </div>
@@ -148,11 +148,11 @@ export function PlaceCategoryRatings({ placeId, userId }: PlaceCategoryRatingsPr
               <div className="flex items-center gap-1.5">
                 <StarRating rating={a.avg} size={12} />
                 <span className="text-sm font-bold text-foreground">{a.avg}</span>
-                <span className="text-[10px] text-muted-foreground">({a.count})</span>
+                <span className="text-[11px] text-muted-foreground">({a.count})</span>
               </div>
               {myR && (
                 <div className="flex items-center gap-1">
-                  <span className="text-[10px] text-primary font-medium">{t("review.youLabel")}</span>
+                  <span className="text-[11px] text-primary font-medium">{t("review.youLabel")}</span>
                   <StarRating rating={Number(myR.rating)} size={10} />
                   <span className="text-xs font-semibold text-primary">{myR.rating}</span>
                 </div>

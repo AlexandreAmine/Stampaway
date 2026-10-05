@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { hapticLight } from "@/lib/haptics";
+import { isOverlayOpen } from "@/hooks/useSheetDrag";
 
 const PULL_THRESHOLD = 70; // px of (damped) pull needed to trigger
 const MAX_PULL = 110; // px cap so the indicator can't be dragged forever
@@ -47,6 +48,8 @@ export function PullToRefresh({ onRefresh }: PullToRefreshProps) {
     const onTouchStart = (e: TouchEvent) => {
       if (refreshingRef.current || e.touches.length !== 1) return;
       if (window.scrollY > 0) return;
+      // A pull inside a sheet belongs to the sheet, not the page behind it.
+      if (isOverlayOpen()) return;
       startYRef.current = e.touches[0].clientY;
       firedHapticRef.current = false;
     };

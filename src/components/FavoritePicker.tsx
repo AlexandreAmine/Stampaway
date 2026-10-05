@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { useSheetTransition } from "@/hooks/useSheetTransition";
+import { RemoveScroll } from "react-remove-scroll";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { fetchAllPlaces } from "@/lib/placeRankings";
 import { matchesPlaceName, normalizeSearchText } from "@/lib/placeSearch";
@@ -68,7 +69,11 @@ export function FavoritePicker({ open, onClose, type, onSelect }: FavoritePicker
 
   return (
     <AnimatePresence>
+      <RemoveScroll>
       <motion.div
+        role="dialog"
+        aria-modal="true"
+        data-overlay-open
         initial={{ opacity: 0 }}
         animate={{ opacity: closing ? 0 : 1 }}
         transition={{ duration: 0.2 }}
@@ -130,6 +135,7 @@ export function FavoritePicker({ open, onClose, type, onSelect }: FavoritePicker
           </div>
         </div>
       </motion.div>
+      </RemoveScroll>
     </AnimatePresence>
   );
 }

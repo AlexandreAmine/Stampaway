@@ -32,6 +32,25 @@ interface PlaceResult {
   image: string | null;
 }
 
+/** The country page for `countryName`, if `userId` hasn't logged that country yet. */
+async function findUnloggedCountry(userId: string, countryName: string) {
+  const { data: countryPlace } = await supabase
+    .from("places")
+    .select("id, name, country, image")
+    .eq("type", "country")
+    .eq("name", countryName)
+    .maybeSingle();
+  if (!countryPlace) return null;
+
+  const { data: countryReview } = await supabase
+    .from("reviews")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("place_id", countryPlace.id)
+    .limit(1);
+  return countryReview && countryReview.length > 0 ? null : countryPlace;
+}
+
 export default function AddPlacePage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -275,6 +294,13 @@ export default function AddPlacePage() {
       return;
     }
     setSaving(true);
+    // Logging a city whose country isn't logged yet offers to log the country
+    // too. Looked up alongside the save (not after it), so the offer appears
+    // as the profile opens instead of popping up a moment later.
+    const unloggedCountryPromise =
+      selectedPlace.type === "city" && selectedPlace.country
+        ? findUnloggedCountry(user.id, selectedPlace.country).catch(() => null)
+        : Promise.resolve(null);
     // Save year if selected; save month only if year is also selected
     const hasYear = visitYear !== "";
     const hasMonth = visitMonth !== "";
@@ -444,47 +470,29 @@ export default function AddPlacePage() {
       hapticSuccess();
       toast.success(t("review.saved"));
 
-      // If user logged a city and hasn't logged the corresponding country, show a prompt
-      // (fire-and-forget — navigation continues normally as for any other log)
-      if (selectedPlace.type === "city" && selectedPlace.country) {
-        (async () => {
-          const { data: countryPlace } = await supabase
-            .from("places")
-            .select("id, name, country, image")
-            .eq("type", "country")
-            .eq("name", selectedPlace.country)
-            .maybeSingle();
-
-          if (!countryPlace) return;
-
-          const { data: countryReview } = await supabase
-            .from("reviews")
-            .select("id")
-            .eq("user_id", user.id)
-            .eq("place_id", countryPlace.id)
-            .limit(1);
-
-          if (!countryReview || countryReview.length === 0) {
-            toast(
-              t("review.logCountryPrompt", {
-                country: getCachedPlaceName(countryPlace.name, language, true),
-              }),
-              {
-                duration: 3000,
-                className: "!text-base !p-5 !min-h-[72px]",
-                action: {
-                  label: t("review.logAction"),
-                  onClick: () => {
-                    navigate(
-                      `/add?placeId=${countryPlace.id}&placeName=${encodeURIComponent(countryPlace.name)}&placeCountry=${encodeURIComponent(countryPlace.country || "")}&placeImage=${encodeURIComponent(countryPlace.image || "")}`
-                    );
-                  },
-                },
-              }
-            );
+      // If the user logged a city and hasn't logged its country, offer it
+      // (navigation continues normally, as for any other log).
+      void unloggedCountryPromise.then((countryPlace) => {
+        if (!countryPlace) return;
+        toast(
+          t("review.logCountryPrompt", {
+            country: getCachedPlaceName(countryPlace.name, language, true),
+          }),
+          {
+            // Long enough to read and act on after arriving on the profile.
+            duration: 8000,
+            className: "!text-base !p-5 !min-h-[72px]",
+            action: {
+              label: t("review.logAction"),
+              onClick: () => {
+                navigate(
+                  `/add?placeId=${countryPlace.id}&placeName=${encodeURIComponent(countryPlace.name)}&placeCountry=${encodeURIComponent(countryPlace.country || "")}&placeImage=${encodeURIComponent(countryPlace.image || "")}`
+                );
+              },
+            },
           }
-        })();
-      }
+        );
+      });
 
       navigate("/profile");
     }
@@ -702,7 +710,7 @@ export default function AddPlacePage() {
           {results.map((place) => (
             <motion.button
               key={place.id}
-              initial={{ opacity: 0 }}
+              initial={false}
               animate={{ opacity: 1 }}
               onClick={() => handleSelectPlace(place)}
               className="aspect-[3/4] w-full"

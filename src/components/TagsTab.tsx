@@ -147,7 +147,7 @@ export function TagsTab({ userId }: { userId?: string }) {
               </button>
             </div>
             {tag.review?.visit_year && (
-              <p className="text-[10px] text-muted-foreground mt-0.5">
+              <p className="text-[11px] text-muted-foreground mt-0.5">
                 {tag.review.visit_month ? months[tag.review.visit_month] + " " : ""}{tag.review.visit_year}
               </p>
             )}

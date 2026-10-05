@@ -102,7 +102,7 @@ export function FollowersTab({ userId }: { userId?: string }) {
     : followers;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+    <motion.div initial={false} animate={{ opacity: 1 }} className="space-y-4">
       {/* Search bar */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />

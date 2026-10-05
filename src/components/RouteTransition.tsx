@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
+import { runPendingSlideClear } from "@/lib/backTransition";
 import { useLocation, useNavigationType } from "react-router-dom";
 
 // Root tabs: switching between them is lateral (tab-bar) navigation, not a
@@ -25,6 +26,12 @@ export default function RouteTransition() {
   const location = useLocation();
   const navType = useNavigationType();
   const prevPathRef = useRef(location.pathname);
+
+  // A finished back slide (swipe or back arrow) is undone in the same frame
+  // the previous page appears.
+  useLayoutEffect(() => {
+    runPendingSlideClear();
+  }, [location.key]);
 
   useEffect(() => {
     const cameFrom = prevPathRef.current;

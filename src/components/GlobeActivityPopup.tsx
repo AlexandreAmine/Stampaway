@@ -232,7 +232,7 @@ export function GlobeActivityPopup({ activity, onClose, onNavigate, onProfileNav
             )}
 
             {/* Tap hint */}
-            <p className="text-[10px] text-muted-foreground/50 text-center mt-3">{t("globe.tapHint")}</p>
+            <p className="text-[11px] text-muted-foreground/50 text-center mt-3">{t("globe.tapHint")}</p>
           </div>
         </motion.div>
       )}

@@ -562,7 +562,7 @@ export default function PlacePage() {
 
       <div className="px-5 -mt-16 relative z-10">
         {/* Name & Country */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <motion.div initial={false} animate={{ opacity: 1, y: 0 }}>
           <div className="flex items-center gap-2 mb-1">
             {flagUrl && <img src={flagUrl} alt="" className="w-6 h-4 rounded-sm object-cover" />}
             <h1 className="text-2xl font-bold text-foreground" data-no-translate>{localizedName}</h1>
@@ -581,7 +581,7 @@ export default function PlacePage() {
         </motion.div>
 
         {/* Description */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>
+        <motion.div initial={false} animate={{ opacity: 1 }}>
           {loadingDesc ? (
             <div className="h-12 bg-card rounded-lg skeleton-shimmer mb-5" />
           ) : description ? (
@@ -590,7 +590,7 @@ export default function PlacePage() {
         </motion.div>
 
         {/* Rating Distribution */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }} className="mb-5">
+        <motion.div initial={false} animate={{ opacity: 1 }} className="mb-5">
           <div className="flex items-center gap-3 mb-2">
             <span className="text-3xl font-bold text-foreground">{avgRating || "—"}</span>
             <div>
@@ -610,7 +610,7 @@ export default function PlacePage() {
 
         {/* My Review */}
         {myReview && (
-          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
+          <motion.div initial={false} animate={{ opacity: 1, y: 0 }}>
             <button
               onClick={() => setEditSheetOpen(true)}
               className="w-full bg-card rounded-xl p-4 border border-border mb-5 text-left"
@@ -632,7 +632,7 @@ export default function PlacePage() {
 
         {/* Visited by (friends) */}
         {friendVisitors.length > 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="mb-5">
+          <motion.div initial={false} animate={{ opacity: 1 }} className="mb-5">
             <button
               onClick={() => navigate(`/place/${id}/friendvisitors`)}
               className="flex items-center gap-1 mb-3"
@@ -666,7 +666,7 @@ export default function PlacePage() {
 
         {/* Want to visit (friends) */}
         {friendWishlist.length > 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="mb-5">
+          <motion.div initial={false} animate={{ opacity: 1 }} className="mb-5">
             <button
               onClick={() => navigate(`/place/${id}/wanttovisit`)}
               className="flex items-center gap-1 mb-3"
@@ -692,25 +692,24 @@ export default function PlacePage() {
 
         {/* Stats row - clickable */}
         <motion.div
-          initial={{ opacity: 0, y: 8 }}
+          initial={false}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
           className="flex items-center justify-around py-5 border-t border-border mt-2"
         >
           <button onClick={() => navigate(`/place/${id}/visitors`)} className="flex flex-col items-center gap-1">
             <Users className="w-5 h-5 text-primary" />
             <span className="text-lg font-bold text-foreground">{formatCount(visitorsCount)}</span>
-            <span className="text-[10px] text-muted-foreground">{t("place.visitors")}</span>
+            <span className="text-[11px] text-muted-foreground">{t("place.visitors")}</span>
           </button>
           <button onClick={() => navigate(`/place/${id}/reviews`)} className="flex flex-col items-center gap-1">
             <MessageSquare className="w-5 h-5 text-primary" />
             <span className="text-lg font-bold text-foreground">{formatCount(writtenReviewsCount)}</span>
-            <span className="text-[10px] text-muted-foreground">{t("place.reviews")}</span>
+            <span className="text-[11px] text-muted-foreground">{t("place.reviews")}</span>
           </button>
           <button onClick={() => navigate(`/place/${id}/lists`)} className="flex flex-col items-center gap-1">
             <List className="w-5 h-5 text-primary" />
             <span className="text-lg font-bold text-foreground">{formatCount(listsCount)}</span>
-            <span className="text-[10px] text-muted-foreground">{t("place.lists")}</span>
+            <span className="text-[11px] text-muted-foreground">{t("place.lists")}</span>
           </button>
         </motion.div>
 
@@ -721,7 +720,7 @@ export default function PlacePage() {
 
         {/* Country-specific: Cities in country */}
         {secondaryLoaded && place.type === "country" && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="mt-6">
+          <motion.div initial={false} animate={{ opacity: 1 }} className="mt-6">
             {/* Cities in country header */}
             <button
               onClick={() => navigate(`/country/${encodeURIComponent(place.name)}/cities`)}

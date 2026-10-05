@@ -451,7 +451,7 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <motion.div initial={false} animate={{ opacity: 1 }}>
       <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-hide">
         {sections.map((s) => (
           <button
@@ -501,7 +501,7 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
               <motion.button
                 key={l.id}
                 onClick={() => navigate(`/list/${l.id}`)}
-                initial={{ opacity: 0, y: 12 }}
+                initial={false}
                 animate={{ opacity: 1, y: 0 }}
                 className="w-full bg-card rounded-xl p-4 border border-border text-left"
               >

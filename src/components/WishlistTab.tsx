@@ -237,7 +237,7 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
   );
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+    <motion.div initial={false} animate={{ opacity: 1 }} className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
           {(["country", "city"] as const).map((tab) => (

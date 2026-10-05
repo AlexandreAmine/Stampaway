@@ -208,7 +208,7 @@ export function ShareProfileSheet({ open, onClose, profile, stats }: ShareProfil
                   <div className={`w-12 h-12 rounded-full ${c.bg} flex items-center justify-center`}>
                     <Icon className="w-5 h-5 text-white" />
                   </div>
-                  <span className="text-[10px] text-muted-foreground">{c.label}</span>
+                  <span className="text-[11px] text-muted-foreground">{c.label}</span>
                 </a>
               );
             })}
@@ -223,7 +223,7 @@ function Stat({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center">
       <span className="text-sm font-bold text-foreground leading-tight">{value}</span>
-      <span className="text-[10px] text-muted-foreground leading-tight">{label}</span>
+      <span className="text-[11px] text-muted-foreground leading-tight">{label}</span>
     </div>
   );
 }
@@ -250,7 +250,7 @@ function ChannelButton({
       <div className={`w-12 h-12 rounded-full ${bg} flex items-center justify-center`}>
         <Icon className={`w-5 h-5 ${iconClass}`} />
       </div>
-      <span className="text-[10px] text-muted-foreground">{label}</span>
+      <span className="text-[11px] text-muted-foreground">{label}</span>
     </button>
   );
 }

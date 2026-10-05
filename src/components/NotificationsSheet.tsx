@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { hapticSuccess, hapticMedium, hapticLight } from "@/lib/haptics";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
 import { useSheetTransition } from "@/hooks/useSheetTransition";
+import { useSheetDrag } from "@/hooks/useSheetDrag";
+import { RemoveScroll } from "react-remove-scroll";
 import { timeAgo } from "@/lib/localeFormat";
 import { getCachedAnyPlaceName } from "@/lib/placeNames";
 
@@ -37,6 +39,7 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { closing, requestClose } = useSheetTransition(open, onClose);
+  const sheetRef = useSheetDrag(requestClose);
 
   // Cached by React Query (and persisted): reopening the sheet renders the
   // last known notifications instantly while a background refetch updates
@@ -217,12 +220,16 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
+    <RemoveScroll>
+    <div className="fixed inset-0 z-50 flex items-end justify-center" data-overlay-open>
       <div
         className={`absolute inset-0 bg-black/60 ${closing ? "animate-out fade-out fill-mode-forwards duration-200" : "animate-in fade-in duration-200"}`}
         onClick={requestClose}
       />
       <div
+        ref={sheetRef}
+        role="dialog"
+        aria-modal="true"
         className={`relative bg-card w-full max-w-lg rounded-t-2xl border border-border flex flex-col ${closing ? "animate-out slide-out-to-bottom fill-mode-forwards duration-200" : "animate-in slide-in-from-bottom duration-200"}`}
         style={{ height: "85vh", maxHeight: "85vh" }}
       >
@@ -281,5 +288,6 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
         </div>
       </div>
     </div>
+    </RemoveScroll>
   );
 }

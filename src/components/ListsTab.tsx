@@ -190,7 +190,7 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
   // List detail view
   if (openList) {
     return (
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+      <motion.div initial={false} animate={{ opacity: 1 }} className="space-y-4">
         <div className="flex items-center justify-between">
           <button onClick={() => setOpenList(null)} className="flex items-center gap-2">
             <ChevronRight className="w-4 h-4 text-muted-foreground rotate-180" />
@@ -267,7 +267,7 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
   }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+    <motion.div initial={false} animate={{ opacity: 1 }} className="space-y-4">
       {!readOnly && (
         <AnimatePresence>
           {showCreate && (

@@ -23,15 +23,32 @@ export function slideBack(goBack: () => void) {
   el.style.transition = `transform ${SLIDE_MS}ms ease-out`;
   el.style.transform = `translateX(${window.innerWidth}px)`;
   window.setTimeout(() => {
-    goBack();
-    // Cleared on the next frame so the previous page never renders shifted.
-    const clear = () => {
+    clearSlideWhenRouteChanges(() => {
       el.style.transition = "";
       el.style.transform = "";
       sliding = false;
-    };
-    requestAnimationFrame(clear);
-    // In case animation frames are throttled.
-    window.setTimeout(clear, 80);
+    });
+    goBack();
   }, SLIDE_MS + 10);
+}
+
+// Undoing the slide has to happen in the same frame the previous page is
+// drawn: earlier, the page that just slid away would flash back for a
+// frame; later, the previous page would show shifted. Route changes render
+// as transitions, which can take a frame or two, so RouteTransition calls
+// runPendingSlideClear() as it commits the new location.
+let pendingClear: (() => void) | null = null;
+
+export function clearSlideWhenRouteChanges(clear: () => void) {
+  pendingClear = clear;
+  // Safety net if no route change follows (nothing to go back to).
+  window.setTimeout(() => {
+    if (pendingClear === clear) runPendingSlideClear();
+  }, 1000);
+}
+
+export function runPendingSlideClear() {
+  const clear = pendingClear;
+  pendingClear = null;
+  clear?.();
 }

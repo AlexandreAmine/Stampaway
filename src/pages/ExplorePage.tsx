@@ -1214,7 +1214,7 @@ export default function ExplorePage() {
                                     height={16}
                                     alt=""
                                   />
-                                  <span className="text-[10px] text-muted-foreground line-clamp-2" data-no-translate>{comment.text}</span>
+                                  <span className="text-[11px] text-muted-foreground line-clamp-2" data-no-translate>{comment.text}</span>
                                 </button>
                               );
                             })()}
@@ -1245,7 +1245,7 @@ export default function ExplorePage() {
                     <h2 className="text-lg font-bold text-foreground mb-3">{t("explore.recentFromFriends")}</h2>
                     <div className="space-y-3">
                       {friendReviews.map((r) => (
-                        <motion.div key={r.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+                        <motion.div key={r.id} initial={false} animate={{ opacity: 1, y: 0 }}>
                           <ReviewCard
                             review={r}
                             likeDataStatus={
@@ -1275,7 +1275,7 @@ export default function ExplorePage() {
                   ) : (
                     <div className="space-y-3">
                       {popularReviews.map((r) => (
-                        <motion.div key={r.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+                        <motion.div key={r.id} initial={false} animate={{ opacity: 1, y: 0 }}>
                           <ReviewCard
                             review={r}
                             likeDataStatus={
@@ -1397,7 +1397,7 @@ function ListCard({ list, showLikes = false }: { list: any; showLikes?: boolean 
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={false}
       animate={{ opacity: 1, y: 0 }}
       className="bg-card rounded-xl p-4 border border-border"
     >

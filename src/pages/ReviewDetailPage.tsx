@@ -105,7 +105,7 @@ export default function ReviewDetailPage() {
 
       <div className="px-5 -mt-12 relative z-10">
         {/* User info */}
-        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+        <motion.div initial={false} animate={{ opacity: 1, y: 0 }}>
           <div className="flex items-center gap-3 mb-4">
             <button onClick={() => setPreviewOpen(true)}>
               <Avatar className="w-12 h-12 border-2 border-background">
@@ -130,7 +130,7 @@ export default function ReviewDetailPage() {
         </motion.div>
 
         {/* Rating & liked */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }} className="bg-card rounded-xl p-4 border border-border mb-4">
+        <motion.div initial={false} animate={{ opacity: 1 }} className="bg-card rounded-xl p-4 border border-border mb-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <span className="text-2xl font-bold text-foreground">{review.rating ?? "—"}</span>
@@ -162,7 +162,7 @@ export default function ReviewDetailPage() {
         </motion.div>
 
         {/* Sub-category ratings */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.22 }} className="mb-4">
+        <motion.div initial={false} animate={{ opacity: 1 }} className="mb-4">
           <div className="bg-card rounded-xl p-4 border border-border">
             <SubRatingsDisplay reviewId={reviewId!} />
           </div>
@@ -170,7 +170,7 @@ export default function ReviewDetailPage() {
 
         {/* Review text */}
         {review.review_text && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.25 }} className="mb-4">
+          <motion.div initial={false} animate={{ opacity: 1 }} className="mb-4">
             <div className="flex items-center gap-2 mb-2">
               <MessageSquare className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-semibold text-foreground">{t("reviewDetail.review")}</h3>
@@ -183,7 +183,7 @@ export default function ReviewDetailPage() {
 
         {/* Past loggings */}
         {pastLoggings.length > 0 && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="mb-4">
+          <motion.div initial={false} animate={{ opacity: 1 }} className="mb-4">
             <div className="flex items-center gap-2 mb-3">
               <History className="w-4 h-4 text-primary" />
               <h3 className="text-sm font-semibold text-foreground">{t("reviewDetail.previousVisits")}</h3>
@@ -206,10 +206,10 @@ export default function ReviewDetailPage() {
                       </div>
                       <div className="flex items-center gap-2 text-muted-foreground">
                         {logDate && (
-                          <span className="text-[10px]">{logDate}</span>
+                          <span className="text-[11px]">{logDate}</span>
                         )}
                         {log.duration_days && (
-                          <span className="text-[10px]">{log.duration_days}d</span>
+                          <span className="text-[11px]">{log.duration_days}d</span>
                         )}
                       </div>
                     </div>
@@ -224,7 +224,7 @@ export default function ReviewDetailPage() {
         )}
 
         {/* Comments section */}
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.35 }} className="mt-6">
+        <motion.div initial={false} animate={{ opacity: 1 }} className="mt-6">
           <ReviewComments reviewId={reviewId!} />
         </motion.div>
       </div>

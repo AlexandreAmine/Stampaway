@@ -281,7 +281,7 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
   );
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+    <motion.div initial={false} animate={{ opacity: 1 }}>
       <div className="flex items-center justify-between mb-3">
         <button
           onClick={() => setGrouped((g) => !g)}

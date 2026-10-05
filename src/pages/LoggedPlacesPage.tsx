@@ -86,9 +86,8 @@ export default function LoggedPlacesPage() {
             {places.map((place, i) => (
               <motion.div
                 key={place.place_id}
-                initial={{ opacity: 0, scale: 0.95 }}
+                initial={false}
                 animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: Math.min(i, 12) * 0.03 }}
                 className="relative"
               >
                 <div className="aspect-[3/4] w-full">

@@ -420,7 +420,7 @@ export default function SearchPage() {
         {items.map((p: any, itemIndex: number) => (
           <motion.button
             key={p.id}
-            initial={{ opacity: 0 }}
+            initial={false}
             animate={{ opacity: 1 }}
             whileTap={{ scale: 0.97 }}
             onTouchStart={() => prefetchPlacePrimary(queryClient, p.id, user?.id ?? null)}
@@ -521,7 +521,7 @@ export default function SearchPage() {
       return (
         <div className="space-y-3">
           {lists.map((l: any) => (
-            <motion.button key={l.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} onClick={() => navigate(`/list/${l.id}`)} className="w-full text-left bg-card rounded-xl p-4 border border-border">
+            <motion.button key={l.id} initial={false} animate={{ opacity: 1, y: 0 }} onClick={() => navigate(`/list/${l.id}`)} className="w-full text-left bg-card rounded-xl p-4 border border-border">
               <div className="flex items-center gap-3">
                 {l.profiles && (
                   <Avatar className="w-8 h-8 shrink-0">
@@ -553,7 +553,7 @@ export default function SearchPage() {
             const isMe = u.user_id === user?.id;
             const relation = relations.get(u.user_id);
             return (
-              <motion.div key={u.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between py-3">
+              <motion.div key={u.id} initial={false} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between py-3">
                 <button onClick={() => navigate(isMe ? "/profile" : `/profile/${u.user_id}`)} {...profileLinkProps(u.user_id, u.username, u.profile_picture)} className="flex items-center gap-3">
                   <Avatar className="w-10 h-10">
                     <AvatarImage src={u.profile_picture || fallbackAvatarUrl(u.username)} />

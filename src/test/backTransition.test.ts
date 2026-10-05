@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { slideBack } from "@/lib/backTransition";
+import { slideBack, runPendingSlideClear } from "@/lib/backTransition";
 
 let reduceMotion = false;
 beforeEach(() => {
@@ -22,7 +22,11 @@ describe("slideBack", () => {
     expect(goBack).not.toHaveBeenCalled();
     vi.advanceTimersByTime(250);
     expect(goBack).toHaveBeenCalledTimes(1);
+    // Still slid away until the previous page is committed…
     vi.advanceTimersByTime(100);
+    expect(el.style.transform).toContain("translateX");
+    // …then cleared in that same commit.
+    runPendingSlideClear();
     expect(el.style.transform).toBe("");
   });
 
@@ -40,5 +44,12 @@ describe("slideBack", () => {
     slideBack(goBack);
     expect(goBack).toHaveBeenCalledTimes(1);
     expect(document.getElementById("route-container")!.style.transform).toBe("");
+  });
+
+  it("clears anyway if no route change follows", () => {
+    const el = document.getElementById("route-container")!;
+    slideBack(() => {});
+    vi.advanceTimersByTime(250 + 1000);
+    expect(el.style.transform).toBe("");
   });
 });

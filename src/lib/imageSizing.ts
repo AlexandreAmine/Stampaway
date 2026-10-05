@@ -43,3 +43,20 @@ export function sizedPosterUrl(
     return url;
   }
 }
+
+/**
+ * A ~1 KB rendition of a stock-photo poster, shown blurred while the full
+ * card image downloads so a loading card already shows the photo's colors.
+ * Null for other hosts (bundled posters load from the app itself, and
+ * uploads have no smaller rendition — the "tiny" file would be the full one).
+ */
+export function tinyPosterUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const host = new URL(url).hostname;
+    if (host !== "images.unsplash.com" && host !== "images.pexels.com") return null;
+  } catch {
+    return null;
+  }
+  return sizedPosterUrl(url, 32);
+}

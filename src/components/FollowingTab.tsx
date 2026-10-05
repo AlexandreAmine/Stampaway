@@ -212,7 +212,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
     : following;
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+    <motion.div initial={false} animate={{ opacity: 1 }} className="space-y-4">
       {/* Search bar (filter own list) + add button */}
       <div className="flex items-center gap-2">
         <div className="relative flex-1">

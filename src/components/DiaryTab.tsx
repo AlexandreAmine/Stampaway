@@ -146,7 +146,7 @@ export function DiaryTab({ userId }: { userId?: string }) {
   });
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+    <motion.div initial={false} animate={{ opacity: 1 }} className="space-y-4">
       {/* Section toggle */}
       <div className="flex gap-2">
         <button
