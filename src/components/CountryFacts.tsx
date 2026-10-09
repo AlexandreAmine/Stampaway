@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { createPersistentCache } from "@/lib/persistentCache";
+import { fetchPlaceRanks } from "@/lib/placeRankings";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Globe, Plane, Utensils, DollarSign, Trophy, Star, Sun, TrendingUp, TrendingDown, Users } from "lucide-react";
@@ -26,6 +28,9 @@ interface Facts {
   least_touristic_months: string[];
 }
 
+// Key facts change rarely: keep the last ~40 countries opened, for a week.
+const countryFactsCache = createPersistentCache<Facts>("country_facts", { maxEntries: 40, ttlMs: 7 * 24 * 60 * 60 * 1000 });
+
 export function CountryFacts({ countryName, placeId }: CountryFactsProps) {
   const { t, language } = useLanguage();
   const [facts, setFacts] = useState<Facts | null>(null);
@@ -40,6 +45,14 @@ export function CountryFacts({ countryName, placeId }: CountryFactsProps) {
   }, [countryName, language]);
 
   const fetchFacts = async () => {
+    // Shown at once from the phone when this country was opened before.
+    const cacheKey = `${countryName}|${language}`;
+    const saved = countryFactsCache.get(cacheKey);
+    if (saved) {
+      setFacts(saved);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const { data: cached } = await supabase
@@ -51,6 +64,7 @@ export function CountryFacts({ countryName, placeId }: CountryFactsProps) {
 
       if (cached?.facts) {
         setFacts(cached.facts as Facts);
+        countryFactsCache.set(cacheKey, cached.facts as Facts);
         setLoading(false);
         return;
       }
@@ -61,6 +75,7 @@ export function CountryFacts({ countryName, placeId }: CountryFactsProps) {
 
       if (data && !error) {
         setFacts(data as Facts);
+        countryFactsCache.set(cacheKey, data as Facts);
       }
     } catch (e) {
       console.error("Failed to load country facts:", e);
@@ -69,53 +84,13 @@ export function CountryFacts({ countryName, placeId }: CountryFactsProps) {
   };
 
   const fetchRankings = async () => {
-    const { data: countries } = await supabase
-      .from("places")
-      .select("id, name")
-      .eq("type", "country");
-
-    if (!countries || countries.length === 0) return;
-
-    const countryIds = countries.map((c) => c.id);
-
-    const { data: reviews } = await supabase
-      .from("reviews")
-      .select("place_id, rating, user_id")
-      .in("place_id", countryIds);
-
-    if (!reviews) return;
-
-    const visitorMap = new Map<string, Set<string>>();
-    const ratingMap = new Map<string, number[]>();
-
-    reviews.forEach((r) => {
-      if (!visitorMap.has(r.place_id)) visitorMap.set(r.place_id, new Set());
-      visitorMap.get(r.place_id)!.add(r.user_id);
-
-      if (r.rating != null) {
-        if (!ratingMap.has(r.place_id)) ratingMap.set(r.place_id, []);
-        ratingMap.get(r.place_id)!.push(Number(r.rating));
-      }
-    });
-
-    const visitorRanking = countries
-      .map((c) => ({ id: c.id, count: visitorMap.get(c.id)?.size || 0 }))
-      .sort((a, b) => b.count - a.count);
-
-    const vIdx = visitorRanking.findIndex((c) => c.id === placeId);
-    if (vIdx >= 0) setVisitorRank(vIdx + 1);
-
-    const ratingRanking = countries
-      .map((c) => {
-        const ratings = ratingMap.get(c.id) || [];
-        const avg = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
-        return { id: c.id, avg };
-      })
-      .filter((c) => c.avg > 0)
-      .sort((a, b) => b.avg - a.avg);
-
-    const rIdx = ratingRanking.findIndex((c) => c.id === placeId);
-    if (rIdx >= 0) setRatingRank(rIdx + 1);
+    try {
+      const ranks = await fetchPlaceRanks(placeId, "country");
+      setVisitorRank(ranks.visitorRank);
+      setRatingRank(ranks.ratingRank);
+    } catch {
+      // Rankings are a bonus line; the facts still show without them.
+    }
   };
 
   if (loading) {

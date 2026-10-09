@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { createPersistentCache } from "@/lib/persistentCache";
+import { fetchPlaceRanks } from "@/lib/placeRankings";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { Globe, Utensils, Trophy, Star, Sun, TrendingUp, TrendingDown, Users } from "lucide-react";
@@ -21,6 +23,9 @@ interface CityFactsData {
   least_touristic_months: string[];
 }
 
+// Key facts change rarely: keep the last ~60 cities opened, for a week.
+const cityFactsCache = createPersistentCache<CityFactsData>("city_facts", { maxEntries: 60, ttlMs: 7 * 24 * 60 * 60 * 1000 });
+
 export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
   const { t, language } = useLanguage();
   const [facts, setFacts] = useState<CityFactsData | null>(null);
@@ -35,6 +40,14 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
   }, [cityName, countryName, language]);
 
   const fetchFacts = async () => {
+    // Shown at once from the phone when this city was opened before.
+    const cacheKey = `${cityName}|${countryName}|${language}`;
+    const saved = cityFactsCache.get(cacheKey);
+    if (saved) {
+      setFacts(saved);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const { data: cached } = await supabase
@@ -47,6 +60,7 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
 
       if (cached?.facts) {
         setFacts(cached.facts as CityFactsData);
+        cityFactsCache.set(cacheKey, cached.facts as CityFactsData);
         setLoading(false);
         return;
       }
@@ -57,6 +71,7 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
 
       if (data && !error) {
         setFacts(data as CityFactsData);
+        cityFactsCache.set(cacheKey, data as CityFactsData);
       }
     } catch (e) {
       console.error("Failed to load city facts:", e);
@@ -65,53 +80,13 @@ export function CityFacts({ cityName, countryName, placeId }: CityFactsProps) {
   };
 
   const fetchRankings = async () => {
-    const { data: cities } = await supabase
-      .from("places")
-      .select("id, name")
-      .eq("type", "city");
-
-    if (!cities || cities.length === 0) return;
-
-    const cityIds = cities.map((c) => c.id);
-
-    let allReviews: any[] = [];
-    for (let i = 0; i < cityIds.length; i += 500) {
-      const chunk = cityIds.slice(i, i + 500);
-      const { data: reviews } = await supabase
-        .from("reviews")
-        .select("place_id, rating, user_id")
-        .in("place_id", chunk);
-      if (reviews) allReviews = allReviews.concat(reviews);
+    try {
+      const ranks = await fetchPlaceRanks(placeId, "city");
+      setVisitorRank(ranks.visitorRank);
+      setRatingRank(ranks.ratingRank);
+    } catch {
+      // Rankings are a bonus line; the facts still show without them.
     }
-
-    const visitorMap = new Map<string, Set<string>>();
-    const ratingMap = new Map<string, number[]>();
-
-    allReviews.forEach((r) => {
-      if (!visitorMap.has(r.place_id)) visitorMap.set(r.place_id, new Set());
-      visitorMap.get(r.place_id)!.add(r.user_id);
-      if (r.rating != null) {
-        if (!ratingMap.has(r.place_id)) ratingMap.set(r.place_id, []);
-        ratingMap.get(r.place_id)!.push(Number(r.rating));
-      }
-    });
-
-    const visitorRanking = cities
-      .map((c) => ({ id: c.id, count: visitorMap.get(c.id)?.size || 0 }))
-      .sort((a, b) => b.count - a.count);
-    const vIdx = visitorRanking.findIndex((c) => c.id === placeId);
-    if (vIdx >= 0) setVisitorRank(vIdx + 1);
-
-    const ratingRanking = cities
-      .map((c) => {
-        const ratings = ratingMap.get(c.id) || [];
-        const avg = ratings.length > 0 ? ratings.reduce((a, b) => a + b, 0) / ratings.length : 0;
-        return { id: c.id, avg };
-      })
-      .filter((c) => c.avg > 0)
-      .sort((a, b) => b.avg - a.avg);
-    const rIdx = ratingRanking.findIndex((c) => c.id === placeId);
-    if (rIdx >= 0) setRatingRank(rIdx + 1);
   };
 
   if (loading) {

@@ -471,7 +471,13 @@ export function MapboxFriendsMap({
     pins.forEach((pin) => {
       seen.add(pin.id);
       let marker = markersRef.current.get(pin.id);
-      if (marker) return;
+      if (marker) {
+        // A city's position can be refined after the pin is drawn
+        // (lib/placeCoordinates): move the pin onto it.
+        const at = marker.getLngLat();
+        if (at.lng !== pin.lng || at.lat !== pin.lat) marker.setLngLat([pin.lng, pin.lat]);
+        return;
+      }
 
       const el = document.createElement("div");
       el.style.cursor = "pointer";

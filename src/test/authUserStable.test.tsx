@@ -41,7 +41,12 @@ describe("AuthContext", () => {
       </AuthProvider>
     );
     await act(async () => h.emit!("SIGNED_IN", session(user(), "t1")));
-    await act(async () => {}); // profile load
+    // The profile loads on a 0 ms timer after sign-in: let it finish before
+    // counting renders, or under load it lands inside the measured window.
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    await act(async () => {});
     const first = seen;
     const before = renders;
 

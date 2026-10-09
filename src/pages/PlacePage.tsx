@@ -1,4 +1,6 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { createPersistentCache } from "@/lib/persistentCache";
+import { fetchAllPlaces, fetchAllTimeVisitorCountMap } from "@/lib/placeRankings";
 import { buttonVariants } from "@/components/ui/button";
 import { slideBack } from "@/lib/backTransition";
 import { selectInChunks } from "@/lib/inChunks";
@@ -46,6 +48,17 @@ interface PlaceFetchContext {
   placeId: string;
   userId: string | null;
   language: string;
+}
+
+// Place descriptions (Wikipedia or stored, then translated) change rarely:
+// keep the last ~150 shown, for a week.
+const descriptionCache = createPersistentCache<string>("place_descriptions", { maxEntries: 150, ttlMs: 7 * 24 * 60 * 60 * 1000 });
+
+/** Short stable key for a text (djb2), so cache keys stay small. */
+function textKey(text: string): string {
+  let hash = 5381;
+  for (let i = 0; i < text.length; i++) hash = ((hash << 5) + hash + text.charCodeAt(i)) | 0;
+  return `${text.length}.${(hash >>> 0).toString(36)}`;
 }
 
 export default function PlacePage() {
@@ -300,29 +313,16 @@ export default function PlacePage() {
           return { countryCities: [] as any[], wishlistCities: [] as any[] };
         }
 
+        // The country's cities, most visited first, from the cached place
+        // catalogue and visitor counts — the same ranking as the full
+        // "Cities in …" page. (This used to download every review of every
+        // city in the country, which was slow for big countries.)
         const fetchCountryCities = async () => {
-          const { data: citiesData } = await supabase
-            .from("places")
-            .select("id, name, country, type, image")
-            .eq("type", "city")
-            .eq("country", placeData.name);
+          const [allPlaces, visitorCounts] = await Promise.all([fetchAllPlaces(), fetchAllTimeVisitorCountMap()]);
           if (!isCurrentPlaceFetch(requestContext)) return null;
-          if (!citiesData || citiesData.length === 0) return [] as any[];
-
-          const cityIds = citiesData.map((c) => c.id);
-          const { data: cityReviews } = await supabase
-            .from("reviews")
-            .select("place_id")
-            .in("place_id", cityIds);
-          if (!isCurrentPlaceFetch(requestContext)) return null;
-
-          const counts = new Map<string, number>();
-          (cityReviews || []).forEach((r) => {
-            counts.set(r.place_id, (counts.get(r.place_id) || 0) + 1);
-          });
-
-          return citiesData
-            .map((c) => ({ ...c, review_count: counts.get(c.id) || 0 }))
+          return (allPlaces as { id: string; name: string; country: string; type: string; image: string | null }[])
+            .filter((c) => c.type === "city" && c.country === placeData.name)
+            .map((c) => ({ ...c, review_count: visitorCounts.get(c.id) || 0 }))
             .sort((a, b) => b.review_count - a.review_count);
         };
 
@@ -367,9 +367,19 @@ export default function PlacePage() {
   };
 
   const fetchDescription = async (name: string, type: string, country: string, dbDescription?: string | null, requestContext?: PlaceFetchContext) => {
+    const targetLanguage = requestContext?.language ?? language;
+    // Shown at once from the phone when this place was opened before in this
+    // language (keyed on the stored text, so an edited description is refetched).
+    const cacheKey = `${type}|${name}|${country}|${targetLanguage}|${textKey(dbDescription || "")}`;
+    const saved = descriptionCache.get(cacheKey);
+    if (saved !== undefined) {
+      if (requestContext && !isCurrentPlaceFetch(requestContext)) return;
+      setDescription(saved);
+      setLoadingDesc(false);
+      return;
+    }
     setLoadingDesc(true);
     let baseEn = dbDescription || "";
-    const targetLanguage = requestContext?.language ?? language;
     if (!baseEn) {
       try {
         const searchTerm = type === "city" ? `${name} ${country}` : name;
@@ -394,6 +404,7 @@ export default function PlacePage() {
     }
 
     if (targetLanguage === "en") {
+      descriptionCache.set(cacheKey, baseEn);
       if (requestContext && !isCurrentPlaceFetch(requestContext)) return;
       setDescription(baseEn);
       setLoadingDesc(false);
@@ -405,9 +416,11 @@ export default function PlacePage() {
       const { data } = await supabase.functions.invoke("translate-text", {
         body: { texts: [baseEn], language: targetLanguage, kind: "description" },
       });
-      const translated = data?.translations?.[0] || baseEn;
+      const translated = data?.translations?.[0];
+      // Only a real translation is kept; a failed one is retried next time.
+      if (translated) descriptionCache.set(cacheKey, translated);
       if (requestContext && !isCurrentPlaceFetch(requestContext)) return;
-      setDescription(translated);
+      setDescription(translated || baseEn);
     } catch {
       if (requestContext && !isCurrentPlaceFetch(requestContext)) return;
       setDescription(baseEn);

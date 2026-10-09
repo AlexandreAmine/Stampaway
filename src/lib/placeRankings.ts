@@ -347,3 +347,35 @@ export async function fetchAllPlaces(): Promise<any[]> {
     return all;
   });
 }
+
+/**
+ * A place's rank among places of its type: by distinct visitors, and by
+ * average rating among places that have one. Built from the cached,
+ * server-aggregated maps (same counting as before: distinct users per place,
+ * plain average of non-empty ratings), instead of downloading every review
+ * row of every country or city on each place page. 1-based; null if absent.
+ */
+export async function fetchPlaceRanks(
+  placeId: string,
+  type: "country" | "city"
+): Promise<{ visitorRank: number | null; ratingRank: number | null }> {
+  const [places, visitors, ratings] = await Promise.all([
+    fetchAllPlaces(),
+    fetchAllTimeVisitorCountMap(),
+    fetchAverageRatingMap(),
+  ]);
+  const ofType = (places as { id: string; type: string }[]).filter((p) => p.type === type);
+
+  const byVisitors = ofType
+    .map((p) => ({ id: p.id, count: visitors.get(p.id) ?? 0 }))
+    .sort((a, b) => b.count - a.count);
+  const vIdx = byVisitors.findIndex((p) => p.id === placeId);
+
+  const byRating = ofType
+    .map((p) => ({ id: p.id, avg: ratings.get(p.id) ?? 0 }))
+    .filter((p) => p.avg > 0)
+    .sort((a, b) => b.avg - a.avg);
+  const rIdx = byRating.findIndex((p) => p.id === placeId);
+
+  return { visitorRank: vIdx >= 0 ? vIdx + 1 : null, ratingRank: rIdx >= 0 ? rIdx + 1 : null };
+}

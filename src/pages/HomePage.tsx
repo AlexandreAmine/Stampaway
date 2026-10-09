@@ -2,7 +2,7 @@ import { fallbackAvatarUrl } from "@/lib/avatarFallback";
 import { EmptyState } from "@/components/EmptyState";
 import { selectInChunks, newestFirst } from "@/lib/inChunks";
 import { profileLinkProps } from "@/lib/profileHeaderQuery";
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Star, Bell, Users, Globe } from "lucide-react";
 import { CountryFlag } from "@/components/CountryFlag";
@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { usePerfReady } from "@/lib/perfMarks";
 import { relativeDays } from "@/lib/localeFormat";
-import { getPlaceCoordinates } from "@/lib/cityCoordinates";
+import { useAccuratePositions } from "@/lib/placeCoordinates";
 import { GlobeActivityPopup } from "@/components/GlobeActivityPopup";
 import { NotificationsSheet } from "@/components/NotificationsSheet";
 import { MapboxFriendsMap, type MapPin } from "@/components/MapboxFriendsMap";
@@ -33,8 +33,6 @@ interface FriendActivity {
   place_type: string;
   rating: number | null;
   created_at: string;
-  lat: number;
-  lng: number;
   visit_month: number | null;
   visit_year: number | null;
   duration_days: number | null;
@@ -42,6 +40,10 @@ interface FriendActivity {
 }
 
 
+
+// Below the list's top edge: the 64px fade above the heading, plus the tab
+// bar (64px, its safe-area padding is added separately) and a little air.
+const TAB_BAR_AND_FADE_PX = 64 + 64 + 16;
 
 export default function HomePage() {
   const { user } = useAuth();
@@ -180,8 +182,6 @@ export default function HomePage() {
 
       const mapped: FriendActivity[] = [];
       filtered.forEach((r: any) => {
-        const coords = getPlaceCoordinates(r.places.name, r.places.country);
-        if (!coords) return;
         const prof = profileMap.get(r.user_id);
         mapped.push({
           id: r.id,
@@ -194,8 +194,6 @@ export default function HomePage() {
           place_type: r.places.type,
           rating: r.rating != null ? Number(r.rating) : null,
           created_at: r.created_at,
-          lat: coords[0],
-          lng: coords[1],
           visit_month: r.visit_month,
           visit_year: r.visit_year,
           duration_days: r.duration_days,
@@ -206,9 +204,27 @@ export default function HomePage() {
       return { hasFollowing: true, activities: mapped };
     },
   });
-  const activities = feedQuery.data?.activities ?? [];
+  const activities = useMemo(() => feedQuery.data?.activities ?? [], [feedQuery.data]);
+  // Pins sit on each city itself: positions come from the phone's geocoder
+  // (looked up once per city, then kept), not just the country's centre.
+  const pins = useAccuratePositions(activities);
   const hasFollowing = feedQuery.data?.hasFollowing ?? true;
   const loading = feedQuery.isPending;
+
+  // With no friends yet, the list is raised so its "Find friends" button is
+  // on screen without scrolling: measure that block to know how high.
+  const noFriends = !hasFollowing && !loading;
+  const noFriendsBlockRef = useRef<HTMLDivElement>(null);
+  const [noFriendsBlockHeight, setNoFriendsBlockHeight] = useState(0);
+  useLayoutEffect(() => {
+    const el = noFriendsBlockRef.current;
+    if (!noFriends || !el) return;
+    const measure = () => setNoFriendsBlockHeight(el.offsetHeight);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [noFriends]);
   usePerfReady("home", !!feedQuery.data, feedQuery.isFetchedAfterMount ? "network" : "cache");
 
   const getAvatarUrl = (a: FriendActivity) =>
@@ -279,7 +295,7 @@ export default function HomePage() {
                 fixed, so nothing shifts) */}
             {globeReady && (
               <MapboxFriendsMap
-                pins={activities as MapPin[]}
+                pins={pins as MapPin[]}
                 loading={loading}
                 width={mapWidth}
                 height={mapHeight}
@@ -302,25 +318,39 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Spacer that reserves room for the fixed map above */}
-      <div style={{ height: mapHeight + 56 }} className="pointer-events-none" />
+      {/* Spacer that reserves room for the fixed map above. With no friends
+          yet, the list starts higher (over the empty globe) so the message
+          and its Find friends button show above the tab bar without scrolling
+          on any phone. */}
+      <div
+        style={{
+          height:
+            noFriends && noFriendsBlockHeight > 0
+              ? `max(140px, min(${mapHeight + 56}px, calc(100dvh - ${noFriendsBlockHeight + TAB_BAR_AND_FADE_PX}px - env(safe-area-inset-bottom, 0px))))`
+              : mapHeight + 56,
+        }}
+        className="pointer-events-none"
+      />
 
       {/* Activity list — scrolls over the fixed globe with a smooth fade into background */}
       <div className="relative z-10">
         {/* Soft fade from transparent to navy so the globe blends into the list */}
         <div className="h-16 bg-gradient-to-b from-transparent to-background pointer-events-none" />
         <div className="px-5 min-h-[60vh] bg-background">
-          <h2 className="section-title mb-4">{t("home.recentActivity")}</h2>
+          <div ref={noFriendsBlockRef}>
+            <h2 className="section-title mb-4">{t("home.recentActivity")}</h2>
+            {noFriends && (
+              <EmptyState
+                icon={Users}
+                title={t("empty.homeTitle")}
+                body={t("empty.followingBody")}
+                action={{ label: t("home.findFriends"), onClick: () => navigate("/search?tab=Users") }}
+                className="py-4"
+              />
+            )}
+          </div>
 
-          {!hasFollowing && !loading ? (
-            <EmptyState
-              icon={Users}
-              title={t("empty.homeTitle")}
-              body={t("empty.followingBody")}
-              action={{ label: t("home.findFriends"), onClick: () => navigate("/search?tab=Users") }}
-              className="py-8"
-            />
-          ) : activities.length === 0 && !loading ? (
+          {noFriends ? null : activities.length === 0 && !loading ? (
             <EmptyState icon={Globe} title={t("home.noActivity")} className="py-8" />
           ) : null}
 
