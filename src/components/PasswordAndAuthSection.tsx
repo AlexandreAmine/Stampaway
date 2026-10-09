@@ -102,7 +102,7 @@ export function PasswordAndAuthSection({ user, t, onBack }: Props) {
     <div className="min-h-screen bg-background pb-24">
       <div className="pt-12 px-5">
         <div className="flex items-center gap-3 mb-8">
-          <button onClick={onBack}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
+          <button aria-label={t("back")} onClick={onBack}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
           <h1 className="page-title">{t("settings.changePassword")}</h1>
         </div>
 
@@ -171,6 +171,7 @@ export function PasswordAndAuthSection({ user, t, onBack }: Props) {
                 <Input
                   type="text"
                   inputMode="numeric"
+                  autoComplete="one-time-code"
                   maxLength={6}
                   value={verifyCode}
                   onChange={e => setVerifyCode(e.target.value.replace(/\D/g, "").slice(0, 6))}

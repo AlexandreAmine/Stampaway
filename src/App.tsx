@@ -1,7 +1,7 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { QueryClient } from "@tanstack/react-query";
-import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import { PersistQueryClientProvider, removeOldestQuery } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -169,7 +169,7 @@ if (typeof window !== "undefined") {
     void import("./pages/ExploreListPage");
     void import("./pages/CountryCitiesPage");
   };
-  if ("requestIdleCallback" in window) {
+  if (typeof (window as { requestIdleCallback?: unknown }).requestIdleCallback === "function") {
     (window as unknown as { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void })
       .requestIdleCallback(warmRouteChunks, { timeout: 5000 });
   } else {
@@ -182,6 +182,10 @@ const queryPersister = createSyncStoragePersister({
   storage: typeof window !== "undefined" ? window.localStorage : undefined,
   key: "stampaway_rq_cache_v1",
   throttleTime: 2000,
+  // If the phone's storage for the app is full, drop the oldest screens'
+  // data and save the rest, rather than saving nothing (which would make
+  // the next launch start from blank screens).
+  retry: removeOldestQuery,
 });
 
 const App = () => (

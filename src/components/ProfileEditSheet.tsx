@@ -130,6 +130,9 @@ export function ProfileEditSheet({ open, onClose, onSaved, currentData }: Profil
           <div>
             <Label className="text-muted-foreground text-xs">{t("editProfile.username")}</Label>
             <Input
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               maxLength={30}

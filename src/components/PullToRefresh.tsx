@@ -50,6 +50,8 @@ export function PullToRefresh({ onRefresh }: PullToRefreshProps) {
       if (window.scrollY > 0) return;
       // A pull inside a sheet belongs to the sheet, not the page behind it.
       if (isOverlayOpen()) return;
+      // Dragging the globe spins it; it shouldn't also refresh the page.
+      if ((e.target as Element | null)?.closest?.(".mapboxgl-map, [data-no-pull-refresh]")) return;
       startYRef.current = e.touches[0].clientY;
       firedHapticRef.current = false;
     };

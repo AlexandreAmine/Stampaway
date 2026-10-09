@@ -103,9 +103,8 @@ export function GlobeActivityPopup({ activity, onClose, onNavigate, onProfileNav
     return () => { cancelled = true; };
   }, [activity?.id]);
 
-  if (!activity) return null;
-
-  const avatarUrl = activity.profile_picture || fallbackAvatarUrl(activity.username);
+  // Stays mounted while closing so the card can slide away.
+  const avatarUrl = activity ? activity.profile_picture || fallbackAvatarUrl(activity.username) : "";
 
   return (
     <AnimatePresence mode="wait">
@@ -116,11 +115,20 @@ export function GlobeActivityPopup({ activity, onClose, onNavigate, onProfileNav
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 60, opacity: 0 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          // Swipe the card down to close it.
+          drag="y"
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={{ top: 0, bottom: 0.7 }}
+          dragSnapToOrigin
+          onDragEnd={(_, info) => {
+            if (info.offset.y > 60 || info.velocity.y > 400) onClose();
+          }}
+          data-no-pull-refresh
           className="absolute bottom-0 left-0 right-0 z-30 px-4 pb-4"
         >
           <div className="bg-card border border-border rounded-2xl p-4 shadow-2xl backdrop-blur-sm">
             {/* Close button */}
-            <button
+            <button aria-label={t("common.close")}
               onClick={(e) => { e.stopPropagation(); onClose(); }}
               className="absolute top-3 right-3 w-7 h-7 rounded-full bg-muted flex items-center justify-center"
             >

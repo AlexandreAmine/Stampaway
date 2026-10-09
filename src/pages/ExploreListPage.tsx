@@ -23,6 +23,7 @@ import {
   NAMED_REGIONS,
   EASTERN_EUROPE_COUNTRIES,
 } from "@/lib/continents";
+import { compareText } from "@/lib/compareText";
 
 type PlaceWithStat = {
   id: string;
@@ -156,7 +157,7 @@ export default function ExploreListPage() {
         nextPlaces = allPlaces
           .filter((p) => p.type === context.placeType && countMap.has(p.id))
           .map((p) => ({ ...p, stat: countMap.get(p.id) || 0 }))
-          .sort((a, b) => b.stat - a.stat || a.name.localeCompare(b.name));
+          .sort((a, b) => b.stat - a.stat || compareText(a.name, b.name));
       } else if (context.mode === "by-category" && context.category) {
         const catMap = await fetchCategoryAverageMap(context.category);
         const regionCountries = context.region ? NAMED_REGIONS[context.region] : null;
@@ -171,7 +172,7 @@ export default function ExploreListPage() {
           .map((p) => ({ ...p, stat: catMap.get(p.id) || 0 }))
           .sort((a, b) => {
             if (b.stat !== a.stat) return b.stat - a.stat;
-            return a.name.localeCompare(b.name);
+            return compareText(a.name, b.name);
           })
           .slice(0, context.limit);
       } else {
@@ -189,7 +190,7 @@ export default function ExploreListPage() {
           .map((p) => ({ ...p, stat: avgMap.get(p.id) || 0 }))
           .sort((a, b) => {
             if (b.stat !== a.stat) return b.stat - a.stat;
-            return a.name.localeCompare(b.name);
+            return compareText(a.name, b.name);
           })
           .slice(0, context.limit);
       }
@@ -212,7 +213,7 @@ export default function ExploreListPage() {
     <div className="min-h-screen bg-background pb-24">
       <div className="pt-12 px-5">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => slideBack(() => navigate(-1))}>
+          <button aria-label={t("back")} onClick={() => slideBack(() => navigate(-1))}>
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
           <h1 className="page-title">{getTitle()}</h1>

@@ -860,6 +860,14 @@ export type Database = {
           avg_rating: number
         }[]
       }
+      get_place_category_stats: {
+        Args: { _place_id: string }
+        Returns: {
+          category: string
+          avg_rating: number
+          rating_count: number
+        }[]
+      }
       get_place_monthly_visitor_counts: {
         Args: { _since: string }
         Returns: {

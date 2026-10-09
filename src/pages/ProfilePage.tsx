@@ -4,7 +4,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { buttonVariants } from "@/components/ui/button";
 import { slideBack } from "@/lib/backTransition";
 import { placeLinkProps } from "@/lib/placePrimaryQuery";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchProfileHeader, profileHeaderQueryKey, type ProfileHeader } from "@/lib/profileHeaderQuery";
 import { ChevronRight, ChevronLeft, Settings, Plus, X, UserPlus, UserMinus, Pencil, Share2, MapPin, Images } from "lucide-react";
@@ -49,6 +49,7 @@ import { usePageBackHandler } from "@/lib/pageBackStack";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import {
   getFreshOwnProfileContentCache,
+  getLastKnownOwnProfileContent,
   getOwnProfileContentCacheVersion,
   invalidateOwnProfileContentCache,
   isOwnProfileContentCacheVersion,
@@ -260,10 +261,12 @@ export default function ProfilePage() {
     setMapTheirData(snapshot.mapTheirData);
   }, [applyProfileCoreSnapshot]);
 
-  useEffect(() => {
+  // Before the first paint, so the tab opens on its last content (refreshed
+  // just after) rather than flashing zeros.
+  useLayoutEffect(() => {
     syncOwnProfileContentCacheUser(viewerUserId);
     if (!viewerUserId || !isOwnProfile || viewingUserId !== viewerUserId) return;
-    const cached = getFreshOwnProfileContentCache<ProfileContentSnapshot>(viewerUserId);
+    const cached = getLastKnownOwnProfileContent<ProfileContentSnapshot>(viewerUserId);
     if (cached) applyProfileContentSnapshot(cached);
   }, [viewerUserId, isOwnProfile, viewingUserId, applyProfileContentSnapshot]);
 
@@ -481,7 +484,8 @@ export default function ProfilePage() {
       );
 
       applyProfileCoreSnapshot(coreSnapshot);
-      const previousSnapshot = getFreshOwnProfileContentCache<ProfileContentSnapshot>(viewerUserId);
+      // Keep the map shown so far (it reloads just below) rather than saving none.
+      const previousSnapshot = getLastKnownOwnProfileContent<ProfileContentSnapshot>(viewerUserId);
       setOwnProfileContentCache<ProfileContentSnapshot>(viewerUserId, {
         ...coreSnapshot,
         mapMyData: previousSnapshot?.mapMyData ?? null,
@@ -729,7 +733,7 @@ export default function ProfilePage() {
               <DestinationPoster placeId={fav.place_id} name={fav.place_name} country={fav.place_country} type={type} image={fav.place_image} autoGenerate priority className="w-full h-full" />
             </button>
             {isOwnProfile && (
-              <button
+              <button aria-label={t("common.remove")}
                 onClick={(e) => { e.stopPropagation(); handleRemoveFavorite(type, i); }}
                 className="absolute top-1 left-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center z-10"
               >
@@ -738,7 +742,7 @@ export default function ProfilePage() {
             )}
           </div>
         ) : isOwnProfile ? (
-          <button
+          <button aria-label={t("nav.add")}
             key={i}
             onClick={() => handleOpenPicker(type, i)}
             onDragOver={(e) => e.preventDefault()}
@@ -792,7 +796,7 @@ export default function ProfilePage() {
       <div ref={subPageWrapperRef} className="min-h-screen bg-background pb-24">
         <div className="pt-14 px-5">
           <div className="flex items-center gap-3 mb-6">
-            <button onClick={closeSubPage}>
+            <button aria-label={t("back")} onClick={closeSubPage}>
               <ChevronLeft className="w-6 h-6 text-foreground" />
             </button>
             <h1 className="page-title flex-1 min-w-0">
@@ -833,7 +837,7 @@ export default function ProfilePage() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             {!isOwnProfile && (
-              <button onClick={() => slideBack(() => navigate(-1))} className="mr-1">
+              <button aria-label={t("back")} onClick={() => slideBack(() => navigate(-1))} className="mr-1">
                 <ChevronLeft className="w-6 h-6 text-foreground" />
               </button>
             )}

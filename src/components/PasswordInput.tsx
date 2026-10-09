@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface PasswordInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   wrapperClassName?: string;
@@ -7,6 +8,7 @@ interface PasswordInputProps extends React.InputHTMLAttributes<HTMLInputElement>
 
 export function PasswordInput({ className, wrapperClassName, ...props }: PasswordInputProps) {
   const [show, setShow] = useState(false);
+  const { t } = useLanguage();
   const value = typeof props.value === "string" ? props.value : "";
 
   return (
@@ -21,6 +23,7 @@ export function PasswordInput({ className, wrapperClassName, ...props }: Passwor
           type="button"
           tabIndex={-1}
           onClick={() => setShow((s) => !s)}
+          aria-label={t(show ? "auth.hidePassword" : "auth.showPassword")}
           className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
         >
           {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

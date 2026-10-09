@@ -1,5 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { SUB_CATEGORIES } from "@/lib/subCategories";
 
 /**
  * Data for the review detail screen: the review with its place, the author,
@@ -47,11 +48,33 @@ export async function fetchReviewDetail(reviewId: string): Promise<ReviewDetail 
   };
 }
 
+export interface SubRating {
+  category: string;
+  rating: number;
+}
+
+export const reviewSubRatingsQueryKey = (reviewId: string) => ["review-sub-ratings", reviewId] as const;
+
+/** A review's category ratings, in the app's category order. */
+export async function fetchReviewSubRatings(reviewId: string): Promise<SubRating[]> {
+  const { data, error } = await supabase
+    .from("review_sub_ratings")
+    .select("category, rating")
+    .eq("review_id", reviewId);
+  if (error) throw error;
+  return SUB_CATEGORIES.map((cat) => (data || []).find((d) => d.category === cat)).filter(Boolean) as SubRating[];
+}
+
 /** Start loading a review when a finger lands on a link to it. */
 export function prefetchReviewDetail(queryClient: QueryClient, reviewId: string) {
   void queryClient.prefetchQuery({
     queryKey: reviewDetailQueryKey(reviewId),
     queryFn: () => fetchReviewDetail(reviewId),
+    staleTime: 10_000,
+  });
+  void queryClient.prefetchQuery({
+    queryKey: reviewSubRatingsQueryKey(reviewId),
+    queryFn: () => fetchReviewSubRatings(reviewId),
     staleTime: 10_000,
   });
 }

@@ -8,6 +8,7 @@ import { RemoveScroll } from "react-remove-scroll";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { fetchAllPlaces } from "@/lib/placeRankings";
 import { matchesPlaceName, normalizeSearchText } from "@/lib/placeSearch";
+import { compareText } from "@/lib/compareText";
 
 interface FavoritePickerProps {
   open: boolean;
@@ -57,7 +58,7 @@ export function FavoritePicker({ open, onClose, type, onSelect }: FavoritePicker
         const normalizedQuery = normalizeSearchText(search);
         candidates = candidates.filter((p: any) => matchesPlaceName(p, normalizedQuery, language));
       }
-      candidates = [...candidates].sort((a: any, b: any) => a.name.localeCompare(b.name)).slice(0, 50);
+      candidates = [...candidates].sort((a: any, b: any) => compareText(a.name, b.name)).slice(0, 50);
       setPlaces(candidates.map((p: any) => ({ id: p.id, name: p.name, country: p.country, image: p.image })));
     } catch {
       setPlaces([]);
@@ -77,14 +78,14 @@ export function FavoritePicker({ open, onClose, type, onSelect }: FavoritePicker
         initial={{ opacity: 0 }}
         animate={{ opacity: closing ? 0 : 1 }}
         transition={{ duration: 0.2 }}
-        className="fixed inset-0 z-50 bg-background/95 flex flex-col"
+        className="fixed inset-0 z-[60] bg-background/95 flex flex-col"
       >
         <div className="max-w-lg mx-auto w-full flex flex-col h-full">
           <div className="flex items-center justify-between pt-12 px-5 mb-4">
             <h2 className="section-title">
               {t(type === "city" ? "picker.selectCity" : "picker.selectCountry")}
             </h2>
-            <button onClick={requestClose} className="p-2">
+            <button aria-label={t("common.close")} onClick={requestClose} className="p-2">
               <X className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>

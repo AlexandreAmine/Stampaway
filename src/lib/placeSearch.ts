@@ -26,17 +26,30 @@ export function normalizeSearchText(text: string): string {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
+// Searching runs over the whole catalog on every keystroke; place names are
+// the same each time, so each is normalized once.
+const normalizedNames = new Map<string, string>();
+function normalizedName(name: string): string {
+  let normalized = normalizedNames.get(name);
+  if (normalized === undefined) {
+    normalized = normalizeSearchText(name);
+    if (normalizedNames.size > 50_000) normalizedNames.clear();
+    normalizedNames.set(name, normalized);
+  }
+  return normalized;
+}
+
 export function matchesPlaceName(
   place: { name: string; type?: string },
   normalizedQuery: string,
   language: Language
 ): boolean {
   if (!normalizedQuery) return true;
-  if (normalizeSearchText(place.name).includes(normalizedQuery)) return true;
+  if (normalizedName(place.name).includes(normalizedQuery)) return true;
   if (language === "en") return false;
 
   const localized = getCachedPlaceName(place.name, language, place.type === "country");
-  return localized !== place.name && normalizeSearchText(localized).includes(normalizedQuery);
+  return localized !== place.name && normalizedName(localized).includes(normalizedQuery);
 }
 
 /**

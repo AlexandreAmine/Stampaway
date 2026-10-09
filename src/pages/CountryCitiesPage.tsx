@@ -26,6 +26,7 @@ import {
   fetchAverageRatingMap,
   fetchCategoryAverageMap,
 } from "@/lib/placeRankings";
+import { compareText } from "@/lib/compareText";
 
 type DestSort = "most-popular" | "avg-highest" | "category-avg";
 
@@ -136,7 +137,7 @@ export default function CountryCitiesPage() {
     if (destSort === "most-popular") {
       return [...cities].sort((a, b) => {
         const diff = (b.review_count || 0) - (a.review_count || 0);
-        return diff !== 0 ? diff : a.name.localeCompare(b.name);
+        return diff !== 0 ? diff : compareText(a.name, b.name);
       });
     }
     if (destSort === "avg-highest") {
@@ -163,7 +164,7 @@ export default function CountryCitiesPage() {
     <div className="min-h-screen bg-background pb-24">
       <div className="pt-12 px-5">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => slideBack(() => navigate(-1))}>
+          <button aria-label={t("back")} onClick={() => slideBack(() => navigate(-1))}>
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
           <h1 className="page-title">{title}</h1>

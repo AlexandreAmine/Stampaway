@@ -167,7 +167,7 @@ export default function SettingsPage() {
       <div className="min-h-screen bg-background pb-24">
         <div className="pt-12 px-5">
           <div className="flex items-center gap-3 mb-8">
-            <button onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
+            <button aria-label={t("back")} onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
             <h1 className="page-title">{t("settings.personalDetails")}</h1>
           </div>
           <div className="space-y-5">
@@ -196,7 +196,7 @@ export default function SettingsPage() {
       <div className="min-h-screen bg-background pb-24">
         <div className="pt-12 px-5">
           <div className="flex items-center gap-3 mb-8">
-            <button onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
+            <button aria-label={t("back")} onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
             <h1 className="page-title">{t("settings.language")}</h1>
           </div>
           <p className="text-sm text-muted-foreground mb-6">{t("settings.selectLanguage")}</p>
@@ -230,7 +230,7 @@ export default function SettingsPage() {
       <div className="min-h-screen bg-background pb-24">
         <div className="pt-12 px-5">
           <div className="flex items-center gap-3 mb-8">
-            <button onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
+            <button aria-label={t("back")} onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
             <h1 className="page-title">{t("settings.accountPrivacy")}</h1>
           </div>
           <div className="flex items-center justify-between py-4 border-b border-border">
@@ -253,11 +253,11 @@ export default function SettingsPage() {
       <div className="min-h-screen bg-background pb-24">
         <div className="pt-12 px-5">
           <div className="flex items-center gap-3 mb-6">
-            <button onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
+            <button aria-label={t("back")} onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
             <h1 className="page-title">{t("settings.blockedUsers")}</h1>
           </div>
           <div className="relative mb-4">
-            <Input value={blockQuery} onChange={e => setBlockQuery(e.target.value)} placeholder={t("settings.searchToBlock")} className="w-full" />
+            <Input enterKeyHint="search" autoCapitalize="none" autoCorrect="off" spellCheck={false} value={blockQuery} onChange={e => setBlockQuery(e.target.value)} placeholder={t("settings.searchToBlock")} className="w-full" />
             {blockSearchResults.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl overflow-hidden z-20 max-h-40 overflow-y-auto">
                 {blockSearchResults.map(p => (
@@ -326,7 +326,7 @@ export default function SettingsPage() {
       <div className="min-h-screen bg-background pb-24">
         <div className="pt-12 px-5">
           <div className="flex items-center gap-3 mb-8">
-            <button onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
+            <button aria-label={t("back")} onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
             <h1 className="page-title">{t("settings.deleteAccount")}</h1>
           </div>
           <p className="text-sm text-foreground mb-2">{t("settings.deleteWarning")}</p>
@@ -344,7 +344,7 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-background pb-24">
       <div className="pt-12 px-5">
         <div className="flex items-center gap-3 mb-8">
-          <button onClick={() => slideBack(() => navigate(-1))}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
+          <button aria-label={t("back")} onClick={() => slideBack(() => navigate(-1))}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
           <h1 className="page-title">{t("settings.title")}</h1>
         </div>
 

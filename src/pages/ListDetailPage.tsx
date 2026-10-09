@@ -137,7 +137,7 @@ export default function ListDetailPage() {
   if (!list) {
     return (
       <div className="min-h-screen bg-background pt-12 px-5">
-        <button onClick={() => slideBack(() => navigate(-1))} className="mb-4"><ChevronLeft className="w-6 h-6 text-foreground" /></button>
+        <button aria-label={t("back")} onClick={() => slideBack(() => navigate(-1))} className="mb-4"><ChevronLeft className="w-6 h-6 text-foreground" /></button>
         <p className="text-sm text-muted-foreground text-center">{t("lists.notFound")}</p>
       </div>
     );
@@ -148,7 +148,7 @@ export default function ListDetailPage() {
       <PullToRefresh onRefresh={() => listQuery.refetch()} />
       <div className="pt-12 px-5">
         <div className="flex items-center gap-3 mb-6">
-          <button onClick={() => slideBack(() => navigate(-1))}>
+          <button aria-label={t("back")} onClick={() => slideBack(() => navigate(-1))}>
             <ChevronLeft className="w-6 h-6 text-foreground" />
           </button>
           <h1 className="page-title flex-1" data-no-translate>{list.name}</h1>

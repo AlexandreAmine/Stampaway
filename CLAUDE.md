@@ -20,9 +20,8 @@ npm run build
 
 **The `-p tsconfig.app.json` is required.** The root `tsconfig.json` has `"files": []` and only
 lists project references, so a bare `npx tsc --noEmit` checks nothing and always exits 0. And
-`npm run build` does not type-check either (Vite strips types with esbuild). The type check has
-**7 known pre-existing errors** (App.tsx, lib/mapboxLoader.ts, lib/posterWarmup.ts, AddPlacePage
-×2, PlacePage ×2) — a change must not add to that count.
+`npm run build` does not type-check either (Vite strips types with esbuild). The type check is
+**clean (0 errors)** — keep it that way.
 
 For anything touching native code or plugins, then run `npx cap sync ios`.
 

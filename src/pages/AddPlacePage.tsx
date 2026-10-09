@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { sizedPosterUrl } from "@/lib/imageSizing";
 import { dismissModal } from "@/lib/backTransition";
 import { ChevronLeft, Search, X } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
@@ -12,12 +13,13 @@ import { toast } from "sonner";
 import { toastError } from "@/lib/toastError";
 import { hapticSuccess } from "@/lib/haptics";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
-import { fetchAllPlaces } from "@/lib/placeRankings";
+import { allRpcRows, fetchAllPlaces } from "@/lib/placeRankings";
 import { matchesPlaceName, normalizeSearchText } from "@/lib/placeSearch";
 import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
 import { ReviewFormFields, useFollowingLookup } from "@/components/ReviewFormFields";
 import { emptyReviewDraft, saveReview, type ReviewDraft } from "@/lib/reviewDraft";
 import { getCachedPlaceName } from "@/lib/placeNames";
+import { compareText } from "@/lib/compareText";
 
 type Step = "search" | "review";
 
@@ -46,6 +48,26 @@ async function findUnloggedCountry(userId: string, countryName: string) {
     .eq("place_id", countryPlace.id)
     .limit(1);
   return countryReview && countryReview.length > 0 ? null : countryPlace;
+}
+
+// Review counts only order the search results, so they're fetched once and
+// reused while typing and when the screen is reopened shortly after, instead
+// of on every keystroke.
+const REVIEW_COUNTS_TTL_MS = 5 * 60 * 1000;
+let reviewCounts: { request: Promise<Map<string, number>>; at: number } | null = null;
+
+function getReviewCountMap(): Promise<Map<string, number>> {
+  if (reviewCounts && Date.now() - reviewCounts.at < REVIEW_COUNTS_TTL_MS) return reviewCounts.request;
+  const request = allRpcRows((from, to) =>
+    supabase.rpc("get_place_review_counts").order("place_id").range(from, to)
+  ).then((rows) => new Map<string, number>(rows.map((count: any) => [count.place_id, Number(count.review_count)])));
+  const entry = { request, at: Date.now() };
+  reviewCounts = entry;
+  // A failed request is retried on the next search.
+  request.catch(() => {
+    if (reviewCounts === entry) reviewCounts = null;
+  });
+  return request;
 }
 
 export default function AddPlacePage() {
@@ -96,9 +118,6 @@ export default function AddPlacePage() {
   });
   const followingLookup = useFollowingLookup();
   const placeSearchRequestIdRef = useRef(0);
-  const reviewCountsInflightRef = useRef<Promise<Map<string, number>> | null>(
-    null
-  );
 
   useEffect(() => {
     const requestId = ++placeSearchRequestIdRef.current;
@@ -115,37 +134,6 @@ export default function AddPlacePage() {
     };
   }, [query]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const fetchReviewCountMap = (): Promise<Map<string, number>> => {
-    if (reviewCountsInflightRef.current) {
-      return reviewCountsInflightRef.current;
-    }
-
-    const request = supabase.rpc("get_place_review_counts").then(({ data, error }) => {
-      if (error) throw error;
-      return new Map<string, number>(
-        (data || []).map((count: any) => [
-          count.place_id,
-          Number(count.review_count),
-        ])
-      );
-    });
-
-    reviewCountsInflightRef.current = request;
-    void request.then(
-      () => {
-        if (reviewCountsInflightRef.current === request) {
-          reviewCountsInflightRef.current = null;
-        }
-      },
-      () => {
-        if (reviewCountsInflightRef.current === request) {
-          reviewCountsInflightRef.current = null;
-        }
-      }
-    );
-    return request;
-  };
-
   const fetchPlaces = async (search: string, requestId: number) => {
     try {
       // Filter the cached places catalog client-side: matches the English DB
@@ -153,7 +141,7 @@ export default function AddPlacePage() {
       // "Spain" via "Espagne"), accent-insensitive — and search-as-you-type
       // no longer needs a network round-trip per keystroke.
       const [countMap, allPlaces] = await Promise.all([
-        fetchReviewCountMap(),
+        getReviewCountMap(),
         fetchAllPlaces(),
       ]);
       if (placeSearchRequestIdRef.current !== requestId) return;
@@ -168,7 +156,7 @@ export default function AddPlacePage() {
       const sorted = [...candidates]
         .sort((a, b) => {
           const diff = (countMap.get(b.id) || 0) - (countMap.get(a.id) || 0);
-          return diff !== 0 ? diff : a.name.localeCompare(b.name);
+          return diff !== 0 ? diff : compareText(a.name, b.name);
         })
         .slice(0, 30);
       setResults(sorted);
@@ -337,7 +325,7 @@ export default function AddPlacePage() {
               <div className="flex items-center gap-3">
                 <div className="w-14 h-[76px] rounded-lg overflow-hidden shrink-0">
                   {selectedPlace.image ? (
-                    <img src={selectedPlace.image} alt={selectedPlace.name} className="w-full h-full object-cover" />
+                    <img src={sizedPosterUrl(selectedPlace.image, 400) || selectedPlace.image} alt={selectedPlace.name} decoding="async" className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full bg-gradient-to-br from-primary/20 via-primary/10 to-muted" />
                   )}

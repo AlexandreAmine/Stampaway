@@ -216,6 +216,7 @@ export function ReviewComments({ reviewId }: { reviewId: string }) {
               </div>
             )}
             <input
+              enterKeyHint="send"
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
@@ -223,7 +224,7 @@ export function ReviewComments({ reviewId }: { reviewId: string }) {
               className="w-full bg-card border border-border rounded-full px-4 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary"
             />
           </div>
-          <button
+          <button aria-label={t("common.send")}
             onClick={handleSubmit}
             disabled={!text.trim() || submitting}
             className="w-8 h-8 rounded-full bg-primary flex items-center justify-center disabled:opacity-50"

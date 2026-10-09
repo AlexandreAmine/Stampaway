@@ -108,6 +108,10 @@ export function FollowersTab({ userId }: { userId?: string }) {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <input
+          enterKeyHint="search"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           value={filterQuery}
           onChange={(e) => setFilterQuery(e.target.value)}
           placeholder={t("search")}
@@ -134,7 +138,7 @@ export function FollowersTab({ userId }: { userId?: string }) {
                 <span className="text-sm font-medium text-foreground" data-no-translate>{f.username}</span>
               </button>
               {isOwnProfile && (
-                <button onClick={() => setPendingRemove(f)} className="p-1.5 rounded-full hover:bg-muted/50 shrink-0">
+                <button aria-label={t("common.remove")} onClick={() => setPendingRemove(f)} className="p-1.5 rounded-full hover:bg-muted/50 shrink-0">
                   <X className="w-4 h-4 text-muted-foreground" />
                 </button>
               )}

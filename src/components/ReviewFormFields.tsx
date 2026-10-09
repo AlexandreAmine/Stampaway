@@ -239,7 +239,7 @@ export function ReviewFormFields({
                   {u.profile_picture ? <AvatarImage src={u.profile_picture} /> : <AvatarFallback className="text-[8px]">{u.username[0]?.toUpperCase()}</AvatarFallback>}
                 </Avatar>
                 <span className="text-xs font-medium text-foreground" data-no-translate>{u.username}</span>
-                <button onClick={() => set("taggedUsers", draft.taggedUsers.filter((tagged) => tagged.user_id !== u.user_id))} className="ml-0.5">
+                <button aria-label={t("common.remove")} onClick={() => set("taggedUsers", draft.taggedUsers.filter((tagged) => tagged.user_id !== u.user_id))} className="ml-0.5">
                   <X className="w-3 h-3 text-muted-foreground" />
                 </button>
               </div>

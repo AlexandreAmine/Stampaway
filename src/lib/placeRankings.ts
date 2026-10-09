@@ -158,11 +158,32 @@ export function clearRankingsCache() {
   } catch {}
 }
 
+const RPC_PAGE = 1000;
+
+/**
+ * Every row of a set-returning database function. PostgREST answers with at
+ * most 1,000 rows per request, so once more places than that have reviews a
+ * single call would silently leave some out; larger results are read page by
+ * page (ordered, so pages never overlap).
+ */
+export async function allRpcRows<Row>(
+  page: (from: number, to: number) => PromiseLike<{ data: Row[] | null; error: unknown }>
+): Promise<Row[]> {
+  const rows: Row[] = [];
+  for (let from = 0; ; from += RPC_PAGE) {
+    const { data, error } = await page(from, from + RPC_PAGE - 1);
+    if (error) throw error;
+    if (data) rows.push(...data);
+    if (!data || data.length < RPC_PAGE) return rows;
+  }
+}
+
 /** Map<place_id, distinct_visitor_count> — all time */
 export async function fetchAllTimeVisitorCountMap(): Promise<Map<string, number>> {
   return cachedFetch("visitorCount", visitorCountCache, async () => {
-    const { data, error } = await supabase.rpc("get_place_visitor_counts");
-    if (error) throw error;
+    const data = await allRpcRows((from, to) =>
+      supabase.rpc("get_place_visitor_counts").order("place_id").range(from, to)
+    );
 
     return new Map<string, number>(
       (data || []).map((c: any) => [c.place_id, Number(c.visitor_count)])
@@ -178,10 +199,12 @@ export async function fetchMonthlyVisitorCountMap(): Promise<Map<string, number>
 
     // Aggregated server-side; previously this downloaded every review row
     // created this month and counted distinct users on the device.
-    const { data, error } = await supabase.rpc("get_place_monthly_visitor_counts", {
-      _since: startOfMonth,
-    });
-    if (error) throw error;
+    const data = await allRpcRows((from, to) =>
+      supabase
+        .rpc("get_place_monthly_visitor_counts", { _since: startOfMonth })
+        .order("place_id")
+        .range(from, to)
+    );
 
     return new Map<string, number>(
       (data || []).map((c: any) => [c.place_id, Number(c.visitor_count)])
@@ -192,8 +215,9 @@ export async function fetchMonthlyVisitorCountMap(): Promise<Map<string, number>
 /** Map<place_id, average_rating> — all time (server-aggregated) */
 export async function fetchAverageRatingMap(): Promise<Map<string, number>> {
   return cachedFetch("avgRating", avgRatingCache, async () => {
-    const { data, error } = await supabase.rpc("get_place_avg_ratings");
-    if (error) throw error;
+    const data = await allRpcRows((from, to) =>
+      supabase.rpc("get_place_avg_ratings").order("place_id").range(from, to)
+    );
 
     const result = new Map<string, number>();
     (data || []).forEach((row: any) => {
@@ -256,10 +280,13 @@ export async function fetchCategoryAverageMaps(
   if (staleCategories.length > 0) {
     const staleKey = `cats:${[...staleCategories].sort().join("|")}`;
     void dedup(staleKey, async () => {
-      const { data, error } = await supabase.rpc("get_place_category_averages", {
-        _categories: staleCategories,
-      });
-      if (error) throw error;
+      const data = await allRpcRows((from, to) =>
+        supabase
+          .rpc("get_place_category_averages", { _categories: staleCategories })
+          .order("place_id")
+          .order("category")
+          .range(from, to)
+      );
 
       const maps = new Map<string, Map<string, number>>();
       staleCategories.forEach((category) => maps.set(category, new Map<string, number>()));
@@ -288,10 +315,13 @@ export async function fetchCategoryAverageMaps(
 
       // Aggregated server-side; previously this downloaded every review id
       // plus all matching sub-ratings in sequential 500-id chunks.
-      const { data, error } = await supabase.rpc("get_place_category_averages", {
-        _categories: missingCategories,
-      });
-      if (error) throw error;
+      const data = await allRpcRows((from, to) =>
+        supabase
+          .rpc("get_place_category_averages", { _categories: missingCategories })
+          .order("place_id")
+          .order("category")
+          .range(from, to)
+      );
 
       (data || []).forEach((row: any) => {
         if (row.avg_rating == null) return;

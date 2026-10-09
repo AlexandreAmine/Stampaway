@@ -232,7 +232,7 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
                   />
                 </div>
                 <p className="text-sm font-semibold text-foreground flex-1 truncate">{item.place.name}</p>
-                <button
+                <button aria-label={t("common.remove")}
                   onClick={() => handleRemoveItem(item.id)}
                   className="w-6 h-6 flex items-center justify-center shrink-0"
                 >

@@ -35,7 +35,7 @@ if (typeof window !== "undefined") {
   const warm = () => {
     loadMapboxGl().catch(() => {});
   };
-  if ("requestIdleCallback" in window) {
+  if (typeof (window as { requestIdleCallback?: unknown }).requestIdleCallback === "function") {
     (window as unknown as { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void })
       .requestIdleCallback(warm, { timeout: 3000 });
   } else {

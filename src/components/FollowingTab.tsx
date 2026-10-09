@@ -220,6 +220,10 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
+            enterKeyHint="search"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             value={filterQuery}
             onChange={(e) => setFilterQuery(e.target.value)}
             placeholder={t("search")}
@@ -244,6 +248,10 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <input
                 autoFocus
+                enterKeyHint="search"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={t("following.findUsersPlaceholder")}
@@ -305,7 +313,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
                 <span className="text-sm font-medium text-foreground" data-no-translate>{f.username}</span>
               </button>
               {!readOnly && (
-                <button onClick={() => setPendingUnfollow(f)} className="p-1.5">
+                <button aria-label={t("common.remove")} onClick={() => setPendingUnfollow(f)} className="p-1.5">
                   <X className="w-4 h-4 text-muted-foreground" />
                 </button>
               )}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { sizedPosterUrl } from "@/lib/imageSizing";
 import { Heart, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -206,7 +207,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
 
   return (
     <RemoveScroll>
-    <div className="fixed inset-0 z-50 flex items-end justify-center" data-overlay-open>
+    <div className="fixed inset-0 z-[60] flex items-end justify-center" data-overlay-open>
       <div
         className={`absolute inset-0 bg-black/60 ${closing ? "animate-out fade-out fill-mode-forwards duration-200" : "animate-in fade-in duration-200"}`}
         onClick={requestClose}
@@ -222,7 +223,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
             >
               {saving ? t("common.saving") : t("save")}
             </button>
-            <button onClick={requestClose}>
+            <button aria-label={t("common.close")} onClick={requestClose}>
               <X className="w-5 h-5 text-muted-foreground" />
             </button>
           </div>
@@ -232,7 +233,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
           {/* Place info */}
           <div className="flex items-center gap-3">
             {entry.place.image ? (
-              <img src={entry.place.image} alt={entry.place.name} className="w-12 h-16 rounded-lg object-cover" />
+              <img src={sizedPosterUrl(entry.place.image, 400) || entry.place.image} alt={entry.place.name} decoding="async" className="w-12 h-16 rounded-lg object-cover" />
             ) : (
               <div className="w-12 h-16 rounded-lg bg-gradient-to-br from-primary/20 to-muted" />
             )}
@@ -349,7 +350,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
                           {u.profile_picture ? <AvatarImage src={u.profile_picture} /> : <AvatarFallback className="text-[8px]">{u.username[0]?.toUpperCase()}</AvatarFallback>}
                         </Avatar>
                         <span className="text-xs font-medium text-foreground" data-no-translate>{u.username}</span>
-                        <button onClick={() => setTaggedUsers(prev => prev.filter(t => t.user_id !== u.user_id))} className="ml-0.5">
+                        <button aria-label={t("common.remove")} onClick={() => setTaggedUsers(prev => prev.filter(t => t.user_id !== u.user_id))} className="ml-0.5">
                           <X className="w-3 h-3 text-muted-foreground" />
                         </button>
                       </div>
@@ -359,6 +360,9 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
                 <div className="relative">
                   <input
                     type="text"
+                    enterKeyHint="search"
+                    autoCapitalize="none"
+                    autoCorrect="off"
                     value={tagQuery}
                     onChange={(e) => setTagQuery(e.target.value)}
                     placeholder={t("review.searchUsername")}

@@ -90,7 +90,7 @@ export default function ReviewDetailPage() {
           className="w-full h-full rounded-none"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-        <button
+        <button aria-label={t("back")}
           onClick={() => slideBack(() => navigate(-1))}
           className="absolute top-12 left-5 w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"
         >

@@ -53,6 +53,11 @@ export default function UsernameSetupGate() {
           <input
             type="text"
             autoFocus
+            autoComplete="username"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            enterKeyHint="done"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder={t("auth.username")}

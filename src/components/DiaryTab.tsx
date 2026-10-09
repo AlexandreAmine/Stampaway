@@ -226,7 +226,7 @@ export function DiaryTab({ userId }: { userId?: string }) {
                 </button>
                 {isOwnProfile && (
                   <div className="flex flex-col gap-1 self-center shrink-0">
-                    <button
+                    <button aria-label={t("edit")}
                       onClick={() => setEditingEntry(entry)}
                       className="p-1.5"
                     >

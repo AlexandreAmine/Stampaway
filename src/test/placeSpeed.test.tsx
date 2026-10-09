@@ -28,16 +28,21 @@ vi.mock("@/integrations/supabase/client", () => {
     };
     return q;
   };
-  const rpc = async (name: string) => {
+  // Like PostgREST: at most 1,000 rows per request, pages via range().
+  const rpc = (name: string) => {
     h.calls.push(`rpc:${name}`);
-    if (name === "get_place_visitor_counts") return { data: visitorCounts(), error: null };
-    if (name === "get_place_avg_ratings") return { data: avgRatings(), error: null };
-    return { data: [], error: null };
+    const rows =
+      name === "get_place_visitor_counts" ? visitorCounts() : name === "get_place_avg_ratings" ? avgRatings() : [];
+    const b: any = {
+      order: () => b,
+      range: async (from: number, to: number) => ({ data: rows.slice(from, Math.min(to + 1, from + 1000)), error: null }),
+    };
+    return b;
   };
   return { supabase: { from, rpc, functions: { invoke: async () => { h.calls.push("fn"); return { data: null, error: null }; } } } };
 });
 
-import { clearRankingsCache, fetchPlaceRanks } from "@/lib/placeRankings";
+import { allRpcRows, clearRankingsCache, fetchAllTimeVisitorCountMap, fetchPlaceRanks } from "@/lib/placeRankings";
 import { createPersistentCache } from "@/lib/persistentCache";
 
 /** The calculation the facts sections used to do on raw review rows. */
@@ -91,6 +96,29 @@ describe("fetchPlaceRanks", () => {
   it("never downloads review rows", async () => {
     await fetchPlaceRanks("fr", "country");
     expect(h.calls).not.toContain("from:reviews");
+  });
+});
+
+describe("ranking maps past 1,000 places", () => {
+  it("reads every page instead of stopping at the first 1,000 rows", async () => {
+    h.reviews = Array.from({ length: 2500 }, (_, i) => ({ place_id: `p${i}`, user_id: "u", rating: 4 }));
+    const map = await fetchAllTimeVisitorCountMap();
+    expect(map.size).toBe(2500);
+    expect(h.calls.filter((c) => c === "rpc:get_place_visitor_counts")).toHaveLength(3);
+  });
+
+  it("an exact multiple of the page size ends on an empty page", async () => {
+    const pages: [number, number][] = [];
+    const rows = await allRpcRows(async (from, to) => {
+      pages.push([from, to]);
+      return { data: from < 2000 ? Array.from({ length: 1000 }, (_, i) => from + i) : [], error: null };
+    });
+    expect(rows).toHaveLength(2000);
+    expect(pages).toEqual([[0, 999], [1000, 1999], [2000, 2999]]);
+  });
+
+  it("a failed page is an error, not a shorter map", async () => {
+    await expect(allRpcRows(async () => ({ data: null, error: new Error("offline") }))).rejects.toThrow("offline");
   });
 });
 

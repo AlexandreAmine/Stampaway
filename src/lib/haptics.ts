@@ -10,6 +10,7 @@ import { isNative } from "@/lib/native/platform";
  *               mode, picking a sort option
  * - light     → small toggles the user directly caused: like, bookmark /
  *               wishlist, the heart on the rating page, follow / unfollow,
+ *               a settings switch,
  *               the pull-to-refresh point where letting go refreshes
  * - medium    → accepting a follow request; dropping a reordered item
  * - success   → something was saved or sent: review, diary entry, new list,

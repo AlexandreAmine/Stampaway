@@ -39,7 +39,7 @@ export function warmTrendingPosters() {
     })();
   };
 
-  if ("requestIdleCallback" in window) {
+  if (typeof (window as { requestIdleCallback?: unknown }).requestIdleCallback === "function") {
     (window as unknown as { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => void })
       .requestIdleCallback(run, { timeout: 8000 });
   } else {

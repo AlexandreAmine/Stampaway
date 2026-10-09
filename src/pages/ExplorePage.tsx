@@ -45,6 +45,7 @@ import {
   EASTERN_EUROPE_COUNTRIES,
   MIDDLE_EAST_COUNTRIES,
 } from "@/lib/continents";
+import { compareText } from "@/lib/compareText";
 
 const tabs = ["Places", "Reviews", "Lists"] as const;
 type ExploreTab = typeof tabs[number];
@@ -466,7 +467,7 @@ export default function ExplorePage() {
           .map((p) => ({ ...p, stat: avgRatingMap.get(p.id) || 0 }))
           .sort((a, b) => {
             if (b.stat !== a.stat) return b.stat - a.stat;
-            return a.name.localeCompare(b.name);
+            return compareText(a.name, b.name);
           })
           .slice(0, limit);
 
@@ -477,7 +478,7 @@ export default function ExplorePage() {
           .map((p) => ({ ...p, stat: catMap.get(p.id) || 0 }))
           .sort((a, b) => {
             if (b.stat !== a.stat) return b.stat - a.stat;
-            return a.name.localeCompare(b.name);
+            return compareText(a.name, b.name);
           })
           .slice(0, previewLimit);
 
@@ -496,7 +497,7 @@ export default function ExplorePage() {
           .map((p) => ({ ...p, stat: catMap.get(p.id) || 0 }))
           .sort((a, b) => {
             if (b.stat !== a.stat) return b.stat - a.stat;
-            return a.name.localeCompare(b.name);
+            return compareText(a.name, b.name);
           })
           .slice(0, previewLimit);
 

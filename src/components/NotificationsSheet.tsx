@@ -222,7 +222,7 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
 
   return (
     <RemoveScroll>
-    <div className="fixed inset-0 z-50 flex items-end justify-center" data-overlay-open>
+    <div className="fixed inset-0 z-[60] flex items-end justify-center" data-overlay-open>
       <div
         className={`absolute inset-0 bg-black/60 ${closing ? "animate-out fade-out fill-mode-forwards duration-200" : "animate-in fade-in duration-200"}`}
         onClick={requestClose}
@@ -236,7 +236,7 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
       >
         <div className="bg-card flex items-center justify-between p-4 border-b border-border rounded-t-2xl shrink-0">
           <h2 className="section-title">{t("notifications.title")}</h2>
-          <button onClick={requestClose}><X className="w-5 h-5 text-muted-foreground" /></button>
+          <button aria-label={t("common.close")} onClick={requestClose}><X className="w-5 h-5 text-muted-foreground" /></button>
         </div>
         <div
           className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4"
@@ -274,10 +274,10 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
                   </div>
                   {item.type === "follow_request" && (
                     <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => acceptRequest(item.id, item.userId)} className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
+                      <button aria-label={t("notifications.accept")} onClick={() => acceptRequest(item.id, item.userId)} className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
                         <Check className="w-3.5 h-3.5 text-primary-foreground" />
                       </button>
-                      <button onClick={() => declineRequest(item.id)} className="w-7 h-7 rounded-full bg-muted flex items-center justify-center">
+                      <button aria-label={t("notifications.decline")} onClick={() => declineRequest(item.id)} className="w-7 h-7 rounded-full bg-muted flex items-center justify-center">
                         <XIcon className="w-3.5 h-3.5 text-muted-foreground" />
                       </button>
                     </div>

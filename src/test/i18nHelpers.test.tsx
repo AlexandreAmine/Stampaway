@@ -78,3 +78,19 @@ describe("tn", () => {
     expect(screen.getByTestId("p").textContent).toBe("0 ville");
   });
 });
+
+describe("shouldTranslate remembered answers", () => {
+  it("a text added to the no-translate list afterwards is no longer translated", async () => {
+    const { shouldTranslate, addNoTranslateStrings } = await import("@/lib/domTranslator");
+    expect(shouldTranslate("Zzyzx Road")).toBe(true);
+    addNoTranslateStrings(["Zzyzx Road"]);
+    expect(shouldTranslate("Zzyzx Road")).toBe(false);
+  });
+
+  it("a template added afterwards covers texts already checked", async () => {
+    const { shouldTranslate, addNoTranslateTemplates } = await import("@/lib/domTranslator");
+    expect(shouldTranslate("Qqqq vers alice")).toBe(true);
+    addNoTranslateTemplates(["Qqqq vers {username}"]);
+    expect(shouldTranslate("Qqqq vers alice")).toBe(false);
+  });
+});

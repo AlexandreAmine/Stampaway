@@ -42,6 +42,7 @@ import {
   EUROPE_COUNTRIES, ASIA_COUNTRIES, NORTH_AMERICA_COUNTRIES,
   SOUTH_AMERICA_COUNTRIES, AFRICA_COUNTRIES, OCEANIA_COUNTRIES,
 } from "@/lib/continents";
+import { compareText } from "@/lib/compareText";
 
 const filterTabs = ["Countries", "Cities", "Lists", "Users"] as const;
 type FilterTab = (typeof filterTabs)[number];
@@ -79,7 +80,7 @@ function buildDestinationResults(
   const withCounts = filtered.map((p: any) => ({ ...p, review_count: countMap.get(p.id) || 0 }));
   withCounts.sort((a: any, b: any) => {
     const diff = b.review_count - a.review_count;
-    return diff !== 0 ? diff : a.name.localeCompare(b.name);
+    return diff !== 0 ? diff : compareText(a.name, b.name);
   });
   return withCounts;
 }
@@ -312,7 +313,7 @@ export default function SearchPage() {
     if (destSort === "most-popular") {
       return [...places].sort((a, b) => {
         const diff = (b.review_count || 0) - (a.review_count || 0);
-        return diff !== 0 ? diff : a.name.localeCompare(b.name);
+        return diff !== 0 ? diff : compareText(a.name, b.name);
       });
     }
     if (destSort === "avg-highest") {

@@ -86,9 +86,11 @@ export function PosterWishlistButton({ placeId, placeName }: PosterWishlistButto
   if (!user) return null;
 
   return (
-    <button
+    // A plain dark disc rather than a blurred one: this sits on every poster
+    // of long scrolling grids, and each blur is extra work on every frame.
+    <button aria-label={t("profile.wishlist")}
       onClick={handleToggle}
-      className="absolute top-2 left-2 z-10 w-6 h-6 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center"
+      className="absolute top-2 left-2 z-10 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center"
     >
       <Bookmark
         className={`w-3.5 h-3.5 transition-colors ${

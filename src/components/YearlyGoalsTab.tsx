@@ -456,7 +456,7 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
                             {gp.place?.name}
                           </span>
                           {isOwn && (
-                            <button onClick={() => removeGoalPlace(gp.id)} className="opacity-0 group-hover:opacity-100 shrink-0">
+                            <button aria-label={t("common.remove")} onClick={() => removeGoalPlace(gp.id)} className="opacity-0 group-hover:opacity-100 shrink-0">
                               <X className="w-4 h-4 text-muted-foreground" />
                             </button>
                           )}
@@ -486,7 +486,7 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
                             <span className="text-muted-foreground text-xs ml-1">({gp.place?.country})</span>
                           </span>
                           {isOwn && (
-                            <button onClick={() => removeGoalPlace(gp.id)} className="opacity-0 group-hover:opacity-100 shrink-0">
+                            <button aria-label={t("common.remove")} onClick={() => removeGoalPlace(gp.id)} className="opacity-0 group-hover:opacity-100 shrink-0">
                               <X className="w-4 h-4 text-muted-foreground" />
                             </button>
                           )}

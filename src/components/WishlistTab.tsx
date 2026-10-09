@@ -228,7 +228,7 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
           {readOnly && <PosterWishlistButton placeId={item.place.id} placeName={item.place.name} />}
           <DestinationPoster placeId={item.place.id} name={item.place.name} country={item.place.country} type={item.place.type as "city" | "country"} image={item.place.image} className="w-full h-full" />
           {!readOnly && (
-            <button onClick={(e) => { e.stopPropagation(); handleRemove(item.id); }} className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center">
+            <button aria-label={t("common.remove")} onClick={(e) => { e.stopPropagation(); handleRemove(item.id); }} className="absolute top-1 right-1 w-5 h-5 bg-black/60 rounded-full flex items-center justify-center">
               <X className="w-3 h-3 text-white" />
             </button>
           )}
@@ -254,7 +254,7 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
           ))}
         </div>
         {!readOnly && (
-          <button onClick={() => setPickerOpen(true)} className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+          <button aria-label={t("nav.add")} onClick={() => setPickerOpen(true)} className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
             <Plus className="w-4 h-4 text-primary" />
           </button>
         )}

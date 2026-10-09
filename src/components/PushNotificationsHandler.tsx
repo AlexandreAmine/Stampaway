@@ -1,11 +1,20 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Capacitor } from "@capacitor/core";
+import { App as CapApp } from "@capacitor/app";
 import { PushNotifications } from "@capacitor/push-notifications";
+import { requestNotificationsSheet } from "@/lib/notificationsRequest";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 export const PushNotificationsHandler = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const onHome = location.pathname === "/";
+
+  const onHomeRef = useRef(onHome);
+  onHomeRef.current = onHome;
 
   useEffect(() => {
     if (!user) return;
@@ -54,12 +63,29 @@ export const PushNotificationsHandler = () => {
           console.error("[Push] Registration error:", JSON.stringify(e));
         });
 
+        // Tapping a notification (also the one that launched the app) opens
+        // the notifications list on Home.
+        const tapHandle = await PushNotifications.addListener("pushNotificationActionPerformed", () => {
+          if (!onHomeRef.current) navigate("/");
+          requestNotificationsSheet();
+        });
+
+        // Every push sets the app icon badge; opening the app clears it (and
+        // the delivered notifications), so it doesn't stay on forever.
+        const clearDelivered = () => PushNotifications.removeAllDeliveredNotifications().catch(() => {});
+        clearDelivered();
+        const resumeHandle = await CapApp.addListener("appStateChange", ({ isActive }) => {
+          if (isActive) clearDelivered();
+        });
+
         console.log("[Push] Calling register()...");
         await PushNotifications.register();
 
         cleanup = () => {
           regHandle.remove();
           errHandle.remove();
+          tapHandle.remove();
+          resumeHandle.remove();
         };
       } catch (e) {
         console.error("[Push] Setup failed:", e);
@@ -67,6 +93,7 @@ export const PushNotificationsHandler = () => {
     })();
 
     return () => { cleanup?.(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   return null;

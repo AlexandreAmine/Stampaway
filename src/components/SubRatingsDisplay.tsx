@@ -1,13 +1,9 @@
-import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { StarRating } from "@/components/StarRating";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { SUB_CATEGORIES, subCategoryLabel, subCategoryShortLabel } from "@/lib/subCategories";
-
-interface SubRating {
-  category: string;
-  rating: number;
-}
+import { subCategoryLabel, subCategoryShortLabel } from "@/lib/subCategories";
+import { fetchReviewSubRatings, reviewSubRatingsQueryKey } from "@/lib/reviewDetailQuery";
+import { fetchPlaceCategoryStats } from "@/lib/placeCategoryStats";
 
 interface SubRatingsDisplayProps {
   reviewId: string;
@@ -16,22 +12,12 @@ interface SubRatingsDisplayProps {
 
 export function SubRatingsDisplay({ reviewId, compact = false }: SubRatingsDisplayProps) {
   const { t } = useLanguage();
-  const [subRatings, setSubRatings] = useState<SubRating[]>([]);
-
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase
-        .from("review_sub_ratings")
-        .select("category, rating")
-        .eq("review_id", reviewId);
-      if (data && data.length > 0) {
-        const sorted = SUB_CATEGORIES
-          .map(cat => data.find(d => d.category === cat))
-          .filter(Boolean) as SubRating[];
-        setSubRatings(sorted);
-      }
-    })();
-  }, [reviewId]);
+  // Cached, so reopening a review shows its ratings at once (and opening one
+  // from a list starts loading them on touch) instead of popping in.
+  const { data: subRatings = [] } = useQuery({
+    queryKey: reviewSubRatingsQueryKey(reviewId),
+    queryFn: () => fetchReviewSubRatings(reviewId),
+  });
 
   if (subRatings.length === 0) return null;
 
@@ -74,59 +60,14 @@ interface PlaceCategoryRatingsProps {
 
 export function PlaceCategoryRatings({ placeId, userId }: PlaceCategoryRatingsProps) {
   const { t } = useLanguage();
-  const [averages, setAverages] = useState<{ category: string; avg: number; count: number }[]>([]);
-  const [myRatings, setMyRatings] = useState<SubRating[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    (async () => {
-      // Get all review IDs for this place
-      const { data: reviews } = await supabase
-        .from("reviews")
-        .select("id, user_id")
-        .eq("place_id", placeId);
-
-      if (!reviews || reviews.length === 0) { setLoading(false); return; }
-
-      const reviewIds = reviews.map(r => r.id);
-
-      // Get all sub ratings for those reviews
-      const { data: allSubs } = await supabase
-        .from("review_sub_ratings")
-        .select("review_id, category, rating")
-        .in("review_id", reviewIds);
-
-      if (!allSubs || allSubs.length === 0) { setLoading(false); return; }
-
-      // Compute averages per category
-      const catMap = new Map<string, number[]>();
-      allSubs.forEach(s => {
-        if (!catMap.has(s.category)) catMap.set(s.category, []);
-        catMap.get(s.category)!.push(Number(s.rating));
-      });
-
-      const avgs = SUB_CATEGORIES
-        .filter(cat => catMap.has(cat))
-        .map(cat => {
-          const vals = catMap.get(cat)!;
-          return { category: cat, avg: Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 10) / 10, count: vals.length };
-        });
-      setAverages(avgs);
-
-      // Get my ratings
-      if (userId) {
-        const myReviewIds = reviews.filter(r => r.user_id === userId).map(r => r.id);
-        if (myReviewIds.length > 0) {
-          const mySubs = allSubs.filter(s => myReviewIds.includes(s.review_id));
-          // Use latest review's sub ratings
-          const latestReviewId = myReviewIds[myReviewIds.length - 1];
-          setMyRatings(mySubs.filter(s => s.review_id === latestReviewId));
-        }
-      }
-
-      setLoading(false);
-    })();
-  }, [placeId, userId]);
+  // Cached, so coming back to this screen shows the ratings at once.
+  const { data, isPending } = useQuery({
+    queryKey: ["place-category-stats", placeId, userId ?? null],
+    queryFn: () => fetchPlaceCategoryStats(placeId, userId),
+  });
+  const loading = isPending;
+  const averages = data?.averages ?? [];
+  const myRatings = data?.myRatings ?? [];
 
   if (loading) return (
     <div className="space-y-2 py-2">

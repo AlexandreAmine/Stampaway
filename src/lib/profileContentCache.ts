@@ -33,6 +33,45 @@ export function setOwnProfileContentCache<T>(userId: string | null, data: T) {
   syncOwnProfileContentCacheUser(userId);
   if (!userId) return;
   ownProfileContentCache = { data, ts: Date.now() };
+  saveLastKnown(userId, data);
+}
+
+// The last content shown on the user's own profile, kept on the phone so the
+// Profile tab opens with it (after a relaunch, or once the 60 s cache above
+// has lapsed or been invalidated) while the fresh copy loads, instead of
+// zeros and empty favorites. Only ever shown to the same user, and always
+// replaced by the refetch that follows.
+const LAST_KNOWN_KEY = "stampaway_own_profile_v1";
+let lastKnown: { userId: string; data: unknown } | null | undefined;
+
+// The map data holds Sets, which JSON can't store as they are.
+const toJson = (_key: string, value: unknown) => (value instanceof Set ? { __set: [...value] } : value);
+const fromJson = (_key: string, value: unknown) =>
+  value && typeof value === "object" && Array.isArray((value as { __set?: unknown }).__set)
+    ? new Set((value as { __set: unknown[] }).__set)
+    : value;
+
+function saveLastKnown(userId: string, data: unknown) {
+  lastKnown = { userId, data };
+  try {
+    localStorage.setItem(LAST_KNOWN_KEY, JSON.stringify(lastKnown, toJson));
+  } catch {
+    // Storage full or unavailable: the in-memory copy still works.
+  }
+}
+
+/** The fresh cached content if any, else the last content seen, for this user. */
+export function getLastKnownOwnProfileContent<T>(userId: string | null): T | null {
+  const fresh = getFreshOwnProfileContentCache<T>(userId);
+  if (fresh || !userId) return fresh;
+  if (lastKnown === undefined) {
+    try {
+      lastKnown = JSON.parse(localStorage.getItem(LAST_KNOWN_KEY) || "null", fromJson);
+    } catch {
+      lastKnown = null;
+    }
+  }
+  return lastKnown?.userId === userId ? (lastKnown.data as T) : null;
 }
 
 export function invalidateOwnProfileContentCache(userId: string | null) {

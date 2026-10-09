@@ -60,6 +60,11 @@ function isSkipped(el: Element | null): boolean {
   return false;
 }
 
+// The same texts come up over and over (labels, place names), and checking
+// one runs every template pattern, so answers are remembered until the
+// no-translate registries below change.
+const decisions = new Map<string, boolean>();
+
 // Exact-string blocklist: never send these texts to DeepL. Used for proper
 // nouns (place names, brand words) so DeepL does not mistranslate e.g. "Riga".
 const noTranslateExact: Set<string> = new Set([
@@ -68,7 +73,10 @@ const noTranslateExact: Set<string> = new Set([
 ]);
 export function addNoTranslateStrings(values: Iterable<string>) {
   for (const v of values) {
-    if (v && v.trim()) noTranslateExact.add(v.trim());
+    const trimmed = v?.trim();
+    if (!trimmed || noTranslateExact.has(trimmed)) continue;
+    noTranslateExact.add(trimmed);
+    decisions.clear();
   }
 }
 
@@ -89,11 +97,22 @@ export function addNoTranslateTemplates(values: Iterable<string>) {
       .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
       .join("[\\s\\S]+?");
     noTranslatePatterns.push(new RegExp(`^${source}$`));
+    decisions.clear();
   }
 }
 
 /** Exported for tests. */
 export function shouldTranslate(text: string): boolean {
+  let decision = decisions.get(text);
+  if (decision === undefined) {
+    decision = decideTranslate(text);
+    if (decisions.size > 5000) decisions.clear();
+    decisions.set(text, decision);
+  }
+  return decision;
+}
+
+function decideTranslate(text: string): boolean {
   const trimmed = text.trim();
   if (trimmed.length < 2) return false;
   if (!/[A-Za-z]/.test(trimmed)) return false;
@@ -246,6 +265,23 @@ function processSubtree(root: Node) {
   }
 }
 
+// Text nodes of screens that have closed are only dropped from the known
+// sets when a translation arrives, which is rare once the cache is warm.
+// Holding them keeps whole closed screens in memory, so they're also swept
+// whenever the sets have grown by a few hundred entries.
+const PRUNE_EVERY = 500;
+let sizeAtLastPrune = 0;
+function pruneDisconnected() {
+  if (knownNodes.size + knownAttrs.size < sizeAtLastPrune + PRUNE_EVERY) return;
+  knownNodes.forEach((n) => {
+    if (!n.isConnected) knownNodes.delete(n);
+  });
+  knownAttrs.forEach((rec) => {
+    if (!rec.el.isConnected) knownAttrs.delete(rec);
+  });
+  sizeAtLastPrune = knownNodes.size + knownAttrs.size;
+}
+
 let scanScheduled = false;
 const pendingRoots: Set<Node> = new Set();
 function scheduleScan(root: Node) {
@@ -263,6 +299,7 @@ function scheduleScan(root: Node) {
         processAttrs(r);
       }
     }
+    pruneDisconnected();
   });
 }
 

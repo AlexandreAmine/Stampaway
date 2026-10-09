@@ -149,7 +149,7 @@ export default function PlacePage() {
 
     const placeData = data.placeData;
     if (!placeData) { setLoading(false); return; }
-    setPlace(placeData);
+    setPlace(placeData as PlaceData);
     setInWishlist(data.nextInWishlist);
 
     // Server-aggregated stats (same dedup semantics as reviewDedup.ts)
@@ -199,7 +199,7 @@ export default function PlacePage() {
       setSecondaryLoaded(false);
       // Fetch description - use DB description first, fallback to Wikipedia
       void fetchDescription(placeData.name, placeData.type, placeData.country, (placeData as any).description, requestContext);
-      void fetchSecondaryPlaceData(placeData, requestContext);
+      void fetchSecondaryPlaceData(placeData as PlaceData, requestContext);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [primaryQuery.data, user?.id, language]);
@@ -537,7 +537,7 @@ export default function PlacePage() {
           className="w-full h-full rounded-none"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-        <button
+        <button aria-label={t("back")}
           onClick={() => slideBack(() => navigate(-1))}
           className="absolute top-12 left-5 w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"
         >
@@ -545,13 +545,13 @@ export default function PlacePage() {
         </button>
         {user && (
           <div className="absolute top-12 right-5 flex items-center gap-2">
-            <button
+            <button aria-label={t("profile.wishlist")}
               onClick={toggleWishlist}
               className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"
             >
               <Bookmark className={`w-5 h-5 transition-colors ${inWishlist ? "text-primary fill-primary" : "text-foreground"}`} />
             </button>
-            <button
+            <button aria-label={t("nav.add")}
               onClick={() => navigate(`/add?placeId=${id}&placeName=${encodeURIComponent(place?.name || "")}&placeCountry=${encodeURIComponent(place?.country || "")}&placeImage=${encodeURIComponent(place?.image || "")}`)}
               className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"
             >

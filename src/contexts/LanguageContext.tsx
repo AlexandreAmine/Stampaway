@@ -107,10 +107,13 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return text;
   }, [language]);
 
+  // Built once per language: creating Intl objects is slow, and long lists
+  // call tn() for every row.
+  const pluralRules = useMemo(() => new Intl.PluralRules(language), [language]);
   const tn = useCallback((key: PluralKey, count: number, replacements?: Record<string, string>): string => {
-    const form = new Intl.PluralRules(language).select(count) === "one" ? "one" : "other";
+    const form = pluralRules.select(count) === "one" ? "one" : "other";
     return t(`${key}.${form}` as TranslationKey, { ...replacements, count: String(count) });
-  }, [t, language]);
+  }, [t, pluralRules]);
 
   // Stable unless the language changes, so a re-render of whatever sits
   // above this provider doesn't re-render every translated component.

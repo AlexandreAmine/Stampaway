@@ -21,6 +21,7 @@ import { PullToRefresh } from "@/components/PullToRefresh";
 import { useAfterFirstPaint } from "@/hooks/useAfterFirstPaint";
 import { warmTrendingPosters } from "@/lib/posterWarmup";
 import { prefetchPlacePrimary } from "@/lib/placePrimaryQuery";
+import { onNotificationsRequest } from "@/lib/notificationsRequest";
 
 interface FriendActivity {
   id: string;
@@ -126,6 +127,16 @@ export default function HomePage() {
         : 0;
     },
   });
+
+  const openNotifications = useCallback(() => {
+    setNotifOpen(true);
+    if (user) localStorage.setItem(`notif_last_read_${user.id}`, new Date().toISOString());
+    queryClient.setQueryData(["unread-notifications", user?.id ?? null], 0);
+  }, [user, queryClient]);
+
+  // Tapping a push notification opens the same list as the bell.
+  useEffect(() => onNotificationsRequest(openNotifications), [openNotifications]);
+
   const unreadCount = unreadQuery.data ?? 0;
 
   // Friend activity feed. Cached by React Query so switching back to Home
@@ -274,11 +285,7 @@ export default function HomePage() {
                 <span className="text-xs font-semibold text-foreground tabular-nums">{citiesCount}</span>
                 <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{t("profile.cities")}</span>
               </div>
-              <button onClick={() => {
-                setNotifOpen(true);
-                if (user) localStorage.setItem(`notif_last_read_${user.id}`, new Date().toISOString());
-                queryClient.setQueryData(unreadQueryKey, 0);
-              }} className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center relative">
+              <button onClick={openNotifications} aria-label={t("notifications.title")} className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center relative">
                 <Bell className="w-5 h-5 text-foreground" />
                 {unreadCount > 0 && (
                   <span className="absolute -top-1 -right-1 min-w-[16px] h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1">
