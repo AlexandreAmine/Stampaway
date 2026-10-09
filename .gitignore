@@ -38,3 +38,7 @@ android-broken-*/
 
 # Claude Code — keep shared config (settings.json, launch.json), ignore personal overrides
 .claude/settings.local.json
+
+# Xcode/SwiftPM per-user state (e.g. inside native/ plugins)
+.swiftpm/
+xcuserdata/
