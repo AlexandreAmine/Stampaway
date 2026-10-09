@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+import { canFindCountriesInPhotos } from "@/lib/native/photoTrips";
 import { EmptyState } from "@/components/EmptyState";
 import { slideBack } from "@/lib/backTransition";
 import { selectInChunks } from "@/lib/inChunks";
-import { ChevronLeft, Lock, Shield, KeyRound, LogOut, Trash2, ChevronRight, Activity, Globe, User, FileText, ShieldCheck, Ban } from "lucide-react";
+import { ChevronLeft, Lock, Shield, KeyRound, LogOut, Trash2, ChevronRight, Activity, Globe, User, FileText, ShieldCheck, Ban, Images } from "lucide-react";
 import { PasswordAndAuthSection } from "@/components/PasswordAndAuthSection";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -379,6 +380,16 @@ export default function SettingsPage() {
             </div>
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
+
+          {canFindCountriesInPhotos() && (
+            <button onClick={() => navigate("/import-photos")} className="flex items-center justify-between py-4 border-b border-border w-full text-left">
+              <div className="flex items-center gap-3">
+                <Images className="w-5 h-5 text-muted-foreground" />
+                <span className="text-sm font-semibold text-foreground">{t("importPhotos.cta")}</span>
+              </div>
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </button>
+          )}
 
           <button onClick={() => setSection("language")} className="flex items-center justify-between py-4 border-b border-border w-full text-left">
             <div className="flex items-center gap-3">

@@ -1,26 +1,22 @@
 import { useState, useEffect, useRef } from "react";
 import { dismissModal } from "@/lib/backTransition";
-import { ChevronLeft, Heart, Search, X } from "lucide-react";
+import { ChevronLeft, Search, X } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { StarRating } from "@/components/StarRating";
 import { DestinationPoster } from "@/components/DestinationPoster";
 import { RecentSearches } from "@/components/RecentSearches";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { toastError } from "@/lib/toastError";
-import { hapticSuccess, hapticMedium, hapticLight } from "@/lib/haptics";
-import { setCachedWishlistStatus } from "@/lib/wishlistCache";
+import { hapticSuccess } from "@/lib/haptics";
 import { invalidateOwnProfileContentCache } from "@/lib/profileContentCache";
-import { invalidateExploreCache } from "@/lib/exploreCache";
-import { clearRankingsCache, fetchAllPlaces } from "@/lib/placeRankings";
+import { fetchAllPlaces } from "@/lib/placeRankings";
 import { matchesPlaceName, normalizeSearchText } from "@/lib/placeSearch";
-import { SUB_CATEGORIES, subCategoryLabel } from "@/lib/subCategories";
-import { monthShortNames } from "@/lib/localeFormat";
 import { useLocalizedPlaceName } from "@/hooks/useLocalizedPlaceName";
+import { ReviewFormFields, useFollowingLookup } from "@/components/ReviewFormFields";
+import { emptyReviewDraft, saveReview, type ReviewDraft } from "@/lib/reviewDraft";
 import { getCachedPlaceName } from "@/lib/placeNames";
 
 type Step = "search" | "review";
@@ -85,13 +81,7 @@ export default function AddPlacePage() {
   // must match rather than fall back to the stored English name.
   const localizedPlaceName = useLocalizedPlaceName(selectedPlace?.name, selectedPlace?.type === "country");
   const localizedPlaceCountry = useLocalizedPlaceName(selectedPlace?.country, true);
-  const [rating, setRating] = useState(0);
-  const [reviewText, setReviewText] = useState("");
-  const [subRatings, setSubRatings] = useState<Record<string, number>>({});
-  const [visitYear, setVisitYear] = useState<number | "">(""); 
-  const [visitMonth, setVisitMonth] = useState<number | "">("");
-  const [durationDays, setDurationDays] = useState<number | "">("");
-  const [liked, setLiked] = useState(false);
+  const [draft, setDraft] = useState<ReviewDraft>(emptyReviewDraft);
   const [results, setResults] = useState<PlaceResult[]>([]);
   const [saving, setSaving] = useState(false);
   // Read during the first render so the grid below doesn't jump down a
@@ -104,65 +94,11 @@ export default function AddPlacePage() {
       return [];
     }
   });
-  const [tagQuery, setTagQuery] = useState("");
-  const [tagResults, setTagResults] = useState<{ user_id: string; username: string; profile_picture: string | null }[]>([]);
-  const [taggedUsers, setTaggedUsers] = useState<{ user_id: string; username: string; profile_picture: string | null }[]>([]);
-  const [followingLookup, setFollowingLookup] = useState<{
-    userId: string | null;
-    ids: Set<string> | null;
-    failed: boolean;
-  }>({ userId: null, ids: new Set(), failed: false });
-  const followingRequestIdRef = useRef(0);
-  const tagSearchRequestIdRef = useRef(0);
+  const followingLookup = useFollowingLookup();
   const placeSearchRequestIdRef = useRef(0);
   const reviewCountsInflightRef = useRef<Promise<Map<string, number>> | null>(
     null
   );
-
-  useEffect(() => {
-    const viewerId = user?.id ?? null;
-    const requestId = ++followingRequestIdRef.current;
-    let cancelled = false;
-
-    setFollowingLookup({
-      userId: viewerId,
-      ids: viewerId ? null : new Set(),
-      failed: false,
-    });
-    setTagResults([]);
-
-    if (!viewerId) return;
-
-    const loadFollowingIds = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("followers")
-          .select("following_id")
-          .eq("follower_id", viewerId);
-        if (error) throw error;
-
-        if (cancelled || followingRequestIdRef.current !== requestId) return;
-        setFollowingLookup({
-          userId: viewerId,
-          ids: new Set((data || []).map((follow) => follow.following_id)),
-          failed: false,
-        });
-      } catch {
-        if (cancelled || followingRequestIdRef.current !== requestId) return;
-        setFollowingLookup({
-          userId: viewerId,
-          ids: null,
-          failed: true,
-        });
-        console.error("Failed to load Add Place following IDs");
-      }
-    };
-
-    void loadFollowingIds();
-    return () => {
-      cancelled = true;
-    };
-  }, [user?.id]);
 
   useEffect(() => {
     const requestId = ++placeSearchRequestIdRef.current;
@@ -178,56 +114,6 @@ export default function AddPlacePage() {
       }
     };
   }, [query]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    const requestId = ++tagSearchRequestIdRef.current;
-    const search = tagQuery.trim();
-    const viewerId = user?.id ?? null;
-    const lookupMatchesViewer = followingLookup.userId === viewerId;
-    const followingIds = lookupMatchesViewer ? followingLookup.ids : null;
-
-    if (!search) {
-      setTagResults([]);
-      return;
-    }
-
-    if (viewerId && (!lookupMatchesViewer || followingLookup.failed || !followingIds)) {
-      return;
-    }
-
-    let cancelled = false;
-    const timer = setTimeout(async () => {
-      try {
-        const { data: profiles, error } = await supabase
-          .from("profiles")
-          .select("user_id, username, profile_picture, is_private")
-          .ilike("username", `%${search}%`)
-          .limit(20);
-        if (error) throw error;
-
-        if (cancelled || tagSearchRequestIdRef.current !== requestId) return;
-
-        const taggedUserIds = new Set(taggedUsers.map((tagged) => tagged.user_id));
-        const visibleFollowingIds = followingIds || new Set<string>();
-        const filtered = (profiles || []).filter(
-          (profile) =>
-            profile.user_id !== viewerId &&
-            !taggedUserIds.has(profile.user_id) &&
-            (!profile.is_private || visibleFollowingIds.has(profile.user_id))
-        );
-        setTagResults(filtered.slice(0, 10));
-      } catch {
-        if (!cancelled && tagSearchRequestIdRef.current === requestId) {
-          console.error("Failed to search Add Place tags");
-        }
-      }
-    }, 200);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [tagQuery, taggedUsers, user?.id, followingLookup]);
 
   const fetchReviewCountMap = (): Promise<Map<string, number>> => {
     if (reviewCountsInflightRef.current) {
@@ -311,50 +197,9 @@ export default function AddPlacePage() {
       selectedPlace.type === "city" && selectedPlace.country
         ? findUnloggedCountry(user.id, selectedPlace.country).catch(() => null)
         : Promise.resolve(null);
-    // Save year if selected; save month only if year is also selected
-    const hasYear = visitYear !== "";
-    const hasMonth = visitMonth !== "";
-    const { error, data: insertedReviews } = await supabase.from("reviews").insert({
-      user_id: user.id,
-      place_id: selectedPlace.id,
-      rating: rating > 0 ? rating : null,
-      review_text: reviewText || null,
-      visit_year: hasYear ? visitYear : null,
-      visit_month: (hasYear && hasMonth) ? visitMonth : null,
-      duration_days: durationDays || null,
-      liked,
-    }).select("id");
-
-    // Everything after the review insert only needs the returned review id,
-    // so all follow-up writes/lookups run in ONE parallel batch instead of
-    // the previous ~8 sequential round-trips. Same writes, same toasts.
-    if (!error) {
-      invalidateOwnProfileContentCache(user.id);
-      clearRankingsCache();
-      invalidateExploreCache(user.id);
-
-      const reviewId = insertedReviews?.[0]?.id;
-      const currentYear = new Date().getFullYear();
-
-      // Auto-remove from wishlist if present
-      const removeFromWishlist = async () => {
-        const { error: wishlistError } = await supabase.from("wishlists").delete().eq("user_id", user.id).eq("place_id", selectedPlace.id);
-        if (!wishlistError) {
-          setCachedWishlistStatus(user.id, selectedPlace.id, false);
-          invalidateOwnProfileContentCache(user.id);
-        }
-      };
-
-      // Auto-tick must-visit goal places
-      const tickGoalPlace = async () => {
-        await supabase.from("yearly_goal_places")
-          .update({ completed: true })
-          .eq("user_id", user.id)
-          .eq("place_id", selectedPlace.id)
-          .eq("year", currentYear)
-          .eq("completed", false);
-      };
-
+    const currentYear = new Date().getFullYear();
+    // Add-screen extras, saved in the same batch as the tags and sub-ratings.
+    const afterInsert = async (reviewId: string | undefined) => {
       // Check if this is a first-time visit (new destination) and user has yearly goals
       const showGoalProgress = async () => {
         const { data: previousReviews } = await supabase
@@ -410,31 +255,6 @@ export default function AddPlacePage() {
         );
       };
 
-      // Save tags
-      const saveTags = async () => {
-        if (taggedUsers.length === 0 || !reviewId) return;
-        await supabase.from("review_tags").insert(
-          taggedUsers.map(t => ({
-            review_id: reviewId,
-            tagged_user_id: t.user_id,
-            tagged_by_user_id: user.id,
-          }))
-        );
-      };
-
-      // Save sub-ratings
-      const saveSubRatings = async () => {
-        const subEntries = Object.entries(subRatings).filter(([, v]) => v > 0);
-        if (subEntries.length === 0 || !reviewId) return;
-        await supabase.from("review_sub_ratings").insert(
-          subEntries.map(([category, rating]) => ({
-            review_id: reviewId,
-            category,
-            rating,
-          }))
-        );
-      };
-
       // If this is a favorite flow, also save as favorite
       const saveFavorite = async () => {
         if (!isFavoriteFlow) return;
@@ -462,15 +282,10 @@ export default function AddPlacePage() {
         }
       };
 
-      await Promise.all([
-        removeFromWishlist(),
-        tickGoalPlace(),
-        showGoalProgress(),
-        saveTags(),
-        saveSubRatings(),
-        saveFavorite(),
-      ]);
-    }
+      await Promise.all([showGoalProgress(), saveFavorite()]);
+    };
+    const reviewId = await saveReview(user.id, selectedPlace, draft, afterInsert);
+    const error = reviewId === null;
 
     setSaving(false);
 
@@ -545,137 +360,7 @@ export default function AddPlacePage() {
             </button>
           </div>
 
-          <div className="space-y-6">
-            <div>
-              <p className="label-caps mb-3">{t("review.yourRating")}</p>
-              <div className="flex items-center justify-between">
-                <StarRating rating={rating} size={40} interactive onChange={setRating} />
-                <button
-                  type="button"
-                  onClick={() => { hapticLight(); setLiked(!liked); }}
-                  aria-pressed={liked}
-                  aria-label={t("reviewDetail.liked")}
-                  className="p-1 -m-1 transition-transform active:scale-90"
-                >
-                  <Heart className={`w-7 h-7 transition-colors ${liked ? "text-red-500 fill-red-500" : "text-muted-foreground"}`} />
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <textarea
-                value={reviewText}
-                onChange={(e) => setReviewText(e.target.value)}
-                placeholder={t("review.placeholder")}
-                className="w-full h-24 bg-card rounded-lg p-4 text-sm text-foreground placeholder:text-muted-foreground resize-none border border-border focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-              <div className="mt-3 space-y-2">
-                {SUB_CATEGORIES.map((cat) => (
-                  <div key={cat} className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">{subCategoryLabel(cat, t)}</span>
-                    <StarRating rating={subRatings[cat] || 0} size={16} interactive onChange={(v) => setSubRatings(prev => ({ ...prev, [cat]: v }))} />
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <p className="label-caps">{t("review.whenVisit")}</p>
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="text-xs text-muted-foreground mb-1 block">{t("review.year")}</label>
-                  <select
-                    value={visitYear}
-                    onChange={(e) => setVisitYear(e.target.value ? Number(e.target.value) : "")}
-                    className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="">—</option>
-                    {Array.from({ length: new Date().getFullYear() - 1977 + 1 }, (_, i) => new Date().getFullYear() - i).map((y) => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex-1">
-                  <label className="text-xs text-muted-foreground mb-1 block">{t("review.month")}</label>
-                  <select
-                    value={visitMonth}
-                    onChange={(e) => setVisitMonth(e.target.value ? Number(e.target.value) : "")}
-                    className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
-                  >
-                    <option value="">—</option>
-                    {monthShortNames(language).map((m, i) => (
-                      <option key={i} value={i + 1}>{m}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex-1">
-                  <label className="text-xs text-muted-foreground mb-1 block">{t("diary.duration")}</label>
-                  <input
-                    type="number"
-                    inputMode="numeric"
-                    value={durationDays}
-                    onChange={(e) => setDurationDays(e.target.value ? Number(e.target.value) : "")}
-                    placeholder={t("review.daysPlaceholder")}
-                    min={1}
-                    className="w-full bg-card rounded-lg py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Tag people */}
-            <div>
-              <p className="label-caps mb-2">{t("review.tagPeople")}</p>
-              {taggedUsers.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {taggedUsers.map(u => (
-                    <div key={u.user_id} className="flex items-center gap-1.5 bg-card border border-border rounded-full px-2.5 py-1">
-                      <Avatar className="w-4 h-4">
-                        {u.profile_picture ? <AvatarImage src={u.profile_picture} /> : <AvatarFallback className="text-[8px]">{u.username[0]?.toUpperCase()}</AvatarFallback>}
-                      </Avatar>
-                      <span className="text-xs font-medium text-foreground" data-no-translate>{u.username}</span>
-                      <button onClick={() => setTaggedUsers(prev => prev.filter(t => t.user_id !== u.user_id))} className="ml-0.5">
-                        <X className="w-3 h-3 text-muted-foreground" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div className="relative">
-                <input
-                  type="text"
-                  enterKeyHint="search"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  value={tagQuery}
-                  onChange={(e) => setTagQuery(e.target.value)}
-                  placeholder={t("review.searchUsername")}
-                  className="w-full bg-card rounded-lg py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-                {tagResults.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl overflow-hidden z-20 max-h-40 overflow-y-auto">
-                    {tagResults.map(p => (
-                      <button
-                        key={p.user_id}
-                        onClick={() => {
-                          setTaggedUsers(prev => [...prev, p]);
-                          setTagQuery("");
-                          setTagResults([]);
-                        }}
-                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/50 text-left"
-                      >
-                        <Avatar className="w-6 h-6">
-                          {p.profile_picture ? <AvatarImage src={p.profile_picture} /> : <AvatarFallback className="text-[10px]">{p.username[0]?.toUpperCase()}</AvatarFallback>}
-                        </Avatar>
-                        <span className="text-sm text-foreground" data-no-translate>{p.username}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-          </div>
+          <ReviewFormFields draft={draft} onChange={setDraft} followingLookup={followingLookup} />
         </div>
       </div>
     );

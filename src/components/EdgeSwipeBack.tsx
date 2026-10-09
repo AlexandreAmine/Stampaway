@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { MODAL_PATHS } from "@/lib/modalRoutes";
 import { useLocation, useNavigate } from "react-router-dom";
 import { hasPageBackHandler, invokePageBackHandler } from "@/lib/pageBackStack";
 import { isOverlayOpen } from "@/hooks/useSheetDrag";
@@ -106,6 +107,8 @@ export default function EdgeSwipeBack() {
       // Root tabs have nowhere to swipe back to UNLESS they have an open
       // internal drill-down view (e.g. Profile's Countries/Map/etc. tabs).
       if (ROOT_PATHS.has(location.pathname) && !hasPageBackHandler()) return;
+      // Modal screens close with their own button, not a swipe back.
+      if (MODAL_PATHS.has(location.pathname)) return;
       startX = t.clientX;
       startY = t.clientY;
       tracking = true;

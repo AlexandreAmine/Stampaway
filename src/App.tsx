@@ -17,6 +17,7 @@ import PressPrefetch from "@/components/PressPrefetch";
 import { PushNotificationsHandler } from "@/components/PushNotificationsHandler";
 import UsernameSetupGate from "@/components/UsernameSetupGate";
 import OnboardingGate from "@/components/onboarding/OnboardingGate";
+import FindCountriesPrompt from "@/components/FindCountriesPrompt";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import HomePage from "./pages/HomePage";
@@ -26,6 +27,7 @@ import WelcomePage from "./pages/WelcomePage";
 // splitting these route modules can leave the globe canvases mounted but blank.
 const ExplorePage = lazy(() => import("./pages/ExplorePage"));
 const AddPlacePage = lazy(() => import("./pages/AddPlacePage"));
+const ImportPhotosPage = lazy(() => import("./pages/ImportPhotosPage"));
 const SearchPage = lazy(() => import("./pages/SearchPage"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const LoggedPlacesPage = lazy(() => import("./pages/LoggedPlacesPage"));
@@ -90,6 +92,7 @@ function AppRoutes() {
           <Route path="/explore" element={<ProtectedRoute><ExplorePage /></ProtectedRoute>} />
           <Route path="/explore/list" element={<ProtectedRoute><ExploreListPage /></ProtectedRoute>} />
           <Route path="/add" element={<ProtectedRoute><AddPlacePage /></ProtectedRoute>} />
+          <Route path="/import-photos" element={<ProtectedRoute><ImportPhotosPage /></ProtectedRoute>} />
           <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/logged-places" element={<ProtectedRoute><LoggedPlacesPage /></ProtectedRoute>} />
@@ -107,6 +110,7 @@ function AppRoutes() {
       {user && !mustCompletePasswordReset && <BottomNav />}
       <UsernameSetupGate />
       <OnboardingGate />
+      {user && !mustCompletePasswordReset && <FindCountriesPrompt />}
     </div>
   );
 }

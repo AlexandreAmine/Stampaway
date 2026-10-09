@@ -1,0 +1,13 @@
+{
+  "name": "stampaway-photo-trips",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reads where and when the user's photos were taken (never the photos themselves), so Stampaway can suggest countries visited.",
+  "files": ["ios/Sources", "Package.swift"],
+  "capacitor": {
+    "ios": { "src": "ios" }
+  },
+  "peerDependencies": {
+    "@capacitor/core": ">=8.0.0"
+  }
+}

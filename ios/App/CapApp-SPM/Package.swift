@@ -29,7 +29,8 @@ let package = Package(
         .package(name: "CapawesomeCapacitorAppleSignIn", path: "../../../node_modules/@capawesome/capacitor-apple-sign-in"),
         .package(name: "CapgoCapacitorContacts", path: "../../../node_modules/@capgo/capacitor-contacts"),
         .package(name: "CapgoCapacitorUpdater", path: "../../../node_modules/@capgo/capacitor-updater"),
-        .package(name: "SentryCapacitor", path: "../../../node_modules/@sentry/capacitor")
+        .package(name: "SentryCapacitor", path: "../../../node_modules/@sentry/capacitor"),
+        .package(name: "StampawayPhotoTrips", path: "../../../native/photo-trips")
     ],
     targets: [
         .target(
@@ -54,7 +55,8 @@ let package = Package(
                 .product(name: "CapawesomeCapacitorAppleSignIn", package: "CapawesomeCapacitorAppleSignIn"),
                 .product(name: "CapgoCapacitorContacts", package: "CapgoCapacitorContacts"),
                 .product(name: "CapgoCapacitorUpdater", package: "CapgoCapacitorUpdater"),
-                .product(name: "SentryCapacitor", package: "SentryCapacitor")
+                .product(name: "SentryCapacitor", package: "SentryCapacitor"),
+                .product(name: "StampawayPhotoTrips", package: "StampawayPhotoTrips")
             ]
         )
     ]

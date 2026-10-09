@@ -35,7 +35,7 @@
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Stampaway saves photos to your library if you choose to save them.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Stampaway accesses your photo library so you can choose a profile picture.</string>
+	<string>Stampaway reads where and when your photos were taken to suggest the countries you have visited, and lets you choose a profile picture. Your photos never leave your phone.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

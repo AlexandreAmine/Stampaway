@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
+import { MODAL_PATHS } from "@/lib/modalRoutes";
 import { runPendingSlideClear } from "@/lib/backTransition";
 import { useLocation, useNavigationType } from "react-router-dom";
 
@@ -42,9 +43,9 @@ export default function RouteTransition() {
     if (location.pathname === cameFrom) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    // The add screen is presented like an iOS modal: it rises from the
-    // bottom instead of sliding in from the side (closing: dismissModal).
-    if (location.pathname === "/add") {
+    // Modal screens (the add screen, finding countries in photos) rise from
+    // the bottom instead of sliding in from the side (closing: dismissModal).
+    if (MODAL_PATHS.has(location.pathname)) {
       document.getElementById("route-container")?.animate(
         [
           { transform: "translateY(40%)", opacity: 0 },

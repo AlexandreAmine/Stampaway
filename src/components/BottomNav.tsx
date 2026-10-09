@@ -1,4 +1,5 @@
 import { Globe, Map, Search, User, Plus } from "lucide-react";
+import { MODAL_PATHS } from "@/lib/modalRoutes";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
@@ -116,8 +117,8 @@ export function BottomNav() {
 
   // Out of the way while typing, like native tab bars (otherwise it sits on
   // top of the keyboard in Search, Add and Edit Profile). Also hidden on the
-  // add screen, which is presented as a modal over everything.
-  if (keyboardOpen || location.pathname === "/add") return null;
+  // screens presented as modals over everything.
+  if (keyboardOpen || MODAL_PATHS.has(location.pathname)) return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-nav-bg border-t border-border safe-bottom">

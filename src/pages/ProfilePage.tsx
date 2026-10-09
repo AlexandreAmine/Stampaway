@@ -1,4 +1,5 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { canFindCountriesInPhotos } from "@/lib/native/photoTrips";
 import { EmptyState } from "@/components/EmptyState";
 import { buttonVariants } from "@/components/ui/button";
 import { slideBack } from "@/lib/backTransition";
@@ -6,7 +7,7 @@ import { placeLinkProps } from "@/lib/placePrimaryQuery";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchProfileHeader, profileHeaderQueryKey, type ProfileHeader } from "@/lib/profileHeaderQuery";
-import { ChevronRight, ChevronLeft, Settings, Plus, X, UserPlus, UserMinus, Pencil, Share2, MapPin } from "lucide-react";
+import { ChevronRight, ChevronLeft, Settings, Plus, X, UserPlus, UserMinus, Pencil, Share2, MapPin, Images } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -794,9 +795,20 @@ export default function ProfilePage() {
             <button onClick={closeSubPage}>
               <ChevronLeft className="w-6 h-6 text-foreground" />
             </button>
-            <h1 className="page-title">
+            <h1 className="page-title flex-1 min-w-0">
               {subPage === "CountriesByRating" ? <>{t("profile.countries")} · {ratingFilter}★ <span className="font-sans text-sm font-normal text-muted-foreground">({countryDistribution[Math.round((ratingFilter || 0) * 2) - 1] || 0})</span></> : subPage === "CitiesByRating" ? <>{t("profile.cities")} · {ratingFilter}★ <span className="font-sans text-sm font-normal text-muted-foreground">({cityDistribution[Math.round((ratingFilter || 0) * 2) - 1] || 0})</span></> : (subPageLabels[subPage] || subPage)}
             </h1>
+            {isOwnProfile && (subPage === "Diary" || subPage === "Countries") && canFindCountriesInPhotos() && (
+              <button
+                type="button"
+                onClick={() => navigate("/import-photos")}
+                aria-label={t("importPhotos.cta")}
+                className={buttonVariants({ variant: "secondary", size: "sm", className: "shrink-0 h-8 px-3 text-xs gap-1.5" })}
+              >
+                <Images aria-hidden />
+                {t("importPhotos.short")}
+              </button>
+            )}
           </div>
           {renderSubPage()}
         </div>
@@ -1028,7 +1040,14 @@ export default function ProfilePage() {
               icon={MapPin}
               title={t("profile.firstPlaceTitle")}
               body={t("profile.firstPlaceBody")}
-              action={{ label: t("profile.firstPlaceCta"), onClick: () => navigate("/add") }}
+              action={
+                canFindCountriesInPhotos()
+                  ? { label: t("importPhotos.cta"), onClick: () => navigate("/import-photos") }
+                  : { label: t("profile.firstPlaceCta"), onClick: () => navigate("/add") }
+              }
+              secondaryAction={
+                canFindCountriesInPhotos() ? { label: t("profile.firstPlaceCta"), onClick: () => navigate("/add") } : undefined
+              }
               className="mb-8 rounded-2xl bg-card"
             />
           )}

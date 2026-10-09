@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { canFindCountriesInPhotos } from "@/lib/native/photoTrips";
 import { EmptyState } from "@/components/EmptyState";
 import { placeLinkProps } from "@/lib/placePrimaryQuery";
 import { hapticSelection } from "@/lib/haptics";
@@ -120,7 +121,18 @@ export function DiaryTab({ userId }: { userId?: string }) {
         icon={BookOpen}
         title={t("profile.firstPlaceTitle")}
         body={t("empty.diaryBody")}
-        action={isOwnProfile ? { label: t("profile.firstPlaceCta"), onClick: () => navigate("/add") } : undefined}
+        action={
+          !isOwnProfile
+            ? undefined
+            : canFindCountriesInPhotos()
+              ? { label: t("importPhotos.cta"), onClick: () => navigate("/import-photos") }
+              : { label: t("profile.firstPlaceCta"), onClick: () => navigate("/add") }
+        }
+        secondaryAction={
+          isOwnProfile && canFindCountriesInPhotos()
+            ? { label: t("profile.firstPlaceCta"), onClick: () => navigate("/add") }
+            : undefined
+        }
       />
     );
   }
