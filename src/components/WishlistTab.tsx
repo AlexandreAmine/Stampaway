@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
+import { EmptyState } from "@/components/EmptyState";
 import { placeLinkProps } from "@/lib/placePrimaryQuery";
 import { hapticSelection } from "@/lib/haptics";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, X, ChevronDown } from "lucide-react";
+import { Plus, X, ChevronDown, Bookmark } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -260,9 +261,12 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
       </div>
 
       {filtered.length === 0 ? (
-        <div className="flex items-center justify-center h-32">
-          <p className="text-sm text-muted-foreground">{t(subTab === "country" ? "wishlist.noCountries" : "wishlist.noCities")}</p>
-        </div>
+        <EmptyState
+          icon={Bookmark}
+          title={readOnly ? t(subTab === "country" ? "wishlist.noCountries" : "wishlist.noCities") : t("empty.wishlistTitle")}
+          body={readOnly ? undefined : t("empty.wishlistBody")}
+          action={readOnly ? undefined : { label: t("nav.explore"), onClick: () => navigate("/explore") }}
+        />
       ) : (
         <>
           <div className="flex items-center justify-between">
@@ -302,7 +306,7 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
             <div className="space-y-5">
               {groups.map((group) => (
                 <div key={group.label}>
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.label}</h3>
+                  <h3 className="label-caps mb-2">{group.label}</h3>
                   {renderGrid(group.items)}
                 </div>
               ))}

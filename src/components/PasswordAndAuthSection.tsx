@@ -131,7 +131,7 @@ export function PasswordAndAuthSection({ user, t, onBack }: Props) {
 
         {/* Two-Factor Authentication */}
         <div>
-          <h2 className="text-base font-bold text-foreground mb-1 flex items-center gap-2">
+          <h2 className="section-title mb-1 flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-primary" />
             {t("settings.twoFactorAuth")}
           </h2>
@@ -147,7 +147,7 @@ export function PasswordAndAuthSection({ user, t, onBack }: Props) {
                 <ShieldCheck className="w-5 h-5 text-primary" />
                 <span className="text-sm font-medium text-primary">{t("settings.2faEnabled")}</span>
               </div>
-              <Button variant="outline" onClick={handleDisable2FA} className="w-full text-destructive border-destructive/30">
+              <Button variant="secondary" onClick={handleDisable2FA} className="w-full text-destructive">
                 <ShieldOff className="w-4 h-4 mr-2" />
                 {t("settings.disable2FA")}
               </Button>

@@ -53,7 +53,7 @@ export function AdminStats({ userId }: { userId: string }) {
     <div className="mb-6">
       <div className="flex items-center gap-2 mb-3">
         <Shield className="w-4 h-4 text-primary" />
-        <h2 className="text-lg font-bold text-foreground">Platform Stats</h2>
+        <h2 className="section-title">Platform Stats</h2>
       </div>
       <div className="grid grid-cols-3 gap-3">
         {items.map((item) => (

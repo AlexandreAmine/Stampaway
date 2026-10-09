@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { buttonVariants } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { ChevronRight, Heart, TrendingUp } from "lucide-react";
 import { PlaceCard } from "@/components/PlaceCard";
@@ -188,7 +189,7 @@ function ScreenProfile({ active }: { active: boolean }) {
     <Panel>
       <PanelCopy titleKey="onboarding.profile.title" bodyKey="onboarding.profile.body" />
       <div className="shrink-0">
-        <motion.h3 {...appear(active, 0.06, 8)} className="text-lg font-bold text-foreground mb-3">
+        <motion.h3 {...appear(active, 0.06, 8)} className="section-title mb-3">
           {t("profile.favoriteCities")}
         </motion.h3>
         <div className="grid grid-cols-4 gap-2">
@@ -213,7 +214,7 @@ function ScreenProfile({ active }: { active: boolean }) {
 
         <motion.div {...appear(active, 0.38, 12)} className="mt-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-lg font-bold text-foreground">{t("profile.map")}</h3>
+            <h3 className="section-title">{t("profile.map")}</h3>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </div>
           {/* Decorative: the real map pans and zooms, which here would steal
@@ -419,7 +420,7 @@ export default function OnboardingFlow({ onFinish }: { onFinish: () => void }) {
           <button
             type="button"
             onClick={() => (isLast ? finish() : goTo(index + 1))}
-            className="w-full rounded-full bg-primary py-3.5 text-sm font-semibold text-primary-foreground transition-transform active:scale-[0.98]"
+            className={buttonVariants({ className: "w-full" })}
           >
             {isLast ? t("onboarding.start") : t("onboarding.next")}
           </button>

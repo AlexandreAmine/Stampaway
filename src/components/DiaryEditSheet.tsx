@@ -213,7 +213,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
       />
       <div ref={sheetRef} role="dialog" aria-modal="true" className={`relative bg-card w-full max-w-lg rounded-t-2xl border border-border max-h-[85vh] overflow-y-auto pb-40 ${closing ? "animate-out slide-out-to-bottom fill-mode-forwards duration-200" : "animate-in slide-in-from-bottom duration-200"}`}>
         <div className="sticky top-0 bg-card z-10 flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-lg font-bold text-foreground">{t("diary.editEntry")}</h2>
+          <h2 className="section-title">{t("diary.editEntry")}</h2>
           <div className="flex items-center gap-3">
             <button
               onClick={handleSave}
@@ -244,7 +244,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
 
           {/* Rating */}
           <div>
-            <p className="text-sm font-semibold text-foreground mb-3">{t("review.yourRating")}</p>
+            <p className="label-caps mb-3">{t("review.yourRating")}</p>
             <div className="flex items-center justify-between">
               <StarRating rating={rating} size={36} interactive onChange={setRating} />
               <button
@@ -265,13 +265,13 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
               value={reviewText}
               onChange={(e) => setReviewText(e.target.value)}
               placeholder={t("review.placeholder")}
-              className="w-full h-28 bg-background rounded-xl p-4 text-sm text-foreground placeholder:text-muted-foreground resize-none border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full h-28 bg-background rounded-lg p-4 text-sm text-foreground placeholder:text-muted-foreground resize-none border border-border focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
 
           {/* Sub-category ratings */}
           <div>
-            <p className="text-sm font-semibold text-foreground mb-3">{t("review.categoryRatings")}</p>
+            <p className="label-caps mb-3">{t("review.categoryRatings")}</p>
             <div className="grid grid-cols-2 gap-3">
               {SUB_CATEGORIES.map((cat) => (
                 <div key={cat} className="space-y-1">
@@ -326,7 +326,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
                   onChange={(e) => setDurationDays(e.target.value ? Number(e.target.value) : "")}
                   placeholder={t("review.daysPlaceholder")}
                   min={1}
-                  className="w-full bg-background rounded-xl py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full bg-background rounded-lg py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
                 />
               </div>
             </div>
@@ -334,7 +334,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
 
           {/* Tags */}
           <div>
-            <p className="text-sm font-semibold text-foreground mb-2">{t("review.tagPeople")}</p>
+            <p className="label-caps mb-2">{t("review.tagPeople")}</p>
             {loadingTags ? (
               <div className="flex items-center justify-center h-8">
                 <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -362,7 +362,7 @@ export function DiaryEditSheet({ entry, open, onClose, onSaved }: DiaryEditSheet
                     value={tagQuery}
                     onChange={(e) => setTagQuery(e.target.value)}
                     placeholder={t("review.searchUsername")}
-                    className="w-full bg-background rounded-xl py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full bg-background rounded-lg py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                   {tagResults.length > 0 && (
                     <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl overflow-hidden z-20 max-h-40 overflow-y-auto">

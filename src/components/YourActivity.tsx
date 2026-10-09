@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
-import {
-  Ban, Bookmark, ChevronLeft, Circle, Heart, ListPlus, MapPin, MapPinned,
-  MessageCircle, Pencil, Star, Target, UserPlus, type LucideIcon,
-} from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
+import { Ban, Bookmark, ChevronLeft, Circle, Heart, ListPlus, MapPin, MapPinned, MessageCircle, Pencil, Star, Target, UserPlus, type LucideIcon, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -239,7 +237,7 @@ export function YourActivity({ onBack }: { onBack: () => void }) {
             ))}
           </div>
         ) : activities.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center mt-8">{t("activity.noActivity")}</p>
+          <EmptyState icon={Activity} title={t("activity.noActivity")} />
         ) : (
           <div className="space-y-0">
             {activities.map(a => (

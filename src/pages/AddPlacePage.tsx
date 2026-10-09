@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { dismissModal } from "@/lib/backTransition";
 import { ChevronLeft, Heart, Search, X } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -65,6 +66,15 @@ export default function AddPlacePage() {
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const [step, setStep] = useState<Step>(preSelectedPlaceId ? "review" : "search");
+
+  // This screen is presented as a modal (see RouteTransition): closing it
+  // sinks it back down to wherever it was opened from.
+  const closeAdd = () =>
+    dismissModal(() => {
+      const idx = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+      if (idx > 0) navigate(-1);
+      else navigate("/", { replace: true });
+    });
   const [query, setQuery] = useState("");
   const [selectedPlace, setSelectedPlace] = useState<PlaceResult | null>(
     preSelectedPlaceId && preSelectedPlaceName
@@ -504,7 +514,9 @@ export default function AddPlacePage() {
         <div className="pt-12 px-5">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <button onClick={() => setStep("search")}>
+              {/* Opened on a specific place: back closes the screen. Otherwise
+                  it returns to the search. */}
+              <button onClick={() => (preSelectedPlaceId ? closeAdd() : setStep("search"))} aria-label={t("back")}>
                 <ChevronLeft className="w-6 h-6 text-foreground" />
               </button>
               <div className="flex items-center gap-3">
@@ -535,7 +547,7 @@ export default function AddPlacePage() {
 
           <div className="space-y-6">
             <div>
-              <p className="text-sm font-semibold text-foreground mb-3">{t("review.yourRating")}</p>
+              <p className="label-caps mb-3">{t("review.yourRating")}</p>
               <div className="flex items-center justify-between">
                 <StarRating rating={rating} size={40} interactive onChange={setRating} />
                 <button
@@ -555,7 +567,7 @@ export default function AddPlacePage() {
                 value={reviewText}
                 onChange={(e) => setReviewText(e.target.value)}
                 placeholder={t("review.placeholder")}
-                className="w-full h-24 bg-card rounded-xl p-4 text-sm text-foreground placeholder:text-muted-foreground resize-none border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full h-24 bg-card rounded-lg p-4 text-sm text-foreground placeholder:text-muted-foreground resize-none border border-border focus:outline-none focus:ring-1 focus:ring-primary"
               />
               <div className="mt-3 space-y-2">
                 {SUB_CATEGORIES.map((cat) => (
@@ -568,7 +580,7 @@ export default function AddPlacePage() {
             </div>
 
             <div className="space-y-3">
-              <p className="text-sm font-semibold text-foreground">{t("review.whenVisit")}</p>
+              <p className="label-caps">{t("review.whenVisit")}</p>
               <div className="flex gap-3">
                 <div className="flex-1">
                   <label className="text-xs text-muted-foreground mb-1 block">{t("review.year")}</label>
@@ -605,7 +617,7 @@ export default function AddPlacePage() {
                     onChange={(e) => setDurationDays(e.target.value ? Number(e.target.value) : "")}
                     placeholder={t("review.daysPlaceholder")}
                     min={1}
-                    className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full bg-card rounded-lg py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
               </div>
@@ -613,7 +625,7 @@ export default function AddPlacePage() {
 
             {/* Tag people */}
             <div>
-              <p className="text-sm font-semibold text-foreground mb-2">{t("review.tagPeople")}</p>
+              <p className="label-caps mb-2">{t("review.tagPeople")}</p>
               {taggedUsers.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-2">
                   {taggedUsers.map(u => (
@@ -638,7 +650,7 @@ export default function AddPlacePage() {
                   value={tagQuery}
                   onChange={(e) => setTagQuery(e.target.value)}
                   placeholder={t("review.searchUsername")}
-                  className="w-full bg-card rounded-xl py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full bg-card rounded-lg py-2.5 px-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
                 />
                 {tagResults.length > 0 && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl overflow-hidden z-20 max-h-40 overflow-y-auto">
@@ -673,12 +685,20 @@ export default function AddPlacePage() {
   return (
     <div className="min-h-screen bg-[hsl(0,0%,4%)] pb-24">
       <div className="pt-14 px-5">
-        <div className="flex items-center gap-3 mb-6">
+        <div className="flex items-center justify-between gap-3 mb-6">
           <h1 className="page-title">
             {isFavoriteFlow
               ? t(favoriteType === "city" ? "add.favoriteCityTitle" : "add.favoriteCountryTitle")
               : t("add.title")}
           </h1>
+          <button
+            type="button"
+            onClick={closeAdd}
+            aria-label={t("common.close")}
+            className="w-9 h-9 -mr-1 rounded-full bg-secondary flex items-center justify-center active:scale-95 transition-transform"
+          >
+            <X className="w-5 h-5 text-foreground" />
+          </button>
         </div>
 
         <div className="relative mb-6">
@@ -694,7 +714,7 @@ export default function AddPlacePage() {
                 ? t(favoriteType === "city" ? "add.searchCities" : "add.searchCountries")
                 : t("add.namePlaceholder")
             }
-            className="w-full bg-card rounded-xl py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full bg-card rounded-lg py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
 

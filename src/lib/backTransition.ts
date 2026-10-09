@@ -10,6 +10,31 @@ let sliding = false;
  * go back two pages. Instant when the system asks for reduced motion.
  */
 export function slideBack(goBack: () => void) {
+  animateOff(
+    { transition: `transform ${SLIDE_MS}ms ease-out`, transform: `translateX(${window.innerWidth}px)` },
+    SLIDE_MS,
+    goBack
+  );
+}
+
+// The add screen opens like an iOS modal (rising from the bottom, see
+// RouteTransition) and closes the same way: down and out.
+const MODAL_CLOSE_MS = 220;
+
+/** Closes a screen presented as a modal: it sinks and fades, then `goBack` runs. */
+export function dismissModal(goBack: () => void) {
+  animateOff(
+    {
+      transition: `transform ${MODAL_CLOSE_MS}ms cubic-bezier(0.32, 0.72, 0, 1), opacity ${MODAL_CLOSE_MS}ms ease-out`,
+      transform: "translateY(30%)",
+      opacity: "0",
+    },
+    MODAL_CLOSE_MS,
+    goBack
+  );
+}
+
+function animateOff(styles: Partial<Record<"transition" | "transform" | "opacity", string>>, ms: number, goBack: () => void) {
   if (sliding) return;
   const el = typeof document !== "undefined" ? document.getElementById("route-container") : null;
   const reduceMotion =
@@ -20,16 +45,16 @@ export function slideBack(goBack: () => void) {
   }
 
   sliding = true;
-  el.style.transition = `transform ${SLIDE_MS}ms ease-out`;
-  el.style.transform = `translateX(${window.innerWidth}px)`;
+  Object.assign(el.style, styles);
   window.setTimeout(() => {
     clearSlideWhenRouteChanges(() => {
       el.style.transition = "";
       el.style.transform = "";
+      el.style.opacity = "";
       sliding = false;
     });
     goBack();
-  }, SLIDE_MS + 10);
+  }, ms + 10);
 }
 
 // Undoing the slide has to happen in the same frame the previous page is

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { slideBack, runPendingSlideClear } from "@/lib/backTransition";
+import { slideBack, dismissModal, runPendingSlideClear } from "@/lib/backTransition";
 
 let reduceMotion = false;
 beforeEach(() => {
@@ -51,5 +51,30 @@ describe("slideBack", () => {
     slideBack(() => {});
     vi.advanceTimersByTime(250 + 1000);
     expect(el.style.transform).toBe("");
+  });
+});
+
+describe("dismissModal", () => {
+  it("sinks and fades the screen, then goes back, then clears", () => {
+    const goBack = vi.fn();
+    const el = document.getElementById("route-container")!;
+    dismissModal(goBack);
+    expect(el.style.transform).toContain("translateY");
+    expect(el.style.opacity).toBe("0");
+    expect(goBack).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(250);
+    expect(goBack).toHaveBeenCalledTimes(1);
+    runPendingSlideClear();
+    expect(el.style.transform).toBe("");
+    expect(el.style.opacity).toBe("");
+  });
+
+  it("ignores a second tap while closing", () => {
+    const goBack = vi.fn();
+    dismissModal(goBack);
+    dismissModal(goBack);
+    vi.advanceTimersByTime(400);
+    expect(goBack).toHaveBeenCalledTimes(1);
+    runPendingSlideClear();
   });
 });

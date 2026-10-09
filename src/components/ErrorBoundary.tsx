@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { buttonVariants } from "@/components/ui/button";
 import { reportError } from "@/lib/monitoring";
 import { readInitialLanguage } from "@/lib/deviceLanguage";
 
@@ -85,12 +86,12 @@ export default class ErrorBoundary extends Component<Props, State> {
 
     return (
       <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center px-8 text-center">
-        <h1 className="text-xl font-semibold">{copy.title}</h1>
+        <h1 className="section-title">{copy.title}</h1>
         <p className="mt-3 max-w-xs text-sm text-muted-foreground">{copy.body}</p>
         <button
           type="button"
           onClick={() => window.location.replace("/")}
-          className="mt-8 w-full max-w-xs rounded-xl bg-primary py-3.5 font-medium text-primary-foreground transition-transform active:scale-[0.98]"
+          className={buttonVariants({ className: "mt-8 w-full max-w-xs" })}
         >
           {copy.action}
         </button>

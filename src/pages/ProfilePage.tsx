@@ -1,10 +1,12 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { EmptyState } from "@/components/EmptyState";
+import { buttonVariants } from "@/components/ui/button";
 import { slideBack } from "@/lib/backTransition";
 import { placeLinkProps } from "@/lib/placePrimaryQuery";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchProfileHeader, profileHeaderQueryKey, type ProfileHeader } from "@/lib/profileHeaderQuery";
-import { ChevronRight, ChevronLeft, Settings, Plus, X, UserPlus, UserMinus, Pencil, Share2 } from "lucide-react";
+import { ChevronRight, ChevronLeft, Settings, Plus, X, UserPlus, UserMinus, Pencil, Share2, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -970,13 +972,11 @@ export default function ProfilePage() {
             <button
               onClick={toggleFollow}
               disabled={togglingFollow}
-              className={`w-full flex items-center justify-center gap-1.5 py-2 rounded-full text-sm font-medium transition-colors ${
-                isFollowing
-                  ? "bg-card border border-border text-foreground"
-                  : hasPendingRequest
-                    ? "bg-muted text-muted-foreground border border-border"
-                    : "bg-primary text-primary-foreground"
-              }`}
+              className={buttonVariants({
+                size: "sm",
+                variant: isFollowing || hasPendingRequest ? "secondary" : "default",
+                className: `w-full ${hasPendingRequest && !isFollowing ? "text-muted-foreground" : ""}`,
+              })}
             >
               {isFollowing ? (
                 <>
@@ -1024,33 +1024,25 @@ export default function ProfilePage() {
           mapMyData &&
           mapMyData.visitedCountries.size === 0 &&
           mapMyData.visitedCitiesCount === 0 && (
-            <div className="mb-8 flex flex-col items-center justify-center gap-3 rounded-xl border border-border bg-card px-6 py-8">
-              <p className="text-base font-semibold text-foreground text-center">
-                {t("profile.firstPlaceTitle")}
-              </p>
-              <p className="max-w-xs text-sm text-muted-foreground text-center">
-                {t("profile.firstPlaceBody")}
-              </p>
-              <button
-                onClick={() => navigate("/add")}
-                className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-transform active:scale-[0.98]"
-              >
-                <Plus className="w-4 h-4" />
-                {t("profile.firstPlaceCta")}
-              </button>
-            </div>
+            <EmptyState
+              icon={MapPin}
+              title={t("profile.firstPlaceTitle")}
+              body={t("profile.firstPlaceBody")}
+              action={{ label: t("profile.firstPlaceCta"), onClick: () => navigate("/add") }}
+              className="mb-8 rounded-2xl bg-card"
+            />
           )}
 
         {/* Favorite Countries */}
         <div className="mb-4">
-          <h2 className="text-lg font-bold text-foreground mb-3">{t("profile.favoriteCountries")}</h2>
+          <h2 className="section-title mb-3">{t("profile.favoriteCountries")}</h2>
           {renderFavoriteSlots("country", favoriteCountries)}
         </div>
         <div className="mb-6"><RatingHistogram distribution={countryDistribution} onBarClick={(r) => { setRatingFilter(r); openSubPage("CountriesByRating"); }} /></div>
 
         {/* Favorite Cities */}
         <div className="mb-4">
-          <h2 className="text-lg font-bold text-foreground mb-3">{t("profile.favoriteCities")}</h2>
+          <h2 className="section-title mb-3">{t("profile.favoriteCities")}</h2>
           {renderFavoriteSlots("city", favoriteCities)}
         </div>
         <div className="mb-6"><RatingHistogram distribution={cityDistribution} onBarClick={(r) => { setRatingFilter(r); openSubPage("CitiesByRating"); }} /></div>
@@ -1062,7 +1054,7 @@ export default function ProfilePage() {
               onClick={() => openSubPage("Map")}
               className="flex items-center justify-between w-full mb-3"
             >
-              <h2 className="text-lg font-bold text-foreground">{t("profile.map")}</h2>
+              <h2 className="section-title">{t("profile.map")}</h2>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </button>
             <div className="relative bg-card rounded-xl border border-border overflow-hidden" style={{ height: 220 }}>

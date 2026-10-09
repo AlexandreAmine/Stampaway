@@ -81,7 +81,7 @@ export function FavoritePicker({ open, onClose, type, onSelect }: FavoritePicker
       >
         <div className="max-w-lg mx-auto w-full flex flex-col h-full">
           <div className="flex items-center justify-between pt-12 px-5 mb-4">
-            <h2 className="text-lg font-bold text-foreground">
+            <h2 className="section-title">
               {t(type === "city" ? "picker.selectCity" : "picker.selectCountry")}
             </h2>
             <button onClick={requestClose} className="p-2">
@@ -100,7 +100,7 @@ export function FavoritePicker({ open, onClose, type, onSelect }: FavoritePicker
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={`Search ${type === "city" ? "cities" : "countries"}...`}
-                className="w-full bg-card rounded-xl py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full bg-card rounded-lg py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
           </div>

@@ -1,10 +1,11 @@
 import { useState } from "react";
+import { EmptyState } from "@/components/EmptyState";
 import { placeLinkProps } from "@/lib/placePrimaryQuery";
 import { hapticSelection } from "@/lib/haptics";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Trash2, Pencil } from "lucide-react";
+import { Trash2, Pencil, BookOpen } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -115,9 +116,12 @@ export function DiaryTab({ userId }: { userId?: string }) {
 
   if (entries.length === 0) {
     return (
-      <div className="flex items-center justify-center h-40">
-        <p className="text-muted-foreground text-sm">{t("diary.emptyCta")}</p>
-      </div>
+      <EmptyState
+        icon={BookOpen}
+        title={t("profile.firstPlaceTitle")}
+        body={t("empty.diaryBody")}
+        action={isOwnProfile ? { label: t("profile.firstPlaceCta"), onClick: () => navigate("/add") } : undefined}
+      />
     );
   }
 
@@ -171,7 +175,7 @@ export function DiaryTab({ userId }: { userId?: string }) {
         <div className="space-y-6">
         {sortedYears.map((year) => (
         <div key={year}>
-          <h3 className="text-lg font-bold text-foreground mb-3">
+          <h3 className="section-title mb-3">
             {year === "Unknown" ? t("common.unknown") : year}
             <span className="text-sm font-normal text-muted-foreground ml-2">
               ({tn(section === "country" ? "count.country" : "count.city", uniquePlacesPerYear[String(year)]?.size || 0)})

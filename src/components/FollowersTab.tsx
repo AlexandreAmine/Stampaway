@@ -1,11 +1,12 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { EmptyState } from "@/components/EmptyState";
 import { selectInChunks } from "@/lib/inChunks";
 import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { X, Search } from "lucide-react";
+import { X, Search, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -110,14 +111,12 @@ export function FollowersTab({ userId }: { userId?: string }) {
           value={filterQuery}
           onChange={(e) => setFilterQuery(e.target.value)}
           placeholder={t("search")}
-          className="w-full bg-card rounded-xl py-2.5 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+          className="w-full bg-card rounded-lg py-2.5 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
 
       {followers.length === 0 ? (
-        <div className="flex items-center justify-center h-40">
-          <p className="text-sm text-muted-foreground">{t("followers.none")}</p>
-        </div>
+        <EmptyState icon={Users} title={t("followers.none")} />
       ) : (
         <div className="space-y-1">
           {filtered.map((f) => (

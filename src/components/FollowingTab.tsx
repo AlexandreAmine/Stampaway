@@ -1,9 +1,11 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { EmptyState } from "@/components/EmptyState";
+import { buttonVariants } from "@/components/ui/button";
 import { selectInChunks } from "@/lib/inChunks";
 import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, X, Search } from "lucide-react";
+import { Plus, X, Search, Users } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -221,7 +223,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
             value={filterQuery}
             onChange={(e) => setFilterQuery(e.target.value)}
             placeholder={t("search")}
-            className="w-full bg-card rounded-xl py-2.5 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full bg-card rounded-lg py-2.5 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
         {!readOnly && (
@@ -245,7 +247,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder={t("following.findUsersPlaceholder")}
-                className="w-full bg-card rounded-xl py-2.5 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full bg-card rounded-lg py-2.5 pl-9 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
             {searchResults.map((u) => {
@@ -265,12 +267,12 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
                     <span className="text-sm font-medium text-foreground" data-no-translate>{u.username}</span>
                   </button>
                   {!isFollowing && !requestedIds.has(u.user_id) && (
-                    <button onClick={() => handleFollow(u)} className="text-xs bg-primary text-primary-foreground px-3 py-1 rounded-lg font-medium">
+                    <button onClick={() => handleFollow(u)} className={buttonVariants({ size: "sm" })}>
                       {t("profile.follow")}
                     </button>
                   )}
                   {!isFollowing && requestedIds.has(u.user_id) && (
-                    <span className="text-xs text-muted-foreground px-3 py-1">{t("profile.requested")}</span>
+                    <span className={buttonVariants({ variant: "secondary", size: "sm", className: "pointer-events-none text-muted-foreground" })}>{t("profile.requested")}</span>
                   )}
                 </div>
               );
@@ -280,9 +282,12 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
       </AnimatePresence>
 
       {following.length === 0 && !showSearch ? (
-        <div className="flex flex-col items-center justify-center h-32 gap-2">
-          <p className="text-sm text-muted-foreground">{t("following.none")}</p>
-        </div>
+        <EmptyState
+          icon={Users}
+          title={readOnly ? t("following.none") : t("empty.followingTitle")}
+          body={readOnly ? undefined : t("empty.followingBody")}
+          action={readOnly ? undefined : { label: t("home.findFriends"), onClick: () => navigate("/search?tab=Users") }}
+        />
       ) : (
         <div className="space-y-1">
           {filtered.map((f) => (

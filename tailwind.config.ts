@@ -61,12 +61,18 @@ export default {
           inactive: "hsl(var(--nav-inactive))",
         },
       },
+      // Four corner sizes app-wide (--radius = 12px): 8px small (thumbnails,
+      // flags, tags, skeleton lines), 12px controls (buttons, inputs, menus),
+      // 16px surfaces (cards, posters, sheets), plus rounded-full. The class
+      // names that used to mean other sizes resolve onto this scale.
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
+        DEFAULT: "calc(var(--radius) - 4px)",
         sm: "calc(var(--radius) - 4px)",
+        md: "var(--radius)",
+        lg: "var(--radius)",
         xl: "calc(var(--radius) + 4px)",
-        "2xl": "calc(var(--radius) + 8px)",
+        "2xl": "calc(var(--radius) + 4px)",
+        "3xl": "calc(var(--radius) + 4px)",
       },
       keyframes: {
         "accordion-down": {

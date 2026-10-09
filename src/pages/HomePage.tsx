@@ -1,9 +1,10 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { EmptyState } from "@/components/EmptyState";
 import { selectInChunks, newestFirst } from "@/lib/inChunks";
 import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Star, UserPlus, Bell } from "lucide-react";
+import { Star, Bell, Users, Globe } from "lucide-react";
 import { CountryFlag } from "@/components/CountryFlag";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -309,21 +310,18 @@ export default function HomePage() {
         {/* Soft fade from transparent to navy so the globe blends into the list */}
         <div className="h-16 bg-gradient-to-b from-transparent to-background pointer-events-none" />
         <div className="px-5 min-h-[60vh] bg-background">
-          <h2 className="text-xl font-bold text-foreground mb-4">{t("home.recentActivity")}</h2>
+          <h2 className="section-title mb-4">{t("home.recentActivity")}</h2>
 
           {!hasFollowing && !loading ? (
-            <div className="flex flex-col items-center justify-center py-8 gap-4">
-              <p className="text-sm text-muted-foreground text-center">{t("home.followFriends")}</p>
-              <button
-                onClick={() => navigate("/search?tab=Users")}
-                className="flex items-center gap-2 bg-primary text-primary-foreground px-5 py-2.5 rounded-full text-sm font-medium"
-              >
-                <UserPlus className="w-4 h-4" />
-                {t("home.findFriends")}
-              </button>
-            </div>
+            <EmptyState
+              icon={Users}
+              title={t("empty.homeTitle")}
+              body={t("empty.followingBody")}
+              action={{ label: t("home.findFriends"), onClick: () => navigate("/search?tab=Users") }}
+              className="py-8"
+            />
           ) : activities.length === 0 && !loading ? (
-            <p className="text-sm text-muted-foreground">{t("home.noActivity")}</p>
+            <EmptyState icon={Globe} title={t("home.noActivity")} className="py-8" />
           ) : null}
 
           <div className="space-y-1 pb-36">

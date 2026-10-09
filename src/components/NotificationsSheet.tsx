@@ -1,8 +1,9 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { EmptyState } from "@/components/EmptyState";
 import { selectInChunks, newestFirst } from "@/lib/inChunks";
 import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { X, UserPlus, Heart, Check, XIcon } from "lucide-react";
+import { X, UserPlus, Heart, Check, XIcon, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -234,7 +235,7 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
         style={{ height: "85vh", maxHeight: "85vh" }}
       >
         <div className="bg-card flex items-center justify-between p-4 border-b border-border rounded-t-2xl shrink-0">
-          <h2 className="text-lg font-bold text-foreground">{t("notifications.title")}</h2>
+          <h2 className="section-title">{t("notifications.title")}</h2>
           <button onClick={requestClose}><X className="w-5 h-5 text-muted-foreground" /></button>
         </div>
         <div
@@ -248,7 +249,7 @@ export function NotificationsSheet({ open, onClose }: NotificationsSheetProps) {
               ))}
             </div>
           ) : items.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-12">{t("activity.noActivity")}</p>
+            <EmptyState icon={Bell} title={t("empty.notificationsTitle")} body={t("empty.notificationsBody")} className="py-16" />
           ) : (
             <div className="space-y-3">
               {items.map((item) => (

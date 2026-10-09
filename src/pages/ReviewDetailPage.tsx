@@ -173,7 +173,7 @@ export default function ReviewDetailPage() {
           <motion.div initial={false} animate={{ opacity: 1 }} className="mb-4">
             <div className="flex items-center gap-2 mb-2">
               <MessageSquare className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">{t("reviewDetail.review")}</h3>
+              <h3 className="label-caps">{t("reviewDetail.review")}</h3>
             </div>
             <p className="text-sm text-muted-foreground leading-relaxed bg-card rounded-xl p-4 border border-border whitespace-pre-wrap break-words">
               <span data-no-translate><Linkify text={review.review_text} /></span>
@@ -186,7 +186,7 @@ export default function ReviewDetailPage() {
           <motion.div initial={false} animate={{ opacity: 1 }} className="mb-4">
             <div className="flex items-center gap-2 mb-3">
               <History className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-semibold text-foreground">{t("reviewDetail.previousVisits")}</h3>
+              <h3 className="label-caps">{t("reviewDetail.previousVisits")}</h3>
             </div>
             <div className="space-y-2">
               {pastLoggings.map((log) => {

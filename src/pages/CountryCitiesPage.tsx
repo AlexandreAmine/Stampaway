@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { EmptyState } from "@/components/EmptyState";
 import { slideBack } from "@/lib/backTransition";
 import { placeLinkProps } from "@/lib/placePrimaryQuery";
 import { hapticSelection } from "@/lib/haptics";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronDown } from "lucide-react";
+import { ChevronLeft, ChevronDown, MapPin } from "lucide-react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -209,9 +210,10 @@ export default function CountryCitiesPage() {
             ))}
           </div>
         ) : sortedCities.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-12">
-            {mode === "wishlist" ? t("countryCities.noWishlistCities") : t("picker.noCities")}
-          </p>
+          <EmptyState
+            icon={MapPin}
+            title={mode === "wishlist" ? t("countryCities.noWishlistCities") : t("picker.noCities")}
+          />
         ) : (
           <>
             <motion.div

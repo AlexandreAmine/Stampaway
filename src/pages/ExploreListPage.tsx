@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
+import { EmptyState } from "@/components/EmptyState";
 import { slideBack } from "@/lib/backTransition";
 import { placeLinkProps } from "@/lib/placePrimaryQuery";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, MapPin } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { DestinationPoster } from "@/components/DestinationPoster";
@@ -224,7 +225,7 @@ export default function ExploreListPage() {
             ))}
           </div>
         ) : places.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-12">{t("explore.noDestinations")}</p>
+          <EmptyState icon={MapPin} title={t("explore.noDestinations")} />
         ) : (
           <motion.div initial={false} animate={{ opacity: 1 }} className="grid grid-cols-3 gap-2.5">
             {places.map((place) => (

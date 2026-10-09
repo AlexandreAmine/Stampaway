@@ -15,6 +15,7 @@ const ROOT_PATHS = new Set([
 ]);
 
 const PUSH_MS = 240;
+const MODAL_OPEN_MS = 360;
 
 /**
  * iOS-style push transition (Checkpoint 8 / B2): forward navigation slides
@@ -39,9 +40,22 @@ export default function RouteTransition() {
 
     if (navType !== "PUSH") return;
     if (location.pathname === cameFrom) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    // The add screen is presented like an iOS modal: it rises from the
+    // bottom instead of sliding in from the side (closing: dismissModal).
+    if (location.pathname === "/add") {
+      document.getElementById("route-container")?.animate(
+        [
+          { transform: "translateY(40%)", opacity: 0 },
+          { transform: "translateY(0px)", opacity: 1 },
+        ],
+        { duration: MODAL_OPEN_MS, easing: "cubic-bezier(0.32, 0.72, 0, 1)" }
+      );
+      return;
+    }
     // Tab-bar destinations are lateral, not pushes
     if (ROOT_PATHS.has(location.pathname)) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const el = document.getElementById("route-container");
     if (!el) return;

@@ -1,4 +1,5 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { buttonVariants } from "@/components/ui/button";
 import { slideBack } from "@/lib/backTransition";
 import { selectInChunks } from "@/lib/inChunks";
 import { reviewLinkProps } from "@/lib/reviewDetailQuery";
@@ -467,7 +468,7 @@ export default function PlacePage() {
           type="button"
           onClick={() => primaryQuery.refetch()}
           disabled={primaryQuery.isFetching}
-          className="mt-5 rounded-xl bg-primary px-6 py-3 text-sm font-medium text-primary-foreground transition-transform active:scale-[0.98] disabled:opacity-60"
+          className={buttonVariants({ className: "mt-5" })}
         >
           {primaryQuery.isFetching ? t("loading") : t("error.retry")}
         </button>
@@ -637,7 +638,7 @@ export default function PlacePage() {
               onClick={() => navigate(`/place/${id}/friendvisitors`)}
               className="flex items-center gap-1 mb-3"
             >
-              <h3 className="text-sm font-semibold text-foreground">{t("place.friendsVisited")}</h3>
+              <h3 className="label-caps">{t("place.friendsVisited")}</h3>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
             <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
@@ -671,7 +672,7 @@ export default function PlacePage() {
               onClick={() => navigate(`/place/${id}/wanttovisit`)}
               className="flex items-center gap-1 mb-3"
             >
-              <h3 className="text-sm font-semibold text-foreground">{t("place.friendsWishlist")}</h3>
+              <h3 className="label-caps">{t("place.friendsWishlist")}</h3>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>
             <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-5 px-5 pb-1">
@@ -698,17 +699,17 @@ export default function PlacePage() {
         >
           <button onClick={() => navigate(`/place/${id}/visitors`)} className="flex flex-col items-center gap-1">
             <Users className="w-5 h-5 text-primary" />
-            <span className="text-lg font-bold text-foreground">{formatCount(visitorsCount)}</span>
+            <span className="section-title">{formatCount(visitorsCount)}</span>
             <span className="text-[11px] text-muted-foreground">{t("place.visitors")}</span>
           </button>
           <button onClick={() => navigate(`/place/${id}/reviews`)} className="flex flex-col items-center gap-1">
             <MessageSquare className="w-5 h-5 text-primary" />
-            <span className="text-lg font-bold text-foreground">{formatCount(writtenReviewsCount)}</span>
+            <span className="section-title">{formatCount(writtenReviewsCount)}</span>
             <span className="text-[11px] text-muted-foreground">{t("place.reviews")}</span>
           </button>
           <button onClick={() => navigate(`/place/${id}/lists`)} className="flex flex-col items-center gap-1">
             <List className="w-5 h-5 text-primary" />
-            <span className="text-lg font-bold text-foreground">{formatCount(listsCount)}</span>
+            <span className="section-title">{formatCount(listsCount)}</span>
             <span className="text-[11px] text-muted-foreground">{t("place.lists")}</span>
           </button>
         </motion.div>
@@ -726,7 +727,7 @@ export default function PlacePage() {
               onClick={() => navigate(`/country/${encodeURIComponent(place.name)}/cities`)}
               className="flex items-center justify-between w-full mb-4"
             >
-              <h3 className="text-lg font-bold text-foreground">{t("place.citiesIn", { country: localizedName })}</h3>
+              <h3 className="section-title">{t("place.citiesIn", { country: localizedName })}</h3>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </button>
 
@@ -759,7 +760,7 @@ export default function PlacePage() {
                 onClick={() => navigate(`/country/${encodeURIComponent(place.name)}/cities?mode=wishlist`)}
                 className="flex items-center justify-between w-full py-3 border-t border-border"
               >
-                <h3 className="text-sm font-semibold text-foreground">{t("place.wishlistCities", { country: localizedName })}</h3>
+                <h3 className="label-caps">{t("place.wishlistCities", { country: localizedName })}</h3>
                 <div className="flex items-center gap-1">
                   <span className="text-sm text-muted-foreground">{wishlistCities.length}</span>
                   <ChevronRight className="w-4 h-4 text-muted-foreground" />

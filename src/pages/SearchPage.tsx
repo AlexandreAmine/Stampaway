@@ -1,9 +1,11 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { EmptyState } from "@/components/EmptyState";
+import { buttonVariants } from "@/components/ui/button";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { hapticSelection, hapticLight } from "@/lib/haptics";
 import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useState, useEffect, useRef } from "react";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, SearchX } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
@@ -388,7 +390,7 @@ export default function SearchPage() {
     if (loading && places.length === 0) return <LoadingSpinner />;
     const isDestTab = activeFilter === "Countries" || activeFilter === "Cities";
     if (!isDestTab) return null;
-    if (!sortedPlaces.length) return <EmptyState text={t("noResults")} />;
+    if (!sortedPlaces.length) return <NoResults title={t("empty.searchTitle")} body={t("empty.searchBody")} />;
 
     const currentLabel = destSort === "category-avg"
       ? subCategoryLabel(selectedCategory, t)
@@ -486,7 +488,7 @@ export default function SearchPage() {
               }
               return visibleGroups.map((group) => (
                 <div key={group.label}>
-                  <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.label}</h3>
+                  <h3 className="label-caps mb-2">{group.label}</h3>
                   {renderPlaceGrid(group.items)}
                 </div>
               ));
@@ -517,7 +519,7 @@ export default function SearchPage() {
     if (loading && shown.length === 0) return <LoadingSpinner />;
 
     if (activeFilter === "Lists") {
-      if (!lists.length) return <EmptyState text={t("search.noLists")} />;
+      if (!lists.length) return <NoResults title={t("search.noLists")} body={t("empty.searchOtherBody")} />;
       return (
         <div className="space-y-3">
           {lists.map((l: any) => (
@@ -546,7 +548,7 @@ export default function SearchPage() {
     }
 
     if (activeFilter === "Users") {
-      if (!users.length) return <EmptyState text={t("search.noUsers")} />;
+      if (!users.length) return <NoResults title={t("search.noUsers")} body={t("empty.searchOtherBody")} />;
       return (
         <div className="space-y-3">
           {users.map((u: any) => {
@@ -586,13 +588,13 @@ export default function SearchPage() {
                         followingInFlight.current.delete(u.user_id);
                       }
                     }}
-                    className="text-xs bg-primary text-primary-foreground px-4 py-1.5 rounded-lg font-medium"
+                    className={buttonVariants({ size: "sm" })}
                   >
                     {t("profile.follow")}
                   </button>
                 )}
                 {!isMe && relation && (
-                  <span className="text-xs text-muted-foreground px-3 py-1.5">
+                  <span className={buttonVariants({ variant: "secondary", size: "sm", className: "pointer-events-none text-muted-foreground" })}>
                     {t(relation === "requested" ? "profile.requested" : "profile.following")}
                   </span>
                 )}
@@ -623,7 +625,7 @@ export default function SearchPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={t("search.placeholder")}
-            className="w-full bg-card rounded-xl py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
+            className="w-full bg-card rounded-lg py-3 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
 
@@ -672,12 +674,8 @@ export default function SearchPage() {
   );
 }
 
-function EmptyState({ text }: { text: string }) {
-  return (
-    <div className="flex items-center justify-center h-40">
-      <p className="text-sm text-muted-foreground">{text}</p>
-    </div>
-  );
+function NoResults({ title, body }: { title: string; body: string }) {
+  return <EmptyState icon={SearchX} title={title} body={body} />;
 }
 
 function LoadingSpinner() {

@@ -267,12 +267,12 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
     <div className="space-y-5 pb-24">
           {/* Header with edit button */}
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold flex items-center gap-2">
+            <h2 className="section-title flex items-center gap-2">
               <Trophy className="w-5 h-5 text-primary" />
               {currentYear}
             </h2>
             {isOwn && (
-              <Button size="sm" variant="outline" onClick={editing ? handleSaveGoals : startEditing} className="rounded-full">
+              <Button size="sm" variant="secondary" onClick={editing ? handleSaveGoals : startEditing}>
                 {editing ? <Check className="w-4 h-4 mr-1" /> : <Pencil className="w-4 h-4 mr-1" />}
                 {editing ? t("save") : (hasAnyGoal ? l("editGoals") : l("setGoals"))}
               </Button>
@@ -328,7 +328,7 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
               <Target className="w-14 h-14 mx-auto mb-4 opacity-30" />
               <p className="text-sm">{l("noGoals")}</p>
               {isOwn && (
-                <Button size="sm" variant="outline" className="mt-4 rounded-full" onClick={startEditing}>
+                <Button size="sm" variant="secondary" className="mt-4" onClick={startEditing}>
                   <Plus className="w-4 h-4 mr-1" /> {l("setGoals")}
                 </Button>
               )}

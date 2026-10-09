@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { buttonVariants } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { toastError } from "@/lib/toastError";
 import { supabase } from "@/integrations/supabase/client";
@@ -60,7 +61,7 @@ export default function UsernameSetupGate() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full bg-primary text-primary-foreground rounded-xl py-3 text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
+            className={buttonVariants({ className: "w-full" })}
           >
             {submitting ? "..." : t("common.continue")}
           </button>

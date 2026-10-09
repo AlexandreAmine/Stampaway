@@ -50,7 +50,7 @@ export function SubRatingsDisplay({ reviewId, compact = false }: SubRatingsDispl
 
   return (
     <div className="space-y-2">
-      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{t("review.categoryRatings")}</h4>
+      <h4 className="label-caps">{t("review.categoryRatings")}</h4>
       <div className="grid gap-2">
         {subRatings.map((sr) => (
           <div key={sr.category} className="flex items-center justify-between">

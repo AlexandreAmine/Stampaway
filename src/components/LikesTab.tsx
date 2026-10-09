@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
+import { EmptyState } from "@/components/EmptyState";
 import { placeLinkProps } from "@/lib/placePrimaryQuery";
 import { hapticSelection } from "@/lib/haptics";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { dedupeByNewest } from "@/lib/reviewDedup";
 import { fetchAverageRatingMap, fetchCategoryAverageMap } from "@/lib/placeRankings";
@@ -366,7 +367,7 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
 
   const renderDestSection = (items: LikedEntry[], emptyLabel: string) => {
     if (items.length === 0) {
-      return <p className="text-sm text-muted-foreground text-center py-8">{emptyLabel}</p>;
+      return <EmptyState icon={Heart} title={emptyLabel} />;
     }
 
     const sortedItems = sortDest(items);
@@ -438,7 +439,7 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
           <div className="space-y-5">
             {groups.map((group) => (
               <div key={group.label}>
-                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.label}</h3>
+                <h3 className="label-caps mb-2">{group.label}</h3>
                 {renderDestGrid(group.items)}
               </div>
             ))}
@@ -473,7 +474,7 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
 
       {activeSection === "reviews" && (
         likedReviews.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">{t("likes.noReviews")}</p>
+          <EmptyState icon={Heart} title={t("likes.noReviews")} />
         ) : (
           <div className="space-y-3">
             {likedReviews.map((r: any) => {
@@ -494,7 +495,7 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
 
       {activeSection === "lists" && (
         likedLists.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">{t("likes.noLists")}</p>
+          <EmptyState icon={Heart} title={t("likes.noLists")} />
         ) : (
           <div className="space-y-3">
             {likedLists.map((l: any) => (

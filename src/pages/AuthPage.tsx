@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { buttonVariants } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -254,8 +255,8 @@ export default function AuthPage() {
     navigate("/", { replace: true });
   };
 
-  const inputClass = "w-full bg-card rounded-xl py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary";
-  const btnClass = "w-full bg-primary text-primary-foreground rounded-xl py-3 text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50";
+  const inputClass = "w-full bg-card rounded-lg py-3 px-4 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-1 focus:ring-primary";
+  const btnClass = buttonVariants({ className: "w-full" });
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6">
@@ -292,7 +293,7 @@ export default function AuthPage() {
                         (e.currentTarget.previousElementSibling as HTMLInputElement).focus();
                       }
                     }}
-                    className="w-11 h-12 text-center text-lg font-bold bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
+                    className="w-11 h-12 text-center text-lg font-bold bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
                   />
                 ))}
               </div>
@@ -341,7 +342,7 @@ export default function AuthPage() {
                         (e.currentTarget.previousElementSibling as HTMLInputElement).focus();
                       }
                     }}
-                    className="w-11 h-12 text-center text-lg font-bold bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
+                    className="w-11 h-12 text-center text-lg font-bold bg-card border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary text-foreground"
                   />
                 ))}
               </div>

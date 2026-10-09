@@ -1,4 +1,5 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { EmptyState } from "@/components/EmptyState";
 import { slideBack } from "@/lib/backTransition";
 import { placeLinkProps } from "@/lib/placePrimaryQuery";
 import { PullToRefresh } from "@/components/PullToRefresh";
@@ -7,7 +8,7 @@ import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
-import { ChevronLeft, Heart } from "lucide-react";
+import { ChevronLeft, Heart, MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -172,7 +173,7 @@ export default function ListDetailPage() {
         {list.description && <p className="text-sm text-muted-foreground mb-5">{list.description}</p>}
 
         {items.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-12">{t("lists.empty")}</p>
+          <EmptyState icon={MapPin} title={t("lists.empty")} />
         ) : (
           <div className="grid grid-cols-3 gap-3">
             {items.map((item) => (

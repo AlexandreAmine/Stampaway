@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
+import { EmptyState } from "@/components/EmptyState";
+import { buttonVariants } from "@/components/ui/button";
 import { hapticMedium, hapticSuccess } from "@/lib/haptics";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Plus, X, ChevronRight, Trash2, GripVertical } from "lucide-react";
+import { Plus, X, ChevronRight, Trash2, GripVertical, List as ListIcon } from "lucide-react";
 import { motion, AnimatePresence, Reorder } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -202,7 +204,7 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
             </button>
           )}
         </div>
-        <h3 className="text-lg font-bold text-foreground" data-no-translate>{openList.name}</h3>
+        <h3 className="section-title" data-no-translate>{openList.name}</h3>
         {openList.description && <p className="text-xs text-muted-foreground">{openList.description}</p>}
 
         {!readOnly && (
@@ -287,7 +289,7 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
                   className="w-full bg-transparent text-xs text-muted-foreground placeholder:text-muted-foreground focus:outline-none"
                 />
                 <div className="flex gap-2">
-                  <button onClick={handleCreate} disabled={creating || !newName.trim()} className="text-xs bg-primary text-primary-foreground px-4 py-1.5 rounded-lg font-medium disabled:opacity-50">{t("common.create")}</button>
+                  <button onClick={handleCreate} disabled={creating || !newName.trim()} className={buttonVariants({ size: "sm" })}>{t("common.create")}</button>
                   <button onClick={() => setShowCreate(false)} className="text-xs text-muted-foreground px-4 py-1.5">{t("cancel")}</button>
                 </div>
               </div>
@@ -297,14 +299,12 @@ export function ListsTab({ userId, readOnly = false }: { userId?: string; readOn
       )}
 
       {lists.length === 0 && !showCreate ? (
-        <div className="flex flex-col items-center justify-center h-40 gap-3">
-          <p className="text-muted-foreground text-sm">{t("lists.noLists")}</p>
-          {!readOnly && (
-            <button onClick={() => setShowCreate(true)} className="flex items-center gap-1 text-primary text-sm font-medium">
-              <Plus className="w-4 h-4" /> {t("lists.createFirst")}
-            </button>
-          )}
-        </div>
+        <EmptyState
+          icon={ListIcon}
+          title={readOnly ? t("lists.noLists") : t("lists.createFirst")}
+          body={readOnly ? undefined : t("empty.listsBody")}
+          action={readOnly ? undefined : { label: t("lists.new"), onClick: () => setShowCreate(true) }}
+        />
       ) : (
         <>
           {!readOnly && !showCreate && (

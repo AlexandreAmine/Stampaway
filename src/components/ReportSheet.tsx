@@ -109,7 +109,7 @@ export function ReportSheet({ open, onOpenChange, targetType, targetId, targetUs
               className="min-h-[120px]"
             />
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setReason(null)} disabled={submitting}>
+              <Button variant="secondary" className="flex-1" onClick={() => setReason(null)} disabled={submitting}>
                 {t("back")}
               </Button>
               <Button className="flex-1" onClick={handleSubmit} disabled={submitting}>

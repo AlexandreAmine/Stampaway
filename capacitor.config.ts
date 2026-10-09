@@ -6,7 +6,9 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   plugins: {
     SplashScreen: {
-      backgroundColor: '#3B82F6',
+      // Same black as the app and the launch image, so the splash fades
+      // straight into the first screen in light and dark mode alike.
+      backgroundColor: '#000000',
       showSpinner: false,
       // Keep the native splash up until the web app has resolved auth state;
       // AuthContext calls SplashScreen.hide() (with a safety timeout).

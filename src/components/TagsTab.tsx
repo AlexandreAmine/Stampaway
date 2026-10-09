@@ -1,4 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
+import { Tag } from "lucide-react";
+import { EmptyState } from "@/components/EmptyState";
 import { reviewLinkProps } from "@/lib/reviewDetailQuery";
 import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { supabase } from "@/integrations/supabase/client";
@@ -100,7 +102,7 @@ export function TagsTab({ userId }: { userId?: string }) {
   const loading = tagsQuery.isPending;
 
   if (loading) return <div className="text-center text-muted-foreground py-8 text-sm">{t("loading")}</div>;
-  if (tags.length === 0) return <div className="text-center text-muted-foreground py-8 text-sm">{t("tags.none")}</div>;
+  if (tags.length === 0) return <EmptyState icon={Tag} title={t("tags.none")} />;
 
   const months = ["", ...monthShortNames(language)];
 

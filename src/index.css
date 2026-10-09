@@ -87,6 +87,17 @@
     @apply font-brand text-[26px] leading-tight font-normal tracking-tight text-foreground;
   }
 
+  /* The three text levels: .page-title (screen), .section-title (a content
+     section: "Trendy countries this month"), .label-caps (a small header
+     inside a card or form: "YOUR RATING"). */
+  .section-title {
+    @apply text-lg font-bold leading-tight text-foreground;
+  }
+
+  .label-caps {
+    @apply text-[11px] font-semibold uppercase tracking-wider text-muted-foreground;
+  }
+
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }

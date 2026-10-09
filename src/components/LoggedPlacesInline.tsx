@@ -329,7 +329,7 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
         <div className="space-y-5">
           {groups.map((group) => (
             <div key={group.label}>
-              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{group.label}</h3>
+              <h3 className="label-caps mb-2">{group.label}</h3>
               {renderGrid(group.items)}
             </div>
           ))}

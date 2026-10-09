@@ -6,6 +6,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import type { TranslationKey } from "@/i18n/translations";
 import { invokePageBackHandler } from "@/lib/pageBackStack";
 import { useKeyboardOpen } from "@/hooks/useKeyboardOpen";
+import { hapticLight } from "@/lib/haptics";
 
 const tabDefs = [
   { path: "/", labelKey: "nav.home" as TranslationKey, icon: Globe },
@@ -16,6 +17,7 @@ const tabDefs = [
 ];
 
 const ACTIVE_TAB_STORAGE_KEY = "traveld-active-tab";
+const ADD_SPIN_LEAD_MS = 110;
 
 // Shared routes that should stay inside the current tab context
 const SHARED_ROUTES = ["/review", "/place", "/country", "/list", "/logged-places", "/profile/"];
@@ -50,6 +52,19 @@ export function BottomNav() {
   const location = useLocation();
   const navigate = useNavigate();
   const keyboardOpen = useKeyboardOpen();
+  // The + spins and pops as the add screen rises; reset once we've left it.
+  const [addPressed, setAddPressed] = useState(false);
+  useEffect(() => {
+    setAddPressed(false);
+  }, [location.pathname]);
+
+  const openAdd = (tabPath: string) => {
+    if (addPressed) return;
+    hapticLight();
+    setAddPressed(true);
+    // A beat for the spin to start before the screen takes over.
+    window.setTimeout(() => handleTabClick(tabPath), ADD_SPIN_LEAD_MS);
+  };
   const [activeTab, setActiveTab] = useState<string>(() => {
     const ownTab = getOwnTabRoot(window.location.pathname);
     return ownTab || getStoredActiveTab();
@@ -100,8 +115,9 @@ export function BottomNav() {
   };
 
   // Out of the way while typing, like native tab bars (otherwise it sits on
-  // top of the keyboard in Search, Add and Edit Profile).
-  if (keyboardOpen) return null;
+  // top of the keyboard in Search, Add and Edit Profile). Also hidden on the
+  // add screen, which is presented as a modal over everything.
+  if (keyboardOpen || location.pathname === "/add") return null;
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-nav-bg border-t border-border safe-bottom">
@@ -114,11 +130,14 @@ export function BottomNav() {
             return (
               <button
                 key={tab.path}
-                onClick={() => handleTabClick(tab.path)}
+                onClick={() => openAdd(tab.path)}
                 className="relative -mt-4"
+                aria-label={t(tab.labelKey)}
               >
                 <motion.div
-                  whileTap={{ scale: 0.9 }}
+                  whileTap={{ scale: 0.88 }}
+                  animate={addPressed ? { rotate: 90, scale: 1.08 } : { rotate: 0, scale: 1 }}
+                  transition={{ type: "spring", stiffness: 420, damping: 16 }}
                   className="w-14 h-14 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/30"
                 >
                   <Icon className="w-7 h-7 text-primary-foreground" />

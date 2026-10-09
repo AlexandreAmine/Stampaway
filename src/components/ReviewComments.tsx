@@ -196,7 +196,7 @@ export function ReviewComments({ reviewId }: { reviewId: string }) {
 
   return (
     <div>
-      <h3 className="text-sm font-semibold text-foreground mb-3">{t("comments.title")}</h3>
+      <h3 className="label-caps mb-3">{t("comments.title")}</h3>
 
       {comments.length === 0 && (
         <p className="text-xs text-muted-foreground mb-3">{t("comments.none")}</p>

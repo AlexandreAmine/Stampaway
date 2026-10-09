@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { buttonVariants } from "@/components/ui/button";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { QRCodeSVG } from "qrcode.react";
@@ -125,7 +126,7 @@ export function ShareProfileSheet({ open, onClose, profile, stats }: ShareProfil
           {/* Drag handle */}
           <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-muted" />
 
-          <h2 className="text-center text-base font-semibold text-foreground mb-5">
+          <h2 className="section-title text-center mb-5">
             {t("share.shareProfile")}
           </h2>
 
@@ -179,7 +180,7 @@ export function ShareProfileSheet({ open, onClose, profile, stats }: ShareProfil
             <span className="flex-1 truncate text-xs text-muted-foreground">{profileUrl}</span>
             <button
               onClick={handleCopy}
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium active:opacity-80"
+              className={buttonVariants({ size: "sm" })}
             >
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               {copied ? t("share.copied") : t("share.copy")}

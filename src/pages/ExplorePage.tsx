@@ -1,8 +1,9 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
+import { EmptyState } from "@/components/EmptyState";
 import { selectInChunks, newestFirst } from "@/lib/inChunks";
 import { hapticSelection, hapticLight } from "@/lib/haptics";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ChevronRight, Heart } from "lucide-react";
+import { ChevronRight, Heart, MessageSquare, List as ListIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -1170,7 +1171,7 @@ export default function ExplorePage() {
                       onClick={() => navigate(`/explore/list?${section.linkParams}`)}
                       className="flex items-center gap-1 mb-3"
                     >
-                      <h2 className="text-lg font-bold text-foreground">{SECTION_TITLES[section.key] ? t(SECTION_TITLES[section.key]) : section.title}</h2>
+                      <h2 className="section-title">{SECTION_TITLES[section.key] ? t(SECTION_TITLES[section.key]) : section.title}</h2>
                       <ChevronRight className="w-5 h-5 text-foreground" />
                     </button>
                     {section.places.length === 0 ? (
@@ -1242,7 +1243,7 @@ export default function ExplorePage() {
               <div className="space-y-6">
                 {friendReviews.length > 0 && (
                   <div>
-                    <h2 className="text-lg font-bold text-foreground mb-3">{t("explore.recentFromFriends")}</h2>
+                    <h2 className="section-title mb-3">{t("explore.recentFromFriends")}</h2>
                     <div className="space-y-3">
                       {friendReviews.map((r) => (
                         <motion.div key={r.id} initial={false} animate={{ opacity: 1, y: 0 }}>
@@ -1269,9 +1270,9 @@ export default function ExplorePage() {
                   </div>
                 )}
                 <div>
-                  <h2 className="text-lg font-bold text-foreground mb-3">{t("explore.mostLikedReviews")}</h2>
+                  <h2 className="section-title mb-3">{t("explore.mostLikedReviews")}</h2>
                   {popularReviews.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">{t("reviews.noReviews")}</p>
+                    <EmptyState icon={MessageSquare} title={t("reviews.noReviews")} />
                   ) : (
                     <div className="space-y-3">
                       {popularReviews.map((r) => (
@@ -1316,7 +1317,7 @@ export default function ExplorePage() {
               <div className="space-y-6">
                 {friendLists.length > 0 && (
                   <div>
-                    <h2 className="text-lg font-bold text-foreground mb-3">{t("explore.recentFromFriends")}</h2>
+                    <h2 className="section-title mb-3">{t("explore.recentFromFriends")}</h2>
                     <div className="space-y-3">
                       {friendLists.map((l) => (
                         <ListCard key={l.id} list={l} />
@@ -1325,9 +1326,9 @@ export default function ExplorePage() {
                   </div>
                 )}
                 <div>
-                  <h2 className="text-lg font-bold text-foreground mb-3">{t("explore.mostLikedLists")}</h2>
+                  <h2 className="section-title mb-3">{t("explore.mostLikedLists")}</h2>
                   {popularLists.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">{t("lists.noLists")}</p>
+                    <EmptyState icon={ListIcon} title={t("lists.noLists")} />
                   ) : (
                     <div className="space-y-3">
                       {popularLists.map((l) => (

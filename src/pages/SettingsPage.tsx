@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
+import { EmptyState } from "@/components/EmptyState";
 import { slideBack } from "@/lib/backTransition";
 import { selectInChunks } from "@/lib/inChunks";
-import { ChevronLeft, Lock, Shield, KeyRound, LogOut, Trash2, ChevronRight, Activity, Globe, User, FileText, ShieldCheck } from "lucide-react";
+import { ChevronLeft, Lock, Shield, KeyRound, LogOut, Trash2, ChevronRight, Activity, Globe, User, FileText, ShieldCheck, Ban } from "lucide-react";
 import { PasswordAndAuthSection } from "@/components/PasswordAndAuthSection";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -270,7 +271,7 @@ export default function SettingsPage() {
             )}
           </div>
           {blockedUsers.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center mt-8">{t("settings.noBlocked")}</p>
+            <EmptyState icon={Ban} title={t("settings.noBlocked")} />
           ) : (
             <div className="space-y-2">
               {blockedUsers.map(b => (
@@ -281,7 +282,7 @@ export default function SettingsPage() {
                     </Avatar>
                     <span className="text-sm font-medium text-foreground" data-no-translate>{b.username}</span>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => handleUnblock(b.id)}>{t("settings.unblock")}</Button>
+                  <Button variant="secondary" size="sm" onClick={() => handleUnblock(b.id)}>{t("settings.unblock")}</Button>
                 </div>
               ))}
             </div>
