@@ -150,7 +150,7 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background pb-24">
-        <div className="pt-12 px-5 space-y-6">
+        <div className="pt-header px-5 space-y-6">
           <div className="h-7 w-32 bg-muted/40 rounded skeleton-shimmer" />
           <div className="space-y-3">
             {[...Array(6)].map((_, i) => (
@@ -165,7 +165,7 @@ export default function SettingsPage() {
   if (section === "personal") {
     return (
       <div className="min-h-screen bg-background pb-24">
-        <div className="pt-12 px-5">
+        <div className="pt-header px-5">
           <div className="flex items-center gap-3 mb-8">
             <button aria-label={t("back")} onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
             <h1 className="page-title">{t("settings.personalDetails")}</h1>
@@ -194,7 +194,7 @@ export default function SettingsPage() {
   if (section === "language") {
     return (
       <div className="min-h-screen bg-background pb-24">
-        <div className="pt-12 px-5">
+        <div className="pt-header px-5">
           <div className="flex items-center gap-3 mb-8">
             <button aria-label={t("back")} onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
             <h1 className="page-title">{t("settings.language")}</h1>
@@ -228,7 +228,7 @@ export default function SettingsPage() {
   if (section === "privacy") {
     return (
       <div className="min-h-screen bg-background pb-24">
-        <div className="pt-12 px-5">
+        <div className="pt-header px-5">
           <div className="flex items-center gap-3 mb-8">
             <button aria-label={t("back")} onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
             <h1 className="page-title">{t("settings.accountPrivacy")}</h1>
@@ -251,7 +251,7 @@ export default function SettingsPage() {
   if (section === "blocked") {
     return (
       <div className="min-h-screen bg-background pb-24">
-        <div className="pt-12 px-5">
+        <div className="pt-header px-5">
           <div className="flex items-center gap-3 mb-6">
             <button aria-label={t("back")} onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
             <h1 className="page-title">{t("settings.blockedUsers")}</h1>
@@ -324,7 +324,7 @@ export default function SettingsPage() {
   if (section === "delete") {
     return (
       <div className="min-h-screen bg-background pb-24">
-        <div className="pt-12 px-5">
+        <div className="pt-header px-5">
           <div className="flex items-center gap-3 mb-8">
             <button aria-label={t("back")} onClick={() => setSection(null)}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
             <h1 className="page-title">{t("settings.deleteAccount")}</h1>
@@ -342,7 +342,7 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <div className="pt-12 px-5">
+      <div className="pt-header px-5">
         <div className="flex items-center gap-3 mb-8">
           <button aria-label={t("back")} onClick={() => slideBack(() => navigate(-1))}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
           <h1 className="page-title">{t("settings.title")}</h1>
@@ -385,7 +385,7 @@ export default function SettingsPage() {
             <button onClick={() => navigate("/import-photos")} className="flex items-center justify-between py-4 border-b border-border w-full text-left">
               <div className="flex items-center gap-3">
                 <Images className="w-5 h-5 text-muted-foreground" />
-                <span className="text-sm font-semibold text-foreground">{t("importPhotos.cta")}</span>
+                <span className="text-sm font-semibold text-foreground">{t("importPhotos.settingsRow")}</span>
               </div>
               <ChevronRight className="w-4 h-4 text-muted-foreground" />
             </button>

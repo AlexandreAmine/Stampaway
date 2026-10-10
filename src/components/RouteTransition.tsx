@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { MODAL_PATHS } from "@/lib/modalRoutes";
 import { runPendingSlideClear } from "@/lib/backTransition";
+import { isRestoredEntry } from "@/lib/tabStacks";
 import { useLocation, useNavigationType } from "react-router-dom";
 
 // Root tabs: switching between them is lateral (tab-bar) navigation, not a
@@ -41,6 +42,8 @@ export default function RouteTransition() {
 
     if (navType !== "PUSH") return;
     if (location.pathname === cameFrom) return;
+    // Reopening a tab on the screen it was left on: lateral, like any tab switch.
+    if (isRestoredEntry(location.state)) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     // Modal screens (the add screen, finding countries in photos) rise from
@@ -68,6 +71,7 @@ export default function RouteTransition() {
       ],
       { duration: PUSH_MS, easing: "cubic-bezier(0.32, 0.72, 0, 1)" }
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, navType]);
 
   return null;

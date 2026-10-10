@@ -11,7 +11,7 @@ import { continentLabel } from "@/lib/continentLabels";
 import { getCachedPlaceName } from "@/lib/placeNames";
 import { CountryFlag } from "@/components/CountryFlag";
 import { getCountryCode } from "@/lib/countryFlags";
-import { getCityCoordinates } from "@/lib/cityCoordinates";
+import { cityPosition, useCityPositions } from "@/lib/placeCoordinates";
 import { numericToAlpha2 } from "@/lib/isoCountryCodes";
 import {
   EUROPE_COUNTRIES, ASIA_COUNTRIES, NORTH_AMERICA_COUNTRIES,
@@ -51,13 +51,14 @@ const CONTINENTS: Record<string, string[]> = {
 interface UserMapData {
   visitedCodes: Set<string>;
   fiveStarCountryCodes: Set<string>;
-  fiveStarCities: { name: string; coords: [number, number]; placeId: string }[];
+  /** coords: best position known when loaded; the map refines it (useCityPositions). */
+  fiveStarCities: { name: string; country: string; coords: [number, number] | null; placeId: string }[];
   visitedCountries: Set<string>;
   visitedCitiesCount: number;
   continentStats: Record<string, { visited: number; total: number }>;
   countryPlaceMap: Record<string, string>;
   countryRatings: Record<string, number | null>; // alpha2 -> best rating
-  ratedCities: { name: string; coords: [number, number]; placeId: string; rating: number | null }[];
+  ratedCities: { name: string; country: string; coords: [number, number] | null; placeId: string; rating: number | null }[];
 }
 
 async function fetchUserMapData(userId: string, options: { throwOnError?: boolean } = {}): Promise<UserMapData> {
@@ -74,9 +75,9 @@ async function fetchUserMapData(userId: string, options: { throwOnError?: boolea
   const visitedCountryNames = new Set<string>();
   const cityCountByCountry: Record<string, number> = {};
   let cityCount = 0;
-  const fiveStars: { name: string; coords: [number, number]; placeId: string }[] = [];
+  const fiveStars: UserMapData["fiveStarCities"] = [];
   const countryRatings: Record<string, number | null> = {};
-  const ratedCities: { name: string; coords: [number, number]; placeId: string; rating: number | null }[] = [];
+  const ratedCities: UserMapData["ratedCities"] = [];
 
   (res.data || []).forEach((r: any) => {
     const code = getCountryCode(r.places.country);
@@ -103,14 +104,12 @@ async function fetchUserMapData(userId: string, options: { throwOnError?: boolea
       const c = r.places.country;
       cityCountByCountry[c] = (cityCountByCountry[c] || 0) + 1;
       const rating = r.rating != null ? Number(r.rating) : null;
-      if (r.rating === 5) {
-        const coords = getCityCoordinates(r.places.name);
-        if (coords) fiveStars.push({ name: r.places.name, coords, placeId: r.place_id });
-      }
-      const coords = getCityCoordinates(r.places.name);
-      if (coords) {
-        ratedCities.push({ name: r.places.name, coords, placeId: r.place_id, rating });
-      }
+      // Every city is kept, located or not: the map places it once the
+      // phone's geocoder has found it (by name and country, so Valencia in
+      // Venezuela isn't drawn in Spain).
+      const coords = cityPosition(r.places.name, c);
+      if (r.rating === 5) fiveStars.push({ name: r.places.name, country: c, coords, placeId: r.place_id });
+      ratedCities.push({ name: r.places.name, country: c, coords, placeId: r.place_id, rating });
     }
   });
 
@@ -155,7 +154,9 @@ export const SoloMapChart = memo(({ data, onCountryClick, onCityClick, coloredMo
   onCountryClick?: (alpha2: string) => void;
   onCityClick?: (placeId: string) => void;
   coloredMode?: boolean;
-}) => (
+}) => {
+  const fiveStarCities = useCityPositions(data.fiveStarCities);
+  return (
   <ComposableMap
     projection="geoMercator"
     projectionConfig={{ scale: 120, center: [0, 30] }}
@@ -191,8 +192,8 @@ export const SoloMapChart = memo(({ data, onCountryClick, onCityClick, coloredMo
           })
         }
       </Geographies>
-      {coloredMode && data.fiveStarCities.map((city) => (
-        <Marker key={city.name} coordinates={[city.coords[1], city.coords[0]]}>
+      {coloredMode && fiveStarCities.map((city) => (
+        <Marker key={city.placeId} coordinates={[city.coords[1], city.coords[0]]}>
           <circle
             r={5}
             fill="hsl(270, 70%, 50%)"
@@ -205,7 +206,8 @@ export const SoloMapChart = memo(({ data, onCountryClick, onCityClick, coloredMo
       ))}
     </ZoomableGroup>
   </ComposableMap>
-));
+  );
+});
 SoloMapChart.displayName = "SoloMapChart";
 
 // ─── Comparative Map ───

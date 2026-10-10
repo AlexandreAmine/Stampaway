@@ -22,7 +22,7 @@ export function LegalDocument({ title, lastUpdated, children }: LegalDocumentPro
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <div className="pt-12 px-5 max-w-2xl mx-auto">
+      <div className="pt-header px-5 max-w-2xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <button
             onClick={() => slideBack(() => navigate(-1))}

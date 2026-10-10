@@ -55,7 +55,7 @@ export default function ReviewDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background pt-12 px-5 max-w-lg mx-auto">
+      <div className="min-h-screen bg-background pt-header px-5 max-w-lg mx-auto">
         <div className="space-y-4">
           <div className="h-6 w-2/3 bg-muted/40 rounded skeleton-shimmer" />
           <div className="h-4 w-1/3 bg-muted/40 rounded skeleton-shimmer" />
@@ -92,12 +92,12 @@ export default function ReviewDetailPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <button aria-label={t("back")}
           onClick={() => slideBack(() => navigate(-1))}
-          className="absolute top-12 left-5 w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"
+          className="absolute top-header left-5 w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"
         >
           <ChevronLeft className="w-5 h-5 text-foreground" />
         </button>
         {user && review.user_id !== user.id && (
-          <div className="absolute top-12 right-5">
+          <div className="absolute top-header right-5">
             <ReviewActionsMenu reviewId={review.id} reviewUserId={review.user_id} />
           </div>
         )}

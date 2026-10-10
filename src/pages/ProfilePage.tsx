@@ -208,6 +208,11 @@ export default function ProfilePage() {
   const [subPage, setSubPage] = useState<SubPage>(null);
   const [ratingFilter, setRatingFilter] = useState<number | undefined>(undefined);
 
+  // The Diary's Countries/Cities switch, so its "From photos" finds the same kind.
+  const [diarySection, setDiarySection] = useState<"country" | "city">("country");
+  const importKindForSubPage =
+    subPage === "Cities" || (subPage === "Diary" && diarySection === "city") ? "city" : "country";
+
   const closeSubPage = () => {
     setSubPage(null);
     setRatingFilter(undefined);
@@ -766,7 +771,7 @@ export default function ProfilePage() {
       case "CitiesByRating":
         return <LoggedPlacesInline type="city" userId={uid} ratingFilter={ratingFilter} profileUsername={!isOwnProfile ? displayName : undefined} />;
       case "Diary":
-        return <DiaryTab userId={uid} />;
+        return <DiaryTab userId={uid} onSectionChange={setDiarySection} />;
       case "Map":
         return <MapTab userId={uid} />;
       case "Lists":
@@ -794,7 +799,7 @@ export default function ProfilePage() {
   if (subPage) {
     return (
       <div ref={subPageWrapperRef} className="min-h-screen bg-background pb-24">
-        <div className="pt-14 px-5">
+        <div className="pt-header-lg px-5">
           <div className="flex items-center gap-3 mb-6">
             <button aria-label={t("back")} onClick={closeSubPage}>
               <ChevronLeft className="w-6 h-6 text-foreground" />
@@ -802,11 +807,11 @@ export default function ProfilePage() {
             <h1 className="page-title flex-1 min-w-0">
               {subPage === "CountriesByRating" ? <>{t("profile.countries")} · {ratingFilter}★ <span className="font-sans text-sm font-normal text-muted-foreground">({countryDistribution[Math.round((ratingFilter || 0) * 2) - 1] || 0})</span></> : subPage === "CitiesByRating" ? <>{t("profile.cities")} · {ratingFilter}★ <span className="font-sans text-sm font-normal text-muted-foreground">({cityDistribution[Math.round((ratingFilter || 0) * 2) - 1] || 0})</span></> : (subPageLabels[subPage] || subPage)}
             </h1>
-            {isOwnProfile && (subPage === "Diary" || subPage === "Countries") && canFindCountriesInPhotos() && (
+            {isOwnProfile && (subPage === "Diary" || subPage === "Countries" || subPage === "Cities") && canFindCountriesInPhotos() && (
               <button
                 type="button"
-                onClick={() => navigate("/import-photos")}
-                aria-label={t("importPhotos.cta")}
+                onClick={() => navigate(`/import-photos?type=${importKindForSubPage}`)}
+                aria-label={t(importKindForSubPage === "city" ? "importPhotos.ctaCities" : "importPhotos.cta")}
                 className={buttonVariants({ variant: "secondary", size: "sm", className: "shrink-0 h-8 px-3 text-xs gap-1.5" })}
               >
                 <Images aria-hidden />
@@ -832,7 +837,7 @@ export default function ProfilePage() {
           }
         }}
       />
-      <div className="pt-14 px-5">
+      <div className="pt-header-lg px-5">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
@@ -1046,7 +1051,7 @@ export default function ProfilePage() {
               body={t("profile.firstPlaceBody")}
               action={
                 canFindCountriesInPhotos()
-                  ? { label: t("importPhotos.cta"), onClick: () => navigate("/import-photos") }
+                  ? { label: t("importPhotos.cta"), onClick: () => navigate("/import-photos?type=country") }
                   : { label: t("profile.firstPlaceCta"), onClick: () => navigate("/add") }
               }
               secondaryAction={
@@ -1065,7 +1070,21 @@ export default function ProfilePage() {
 
         {/* Favorite Cities */}
         <div className="mb-4">
-          <h2 className="section-title mb-3">{t("profile.favoriteCities")}</h2>
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <h2 className="section-title">{t("profile.favoriteCities")}</h2>
+            {/* No city logged yet: a way to find them in their photos. */}
+            {isOwnProfile && totalCountries > 0 && citiesCount === 0 && canFindCountriesInPhotos() && (
+              <button
+                type="button"
+                onClick={() => navigate("/import-photos?type=city")}
+                aria-label={t("importPhotos.ctaCities")}
+                className={buttonVariants({ variant: "secondary", size: "sm", className: "shrink-0 h-8 px-3 text-xs gap-1.5" })}
+              >
+                <Images aria-hidden />
+                {t("importPhotos.short")}
+              </button>
+            )}
+          </div>
           {renderFavoriteSlots("city", favoriteCities)}
         </div>
         <div className="mb-6"><RatingHistogram distribution={cityDistribution} onBarClick={(r) => { setRatingFilter(r); openSubPage("CitiesByRating"); }} /></div>

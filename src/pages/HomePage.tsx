@@ -275,7 +275,7 @@ export default function HomePage() {
       <div className="fixed top-0 left-0 right-0 z-0 pointer-events-none">
         <div className="mx-auto max-w-lg pointer-events-auto">
           {/* Header */}
-          <div className="pt-14 pb-2 px-5 flex items-end justify-between relative z-10">
+          <div className="pt-header-lg pb-2 px-5 flex items-end justify-between relative z-10">
             <h1 className="font-brand text-3xl font-normal text-foreground tracking-tight leading-none">{t("home.title")}</h1>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1.5 bg-background/60 backdrop-blur-sm rounded-full px-3 h-8">
@@ -333,8 +333,8 @@ export default function HomePage() {
         style={{
           height:
             noFriends && noFriendsBlockHeight > 0
-              ? `max(140px, min(${mapHeight + 56}px, calc(100dvh - ${noFriendsBlockHeight + TAB_BAR_AND_FADE_PX}px - env(safe-area-inset-bottom, 0px))))`
-              : mapHeight + 56,
+              ? `max(140px, min(calc(${mapHeight + 56}px + var(--island-extra)), calc(100dvh - ${noFriendsBlockHeight + TAB_BAR_AND_FADE_PX}px - env(safe-area-inset-bottom, 0px))))`
+              : `calc(${mapHeight + 56}px + var(--island-extra))`,
         }}
         className="pointer-events-none"
       />

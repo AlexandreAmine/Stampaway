@@ -81,7 +81,7 @@ export function FavoritePicker({ open, onClose, type, onSelect }: FavoritePicker
         className="fixed inset-0 z-[60] bg-background/95 flex flex-col"
       >
         <div className="max-w-lg mx-auto w-full flex flex-col h-full">
-          <div className="flex items-center justify-between pt-12 px-5 mb-4">
+          <div className="flex items-center justify-between pt-header px-5 mb-4">
             <h2 className="section-title">
               {t(type === "city" ? "picker.selectCity" : "picker.selectCountry")}
             </h2>

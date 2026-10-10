@@ -96,4 +96,28 @@ describe("FindCountriesPrompt", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(h.queries).toBe(0);
   });
+
+  it("lets the notifications prompt through only once it's out of the way", async () => {
+    await mount();
+    const prompts = await import("@/lib/launchPrompts");
+    let done = false;
+    void prompts.whenFindCountriesPromptDone().then(() => (done = true));
+    await act(async () => {
+      vi.advanceTimersByTime(30_000);
+    });
+    expect(done).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "Not now" }));
+    await act(async () => {});
+    expect(done).toBe(true);
+  });
+
+  it("with a country already logged, the notifications prompt needn't wait", async () => {
+    h.countries = 1;
+    await mount();
+    const prompts = await import("@/lib/launchPrompts");
+    let done = false;
+    void prompts.whenFindCountriesPromptDone().then(() => (done = true));
+    await act(async () => {});
+    expect(done).toBe(true);
+  });
 });

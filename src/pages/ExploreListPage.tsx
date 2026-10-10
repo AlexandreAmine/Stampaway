@@ -211,7 +211,7 @@ export default function ExploreListPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <div className="pt-12 px-5">
+      <div className="pt-header px-5">
         <div className="flex items-center gap-3 mb-6">
           <button aria-label={t("back")} onClick={() => slideBack(() => navigate(-1))}>
             <ChevronLeft className="w-6 h-6 text-foreground" />

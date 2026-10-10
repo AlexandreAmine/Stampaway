@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { buttonVariants } from "@/components/ui/button";
 import { canFindCountriesInPhotos } from "@/lib/native/photoTrips";
+import { setFindCountriesPrompt } from "@/lib/launchPrompts";
 
 // Shown at most once per app launch (this module lives as long as the app).
 let shownThisLaunch = false;
@@ -40,32 +41,57 @@ export default function FindCountriesPrompt() {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  // Chose "find my countries": the import is underway until they leave it.
+  const [importing, setImporting] = useState(false);
   // Waits for the username step, which new accounts go through first.
   const ready = !!user && !!profile && !profile.needs_username;
 
   useEffect(() => {
-    if (!ready || shownThisLaunch || !canFindCountriesInPhotos() || QUIET_PATHS.has(location.pathname)) return;
+    if (!canFindCountriesInPhotos() || (shownThisLaunch && !open && !importing)) {
+      setFindCountriesPrompt("done");
+      return;
+    }
+    if (!ready || shownThisLaunch || QUIET_PATHS.has(location.pathname)) return;
     let cancelled = false;
     const timer = window.setTimeout(() => {
       hasLoggedCountry(user!.id)
         .then((logged) => {
-          if (cancelled || logged || shownThisLaunch) return;
+          if (cancelled || shownThisLaunch) return;
+          if (logged) {
+            setFindCountriesPrompt("done");
+            return;
+          }
           shownThisLaunch = true;
+          setFindCountriesPrompt("showing");
           setOpen(true);
         })
-        .catch(() => {});
+        .catch(() => setFindCountriesPrompt("done"));
     }, SHOW_DELAY_MS);
     return () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, user, location.pathname]);
+
+  // Back from the photo import it opened: other prompts may show now.
+  useEffect(() => {
+    if (importing && location.pathname !== "/import-photos") {
+      setImporting(false);
+      setFindCountriesPrompt("done");
+    }
+  }, [importing, location.pathname]);
 
   if (!open) return null;
 
   const findCountries = () => {
     setOpen(false);
-    navigate("/import-photos");
+    setImporting(true);
+    navigate("/import-photos?type=country");
+  };
+  const notNow = () => {
+    setOpen(false);
+    setFindCountriesPrompt("done");
   };
 
   return (
@@ -75,7 +101,7 @@ export default function FindCountriesPrompt() {
           className="absolute inset-0 bg-black/70"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          onClick={() => setOpen(false)}
+          onClick={notNow}
         />
         <motion.div
           role="dialog"
@@ -94,7 +120,7 @@ export default function FindCountriesPrompt() {
           <button type="button" onClick={findCountries} className={buttonVariants({ className: "mt-6 w-full" })}>
             {t("importPhotos.cta")}
           </button>
-          <button type="button" onClick={() => setOpen(false)} className={buttonVariants({ variant: "ghost", className: "mt-1 w-full" })}>
+          <button type="button" onClick={notNow} className={buttonVariants({ variant: "ghost", className: "mt-1 w-full" })}>
             {t("importPhotos.notNow")}
           </button>
         </motion.div>

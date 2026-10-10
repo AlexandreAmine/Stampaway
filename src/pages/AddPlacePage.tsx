@@ -314,7 +314,7 @@ export default function AddPlacePage() {
   if (step === "review" && selectedPlace) {
     return (
       <div className="min-h-screen bg-[hsl(0,0%,4%)] pb-44 overflow-y-auto">
-        <div className="pt-12 px-5">
+        <div className="pt-header px-5">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               {/* Opened on a specific place: back closes the screen. Otherwise
@@ -357,7 +357,7 @@ export default function AddPlacePage() {
 
   return (
     <div className="min-h-screen bg-[hsl(0,0%,4%)] pb-24">
-      <div className="pt-14 px-5">
+      <div className="pt-header-lg px-5">
         <div className="flex items-center justify-between gap-3 mb-6">
           <h1 className="page-title">
             {isFavoriteFlow

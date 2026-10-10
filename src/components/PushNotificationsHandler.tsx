@@ -4,8 +4,11 @@ import { Capacitor } from "@capacitor/core";
 import { App as CapApp } from "@capacitor/app";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { requestNotificationsSheet } from "@/lib/notificationsRequest";
+import { whenFindCountriesPromptDone } from "@/lib/launchPrompts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+
+const PROMPT_GAP_MS = 800;
 
 export const PushNotificationsHandler = () => {
   const { user } = useAuth();
@@ -28,6 +31,7 @@ export const PushNotificationsHandler = () => {
     }
 
     let cleanup: (() => void) | undefined;
+    let cancelled = false;
 
     (async () => {
       try {
@@ -38,6 +42,11 @@ export const PushNotificationsHandler = () => {
 
         let status = perm.receive;
         if (status === "prompt" || status === "prompt-with-rationale") {
+          // Not on top of the "find your countries" pop-up: after it, with
+          // a short pause so the two don't follow each other instantly.
+          await whenFindCountriesPromptDone();
+          await new Promise((resolve) => window.setTimeout(resolve, PROMPT_GAP_MS));
+          if (cancelled) return;
           console.log("[Push] Requesting permission...");
           const req = await PushNotifications.requestPermissions();
           status = req.receive;
@@ -87,12 +96,17 @@ export const PushNotificationsHandler = () => {
           tapHandle.remove();
           resumeHandle.remove();
         };
+        // Signed out (or remounted) while setting up: don't leave listeners behind.
+        if (cancelled) cleanup();
       } catch (e) {
         console.error("[Push] Setup failed:", e);
       }
     })();
 
-    return () => { cleanup?.(); };
+    return () => {
+      cancelled = true;
+      cleanup?.();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 

@@ -612,7 +612,7 @@ export default function SearchPage() {
   return (
     <div className="min-h-screen bg-background pb-24">
       <PullToRefresh onRefresh={handleRefresh} />
-      <div className="pt-14 px-5">
+      <div className="pt-header-lg px-5">
         <div className="flex items-center gap-3 mb-6">
           <h1 className="page-title">{t("nav.search")}</h1>
         </div>

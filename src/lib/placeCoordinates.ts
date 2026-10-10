@@ -26,6 +26,18 @@ export function placeCoordinates(name: string, country: string, type: string): C
   return getCityCoordinates(name) || getCountryCoordinates(country) || null;
 }
 
+/**
+ * Where a city is, without guessing: where the geocoder found it, else the
+ * built-in list of big cities; null when not known yet (unlike
+ * placeCoordinates, never its country's centre).
+ */
+export function cityPosition(name: string, country: string): Coords | null {
+  const cached = cityCache.get(keyOf(name, country));
+  if (cached && cached !== "none") return cached;
+  if (cached === "none") return null;
+  return getCityCoordinates(name) || null;
+}
+
 const listeners = new Set<() => void>();
 const queued = new Set<string>();
 const queue: { name: string; country: string }[] = [];
@@ -104,5 +116,38 @@ export function useAccuratePositions<T extends { place_name: string; place_count
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [items, version]
+  );
+}
+
+/**
+ * The same for city pins on the profile map: each city at its best known
+ * position (cities not located yet are left out until they are), looking up
+ * the ones not asked about yet.
+ */
+export function useCityPositions<T extends { name: string; country: string }>(
+  cities: T[]
+): (T & { coords: Coords })[] {
+  const [version, setVersion] = useState(0);
+
+  useEffect(() => {
+    const notify = () => setVersion((v) => v + 1);
+    listeners.add(notify);
+    return () => {
+      listeners.delete(notify);
+    };
+  }, []);
+
+  useEffect(() => {
+    locateCities(cities.map((city) => ({ name: city.name, country: city.country })));
+  }, [cities]);
+
+  return useMemo(
+    () =>
+      cities.flatMap((city) => {
+        const coords = cityPosition(city.name, city.country);
+        return coords ? [{ ...city, coords }] : [];
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cities, version]
   );
 }

@@ -87,3 +87,32 @@ describe("useAccuratePositions", () => {
     expect(h.asked).toEqual([]);
   });
 });
+
+describe("useCityPositions (profile map)", () => {
+  it("a city not located yet is left off the map, then appears where the phone finds it", async () => {
+    h.answers.set("Koh Samui, Thailand", { found: true, lat: 9.51, lng: 100.01 });
+    const { useCityPositions } = await load();
+    const cities = [{ name: "Koh Samui", country: "Thailand", placeId: "p1" }];
+    const { result } = renderHook(() => useCityPositions(cities));
+    // Never drawn at the country's centre while unknown.
+    expect(result.current).toEqual([]);
+    await act(async () => {});
+    expect(result.current[0].coords).toEqual([9.51, 100.01]);
+  });
+
+  it("a same-name city ends up in its own country, not the built-in one", async () => {
+    // The built-in list has London (UK); this log is London, Canada.
+    h.answers.set("London, Canada", { found: true, lat: 42.98, lng: -81.25 });
+    // Paris, Texas isn't found at all: it must not be drawn in France.
+    h.answers.set("Paris, United States", { found: false, retry: false });
+    const { useCityPositions } = await load();
+    const cities = [
+      { name: "London", country: "Canada", placeId: "p2" },
+      { name: "Paris", country: "United States", placeId: "p3" },
+    ];
+    const { result } = renderHook(() => useCityPositions(cities));
+    await act(async () => {});
+    expect(result.current).toHaveLength(1);
+    expect(result.current[0]).toMatchObject({ placeId: "p2", coords: [42.98, -81.25] });
+  });
+});

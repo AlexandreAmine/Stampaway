@@ -120,7 +120,7 @@ export default function ListDetailPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background pt-12 px-5 max-w-lg mx-auto">
+      <div className="min-h-screen bg-background pt-header px-5 max-w-lg mx-auto">
         <div className="space-y-3">
           <div className="h-7 w-48 bg-muted/40 rounded skeleton-shimmer" />
           <div className="h-4 w-32 bg-muted/40 rounded skeleton-shimmer" />
@@ -136,7 +136,7 @@ export default function ListDetailPage() {
 
   if (!list) {
     return (
-      <div className="min-h-screen bg-background pt-12 px-5">
+      <div className="min-h-screen bg-background pt-header px-5">
         <button aria-label={t("back")} onClick={() => slideBack(() => navigate(-1))} className="mb-4"><ChevronLeft className="w-6 h-6 text-foreground" /></button>
         <p className="text-sm text-muted-foreground text-center">{t("lists.notFound")}</p>
       </div>
@@ -146,7 +146,7 @@ export default function ListDetailPage() {
   return (
     <div className="min-h-screen bg-background pb-24">
       <PullToRefresh onRefresh={() => listQuery.refetch()} />
-      <div className="pt-12 px-5">
+      <div className="pt-header px-5">
         <div className="flex items-center gap-3 mb-6">
           <button aria-label={t("back")} onClick={() => slideBack(() => navigate(-1))}>
             <ChevronLeft className="w-6 h-6 text-foreground" />

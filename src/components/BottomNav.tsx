@@ -1,6 +1,8 @@
 import { Globe, Map, Search, User, Plus } from "lucide-react";
 import { MODAL_PATHS } from "@/lib/modalRoutes";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useNavigationType } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { RESTORED, recordNavigation, resetTabStacks, trailAboveRoot } from "@/lib/tabStacks";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -48,10 +50,19 @@ function getOwnTabRoot(pathname: string): string | null {
   return null;
 }
 
+// The account the tab trails belong to (they're forgotten on a change).
+let trailsUserId: string | null = null;
+
 export function BottomNav() {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const navType = useNavigationType();
+  if (trailsUserId !== (user?.id ?? null)) {
+    trailsUserId = user?.id ?? null;
+    resetTabStacks();
+  }
   const keyboardOpen = useKeyboardOpen();
   // The + spins and pops as the add screen rises; reset once we've left it.
   const [addPressed, setAddPressed] = useState(false);
@@ -82,6 +93,16 @@ export function BottomNav() {
     setActiveTab(resolvedTab);
     window.sessionStorage.setItem(ACTIVE_TAB_STORAGE_KEY, resolvedTab);
 
+    // Each tab's trail of screens (reopened when coming back to the tab).
+    // Only screens that belong to a tab: not modals, sign-in or legal pages.
+    if ((ownTab || isSharedRoute(location.pathname)) && !MODAL_PATHS.has(location.pathname)) {
+      recordNavigation(
+        resolvedTab,
+        { pathname: location.pathname, search: location.search, state: location.state },
+        navType
+      );
+    }
+
     if (ownTab) {
       return;
     }
@@ -96,6 +117,7 @@ export function BottomNav() {
         state: { ...currentState, tabRoot: resolvedTab },
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, location.search, location.hash, location.state, navigate]);
 
   const handleTabClick = (tabPath: string) => {
@@ -103,7 +125,22 @@ export function BottomNav() {
     window.sessionStorage.setItem(ACTIVE_TAB_STORAGE_KEY, tabPath);
 
     if (location.pathname !== tabPath) {
-      navigate(tabPath);
+      // Coming back to another tab: reopen the screen it was left on, with
+      // the screens before it underneath (so Back still leads to the tab's
+      // first screen), like a native tab bar. Tapping the current tab still
+      // returns to its first screen.
+      const trail = activeTab !== tabPath ? trailAboveRoot(tabPath) : [];
+      if (trail.length === 0) {
+        navigate(tabPath);
+        return;
+      }
+      navigate(tabPath, { state: { [RESTORED]: true } });
+      trail.forEach((entry) => {
+        const previous = entry.state && typeof entry.state === "object" ? entry.state : {};
+        navigate(`${entry.pathname}${entry.search}`, {
+          state: { ...previous, tabRoot: tabPath, [RESTORED]: true },
+        });
+      });
       return;
     }
 

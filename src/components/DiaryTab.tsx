@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { canFindCountriesInPhotos } from "@/lib/native/photoTrips";
 import { EmptyState } from "@/components/EmptyState";
 import { placeLinkProps } from "@/lib/placePrimaryQuery";
@@ -38,13 +38,23 @@ interface DiaryEntry {
   };
 }
 
-export function DiaryTab({ userId }: { userId?: string }) {
+export function DiaryTab({
+  userId,
+  onSectionChange,
+}: {
+  userId?: string;
+  /** Told when the Countries/Cities switch changes (and the starting one). */
+  onSectionChange?: (section: "country" | "city") => void;
+}) {
   const { user } = useAuth();
   const { t, tn, language } = useLanguage();
   const months = monthShortNames(language);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [section, setSection] = useState<"country" | "city">("country");
+  useEffect(() => {
+    onSectionChange?.(section);
+  }, [section, onSectionChange]);
   const [editingEntry, setEditingEntry] = useState<DiaryEntry | null>(null);
   const targetUserId = userId || user?.id;
   const isOwnProfile = !userId || userId === user?.id;
@@ -125,7 +135,7 @@ export function DiaryTab({ userId }: { userId?: string }) {
           !isOwnProfile
             ? undefined
             : canFindCountriesInPhotos()
-              ? { label: t("importPhotos.cta"), onClick: () => navigate("/import-photos") }
+              ? { label: t("importPhotos.cta"), onClick: () => navigate("/import-photos?type=country") }
               : { label: t("profile.firstPlaceCta"), onClick: () => navigate("/add") }
         }
         secondaryAction={

@@ -491,7 +491,7 @@ export default function PlacePage() {
 
   if (loading || !place) {
     return (
-      <div className="min-h-screen bg-background pt-12 px-5 max-w-lg mx-auto">
+      <div className="min-h-screen bg-background pt-header px-5 max-w-lg mx-auto">
         <div className="space-y-4">
           <div className="aspect-[3/4] w-full max-w-[240px] mx-auto bg-muted/40 rounded-xl skeleton-shimmer" />
           <div className="h-7 w-2/3 mx-auto bg-muted/40 rounded skeleton-shimmer" />
@@ -539,12 +539,12 @@ export default function PlacePage() {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <button aria-label={t("back")}
           onClick={() => slideBack(() => navigate(-1))}
-          className="absolute top-12 left-5 w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"
+          className="absolute top-header left-5 w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"
         >
           <ChevronLeft className="w-5 h-5 text-foreground" />
         </button>
         {user && (
-          <div className="absolute top-12 right-5 flex items-center gap-2">
+          <div className="absolute top-header right-5 flex items-center gap-2">
             <button aria-label={t("profile.wishlist")}
               onClick={toggleWishlist}
               className="w-8 h-8 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center"

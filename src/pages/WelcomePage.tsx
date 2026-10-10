@@ -45,7 +45,7 @@ export default function WelcomePage() {
         className="w-full max-w-sm flex-1 flex flex-col"
       >
         {/* Logo + wordmark */}
-        <div className="text-center pt-12 pb-4 flex flex-col items-center">
+        <div className="text-center pt-header pb-4 flex flex-col items-center">
           <div className="w-16 h-16 rounded-2xl overflow-hidden mb-3 shadow-lg ring-1 ring-white/10">
             <img src={logoImage} alt="Stampaway" className="w-full h-full object-cover" />
           </div>

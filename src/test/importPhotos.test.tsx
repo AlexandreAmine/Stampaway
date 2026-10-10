@@ -25,7 +25,23 @@ vi.mock("@/lib/placeRankings", () => ({
     { id: "p-pt", name: "Portugal", country: "Portugal", type: "country", image: null },
     { id: "p-es", name: "Spain", country: "Spain", type: "country", image: null },
     { id: "p-it", name: "Italy", country: "Italy", type: "country", image: null },
+    { id: "c-paris", name: "Paris", country: "France", type: "city", image: null },
+    { id: "c-lisbon", name: "Lisbon", country: "Portugal", type: "city", image: null },
+    { id: "c-madrid", name: "Madrid", country: "Spain", type: "city", image: null },
+    { id: "c-rome", name: "Rome", country: "Italy", type: "city", image: null },
   ],
+}));
+vi.mock("@/lib/native/placeGeocoder", () => ({
+  PlaceGeocoder: {
+    reverseGeocode: async ({ lat }: { lat: number }) =>
+      lat > 48
+        ? { found: true, names: ["Paris"], countryCode: "FR" }
+        : lat > 41.5
+          ? { found: true, names: ["Rome"], countryCode: "IT" }
+          : lat > 40
+            ? { found: true, names: ["Madrid"], countryCode: "ES" }
+            : { found: true, names: ["Lisbon"], countryCode: "PT" },
+  },
 }));
 vi.mock("@/integrations/supabase/client", () => {
   const from = (table: string) => {
@@ -38,7 +54,8 @@ vi.mock("@/integrations/supabase/client", () => {
         h.inserts.push({ table, row });
         return { select: async () => ({ data: [{ id: "r1" }], error: null }), then: (r: any) => r({ error: null }) };
       },
-      then: (resolve: any) => resolve({ data: table === "reviews" ? [{ place_id: "p-it" }] : [], error: null }),
+      then: (resolve: any) =>
+        resolve({ data: table === "reviews" ? [{ place_id: "p-it" }, { place_id: "c-rome" }] : [], error: null }),
     };
     return q;
   };
@@ -53,6 +70,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 const days = (prefix: string, n: number) => Array.from({ length: n }, (_, i) => `${prefix}-${String(i + 1).padStart(2, "0")}`);
 
 beforeEach(() => {
+  localStorage.clear();
   h.inserts = [];
   const topology = JSON.parse(readFileSync(join(__dirname, "../../public/countries-50m.json"), "utf8"));
   vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => topology })));
@@ -121,5 +139,56 @@ describe("Find countries in photos", () => {
     expect(review?.row).toMatchObject({ user_id: "me", place_id: "p-pt", visit_year: 2023, visit_month: 5 });
     expect(h.inserts.filter((i) => i.table === "reviews")).toHaveLength(1);
     expect(screen.getByText("1 country added")).toBeTruthy();
+  });
+});
+
+describe("Find cities in photos", () => {
+  it("names the places, asks about the home city, and saves a city with its visit date", async () => {
+    render(
+      <LanguageProvider>
+        <MemoryRouter initialEntries={["/import-photos?type=city"]}>
+          <ImportPhotosPage />
+        </MemoryRouter>
+      </LanguageProvider>
+    );
+
+    expect(screen.getByText("Find the cities you've been to")).toBeTruthy();
+    // Opened for cities: no Countries/Cities choice.
+    expect(screen.queryByRole("radiogroup")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /look through my photos/i }));
+    await flush();
+
+    expect(screen.getByText("Do you live in Paris?")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /yes, skip it/i }));
+
+    // Madrid (2024) then Lisbon (2023); Rome is already logged.
+    expect(screen.getByText("1 of 2")).toBeTruthy();
+    expect(screen.getByText("Madrid")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /^skip$/i }));
+    await act(async () => {});
+    expect(screen.getByText("Lisbon")).toBeTruthy();
+    expect(screen.getByText(/May 2023/)).toBeTruthy();
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+    });
+    await act(async () => {});
+
+    const review = h.inserts.find((i) => i.table === "reviews");
+    expect(review?.row).toMatchObject({ user_id: "me", place_id: "c-lisbon", visit_year: 2023, visit_month: 5 });
+    expect(screen.getByText("1 city added")).toBeTruthy();
+  });
+
+  it("from Settings, the user picks countries or cities", async () => {
+    render(
+      <LanguageProvider>
+        <MemoryRouter initialEntries={["/import-photos"]}>
+          <ImportPhotosPage />
+        </MemoryRouter>
+      </LanguageProvider>
+    );
+    expect(screen.getByText("Find the countries you've been to")).toBeTruthy();
+    fireEvent.click(screen.getByRole("radio", { name: "Cities" }));
+    expect(screen.getByText("Find the cities you've been to")).toBeTruthy();
   });
 });

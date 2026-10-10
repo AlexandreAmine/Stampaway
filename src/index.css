@@ -54,6 +54,8 @@
     --gradient-card: linear-gradient(180deg, hsla(0, 0%, 100%, 0.06) 0%, hsla(0, 0%, 100%, 0) 100%);
 
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    /* How much taller than 50pt the status bar is (see .pt-header). */
+    --island-extra: max(0px, calc(env(safe-area-inset-top, 0px) - 50px));
   }
 }
 
@@ -96,6 +98,19 @@
 
   .label-caps {
     @apply text-[11px] font-semibold uppercase tracking-wider text-muted-foreground;
+  }
+
+  /* Screen headers. On phones whose status bar is taller than 50pt (Dynamic
+     Island models) they move down by the difference, so titles and back
+     buttons keep clear of the island; other phones are unchanged. */
+  .pt-header {
+    padding-top: calc(3rem + var(--island-extra));
+  }
+  .pt-header-lg {
+    padding-top: calc(3.5rem + var(--island-extra));
+  }
+  .top-header {
+    top: calc(3rem + var(--island-extra));
   }
 
   .safe-bottom {

@@ -224,7 +224,7 @@ export function YourActivity({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      <div className="pt-12 px-5">
+      <div className="pt-header px-5">
         <div className="flex items-center gap-3 mb-6">
           <button aria-label={t("back")} onClick={onBack}><ChevronLeft className="w-6 h-6 text-foreground" /></button>
           <h1 className="page-title">{t("activity.title")}</h1>
