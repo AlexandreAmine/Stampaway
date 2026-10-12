@@ -273,13 +273,13 @@ export function WishlistTab({ userId, readOnly = false }: { userId?: string; rea
             <button
               onClick={() => setGrouped((g) => !g)}
               className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
-                grouped ? "bg-primary text-primary-foreground" : "text-muted-foreground border border-border hover:text-foreground"
+                grouped ? "bg-primary text-primary-foreground" : "text-muted-foreground border border-border hover:text-foreground active:text-foreground"
               }`}
             >
               {groupLabel}
             </button>
             <DropdownMenu>
-              <DropdownMenuTrigger className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded-lg px-3 py-1.5 hover:text-foreground transition-colors">
+              <DropdownMenuTrigger className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded-lg px-3 py-1.5 hover:text-foreground active:text-foreground transition-colors">
                 {currentLabel}
                 <ChevronDown className="w-3.5 h-3.5" />
               </DropdownMenuTrigger>

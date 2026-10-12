@@ -83,14 +83,14 @@ export default function WelcomePage() {
                   }
                 }
               }}
-              className="w-full bg-white text-black rounded-xl py-3.5 text-[15px] font-semibold hover:bg-white/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              className="w-full bg-white text-black rounded-xl py-3.5 text-[15px] font-semibold hover:bg-white/90 active:bg-white/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
             >
               <AppleLogo className="w-[18px] h-[18px]" />
               {t("auth.continueWithApple")}
             </button>
             <button
               onClick={() => navigate("/auth?mode=signup")}
-              className="w-full bg-card text-foreground border border-border rounded-xl py-3.5 text-[15px] font-semibold hover:bg-card/80 active:scale-[0.98] transition-all"
+              className="w-full bg-card text-foreground border border-border rounded-xl py-3.5 text-[15px] font-semibold hover:bg-card/80 active:bg-card/80 active:scale-[0.98] transition-all"
             >
               {t("auth.createAccount")}
             </button>

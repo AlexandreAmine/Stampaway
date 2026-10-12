@@ -146,20 +146,17 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
       };
 
       const fetchLikedReviews = async () => {
+        // The liked reviews come with the likes (one request instead of two).
         const { data: reviewLikes } = await supabase
           .from("review_likes")
-          .select("id, review_id")
+          .select("review_id, reviews!inner(*, places!inner(name, image))")
           .eq("user_id", targetId)
           .order("created_at", { ascending: false });
         if (!reviewLikes) return null;
         if (reviewLikes.length === 0) return [] as any[];
 
         const reviewIds = reviewLikes.map((rl) => rl.review_id);
-        const { data: reviews } = await supabase
-          .from("reviews")
-          .select("*, places!inner(name, image)")
-          .in("id", reviewIds);
-        if (!reviews) return null;
+        const reviews = reviewLikes.map((rl: any) => rl.reviews).filter(Boolean);
         if (reviews.length === 0) return [] as any[];
 
         const userIds = [...new Set(reviews.map((r) => r.user_id))];
@@ -187,48 +184,47 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
       };
 
       const fetchLikedLists = async () => {
+        // The liked lists come with the likes; then their owners and their
+        // first items load together (two steps instead of four).
         const { data: listLikes } = await supabase
           .from("list_likes")
-          .select("id, list_id")
+          .select("list_id, lists!inner(*)")
           .eq("user_id", targetId)
           .order("created_at", { ascending: false });
         if (!listLikes) return null;
         if (listLikes.length === 0) return [] as any[];
 
-        const listIds = listLikes.map((ll) => ll.list_id);
-        const { data: lists } = await supabase.from("lists").select("*").in("id", listIds);
-        if (!lists) return null;
+        const lists = listLikes.map((ll: any) => ll.lists).filter(Boolean);
         if (lists.length === 0) return [] as any[];
 
-        const userIds = [...new Set(lists.map((list) => list.user_id))];
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("user_id, username, profile_picture")
-          .in("user_id", userIds);
+        const userIds = [...new Set(lists.map((list: any) => list.user_id))];
+        const [{ data: profiles }, itemsPerList] = await Promise.all([
+          supabase.from("profiles").select("user_id, username, profile_picture").in("user_id", userIds),
+          Promise.all(
+            lists.map((list: any) =>
+              supabase
+                .from("list_items")
+                .select("id, position, places!inner(id, name, country, type, image)")
+                .eq("list_id", list.id)
+                .order("position", { ascending: true })
+                .limit(8)
+                .then(({ data }) => data)
+            )
+          ),
+        ]);
         const profileMap = new Map((profiles || []).map((profile) => [profile.user_id, profile]));
-        const listMap = new Map(lists.map((list: any) => [list.id, list]));
 
-        const enriched = await Promise.all(
-          listIds.map(async (listId) => {
-            const list: any = listMap.get(listId);
-            if (!list) return null;
-            const { data: items } = await supabase
-              .from("list_items")
-              .select("id, position, places!inner(id, name, country, type, image)")
-              .eq("list_id", list.id)
-              .order("position", { ascending: true })
-              .limit(8);
-            const profile = profileMap.get(list.user_id);
-            return {
-              ...list,
-              items: items || [],
-              item_count: items?.length || 0,
-              username: profile?.username,
-              profile_picture: profile?.profile_picture,
-            };
-          })
-        );
-        return enriched.filter(Boolean);
+        return lists.map((list: any, i: number) => {
+          const items = itemsPerList[i];
+          const profile = profileMap.get(list.user_id);
+          return {
+            ...list,
+            items: items || [],
+            item_count: items?.length || 0,
+            username: profile?.username,
+            profile_picture: profile?.profile_picture,
+          };
+        });
       };
 
       const [destinationResult, reviewResult, listResult] = await Promise.all([
@@ -397,13 +393,13 @@ export function LikesTab({ userId, profileUsername }: { userId?: string; profile
           <button
             onClick={() => setGrouped((g) => !g)}
             className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
-              grouped ? "bg-primary text-primary-foreground" : "text-muted-foreground border border-border hover:text-foreground"
+              grouped ? "bg-primary text-primary-foreground" : "text-muted-foreground border border-border hover:text-foreground active:text-foreground"
             }`}
           >
             {groupLabel}
           </button>
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded-lg px-3 py-1.5 hover:text-foreground transition-colors">
+            <DropdownMenuTrigger className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded-lg px-3 py-1.5 hover:text-foreground active:text-foreground transition-colors">
               {currentLabel}
               <ChevronDown className="w-3.5 h-3.5" />
             </DropdownMenuTrigger>

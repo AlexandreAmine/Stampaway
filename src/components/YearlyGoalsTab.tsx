@@ -425,7 +425,7 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
                           <button
                             key={place.id}
                             onClick={() => addGoalPlace(place.id)}
-                            className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center gap-2"
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-muted active:bg-muted flex items-center gap-2"
                           >
                             {place.type === "country" ? <Globe className="w-3 h-3" /> : <MapPin className="w-3 h-3" />}
                             <span>{place.name}</span>
@@ -443,7 +443,7 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
                     <p className="text-xs text-muted-foreground mb-1.5">{l("countries")}</p>
                     <div className="space-y-0.5">
                       {goalCountries.map(gp => (
-                        <div key={gp.id} className="flex items-center gap-2 py-2 px-2.5 rounded-lg hover:bg-muted/50 group transition-colors">
+                        <div key={gp.id} className="flex items-center gap-2 py-2 px-2.5 rounded-lg hover:bg-muted/50 active:bg-muted/50 group transition-colors">
                           {isOwn && (
                             <button onClick={() => toggleCompleted(gp.id, gp.completed)}
                               className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${gp.completed ? "bg-primary border-primary" : "border-muted-foreground/40"}`}>
@@ -456,7 +456,7 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
                             {gp.place?.name}
                           </span>
                           {isOwn && (
-                            <button aria-label={t("common.remove")} onClick={() => removeGoalPlace(gp.id)} className="opacity-0 group-hover:opacity-100 shrink-0">
+                            <button aria-label={t("common.remove")} onClick={() => removeGoalPlace(gp.id)} className="shrink-0 [@media(hover:hover)]:opacity-0 group-hover:opacity-100">
                               <X className="w-4 h-4 text-muted-foreground" />
                             </button>
                           )}
@@ -472,7 +472,7 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
                     <p className="text-xs text-muted-foreground mb-1.5">{l("cities")}</p>
                     <div className="space-y-0.5">
                       {goalCities.map(gp => (
-                        <div key={gp.id} className="flex items-center gap-2 py-2 px-2.5 rounded-lg hover:bg-muted/50 group transition-colors">
+                        <div key={gp.id} className="flex items-center gap-2 py-2 px-2.5 rounded-lg hover:bg-muted/50 active:bg-muted/50 group transition-colors">
                           {isOwn && (
                             <button onClick={() => toggleCompleted(gp.id, gp.completed)}
                               className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors shrink-0 ${gp.completed ? "bg-primary border-primary" : "border-muted-foreground/40"}`}>
@@ -486,7 +486,7 @@ export function YearlyGoalsTab({ userId }: YearlyGoalsTabProps) {
                             <span className="text-muted-foreground text-xs ml-1">({gp.place?.country})</span>
                           </span>
                           {isOwn && (
-                            <button aria-label={t("common.remove")} onClick={() => removeGoalPlace(gp.id)} className="opacity-0 group-hover:opacity-100 shrink-0">
+                            <button aria-label={t("common.remove")} onClick={() => removeGoalPlace(gp.id)} className="shrink-0 [@media(hover:hover)]:opacity-0 group-hover:opacity-100">
                               <X className="w-4 h-4 text-muted-foreground" />
                             </button>
                           )}

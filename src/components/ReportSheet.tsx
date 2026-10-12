@@ -90,7 +90,7 @@ export function ReportSheet({ open, onOpenChange, targetType, targetId, targetUs
               <button
                 key={r.value}
                 onClick={() => setReason(r)}
-                className="w-full text-left px-4 py-3 rounded-lg bg-card border border-border text-sm text-foreground hover:border-primary transition-colors"
+                className="w-full text-left px-4 py-3 rounded-lg bg-card border border-border text-sm text-foreground hover:border-primary active:border-primary transition-colors"
               >
                 {t(r.label)}
               </button>

@@ -101,3 +101,34 @@ describe("CountryFlag", () => {
     expect(flagImgs(container)).toHaveLength(0);
   });
 });
+
+describe("DestinationPoster big posters", () => {
+  it("show the card-size photo underneath while the full-size one loads", async () => {
+    const { DestinationPoster } = await import("@/components/DestinationPoster");
+    const { render } = await import("@testing-library/react");
+    const { LanguageProvider } = await import("@/contexts/LanguageContext");
+    const url = "https://images.unsplash.com/photo-123?ixid=abc";
+    const { container } = render(
+      <LanguageProvider>
+        <DestinationPoster placeId="p" name="Zzyzx" country="United States" type="city" image={url} renderWidth={900} />
+      </LanguageProvider>
+    );
+    const sources = [...container.querySelectorAll("img")].map((img) => img.getAttribute("src") || "");
+    expect(sources.some((src) => src.includes("w=400"))).toBe(true);
+    expect(sources.some((src) => src.includes("w=900"))).toBe(true);
+  });
+
+  it("cards themselves don't load a second copy", async () => {
+    const { DestinationPoster } = await import("@/components/DestinationPoster");
+    const { render } = await import("@testing-library/react");
+    const { LanguageProvider } = await import("@/contexts/LanguageContext");
+    const url = "https://images.unsplash.com/photo-123?ixid=abc";
+    const { container } = render(
+      <LanguageProvider>
+        <DestinationPoster placeId="p2" name="Zzyzx Two" country="United States" type="city" image={url} />
+      </LanguageProvider>
+    );
+    const sources = [...container.querySelectorAll("img")].map((img) => img.getAttribute("src") || "");
+    expect(sources.filter((src) => src.includes("w=400"))).toHaveLength(1);
+  });
+});

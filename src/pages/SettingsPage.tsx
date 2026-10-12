@@ -206,7 +206,7 @@ export default function SettingsPage() {
                 key={lang}
                 onClick={() => setLanguage(lang)}
                 className={`w-full flex items-center justify-between py-3.5 px-4 rounded-xl text-left transition-colors ${
-                  language === lang ? "bg-primary/10 border border-primary" : "hover:bg-muted/50"
+                  language === lang ? "bg-primary/10 border border-primary" : "hover:bg-muted/50 active:bg-muted/50"
                 }`}
               >
                 <span className={`text-sm font-medium ${language === lang ? "text-primary" : "text-foreground"}`} data-no-translate>
@@ -261,7 +261,7 @@ export default function SettingsPage() {
             {blockSearchResults.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-xl overflow-hidden z-20 max-h-40 overflow-y-auto">
                 {blockSearchResults.map(p => (
-                  <button key={p.user_id} onClick={() => setPendingBlock({ user_id: p.user_id, username: p.username })} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/50 text-left">
+                  <button key={p.user_id} onClick={() => setPendingBlock({ user_id: p.user_id, username: p.username })} className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/50 active:bg-muted/50 text-left">
                     <Avatar className="w-6 h-6">
                       {p.profile_picture ? <AvatarImage src={p.profile_picture} /> : <AvatarFallback className="text-[10px]">{p.username[0]?.toUpperCase()}</AvatarFallback>}
                     </Avatar>
@@ -302,7 +302,7 @@ export default function SettingsPage() {
             <AlertDialogFooter>
               <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
               <AlertDialogAction
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 active:bg-destructive/90"
                 onClick={async () => {
                   if (pendingBlock) await handleBlock(pendingBlock.user_id, pendingBlock.username);
                   setPendingBlock(null);
@@ -448,7 +448,7 @@ export default function SettingsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 active:bg-destructive/90"
               onClick={async () => { await signOut(); navigate("/welcome", { replace: true }); }}
             >
               {t("settings.signOutAction")}

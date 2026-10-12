@@ -19,7 +19,7 @@ export function SocialLinks({ links }: SocialLinksProps) {
             href={p.buildUrl(handle)}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card border border-border text-xs text-foreground hover:border-primary transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-card border border-border text-xs text-foreground hover:border-primary active:border-primary transition-colors"
             aria-label={`${p.label}: ${handle}`}
           >
             <Icon className="w-3.5 h-3.5 text-muted-foreground" />

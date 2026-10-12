@@ -1,6 +1,8 @@
 import { fallbackAvatarUrl } from "@/lib/avatarFallback";
 import { profileLinkProps } from "@/lib/profileHeaderQuery";
 import { useState, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchReviewComments, reviewCommentsQueryKey, type ReviewComment } from "@/lib/reviewDetailQuery";
 import { Send, Reply, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,16 +12,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 import { toastError } from "@/lib/toastError";
 
-interface Comment {
-  id: string;
-  review_id: string;
-  user_id: string;
-  parent_id: string | null;
-  comment_text: string;
-  created_at: string;
-  profile?: { username: string; profile_picture: string | null };
-  replies?: Comment[];
-}
+type Comment = ReviewComment;
 
 // Comments shown before the server has confirmed them.
 const PENDING_PREFIX = "pending-";
@@ -44,56 +37,23 @@ export function ReviewComments({ reviewId }: { reviewId: string }) {
   const { user, profile } = useAuth();
   const { t, language } = useLanguage();
   const navigate = useNavigate();
-  const [comments, setComments] = useState<Comment[]>([]);
+  const queryClient = useQueryClient();
+  // Cached (and started when a finger lands on the review), refreshed every
+  // time the review opens; sending and deleting update the list at once.
+  const commentsQuery = useQuery({
+    queryKey: reviewCommentsQueryKey(reviewId),
+    queryFn: () => fetchReviewComments(reviewId),
+  });
+  const [comments, setComments] = useState<Comment[]>(() => commentsQuery.data ?? []);
+  useEffect(() => {
+    if (commentsQuery.data) setComments(commentsQuery.data);
+  }, [commentsQuery.data]);
+
   const [text, setText] = useState("");
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    fetchComments();
-  }, [reviewId]);
-
-  const fetchComments = async () => {
-    const { data } = await supabase
-      .from("review_comments")
-      .select("*")
-      .eq("review_id", reviewId)
-      .order("created_at", { ascending: true });
-
-    if (!data || data.length === 0) {
-      setComments([]);
-      return;
-    }
-
-    const userIds = [...new Set(data.map((c) => c.user_id))];
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("user_id, username, profile_picture")
-      .in("user_id", userIds);
-
-    const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
-
-    // Build tree
-    const all: Comment[] = data.map((c) => ({
-      ...c,
-      profile: profileMap.get(c.user_id) || undefined,
-      replies: [],
-    }));
-
-    const topLevel: Comment[] = [];
-    const byId = new Map(all.map((c) => [c.id, c]));
-
-    all.forEach((c) => {
-      if (c.parent_id) {
-        const parent = byId.get(c.parent_id);
-        if (parent) parent.replies!.push(c);
-      } else {
-        topLevel.push(c);
-      }
-    });
-
-    setComments(topLevel);
-  };
+  const fetchComments = () => queryClient.refetchQueries({ queryKey: reviewCommentsQueryKey(reviewId), exact: true });
 
   // Instant: the comment appears as soon as it's sent, then the list is
   // reloaded from the server. If the save fails it's taken out again and the

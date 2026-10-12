@@ -409,7 +409,7 @@ export default function AuthPage() {
                       }
                     }
                   }}
-                  className="w-full bg-white text-black rounded-xl py-3 text-sm font-semibold hover:bg-white/90 transition-colors flex items-center justify-center gap-2"
+                  className="w-full bg-white text-black rounded-xl py-3 text-sm font-semibold hover:bg-white/90 active:bg-white/90 transition-colors flex items-center justify-center gap-2"
                 >
                   <AppleLogo className="w-4 h-4" />
                   {t("auth.continueWithApple")}

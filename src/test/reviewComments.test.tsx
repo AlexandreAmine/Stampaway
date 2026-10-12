@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent, act, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const h = vi.hoisted(() => ({
   rows: [] as any[],
@@ -48,13 +49,19 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { toastError } from "@/lib/toastError";
 
 const setup = async () => {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
-    <LanguageProvider>
-      <MemoryRouter>
-        <ReviewComments reviewId="r1" />
-      </MemoryRouter>
-    </LanguageProvider>,
+    <QueryClientProvider client={client}>
+      <LanguageProvider>
+        <MemoryRouter>
+          <ReviewComments reviewId="r1" />
+        </MemoryRouter>
+      </LanguageProvider>
+    </QueryClientProvider>,
   );
+  // Until the comments have loaded (however busy the machine running the
+  // tests is), then let the screen catch up.
+  await waitFor(() => expect(client.getQueryState(["review-comments", "r1"])?.status).toBe("success"));
   await act(async () => {});
 };
 const box = () => screen.getByPlaceholderText(/comment/i) as HTMLInputElement;

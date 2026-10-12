@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchAverageRatingMap, fetchCategoryAverageMap } from "@/lib/placeRankings";
 import { placeLinkProps } from "@/lib/placePrimaryQuery";
 import { hapticSelection } from "@/lib/haptics";
 import { useNavigate } from "react-router-dom";
@@ -61,27 +63,26 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
   const { user } = useAuth();
   const { t, language } = useLanguage();
   const navigate = useNavigate();
-  const [places, setPlaces] = useState<PlaceEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [sort, setSort] = useState<SortOption>("your-highest");
-  const [selectedCategory, setSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
-  const [avgSelectedCategory, setAvgSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
-  const [grouped, setGrouped] = useState(false);
   const targetUserId = userId || user?.id;
+  // The list itself is cached (and kept across launches): reopening the tab
+  // shows it at once while it refreshes. Averages come from the shared,
+  // server-computed map instead of downloading every review of each place.
+  const listQuery = useQuery({
+    queryKey: ["logged-inline", targetUserId ?? null, type],
+    enabled: !!targetUserId,
+    queryFn: async (): Promise<PlaceEntry[]> => {
+      const [{ data, error }, avgMap] = await Promise.all([
+        supabase
+          .from("reviews")
+          .select("id, place_id, rating, liked, visit_year, visit_month, duration_days, created_at, places!inner(name, country, type, image)")
+          .eq("user_id", targetUserId!)
+          .eq("places.type", type)
+          .order("created_at", { ascending: false }),
+        fetchAverageRatingMap().catch(() => new Map<string, number>()),
+      ]);
+      if (error) throw error;
 
-  useEffect(() => {
-    if (!targetUserId) return;
-    (async () => {
-      const { data } = await supabase
-        .from("reviews")
-        .select("id, place_id, rating, liked, visit_year, visit_month, duration_days, created_at, places!inner(name, country, type, image)")
-        .eq("user_id", targetUserId)
-        .eq("places.type", type)
-        .order("created_at", { ascending: false });
-
-      if (!data) { setLoading(false); return; }
-
-      const allEntries: (PlaceEntry & { review_id: string; created_at: string })[] = data.map((r: any) => ({
+      const allEntries: (PlaceEntry & { review_id: string; created_at: string })[] = (data || []).map((r: any) => ({
         review_id: r.id,
         place_id: r.place_id,
         rating: r.rating != null ? Number(r.rating) : null,
@@ -97,32 +98,31 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
       }));
 
       // Deduplicate: keep newest visit date per place
-      const entries = dedupeByNewest(allEntries, (e) => e.place_id);
+      return dedupeByNewest(allEntries, (e) => e.place_id).map((e) => ({
+        ...e,
+        avg_rating: avgMap.get(e.place_id) ?? e.rating ?? undefined,
+      }));
+    },
+  });
+  const [places, setPlaces] = useState<PlaceEntry[]>(() => listQuery.data ?? []);
+  const loading = listQuery.isPending;
+  const [sort, setSort] = useState<SortOption>("your-highest");
+  const [selectedCategory, setSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
+  const [avgSelectedCategory, setAvgSelectedCategory] = useState<SubRatingCategory>("Natural Beauty");
+  const [grouped, setGrouped] = useState(false);
 
-      const placeIds = [...new Set(entries.map((e) => e.place_id))];
-      if (placeIds.length > 0) {
-        const { data: allReviews } = await supabase
-          .from("reviews")
-          .select("place_id, rating")
-          .in("place_id", placeIds);
-        if (allReviews) {
-          const avgMap: Record<string, { sum: number; count: number }> = {};
-          allReviews.forEach((r: any) => {
-            if (!avgMap[r.place_id]) avgMap[r.place_id] = { sum: 0, count: 0 };
-            avgMap[r.place_id].sum += Number(r.rating);
-            avgMap[r.place_id].count++;
-          });
-          entries.forEach((e) => {
-            const a = avgMap[e.place_id];
-            e.avg_rating = a ? a.sum / a.count : e.rating ?? undefined;
-          });
-        }
-      }
-
-      setPlaces(entries);
-      setLoading(false);
-    })();
-  }, [targetUserId, type]);
+  // Fresh data replaces the list, keeping the category scores the sorts
+  // below have already added.
+  useEffect(() => {
+    if (!listQuery.data) return;
+    setPlaces((prev) => {
+      const extras = new Map(prev.map((p) => [p.place_id, p]));
+      return listQuery.data.map((p) => {
+        const before = extras.get(p.place_id);
+        return before ? { ...p, _catRating: before._catRating, _avgCatRating: before._avgCatRating } : p;
+      });
+    });
+  }, [listQuery.data]);
 
   // Fetch user's category ratings
   useEffect(() => {
@@ -155,40 +155,24 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
     })();
   }, [sort, selectedCategory, places.length, targetUserId]);
 
-  // Fetch average category ratings (all users)
+  // Average category ratings (all users): the shared, server-computed map.
   useEffect(() => {
     if (sort !== "avg-category-highest" || places.length === 0) return;
+    let cancelled = false;
     (async () => {
       const placeIds = places.map((p) => p.place_id);
-      const { data: allReviews } = await supabase
-        .from("reviews")
-        .select("id, place_id")
-        .in("place_id", placeIds);
-      if (!allReviews || allReviews.length === 0) return;
-
-      const reviewIds = allReviews.map((r) => r.id);
-      const reviewPlaceMap = new Map(allReviews.map((r) => [r.id, r.place_id]));
-
-      const { data: subRatings } = await supabase
-        .from("review_sub_ratings")
-        .select("review_id, category, rating")
-        .in("review_id", reviewIds)
-        .eq("category", avgSelectedCategory);
-
-      const catMap: Record<string, { sum: number; count: number }> = {};
-      (subRatings || []).forEach((sr: any) => {
-        const pid = reviewPlaceMap.get(sr.review_id);
-        if (!pid) return;
-        if (!catMap[pid]) catMap[pid] = { sum: 0, count: 0 };
-        catMap[pid].sum += Number(sr.rating);
-        catMap[pid].count++;
-      });
-
-      setPlaces((prev) => prev.map((p) => {
-        const a = catMap[p.place_id];
-        return { ...p, _avgCatRating: a ? a.sum / a.count : 0 };
-      }));
+      try {
+        const catMap = await fetchCategoryAverageMap(avgSelectedCategory, placeIds);
+        if (cancelled) return;
+        setPlaces((prev) => prev.map((p) => ({ ...p, _avgCatRating: catMap.get(p.place_id) ?? 0 })));
+      } catch {
+        // Keep the current order.
+      }
     })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sort, avgSelectedCategory, places.length]);
 
   const filtered = ratingFilter != null
@@ -286,13 +270,13 @@ export function LoggedPlacesInline({ type, userId, ratingFilter, profileUsername
         <button
           onClick={() => setGrouped((g) => !g)}
           className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${
-            grouped ? "bg-primary text-primary-foreground" : "text-muted-foreground border border-border hover:text-foreground"
+            grouped ? "bg-primary text-primary-foreground" : "text-muted-foreground border border-border hover:text-foreground active:text-foreground"
           }`}
         >
           {groupLabel}
         </button>
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded-lg px-3 py-1.5 hover:text-foreground transition-colors">
+          <DropdownMenuTrigger className="flex items-center gap-1 text-xs text-muted-foreground border border-border rounded-lg px-3 py-1.5 hover:text-foreground active:text-foreground transition-colors">
             {currentLabel}
             <ChevronDown className="w-3.5 h-3.5" />
           </DropdownMenuTrigger>

@@ -612,7 +612,7 @@ function VisitedTogether({ myUserId, theirUserId, theirUsername }: { myUserId: s
                   <button
                     key={c.placeId}
                     onClick={() => navigate(`/place/${c.placeId}`)} {...placeLinkProps(c.placeId)}
-                    className="w-full flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left"
+                    className="w-full flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 active:bg-muted/50 transition-colors text-left"
                   >
                     <CountryFlag country={c.name} />
                     <span className="text-xs text-foreground">{getCachedPlaceName(c.name, language, true)}</span>
@@ -632,7 +632,7 @@ function VisitedTogether({ myUserId, theirUserId, theirUsername }: { myUserId: s
                 <button
                   key={c.placeId}
                   onClick={() => navigate(`/place/${c.placeId}`)} {...placeLinkProps(c.placeId)}
-                  className="w-full flex items-center gap-1.5 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left"
+                  className="w-full flex items-center gap-1.5 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 active:bg-muted/50 transition-colors text-left"
                 >
                   <span className="text-xs text-foreground">{getCachedPlaceName(c.name, language, false)}</span>
                   <span className="text-[11px] text-muted-foreground">({getCachedPlaceName(c.country, language, true)})</span>
@@ -721,7 +721,7 @@ function RatingComparison({ myUserId, theirUserId, theirUsername }: { myUserId: 
       <button
         key={item.placeId}
         onClick={() => navigate(`/place/${item.placeId}`)} {...placeLinkProps(item.placeId)}
-        className="w-full flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2 hover:bg-muted/50 transition-colors"
+        className="w-full flex items-center justify-between bg-muted/30 rounded-lg px-3 py-2 hover:bg-muted/50 active:bg-muted/50 transition-colors"
       >
         <div className="flex items-center gap-2 min-w-0">
           {!showCountry && <CountryFlag country={item.name} />}
@@ -834,7 +834,7 @@ function SharedWishlist({ myUserId, theirUserId, theirUsername }: { myUserId: st
         <div className="space-y-1">
           {activeList.map((c) => {
             return (
-              <button key={c.placeId} onClick={() => navigate(`/place/${c.placeId}`)} {...placeLinkProps(c.placeId)} className="w-full flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 transition-colors text-left">
+              <button key={c.placeId} onClick={() => navigate(`/place/${c.placeId}`)} {...placeLinkProps(c.placeId)} className="w-full flex items-center gap-2 bg-muted/30 rounded-lg px-3 py-1.5 hover:bg-muted/50 active:bg-muted/50 transition-colors text-left">
                 {wishTab === "country" && <CountryFlag country={c.name} />}
                 <span className="text-xs text-foreground">{getCachedPlaceName(c.name, language, wishTab === "country")}</span>
                 {"country" in c && wishTab === "city" && <span className="text-[11px] text-muted-foreground">({getCachedPlaceName((c as any).country, language, true)})</span>}

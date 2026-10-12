@@ -40,7 +40,7 @@ export function RatingHistogram({ distribution, onBarClick }: RatingHistogramPro
                   setActiveIdx(isActive ? null : i);
                 }
               }}
-              className={`w-full rounded-t-sm transition-all ${count > 0 ? "bg-muted-foreground/40 hover:bg-primary/60 cursor-pointer" : "bg-muted-foreground/20 cursor-default"}`}
+              className={`w-full rounded-t-sm transition-all ${count > 0 ? "bg-muted-foreground/40 hover:bg-primary/60 active:bg-primary/60 cursor-pointer" : "bg-muted-foreground/20 cursor-default"}`}
               style={{ height: `${height}px` }}
               disabled={count === 0}
             />

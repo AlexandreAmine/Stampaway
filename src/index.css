@@ -184,6 +184,14 @@ button, a, [role="button"] {
   );
   animation: skeleton-shimmer-sweep 1.6s ease-in-out infinite;
 }
+/* Reduce Motion: placeholders stay still instead of shimmering. */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer::after {
+    animation: none;
+    transform: none;
+    opacity: 0;
+  }
+}
 
 /* Native-app feel: long-pressing UI chrome must not trigger iOS text
    selection or the copy callout. Inputs stay selectable/editable. */

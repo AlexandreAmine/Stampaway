@@ -16,6 +16,9 @@ import {
   type DestinationPosterRequestToken,
 } from "@/lib/destinationPosterCache";
 
+// The width posters are shown at in lists and grids (the default below).
+const CARD_WIDTH = 400;
+
 interface DestinationPosterProps {
   placeId: string;
   name: string;
@@ -57,7 +60,7 @@ export function DestinationPoster({
   onImageGenerated,
   provider = "unsplash",
   bare = false,
-  renderWidth = 400,
+  renderWidth = CARD_WIDTH,
   priority = false,
   eager = false,
 }: DestinationPosterProps) {
@@ -132,6 +135,10 @@ export function DestinationPoster({
   const photoState = imageUrl && photoResult?.url === imageUrl ? photoResult.state : "loading";
   const showPhoto = !!imageUrl && photoState !== "failed";
   const tinySrc = showPhoto ? tinyPosterUrl(imageUrl) : null;
+  const fullSrc = imageUrl ? sizedPosterUrl(imageUrl, renderWidth) || imageUrl : null;
+  const cardSizeSrc = showPhoto && renderWidth > CARD_WIDTH ? sizedPosterUrl(imageUrl, CARD_WIDTH) : null;
+  // Only when it's a different, smaller file (not app-bundled or uploaded photos).
+  const cardSrc = cardSizeSrc && cardSizeSrc !== fullSrc && tinySrc ? cardSizeSrc : null;
   // No photo at all (or it failed): a deliberate card with the flag, rather
   // than a near-black tile that looks like a failed load.
   // With autoGenerate, the first render happens before the fetch starts; show
@@ -169,10 +176,24 @@ export function DestinationPoster({
                 className="absolute inset-0 w-full h-full object-cover blur-md scale-110"
               />
             )}
+            {/* Big posters (a place's page): the card-size photo, usually
+                already downloaded for the list that was tapped, shows at
+                once and the full-size one fades in over it when it arrives
+                (it stays underneath, so the fade never dips to the gradient). */}
+            {cardSrc && (
+              <FadeInImage
+                key={cardSrc}
+                src={cardSrc}
+                alt=""
+                aria-hidden
+                decoding="async"
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            )}
           </div>
           <FadeInImage
             key={imageUrl}
-            src={sizedPosterUrl(imageUrl, renderWidth) || imageUrl}
+            src={fullSrc ?? undefined}
             alt={localizedName}
             loading={priority || eager ? "eager" : "lazy"}
             decoding="async"

@@ -56,7 +56,12 @@ Rebuild without the variable before anything ships.
   revert hand edits to it — re-check after any sync.
 - **mapbox-gl:** do not use Vite `manualChunks` vendor splitting; it breaks both globes in the iOS
   WebView. Dynamic `import()` is the supported approach and is already in place (`src/lib/mapboxLoader.ts`).
-- Data fetching is React Query (`staleTime: 0`, `gcTime` 30min, persisted to localStorage), with
-  several hand-rolled caches in `src/lib/*Cache.ts` alongside it.
+- Data fetching is React Query (`staleTime: 0`, `gcTime` 30min, persisted to localStorage for 7
+  days; the main screens' keys — home feed/stats, notifications, profile header — keep a 7-day
+  `gcTime` via `setQueryDefaults` in `App.tsx` so they survive in the saved cache), with several
+  hand-rolled caches in `src/lib/*Cache.ts` alongside it.
+- Hover styles only apply on devices that can hover (`future.hoverOnlyWhenSupported` in
+  `tailwind.config.ts`): give tappable things an `active:` style for pressed feedback, and never
+  hide a control behind hover.
 - Heaviest files, where most bugs concentrate: `ExplorePage.tsx` (1.4k lines), `ProfilePage.tsx` (1.1k),
   `MapTab.tsx` (855), `PlacePage.tsx` (751).

@@ -403,7 +403,7 @@ export default function HomePage() {
             {!showAllActivities && activities.length > 10 && (
               <button
                 onClick={() => setShowAllActivities(true)}
-                className="w-full mt-3 py-2.5 text-sm font-medium text-primary hover:bg-muted/40 rounded-lg transition-colors"
+                className="w-full mt-3 py-2.5 text-sm font-medium text-primary hover:bg-muted/40 active:bg-muted/40 rounded-lg transition-colors"
               >
                 {t("common.viewMoreCount", { count: String(activities.length - 10) })}
               </button>
@@ -411,7 +411,7 @@ export default function HomePage() {
             {showAllActivities && activities.length > 10 && (
               <button
                 onClick={() => setShowAllActivities(false)}
-                className="w-full mt-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted/40 rounded-lg transition-colors"
+                className="w-full mt-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted/40 active:bg-muted/40 rounded-lg transition-colors"
               >
                 {t("common.showLess")}
               </button>

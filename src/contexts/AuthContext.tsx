@@ -7,6 +7,7 @@ import { perfMark } from "@/lib/perfMarks";
 
 const PASSWORD_RESET_LOCK_KEY = "traveld.password-reset-lock";
 const SPLASH_FONT_WAIT_MS = 400;
+const SPLASH_FRAME_WAIT_MS = 100;
 
 interface AuthContextType {
   user: User | null;
@@ -82,19 +83,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Native splash stays up (launchAutoHide: false) until auth state is
   // resolved, so users never see a blank screen between splash and app.
   const splashHiddenRef = useRef(false);
+  const splashGoneRef = useRef(false);
+  const removeSplash = () => {
+    if (splashGoneRef.current) return;
+    splashGoneRef.current = true;
+    perfMark("splash-hide");
+    // Smooth dissolve into the app instead of a hard cut
+    SplashScreen.hide({ fadeOutDuration: 300 }).catch(() => {});
+  };
   const hideSplash = () => {
     if (splashHiddenRef.current || !isNative()) return;
     splashHiddenRef.current = true;
     // After the first screen has been laid out and its fonts have loaded
-    // (briefly capped), so the app never appears in a fallback font first.
-    requestAnimationFrame(() => {
-      const fontsReady = document.fonts?.ready ?? Promise.resolve();
-      Promise.race([fontsReady, new Promise((r) => window.setTimeout(r, SPLASH_FONT_WAIT_MS))]).then(() => {
-        perfMark("splash-hide");
-        // Smooth dissolve into the app instead of a hard cut
-        SplashScreen.hide({ fadeOutDuration: 300 }).catch(() => {});
-      });
-    });
+    // (each wait capped), so the app never appears in a fallback font first.
+    const wait = (ms: number) => new Promise((resolve) => window.setTimeout(resolve, ms));
+    Promise.race([new Promise((resolve) => requestAnimationFrame(resolve)), wait(SPLASH_FRAME_WAIT_MS)])
+      .then(() => Promise.race([document.fonts?.ready ?? Promise.resolve(), wait(SPLASH_FONT_WAIT_MS)]))
+      .then(removeSplash, removeSplash);
   };
 
   const setPasswordResetLock = (locked: boolean) => {
@@ -111,8 +116,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Safety net: never leave the native splash stuck if auth resolution hangs.
-    const splashTimeout = window.setTimeout(hideSplash, 6000);
+    // Safety net: never leave the native splash stuck, whatever else hangs.
+    const splashTimeout = window.setTimeout(() => {
+      if (isNative()) removeSplash();
+    }, 6000);
 
     // The saved user can show the app at once; its data loads as soon as
     // Supabase has the session ready.

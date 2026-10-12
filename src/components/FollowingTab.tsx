@@ -337,7 +337,7 @@ export function FollowingTab({ userId, readOnly = false }: { userId?: string; re
           <AlertDialogFooter>
             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 active:bg-destructive/90"
               onClick={async () => {
                 const target = pendingUnfollow;
                 setPendingUnfollow(null);

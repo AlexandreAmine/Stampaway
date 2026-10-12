@@ -138,7 +138,7 @@ export function FollowersTab({ userId }: { userId?: string }) {
                 <span className="text-sm font-medium text-foreground" data-no-translate>{f.username}</span>
               </button>
               {isOwnProfile && (
-                <button aria-label={t("common.remove")} onClick={() => setPendingRemove(f)} className="p-1.5 rounded-full hover:bg-muted/50 shrink-0">
+                <button aria-label={t("common.remove")} onClick={() => setPendingRemove(f)} className="p-1.5 rounded-full hover:bg-muted/50 active:bg-muted/50 shrink-0">
                   <X className="w-4 h-4 text-muted-foreground" />
                 </button>
               )}
@@ -162,7 +162,7 @@ export function FollowersTab({ userId }: { userId?: string }) {
           <AlertDialogFooter>
             <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
             <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90 active:bg-destructive/90"
               onClick={async () => {
                 if (pendingRemove) await removeFollower(pendingRemove.id, pendingRemove.username);
                 setPendingRemove(null);

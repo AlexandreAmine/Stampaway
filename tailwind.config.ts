@@ -1,6 +1,12 @@
 import type { Config } from "tailwindcss";
 
 export default {
+  // Hover styles only on devices that can hover. On iPhone a tapped element
+  // otherwise keeps its hover look until the next tap elsewhere; pressed
+  // feedback comes from the active: styles instead.
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
   darkMode: ["class"],
   content: ["./pages/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./src/**/*.{ts,tsx}"],
   prefix: "",

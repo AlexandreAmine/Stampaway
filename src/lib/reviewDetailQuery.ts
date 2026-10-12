@@ -65,6 +65,54 @@ export async function fetchReviewSubRatings(reviewId: string): Promise<SubRating
   return SUB_CATEGORIES.map((cat) => (data || []).find((d) => d.category === cat)).filter(Boolean) as SubRating[];
 }
 
+export interface ReviewComment {
+  id: string;
+  review_id: string;
+  user_id: string;
+  parent_id: string | null;
+  comment_text: string;
+  created_at: string;
+  profile?: { username: string; profile_picture: string | null };
+  replies?: ReviewComment[];
+}
+
+export const reviewCommentsQueryKey = (reviewId: string) => ["review-comments", reviewId] as const;
+
+/** A review's comments as a thread (replies under their parent), oldest first. */
+export async function fetchReviewComments(reviewId: string): Promise<ReviewComment[]> {
+  const { data, error } = await supabase
+    .from("review_comments")
+    .select("*")
+    .eq("review_id", reviewId)
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  if (!data || data.length === 0) return [];
+
+  const userIds = [...new Set(data.map((c) => c.user_id))];
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("user_id, username, profile_picture")
+    .in("user_id", userIds);
+  const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
+
+  const all: ReviewComment[] = data.map((c) => ({
+    ...c,
+    profile: profileMap.get(c.user_id) || undefined,
+    replies: [],
+  }));
+  const topLevel: ReviewComment[] = [];
+  const byId = new Map(all.map((c) => [c.id, c]));
+  all.forEach((c) => {
+    if (c.parent_id) {
+      const parent = byId.get(c.parent_id);
+      if (parent) parent.replies!.push(c);
+    } else {
+      topLevel.push(c);
+    }
+  });
+  return topLevel;
+}
+
 /** Start loading a review when a finger lands on a link to it. */
 export function prefetchReviewDetail(queryClient: QueryClient, reviewId: string) {
   void queryClient.prefetchQuery({
@@ -75,6 +123,11 @@ export function prefetchReviewDetail(queryClient: QueryClient, reviewId: string)
   void queryClient.prefetchQuery({
     queryKey: reviewSubRatingsQueryKey(reviewId),
     queryFn: () => fetchReviewSubRatings(reviewId),
+    staleTime: 10_000,
+  });
+  void queryClient.prefetchQuery({
+    queryKey: reviewCommentsQueryKey(reviewId),
+    queryFn: () => fetchReviewComments(reviewId),
     staleTime: 10_000,
   });
 }

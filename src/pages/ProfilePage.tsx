@@ -382,6 +382,10 @@ export default function ProfilePage() {
     enabled: !!viewingUserId && !isOwnProfile,
     queryFn: async () => {
       const uid = viewingUserId!;
+      // The maps don't depend on the rest: loaded at the same time.
+      const mapsPromise = viewerUserId
+        ? Promise.all([fetchUserMapData(viewerUserId), fetchUserMapData(uid)])
+        : fetchUserMapData(uid).then((theirs) => [theirs, null] as const);
       const [favRes, reviewRes, listRes, wishRes, followingRes, followersRes, totalCountriesRes, likedDestRes, reviewLikesRes, listLikesRes, writtenReviewsRes] = await Promise.all([
         supabase.from("favorite_places").select("slot_index, place_id, type, places!inner(name, image, country, type)").eq("user_id", uid),
         supabase.from("reviews").select("rating, place_id, places!inner(type)").eq("user_id", uid),
@@ -412,15 +416,9 @@ export default function ProfilePage() {
         likedDestRes.data || [],
       );
 
-      if (viewerUserId) {
-        const [mine, theirs] = await Promise.all([
-          fetchUserMapData(viewerUserId),
-          fetchUserMapData(uid),
-        ]);
-        return { core, mapMine: mine, mapTheirs: theirs };
-      }
-      const theirs = await fetchUserMapData(uid);
-      return { core, mapMine: theirs, mapTheirs: null as UserMapData | null };
+      const [first, second] = await mapsPromise;
+      if (viewerUserId) return { core, mapMine: first, mapTheirs: second as UserMapData | null };
+      return { core, mapMine: first, mapTheirs: null as UserMapData | null };
     },
   });
 
@@ -447,6 +445,11 @@ export default function ProfilePage() {
         && active.viewingUserId === requestProfileUserId
         && active.isOwnProfile;
     };
+
+    // The map's data doesn't depend on the rest: loaded at the same time
+    // (its failure is handled where it's awaited, below).
+    const mapPromise = canUseOwnProfileCache ? fetchUserMapData(uid, { throwOnError: true }) : null;
+    mapPromise?.catch(() => {});
 
     try {
     const [favRes, reviewRes, listRes, wishRes, followingRes, followersRes, totalCountriesRes, likedDestRes, reviewLikesRes, listLikesRes, writtenReviewsRes] = await Promise.all([
@@ -498,7 +501,7 @@ export default function ProfilePage() {
       });
 
       try {
-        const mapData = await fetchUserMapData(uid, { throwOnError: true });
+        const mapData = await (mapPromise ?? fetchUserMapData(uid, { throwOnError: true }));
         if (!isOwnProfileContentCacheVersion(cacheVersion) || !isStillCurrentOwnProfile()) return;
         const latestSnapshot = getFreshOwnProfileContentCache<ProfileContentSnapshot>(viewerUserId);
         const nextSnapshot: ProfileContentSnapshot = {
@@ -752,7 +755,7 @@ export default function ProfilePage() {
             onClick={() => handleOpenPicker(type, i)}
             onDragOver={(e) => e.preventDefault()}
             onDrop={() => handleDrop(type, i)}
-            className="w-full aspect-[3/4] rounded-2xl border-2 border-dashed border-border flex items-center justify-center hover:border-primary transition-colors"
+            className="w-full aspect-[3/4] rounded-2xl border-2 border-dashed border-border flex items-center justify-center hover:border-primary active:border-primary transition-colors"
           >
             <Plus className="w-8 h-8 text-muted-foreground" />
           </button>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Network } from "@/lib/native";
+import { Network } from "@capacitor/network";
 import { useLanguage } from "@/contexts/LanguageContext";
 
 /**

@@ -119,7 +119,7 @@ export default function ReviewDetailPage() {
               </Avatar>
             </button>
             <div>
-              <button onClick={() => navigate(profile?.user_id === user?.id ? "/profile" : `/profile/${profile?.user_id}`)} {...profileLinkProps(profile?.user_id, profile?.username, profile?.profile_picture)} className="text-base font-semibold text-foreground hover:text-primary transition-colors">
+              <button onClick={() => navigate(profile?.user_id === user?.id ? "/profile" : `/profile/${profile?.user_id}`)} {...profileLinkProps(profile?.user_id, profile?.username, profile?.profile_picture)} className="text-base font-semibold text-foreground hover:text-primary active:text-primary transition-colors">
                 {profile?.username || "User"}
               </button>
               <p className="text-xs text-muted-foreground">

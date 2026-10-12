@@ -3,6 +3,8 @@ import { Toaster as Sonner, toast } from "sonner";
 
 type ToasterProps = React.ComponentProps<typeof Sonner>;
 
+const TOAST_OFFSET = { top: 88, left: 88, right: 88, bottom: "calc(76px + env(safe-area-inset-bottom, 0px))" };
+
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme();
 
@@ -11,8 +13,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
       position="bottom-center"
-      offset={88}
-      mobileOffset={88}
+      // Just above the tab bar (64pt plus the home bar area on newer
+      // iPhones); the sides keep their 88px margins.
+      offset={TOAST_OFFSET}
+      mobileOffset={TOAST_OFFSET}
       duration={3000}
       toastOptions={{
         duration: 3000,

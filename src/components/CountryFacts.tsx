@@ -167,7 +167,7 @@ export function CountryFacts({ countryName, placeId }: CountryFactsProps) {
             href={facts.official_website}
             target="_blank"
             rel="noopener noreferrer"
-            className="block bg-card rounded-xl p-3 border border-border hover:border-primary transition-colors"
+            className="block bg-card rounded-xl p-3 border border-border hover:border-primary active:border-primary transition-colors"
           >
             <div className="flex items-center gap-2">
               <Globe className="w-4 h-4 text-primary" />

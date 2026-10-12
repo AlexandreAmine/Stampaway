@@ -1,12 +1,12 @@
 import { lazy, Suspense } from "react";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { MotionConfig } from "framer-motion";
+import { BrowserRouter, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider, removeOldestQuery } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import ScreenErrorBoundary from "@/components/ScreenErrorBoundary";
 import OfflineBanner from "@/components/OfflineBanner";
 import { BottomNav } from "@/components/BottomNav";
 import ScrollRestoration from "@/components/ScrollRestoration";
@@ -55,6 +55,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function AppRoutes() {
   const { user, mustCompletePasswordReset } = useAuth();
+  const { pathname } = useLocation();
 
   return (
     <div className="max-w-lg mx-auto relative min-h-screen">
@@ -79,6 +80,8 @@ function AppRoutes() {
       {/* Wrapper targeted by EdgeSwipeBack: the interactive swipe-back
           gesture translates this element with the finger */}
       <div id="route-container">
+      {/* An error in one screen stays in that screen; the tab bar keeps working. */}
+      <ScreenErrorBoundary resetKey={pathname}>
       <Suspense fallback={null}>
         <Routes>
           <Route path="/welcome" element={<WelcomePage />} />
@@ -106,6 +109,7 @@ function AppRoutes() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
+      </ScreenErrorBoundary>
       </div>
       {user && !mustCompletePasswordReset && <BottomNav />}
       <UsernameSetupGate />
@@ -131,6 +135,15 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// The screens the app opens on keep their last content for a week, so
+// reopening the app after a few days paints them at once (then refreshes)
+// instead of showing loading placeholders. Everything else is dropped 30
+// minutes after its screen closes, which keeps the saved cache small.
+const KEEP_MAIN_SCREENS_MS = 7 * 24 * 60 * 60 * 1000;
+for (const key of ["home-feed", "home-stats", "unread-notifications", "notifications", "profile-header"]) {
+  queryClient.setQueryDefaults([key], { gcTime: KEEP_MAIN_SCREENS_MS });
+}
 
 // Instagram-style resume freshness: when the app returns to the foreground
 // after a meaningful background period, silently revalidate all cached
@@ -190,16 +203,17 @@ const queryPersister = createSyncStoragePersister({
 
 const App = () => (
   <ErrorBoundary>
-    <PersistQueryClientProvider
-      client={queryClient}
-      persistOptions={{
-        persister: queryPersister,
-        maxAge: 24 * 60 * 60 * 1000,
-        buster: "v1",
-      }}
-    >
-      <TooltipProvider>
-        <Toaster />
+    {/* With iOS's Reduce Motion on, slides, springs and scaling are left out
+        (fades stay), like native apps. No change otherwise. */}
+    <MotionConfig reducedMotion="user">
+      <PersistQueryClientProvider
+        client={queryClient}
+        persistOptions={{
+          persister: queryPersister,
+          maxAge: KEEP_MAIN_SCREENS_MS,
+          buster: "v1",
+        }}
+      >
         <Sonner />
         {/* Route changes run as React transitions: a screen whose code is
             still loading keeps the current screen up until it's ready,
@@ -212,8 +226,8 @@ const App = () => (
             </LanguageProvider>
           </AuthProvider>
         </BrowserRouter>
-      </TooltipProvider>
-    </PersistQueryClientProvider>
+      </PersistQueryClientProvider>
+    </MotionConfig>
   </ErrorBoundary>
 );
 

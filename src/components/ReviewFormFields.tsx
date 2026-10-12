@@ -267,7 +267,7 @@ export function ReviewFormFields({
                     setTagQuery("");
                     setTagResults([]);
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/50 text-left"
+                  className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted/50 active:bg-muted/50 text-left"
                 >
                   <Avatar className="w-6 h-6">
                     {p.profile_picture ? <AvatarImage src={p.profile_picture} /> : <AvatarFallback className="text-[10px]">{p.username[0]?.toUpperCase()}</AvatarFallback>}

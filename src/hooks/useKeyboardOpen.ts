@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Keyboard, isNative } from "@/lib/native";
+import { Keyboard } from "@capacitor/keyboard";
+import { isNative } from "@/lib/native/platform";
 
 /**
  * Whether the iOS on-screen keyboard is showing (always false on web).
